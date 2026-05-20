@@ -2096,8 +2096,8 @@ const submitCreateDialog = async () => {
   const treeEditorShell = (
     <section className={`fte-shell ${treeFullscreen ? "is-fullscreen" : ""}`}>
       <TransformWrapper
-        initialScale={isTreeMobile ? 0.55 : 0.85}
-        minScale={isTreeMobile ? 0.2 : 0.35}
+        initialScale={isTreeMobile ? 0.68 : 0.85}
+        minScale={isTreeMobile ? 0.24 : 0.35}
         maxScale={2.6}
         centerOnInit={true}
         limitToBounds={false}

@@ -781,6 +781,32 @@ select.mgr-search.mgr-selectMulti {
     padding: 2.25rem !important;
 }
 
+@media (max-width: 760px) {
+    .manager-genealogy-page .management-grid.management-grid--single {
+        width: 100vw;
+        margin-left: calc(50% - 50vw);
+        margin-right: calc(50% - 50vw);
+    }
+
+    .manager-genealogy-page .panel-card.tree-preview-panel {
+        border-radius: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        border: 0 !important;
+        box-shadow: none !important;
+    }
+
+    .manager-genealogy-page .panel-card.tree-preview-panel > .panel-header {
+        padding: 0 14px 10px;
+    }
+
+    .manager-genealogy-page .tree-container {
+        min-height: calc(100dvh - 98px) !important;
+        padding: 0 !important;
+        overflow: visible !important;
+    }
+}
+
 .manager-genealogy-page .family-tree-container {
     min-width: max-content !important;
     width: max-content !important;
