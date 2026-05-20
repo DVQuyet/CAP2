@@ -371,6 +371,7 @@ export default function FamilyTreeEditor({
   const [isTreeMobile, setIsTreeMobile] = useState(() => (
     typeof window !== "undefined" && window.matchMedia(TREE_MOBILE_QUERY).matches
   ));
+  const [mobileTreePanel, setMobileTreePanel] = useState(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -385,6 +386,12 @@ export default function FamilyTreeEditor({
       mediaQuery.removeEventListener?.("change", syncMobileState);
     };
   }, []);
+
+  useEffect(() => {
+    if (!isTreeMobile && mobileTreePanel) {
+      setMobileTreePanel(null);
+    }
+  }, [isTreeMobile, mobileTreePanel]);
 
   const { t, language } = useLanguage();
   const treeRef = useRef(null);
@@ -2119,7 +2126,7 @@ const submitCreateDialog = async () => {
       >
         {({ zoomIn, zoomOut, resetTransform, centerView }) => (
           <>
-            <div className="fte-toolbar">
+            <div className="fte-toolbar fte-toolbar--desktop">
               <div className="fte-toolbarGroup fte-toolbarGroup--edit">
                 <button
                   type="button"
@@ -2253,6 +2260,160 @@ const submitCreateDialog = async () => {
                 </button>
               </div>
             </div>
+
+            {isTreeMobile ? (
+              <>
+                {mobileTreePanel ? (
+                  <button
+                    type="button"
+                    className="fte-mobileSheetBackdrop"
+                    aria-label={t("common.close")}
+                    onClick={() => setMobileTreePanel(null)}
+                  />
+                ) : null}
+
+                <div className="fte-mobileTreeBar" role="toolbar" aria-label={t("tree.title")}>
+                  <button
+                    type="button"
+                    onClick={() => openCreateDialog("person")}
+                    disabled={!canEditAll || loading || saving}
+                    title={canEditAll ? t("tree.toolbar.addPerson") : t("tree.toolbar.addPersonAdminOnly")}
+                  >
+                    <span className="material-symbols-outlined">person_add</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMobileTreePanel((panel) => (panel === "search" ? null : "search"))}
+                    className={mobileTreePanel === "search" ? "is-active" : ""}
+                    title={t("tree.sidebar.search")}
+                  >
+                    <span className="material-symbols-outlined">search</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => centerView?.(0.75, 220)}
+                    title="Căn giữa"
+                  >
+                    <span className="material-symbols-outlined">my_location</span>
+                  </button>
+                  <button type="button" onClick={() => zoomOut(0.16, 180)} title={t("tree.toolbar.zoomOut")}>
+                    <span className="material-symbols-outlined">zoom_out</span>
+                  </button>
+                  <button type="button" onClick={() => zoomIn(0.16, 180)} title={t("tree.toolbar.zoomIn")}>
+                    <span className="material-symbols-outlined">zoom_in</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMobileTreePanel((panel) => (panel === "more" ? null : "more"))}
+                    className={mobileTreePanel === "more" ? "is-active" : ""}
+                    title="Thêm"
+                  >
+                    <span className="material-symbols-outlined">more_horiz</span>
+                  </button>
+                </div>
+
+                {mobileTreePanel === "search" ? (
+                  <div className="fte-mobileSheet" role="dialog" aria-label={t("tree.sidebar.title")}>
+                    <div className="fte-mobileSheetHandle" />
+                    <div className="fte-mobileSheetHeader">
+                      <strong>{t("tree.sidebar.title")}</strong>
+                      <button type="button" onClick={() => setMobileTreePanel(null)} title={t("common.close")}>
+                        <span className="material-symbols-outlined">close</span>
+                      </button>
+                    </div>
+                    <TreeSearchPanel
+                      query={treeSearch.query}
+                      onQueryChange={treeSearch.setQuery}
+                      onSubmit={treeSearch.submitSearch}
+                      onClear={treeSearch.clearSearch}
+                      submittedQuery={treeSearch.submittedQuery}
+                      results={treeSearch.results}
+                      onFindMe={handleFindMe}
+                      onResultClick={(person) => {
+                        if (!visiblePeople.some((item) => Number(item.id) === Number(person.id))) {
+                          treeViewMode.setFullMode();
+                        }
+                        focusPerson(person.id, { search: true });
+                        setMobileTreePanel(null);
+                      }}
+                    />
+                  </div>
+                ) : null}
+
+                {mobileTreePanel === "more" ? (
+                  <div className="fte-mobileSheet" role="dialog" aria-label="Thêm">
+                    <div className="fte-mobileSheetHandle" />
+                    <div className="fte-mobileSheetHeader">
+                      <strong>Thêm</strong>
+                      <span className="fte-mobileZoomText">{Math.round(currentScale * 100)}%</span>
+                      <button type="button" onClick={() => setMobileTreePanel(null)} title={t("common.close")}>
+                        <span className="material-symbols-outlined">close</span>
+                      </button>
+                    </div>
+                    <div className="fte-mobileMoreGrid">
+                      {canEditAll ? (
+                        <>
+                          <button type="button" onClick={() => setArchiveDialogOpen(true)} disabled={loading || saving}>
+                            <span className="material-symbols-outlined">inventory_2</span>
+                            <span>Kho lưu</span>
+                          </button>
+                          <button type="button" onClick={openGenealogyAiDialog} disabled={loading || saving}>
+                            <span className="material-symbols-outlined">auto_awesome</span>
+                            <span>AI</span>
+                          </button>
+                          <button type="button" onClick={resetTreeTitleLabel} disabled={loading || saving}>
+                            <span className="material-symbols-outlined">title</span>
+                            <span>Tiêu đề</span>
+                          </button>
+                          <button type="button" onClick={applyAutoLayoutAndSave} disabled={loading || saving}>
+                            <span className="material-symbols-outlined">auto_fix_high</span>
+                            <span>{t("tree.toolbar.autoLayout")}</span>
+                          </button>
+                        </>
+                      ) : null}
+                      <button type="button" onClick={handleExport} disabled={loading || saving}>
+                        <span className="material-symbols-outlined">download</span>
+                        <span>{t("tree.toolbar.exportPng")}</span>
+                      </button>
+                      <button type="button" onClick={handleValidateTree} disabled={loading || saving}>
+                        <span className="material-symbols-outlined">rule</span>
+                        <span>{t("tree.toolbar.validate")}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const nextFullscreen = !treeFullscreen;
+                          setTreeFullscreen(nextFullscreen);
+                          setMobileTreePanel(null);
+                          if (nextFullscreen) {
+                            window.setTimeout(() => centerView?.(0.95, 260), 80);
+                          }
+                        }}
+                      >
+                        <span className="material-symbols-outlined">{treeFullscreen ? "close_fullscreen" : "open_in_full"}</span>
+                        <span>{treeFullscreen ? t("tree.toolbar.exitFullscreen") : t("tree.toolbar.fullscreen")}</span>
+                      </button>
+                    </div>
+                    <div className="fte-mobileViewMode">
+                      <TreeViewModeSelector
+                        people={people}
+                        mode={treeViewMode.mode}
+                        rootPersonId={treeViewMode.rootPersonId}
+                        onFullMode={() => {
+                          treeViewMode.setFullMode();
+                          setMobileTreePanel(null);
+                        }}
+                        onRootMode={(personId) => {
+                          treeViewMode.setRootMode(personId);
+                          focusPerson(personId);
+                          setMobileTreePanel(null);
+                        }}
+                      />
+                    </div>
+                  </div>
+                ) : null}
+              </>
+            ) : null}
 
             {billingWarning ? (
               <div className="fte-billingWarning">

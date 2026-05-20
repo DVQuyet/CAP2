@@ -283,12 +283,56 @@
     position: fixed;
     left: 0;
     top: 0;
+    width: min(340px, 86vw);
     margin: 0;
     border-radius: 0 24px 24px 0;
-    height: calc(100dvh - 2rem);
-    max-width: min(280px, calc(100vw - 36px));
+    height: 100dvh;
+    max-width: min(340px, 86vw);
     overflow-y: auto;
     z-index: 80;
+    padding: 1.25rem 1rem 1rem;
+    background:
+      linear-gradient(180deg, rgba(71, 19, 15, 0.98), rgba(30, 10, 9, 0.98)) !important;
+    border-right: 1px solid rgba(244, 197, 92, 0.34);
+    box-shadow: 16px 0 46px rgba(0, 0, 0, 0.36);
+    backdrop-filter: none;
+  }
+
+  .admin-sidebar .sidebar-toggle {
+    top: 14px;
+    right: 14px;
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    background: rgba(255, 246, 220, 0.14);
+    color: #ffe6a3;
+    border-color: rgba(255, 222, 140, 0.34);
+    box-shadow: none;
+  }
+
+  .admin-sidebar .sidebar-header {
+    padding-top: 3rem;
+  }
+
+  .admin-sidebar .sidebar-user-section,
+  .admin-sidebar .nav-item,
+  .admin-sidebar .logout-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 224, 151, 0.12);
+  }
+
+  .admin-sidebar .nav-item {
+    color: rgba(255, 246, 220, 0.84);
+  }
+
+  .admin-sidebar .nav-item.active {
+    background: linear-gradient(135deg, #d6a536, #8b1e13);
+    color: #fff8df;
+  }
+
+  .admin-sidebar .user-details strong,
+  .admin-sidebar .admin-badge-chip {
+    color: #fff8df;
   }
 
   .sidebar-collapsed .admin-sidebar {
@@ -316,8 +360,8 @@
     display: block;
     border: 0;
     padding: 0;
-    background: rgba(11, 7, 5, 0.42);
-    backdrop-filter: blur(2px);
+    background: rgba(17, 7, 4, 0.62);
+    backdrop-filter: blur(3px);
   }
 }
 
