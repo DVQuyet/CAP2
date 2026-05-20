@@ -88,6 +88,14 @@ export default function AdminLayout() {
           </button>
         </div>
       </aside>
+      {sidebarOpen ? (
+        <button
+          type="button"
+          className="portal-sidebar-backdrop"
+          aria-label={t("layout.collapse")}
+          onClick={() => setSidebarOpen(false)}
+        />
+      ) : null}
 
       <main className="admin-main-content">
         <header className="admin-top-header glass-effect">
@@ -96,6 +104,15 @@ export default function AdminLayout() {
             <p>{currentTime.toLocaleTimeString(i18n.language === "vi" ? "vi-VN" : "en-US")} | {formatDate(currentTime, { language: i18n.language })}</p>
           </div>
           <div className="admin-header-utils">
+            <button
+              type="button"
+              className="admin-util-btn mobile-sidebar-open"
+              onClick={() => setSidebarOpen(true)}
+              aria-label={t("layout.expand")}
+              title={t("layout.expand")}
+            >
+              <span className="material-symbols-outlined">menu</span>
+            </button>
             <LanguageToggle className="admin-util-btn" />
           </div>
         </header>

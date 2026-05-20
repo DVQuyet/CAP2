@@ -326,6 +326,14 @@ export default function ManagerLayout() {
           </button>
         </div>
       </aside>
+      {sidebarOpen ? (
+        <button
+          type="button"
+          className="portal-sidebar-backdrop"
+          aria-label={t("layout.collapseMenu")}
+          onClick={() => setSidebarOpen(false)}
+        />
+      ) : null}
 
       <main className="manager-main-content">
         <header className="manager-top-header glass-effect">
@@ -334,6 +342,15 @@ export default function ManagerLayout() {
             <p>{t("layout.session", { date: formatDate(new Date(), { language: i18n.language }) })}</p>
           </div>
           <div className="header-utils">
+            <button
+              type="button"
+              className="util-btn mobile-sidebar-open"
+              onClick={() => setSidebarOpen(true)}
+              aria-label={t("layout.openMenu")}
+              title={t("layout.openMenu")}
+            >
+              <span className="material-symbols-outlined">menu</span>
+            </button>
             <NotificationBell role="manager" buttonClassName="util-btn" />
             <LanguageToggle className="util-btn" />
             <button className="util-btn" title={t("layout.editAccount")} onClick={openAccountModal}>
