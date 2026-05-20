@@ -1,0 +1,14 @@
+services:
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:5.2
+    container_name: cap2-phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: ${DB_HOST}
+      PMA_PORT: ${DB_PORT}
+      PMA_USER: ${DB_USER}
+      PMA_PASSWORD: ${DB_PASSWORD}
+      PMA_ABSOLUTE_URI: http://localhost:${PHPMYADMIN_PORT:-16001}/
+      UPLOAD_LIMIT: 256M
+    ports:
+      - "${PHPMYADMIN_PORT:-16001}:80"

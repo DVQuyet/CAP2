@@ -1,0 +1,61 @@
+.ai-chat-widget {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+}
+.ai-chat-btn {
+  width: 60px; height: 60px; border-radius: 50%;
+  background: linear-gradient(135deg, #6e8efb, #a777e3);
+  color: white; border: none; font-size: 28px;
+  cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.2s;
+}
+.ai-chat-btn:hover {
+  transform: scale(1.1);
+}
+.ai-chat-window {
+  position: absolute; bottom: 70px; right: 0;
+  width: 360px; height: 500px;
+  background: white; border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  display: flex; flex-direction: column; overflow: hidden;
+  animation: slideUp 0.3s ease-out;
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.ai-chat-header {
+  background: linear-gradient(135deg, #6e8efb, #a777e3);
+  color: white; padding: 15px; font-weight: bold; font-size: 1.1rem;
+}
+.ai-chat-tabs {
+  display: flex; background: #f4f6f8; border-bottom: 1px solid #e0e0e0;
+}
+.ai-tab {
+  flex: 1; text-align: center; padding: 12px; cursor: pointer; color: #555; font-size: 0.9em; transition: 0.2s;
+}
+.ai-tab.active {
+  background: white; color: #6e8efb; font-weight: bold; border-bottom: 2px solid #6e8efb;
+}
+.ai-chat-messages {
+  flex: 1; padding: 15px; overflow-y: auto; background: #fbfbfb; display: flex; flex-direction: column;
+}
+.ai-message {
+  padding: 12px 16px; border-radius: 20px; margin-bottom: 12px; max-width: 85%; width: fit-content; line-height: 1.4;
+}
+.ai-msg-user { background: #6e8efb; color: white; align-self: flex-end; margin-left: auto; border-bottom-right-radius: 4px; }
+.ai-msg-bot { background: #eef2f5; color: #333; align-self: flex-start; margin-right: auto; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.ai-chat-input {
+  display: flex; align-items: center; gap: 8px; padding: 12px; border-top: 1px solid #eee; background: white;
+}
+.ai-chat-input input {
+  flex: 1; min-width: 0; padding: 10px 15px; border: 1px solid #ddd; border-radius: 20px; outline: none; font-size: 0.95rem;
+}
+.ai-chat-input input:focus { border-color: #6e8efb; }
+.ai-chat-input > button {
+  background: transparent; border: none; color: #6e8efb; font-weight: bold; font-size: 1rem; margin-left: 10px; cursor: pointer;
+}
+.ai-chat-input > button:disabled { color: #ccc; cursor: not-allowed; }

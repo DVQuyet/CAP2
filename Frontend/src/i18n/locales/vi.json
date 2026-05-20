@@ -1,0 +1,2435 @@
+{
+  "common": {
+    "all": "Tất cả",
+    "approved": "Đã duyệt",
+    "back": "Quay lại",
+    "cancel": "Hủy",
+    "closeCamera": "Đóng camera",
+    "content": "Nội dung",
+    "dashboard": "Dashboard",
+    "deleteFile": "Xóa tệp",
+    "editProfile": "Chỉnh sửa thông tin cá nhân",
+    "email": "Email",
+    "firstName": "Tên",
+    "fullName": "Họ và tên",
+    "gender": "Giới tính",
+    "hometown": "Quê quán",
+    "help": "Hỗ trợ",
+    "currentPlan": "gói hiện tại",
+    "loading": "Đang tải...",
+    "login": "Đăng nhập",
+    "logout": "Đăng xuất",
+    "pending": "Chờ duyệt",
+    "active": "Hoạt động",
+    "phone": "Điện thoại",
+    "register": "Đăng ký",
+    "rejected": "Từ chối",
+    "reload": "Tải lại",
+    "save": "Lưu",
+    "submit": "Gửi",
+    "submitting": "Đang gửi...",
+    "title": "Tiêu đề",
+    "uploading": "Đang tải lên...",
+    "welcome": "Chào mừng",
+    "other": "Khác",
+    "event": "Sự kiện",
+    "year": "Năm",
+    "uploaded": "Đã tải lên",
+    "selectImage": "Chọn ảnh",
+    "approve": "Phê duyệt",
+    "reject": "Từ chối",
+    "preview": "Xem trước",
+    "member": "Thành viên",
+    "noChange": "Không thay đổi",
+    "birthDate": "Ngày sinh",
+    "saveChanges": "Lưu thay đổi",
+    "saving": "Đang lưu...",
+    "operationFailed": "Thao tác thất bại",
+    "close": "Đóng",
+    "delete": "Xóa",
+    "select": "Chọn",
+    "deselect": "Bỏ chọn",
+    "next": "Tiếp tục",
+    "createMore": "Tạo thêm",
+    "startVoice": "Bắt đầu ghi âm",
+    "stopVoice": "Dừng ghi âm",
+    "speechUnsupported": "Trình duyệt không hỗ trợ nhận diện giọng nói.",
+    "noInfo": "Chưa có thông tin",
+    "edit": "Sửa",
+    "search": "Tìm kiếm",
+    "address": "Địa chỉ",
+    "actions": "Thao tác",
+    "status": {
+      "title": "Trạng thái",
+      "active": "Đang hoạt động",
+      "pending": "Chờ duyệt",
+      "rejected": "Từ chối"
+    }
+  },
+  "navigation": {
+    "home": "Trang chủ",
+    "backHome": "Về trang chủ",
+    "login": "Đăng nhập",
+    "register": "Đăng ký",
+    "logout": "Đăng xuất"
+  },
+  "language": {
+    "switchTo": "Đổi ngôn ngữ: {{language}}",
+    "english": "English",
+    "vietnamese": "Tiếng Việt"
+  },
+  "layout": {
+    "about": "Về chúng tôi",
+    "features": "Tính năng",
+    "benefits": "Lợi ích",
+    "news": "Tin tức",
+    "guide": "Hướng dẫn",
+    "hello": "Xin chào, {{name}}",
+    "adminTitle": "Hệ thống Quản trị Gia Phả Việt",
+    "managerTitle": "Hệ thống quản trị Gia Phả",
+    "openMenu": "Mở menu",
+    "editAccount": "Sửa tài khoản",
+    "memberNavigation": "Điều hướng thành viên",
+    "brand": "Gia Phả Việt",
+    "homeAria": "Về trang chủ Gia Phả Việt",
+    "userFallback": "Người dùng",
+    "session": "Phiên làm việc: {{date}}",
+    "clanManager": "Quản trị viên dòng họ",
+    "systemAdmin": "Quản trị viên hệ thống",
+    "familyMember": "Thành viên dòng họ",
+    "collapseMenu": "Thu gọn menu",
+    "leaveSystem": "Rời hệ thống",
+    "managerNavigation": "Điều hướng quản lý",
+    "adminNavigation": "Điều hướng hệ thống",
+    "manager": "Quản lý",
+    "admin": "Admin",
+    "member": "Thành viên",
+    "guest": "Khách",
+    "footer": {
+      "tagline": "©2026 Gia Phả Việt - Lưu giữ bản sắc Việt",
+      "contact": "Liên hệ",
+      "privacy": "Chính sách bảo mật",
+      "terms": "Điều khoản sử dụng",
+      "faq": "Câu hỏi thường gặp"
+    },
+    "accountMessages": {
+      "loadFailed": "Không tải được thông tin tài khoản.",
+      "notLinked": "Tài khoản chưa liên kết hồ sơ người nên chưa thể cập nhật.",
+      "invalidGeneration": "Đời phải là một số hợp lệ.",
+      "updated": "Đã cập nhật thông tin tài khoản.",
+      "saveFailed": "Không thể lưu thông tin tài khoản.",
+      "notLinkedContent": "Tài khoản chưa liên kết hồ sơ người nên chưa thể gửi duyệt ảnh/bio.",
+      "contentSubmitted": "Đã gửi yêu cầu cập nhật ảnh và tiểu sử.",
+      "contentSubmitFailed": "Không thể gửi yêu cầu cập nhật hồ sơ.",
+      "passwordChanged": "Đã đổi mật khẩu thành công.",
+      "passwordChangeFailed": "Không thể đổi mật khẩu."
+    },
+    "adminMenu": {
+      "overview": "Tổng quan",
+      "genealogy": "Quản lý phả hệ",
+      "accounts": "Quản lý Tài khoản",
+      "posts": "Quản lý bài viết",
+      "events": "Quản lý sự kiện",
+      "billing": "Gói sử dụng",
+      "calendar": "Lịch Việt Nam"
+    },
+    "portalMenu": {
+      "overview": "Tổng quan",
+      "genealogy": "Phả hệ dòng họ",
+      "familyTree": "Gia phả dòng họ",
+      "events": "Sự kiện dòng họ",
+      "posts": "Bảng tin dòng họ",
+      "memories": "Kỉ niệm dòng họ",
+      "members": "Thành viên dòng họ",
+      "pending": "Duyệt chờ",
+      "fund": "Quỹ dòng họ",
+      "calendar": "Lịch Việt Nam",
+      "billing": "Gói sử dụng",
+      "profile": "Hồ sơ cá nhân"
+    }
+  },
+  "manager": {
+    "title": "Hệ thống quản trị Gia Phả",
+    "pending": {
+      "hero": {
+        "kicker": "Trung tâm kiểm duyệt",
+        "title": "Duyệt chờ",
+        "description": "Kiểm tra tài khoản mới, bài viết, hồ sơ cập nhật và kỉ niệm dòng họ trước khi hiển thị công khai."
+      },
+      "tabs": {
+        "users": "Tài khoản mới",
+        "usersShort": "Tài khoản",
+        "posts": "Bài viết",
+        "profiles": "Hồ sơ",
+        "memories": "Kỉ niệm"
+      },
+      "summary": {
+        "total": "Tổng chờ duyệt",
+        "users": "Tài khoản mới",
+        "posts": "Bài viết",
+        "memories": "Kỉ niệm"
+      },
+      "searchPlaceholder": "Tìm trong {{category}}...",
+      "contentCount": "Đang hiển thị {{count}} mục trong nhóm {{category}}.",
+      "pendingCount": "{{count}} mục chờ",
+      "loadingData": "Đang tải dữ liệu chờ duyệt...",
+      "empty": {
+        "users": "Không có tài khoản chờ duyệt.",
+        "posts": "Không có bài viết chờ duyệt.",
+        "profiles": "Không có hồ sơ chờ duyệt.",
+        "memories": "Không có kỉ niệm chờ duyệt."
+      },
+      "items": {
+        "newBio": "Bio mới:",
+        "newPhoto": "Ảnh mới:",
+        "noBioChange": "Không thay đổi bio",
+        "noPhotoChange": "Không thay đổi ảnh",
+        "base64Notice": "Ảnh được gửi dưới dạng base64. Đã chuyển sang chế độ xem trước.",
+        "fileType": "Loại tệp:",
+        "author": "Người gửi",
+        "noContent": "[Không có nội dung chữ]",
+        "emailPlaceholder": "Chưa có email",
+        "openAttachment": "Mở tệp đính kèm"
+      },
+      "actions": {
+        "approvePost": "Duyệt bài",
+        "approveMemory": "Duyệt kỉ niệm"
+      },
+      "prompts": {
+        "rejectPost": "Lý do từ chối bài viết:",
+        "unsuitableContent": "Nội dung chưa phù hợp",
+        "rejectProfile": "Lý do từ chối cập nhật hồ sơ:",
+        "insufficientInfo": "Thông tin chưa đủ rõ",
+        "rejectMemory": "Lý do từ chối kỉ niệm:"
+      },
+      "messages": {
+        "postRejected": "Đã từ chối bài viết",
+        "profileRejected": "Đã từ chối cập nhật hồ sơ",
+        "memoryRejected": "Đã từ chối kỉ niệm dòng họ",
+        "userApproved": "Đã phê duyệt tài khoản",
+        "userRejected": "Đã từ chối tài khoản",
+        "postApproved": "Đã phê duyệt bài viết",
+        "profileApproved": "Đã phê duyệt hồ sơ",
+        "memoryApproved": "Đã phê duyệt kỉ niệm"
+      },
+      "preview": {
+        "title": "Xem trước cập nhật hồ sơ",
+        "currentInfo": "Thông tin hiện tại",
+        "newInfo": "Thông tin mới",
+        "currentBio": "Bio hiện tại:",
+        "noCurrentBio": "Chưa có bio hiện tại",
+        "noCurrentPhoto": "Chưa có ảnh hiện tại"
+      }
+    },
+    "dashboard": {
+      "welcome": "Chào mừng trở lại, {{name}}!",
+      "pendingSummary": "Hôm nay có <strong>{{count}}</strong> yêu cầu cần xử lý từ dữ liệu trong hệ thống.",
+      "stats": {
+        "members": "Thành viên dòng họ",
+        "pending": "Đang chờ duyệt",
+        "fund": "Tổng tiền trong quỹ",
+        "tasks": "Nhiệm vụ active",
+        "accounts": "Tài khoản dòng họ"
+      },
+      "messages": {
+        "loadError": "Không thể tải dữ liệu tổng quan"
+      },
+      "charts": {
+        "loading": "Đang tải biểu đồ...",
+        "genderTitle": "Thành viên theo giới tính",
+        "genderSubtitle": "Tỷ lệ nam, nữ trong dòng họ",
+        "emptyGender": "Chưa có dữ liệu giới tính.",
+        "familyTitle": "Gia đình theo quý",
+        "familySubtitle": "Mỗi cặp con trai đã có vợ được tính là 1 gia đình",
+        "threeMonths": "3 tháng",
+        "emptyFamily": "Chưa có dữ liệu gia đình theo quý.",
+        "financeTitle": "Thu / Chi theo quý",
+        "financeSubtitle": "Mỗi quý gồm 2 cột: tổng thu và tổng chi",
+        "emptyFinance": "Chưa có dữ liệu thu chi.",
+        "tasksTitle": "Phân công công việc",
+        "tasksSubtitle": "Danh sách công việc đang được giao gần nhất",
+        "emptyTasks": "Chưa có công việc nào.",
+        "quarterLabel": "Quý {{quarter}}/{{year}}",
+        "unknownQuarter": "Chưa rõ",
+        "peoplePercent": "{{count}} người - {{percent}}%",
+        "familyCount": "{{count}} gia đình",
+        "quantity": "Số lượng",
+        "familyCountName": "Số gia đình",
+        "income": "Thu",
+        "expense": "Chi",
+        "money": {
+          "millionShort": "tr",
+          "thousandShort": "k"
+        },
+        "gender": {
+          "male": "Nam",
+          "female": "Nữ",
+          "unknown": "Chưa cập nhật"
+        },
+        "taskStatus": {
+          "assigned": "Đang giao",
+          "completed": "Hoàn thành",
+          "pending": "Chờ xử lý",
+          "in_progress": "Đang làm",
+          "cancelled": "Đã hủy",
+          "unknown": "Không rõ"
+        }
+      },
+      "usage": {
+        "title": "Theo dõi giới hạn gói",
+        "plan": "Gói hiện tại: {{name}}",
+        "noPlan": "Chưa có thông tin gói sử dụng",
+        "profiles": "Hồ sơ thành viên",
+        "accounts": "Tài khoản đăng nhập",
+        "nearLimit": "Sắp đạt giới hạn",
+        "normal": "Trong giới hạn",
+        "unlimited": "Không giới hạn"
+      }
+    },
+    "accounts": {
+      "hero": {
+        "kicker": "Quản lý nhân sự dòng họ",
+        "title": "Thành viên dòng họ",
+        "description": "Tạo mới, tìm kiếm, chỉnh sửa hồ sơ và liên kết quan hệ cha mẹ, vợ/chồng, con cái."
+      },
+      "summary": {
+        "total": "Tổng thành viên",
+        "male": "Nam",
+        "female": "Nữ",
+        "living": "Còn sống",
+        "pending": "Chờ duyệt"
+      },
+      "list": {
+        "title": "Danh sách thành viên",
+        "showing": "Đang hiển thị <strong>{{count}}</strong> / {{total}} thành viên."
+      },
+      "actions": {
+        "addMember": "Thêm thành viên",
+        "linkRelations": "Liên kết quan hệ",
+        "refresh": "Tải lại",
+        "refreshing": "Đang tải...",
+        "save": "Lưu quan hệ",
+        "saving": "Đang lưu..."
+      },
+      "form": {
+        "createTitle": "Tạo thành viên",
+        "createDescription": "Thêm tài khoản và hồ sơ thành viên mới.",
+        "editTitle": "Chỉnh sửa thành viên",
+        "editDescription": "Cập nhật thông tin tài khoản và hồ sơ thành viên.",
+        "linkTitle": "Liên kết quan hệ",
+        "linkDescription": "Cập nhật cha, mẹ, vợ/chồng và con cái.",
+        "selectMember": "Thành viên cần liên kết",
+        "selectMemberPrompt": "Chọn thành viên",
+        "marriageTitle": "Gia đình/cuộc hôn nhân",
+        "marriagePrompt": "Tạo/chọn gia đình khi thêm con",
+        "parentFather": "Cha",
+        "parentFatherPrompt": "Chưa chọn cha",
+        "parentMother": "Mẹ",
+        "parentMotherPrompt": "Chưa chọn mẹ",
+        "spouse": "Vợ/chồng",
+        "spousePrompt": "Chưa chọn vợ/chồng",
+        "children": "Con cái",
+        "placeholderEmail": "Email đăng nhập",
+        "placeholderPassword": "Mật khẩu",
+        "placeholderSurname": "Họ",
+        "placeholderMiddleName": "Tên đệm",
+        "placeholderFirstName": "Tên",
+        "placeholderGender": "Giới tính",
+        "placeholderGeneration": "Đời",
+        "placeholderHometown": "Quê quán",
+        "placeholderBirthDate": "Ngày sinh",
+        "placeholderDeathDate": "Ngày mất",
+        "genderMale": "Nam",
+        "genderFemale": "Nữ",
+        "genderUnknown": "Không khai báo",
+        "livingStatus": "Trạng thái sống",
+        "statusLiving": "Còn sống",
+        "statusDead": "Đã mất",
+        "currentRelations": "Quan hệ hiện tại",
+        "branch": "Nhánh/Chi",
+        "note": "Ghi chú",
+        "noInfo": "Chưa có"
+      },
+      "messages": {
+        "loadError": "Không thể tải thành viên từ database",
+        "loadRelationError": "Không thể tải quan hệ thành viên",
+        "createSuccess": "Đã tạo thành viên mới.",
+        "createError": "Không thể tạo thành viên",
+        "saveRelationSuccess": "Đã lưu liên kết quan hệ.",
+        "saveRelationError": "Không thể lưu liên kết quan hệ",
+        "editSuccess": "Đã lưu thay đổi thành viên.",
+        "editError": "Không thể lưu thành viên",
+        "linkPrompt": "Vui lòng chọn thành viên cần liên kết.",
+        "noRelationData": "Chưa có thông tin quan hệ để lưu.",
+        "selectFamilyPrompt": "Vui lòng chọn gia đình cụ thể để thêm con."
+      }
+    }
+  },
+  "vnCalendar": {
+    "hero": {
+      "eyebrow": "Lịch Việt Nam",
+      "title": "Lịch dương & âm",
+      "description": "Theo dõi ngày âm, ngày dương, lễ quan trọng, lịch cá nhân và lịch tổng thể của dòng họ."
+    },
+    "lunar": "Âm lịch",
+    "leap": "nhuận",
+    "today": "Hôm nay",
+    "week": "Tuần",
+    "month": "Tháng",
+    "year": "Năm",
+    "day": "Ngày",
+    "syncing": "Đang đồng bộ lịch...",
+    "noEvents": "Ngày này chưa có lịch trình.",
+    "selectedDate": "Ngày đang chọn",
+    "lunarPrefix": "âm lịch",
+    "addEvent": "Thêm lịch",
+    "addPersonalEvent": "Thêm lịch cá nhân",
+    "createTitle": "Tạo lịch mới",
+    "editTitle": "Chỉnh sửa lịch",
+    "agendaTitle": "Lịch trong ngày",
+    "viewToggleAria": "Chọn kiểu xem",
+    "originalLunarDeath": "Ngày mất âm lịch gốc",
+    "anniversaryLunarYear": "Ngày giỗ âm lịch năm này",
+    "birthdayLunarYear": "Ngày sinh âm lịch năm này",
+    "creator": "Người tạo",
+    "form": {
+      "managerHint": "Quản trị viên có thể chọn cá nhân hoặc tổng thể",
+      "memberHint": "Thành viên chỉ tạo lịch cá nhân",
+      "titlePlaceholder": "Tên ngày lễ / sự kiện quan trọng",
+      "visibility": "Kiểu hiển thị",
+      "visibilityPersonal": "Cá nhân - chỉ người tạo nhìn thấy",
+      "visibilityGlobal": "Tổng thể - cả dòng họ nhìn thấy",
+      "visibilityHintManager": "Lịch tổng thể sẽ hiện cho mọi thành viên cùng dòng họ.",
+      "visibilityHintMember": "Tài khoản member chỉ được tạo lịch cá nhân của mình.",
+      "reminder": "Nhắc trước",
+      "reminderOption": {
+        "0": "Đúng ngày",
+        "1": "Trước 1 ngày",
+        "2": "Trước 2 ngày",
+        "3": "Trước 3 ngày",
+        "7": "Trước 7 ngày",
+        "14": "Trước 14 ngày",
+        "30": "Trước 30 ngày"
+      },
+      "reminderHint": "Đến hạn nhắc, hệ thống tạo thông báo trên web và gửi email cho người được thấy lịch.",
+      "notePlaceholder": "Ghi chú",
+      "cancel": "Hủy",
+      "save": "Lưu lịch",
+      "update": "Lưu chỉnh sửa"
+    },
+    "types": {
+      "holiday": "Ngày lễ quan trọng",
+      "family": "Dòng họ",
+      "study": "Lịch học",
+      "personal": "Lịch trình",
+      "birthday": "Sinh nhật",
+      "death_anniversary": "Ngày giỗ",
+      "lunar": "Ngày lễ"
+    },
+    "labels": {
+      "weekdays": [
+        "CN",
+        "T2",
+        "T3",
+        "T4",
+        "T5",
+        "T6",
+        "T7"
+      ],
+      "months": [
+        "Tháng Một",
+        "Tháng Hai",
+        "Tháng Ba",
+        "Tháng Tư",
+        "Tháng Năm",
+        "Tháng Sáu",
+        "Tháng Bảy",
+        "Tháng Tám",
+        "Tháng Chín",
+        "Tháng Mười",
+        "Tháng Mười Một",
+        "Tháng Mười Hai"
+      ]
+    },
+    "messages": {
+      "noPermissionEdit": "Bạn không có quyền chỉnh sửa lịch này.",
+      "noPermissionDelete": "Bạn không có quyền xóa lịch này.",
+      "deleteConfirm": "Xóa {{label}} này?",
+      "deleteSuccess": "Đã xóa lịch.",
+      "deleteError": "Không thể xóa lịch.",
+      "saveSuccessGlobal": "Đã lưu lịch tổng thể. Cả dòng họ sẽ thấy lịch này.",
+      "saveSuccessPersonal": "Đã lưu lịch cá nhân. Chỉ tài khoản tạo lịch nhìn thấy lịch này.",
+      "saveError": "Không thể lưu lịch.",
+      "loadError": "Không thể tải lịch từ hệ thống.",
+      "updating": "Đang cập nhật lịch...",
+      "saving": "Đang lưu lịch...",
+      "scopeGlobal": "Tổng thể",
+      "scopePersonal": "Cá nhân"
+    }
+  },
+  "auth": {
+    "close": "Đóng",
+    "login": {
+      "title": "Chào mừng đến với Gia Phả Việt!",
+      "subtitle": "Hãy đăng nhập để tiếp tục",
+      "submit": "Đăng nhập",
+      "submitting": "Đang xác thực...",
+      "emailPlaceholder": "Email đăng nhập",
+      "passwordPlaceholder": "Mật khẩu",
+      "noAccount": "Chưa có tài khoản?",
+      "forgotPassword": "Quên mật khẩu?",
+      "forgotTitle": "Nhận mã 6 số qua email đã đăng ký",
+      "missingEmail": "Vui lòng nhập email.",
+      "failed": "Đăng nhập không thành công.",
+      "missingUser": "Phản hồi từ server thiếu thông tin tài khoản."
+    },
+    "register": {
+      "title": "Tạo tài khoản mới",
+      "subtitle": "Vui lòng điền thông tin để tạo tài khoản mới",
+      "submit": "Đăng ký tài khoản",
+      "submitting": "Đang xử lý...",
+      "newClanPrompt": "Bạn muốn tạo dòng họ mới?",
+      "learnMore": "Tìm hiểu thêm",
+      "surname": "Họ",
+      "middleName": "Tên đệm",
+      "firstName": "Tên",
+      "displayName": "Tên hiển thị đầy đủ",
+      "male": "Nam",
+      "female": "Nữ",
+      "unknown": "Không rõ",
+      "emailPlaceholder": "Email đăng nhập",
+      "passwordPlaceholder": "Mật khẩu",
+      "hometownPlaceholder": "Quê quán",
+      "clanId": "ID dòng họ",
+      "clanIdPlaceholder": "Nhập ID dòng họ",
+      "clanIdHelp": "Nhập ID do trưởng họ hoặc quản trị viên cung cấp để tài khoản được thêm vào cây gia phả.",
+      "agreePrefix": "Tôi đồng ý",
+      "terms": "Điều khoản sử dụng",
+      "and": "và",
+      "privacy": "Chính sách bảo mật",
+      "hasAccount": "Đã có tài khoản?",
+      "loginNow": "Đăng nhập ngay",
+      "success": "Đăng ký thành công! Vui lòng chờ phê duyệt.",
+      "failed": "Đăng ký thất bại.",
+      "errors": {
+        "nameRequired": "Vui lòng nhập đầy đủ họ, tên và tên hiển thị.",
+        "emailRequired": "Vui lòng nhập email đăng nhập.",
+        "passwordLength": "Mật khẩu phải có ít nhất 6 ký tự.",
+        "birthDateRequired": "Vui lòng nhập ngày sinh theo định dạng dd/mm/yyyy.",
+        "hometownRequired": "Vui lòng nhập quê quán.",
+        "clanIdInvalid": "Vui lòng nhập ID dòng họ hợp lệ.",
+        "termsRequired": "Vui lòng đồng ý Điều khoản sử dụng và Chính sách bảo mật."
+      }
+    },
+    "forgotPassword": {
+      "title": "Quên mật khẩu",
+      "stepEmail": "Nhập email để nhận mã xác nhận (6 số)",
+      "stepReset": "Nhập mã từ email và mật khẩu mới",
+      "hint": "Mã 6 số gửi tới email đã đăng ký. Cần SMTP trong Backend/.env. Không thấy thư - kiểm tra Spam.",
+      "registeredEmail": "Email đã đăng ký",
+      "sendCode": "Gửi mã qua email",
+      "sending": "Đang gửi...",
+      "code": "Mã 6 số",
+      "newPassword": "Mật khẩu mới",
+      "confirmPassword": "Nhập lại mật khẩu mới",
+      "reset": "Đặt lại mật khẩu",
+      "resetting": "Đang xử lý...",
+      "resend": "Gửi lại mã (bước 1)",
+      "backToLogin": "Về đăng nhập",
+      "processed": "Đã xử lý yêu cầu.",
+      "sendFailed": "Không gửi được mã.",
+      "passwordMismatch": "Mật khẩu xác nhận không khớp.",
+      "passwordMin": "Mật khẩu tối thiểu 6 ký tự.",
+      "resetSuccess": "Đặt lại thành công.",
+      "resetFailed": "Đặt lại thất bại."
+    },
+    "waiting": {
+      "title": "Đang chờ phê duyệt",
+      "backToLogin": "Quay lại đăng nhập"
+    }
+  },
+  "shared": {
+    "notification": {
+      "title": "Thông báo",
+      "new": "Thông báo mới",
+      "defaultMessage": "Bạn có cập nhật mới trong hệ thống.",
+      "unread": "{{count}} chưa đọc",
+      "noneNew": "Không có thông báo mới",
+      "markAllRead": "Đã đọc hết",
+      "empty": "Chưa có thông báo."
+    },
+    "upload": {
+      "label": "Tải ảnh lên",
+      "failed": "Tải ảnh thất bại",
+      "error": "Lỗi khi tải ảnh lên",
+      "invalidImageVideo": "Vui lòng chọn tệp ảnh hoặc video hợp lệ",
+      "invalidImage": "Vui lòng chọn tệp hình ảnh (.jpg, .png, .webp, ...)",
+      "avatarOnlyImage": "Ảnh đại diện chỉ hỗ trợ tệp hình ảnh.",
+      "cropFailed": "Không thể cắt ảnh này. Vui lòng chọn ảnh khác.",
+      "cropError": "Không thể cắt ảnh",
+      "invalidUrl": "URL ảnh không hợp lệ",
+      "changeAvatar": "Đổi ảnh đại diện",
+      "changeImageVideo": "Thay đổi ảnh/video",
+      "changeImage": "Thay đổi ảnh",
+      "dragHint": "Kéo thả hoặc nhấn để chọn file",
+      "orPasteUrl": "hoặc dán URL:",
+      "cropAvatar": "Cắt ảnh đại diện",
+      "cropHelp": "Vùng bên trong vòng tròn sẽ là ảnh lưu cuối cùng. Kéo ảnh và thu/phóng để căn đúng khuôn.",
+      "zoom": "Thu/phóng",
+      "cropAndUpload": "Cắt và tải lên",
+      "saving": "Đang lưu..."
+    },
+    "profile": {
+      "account": "Tài khoản",
+      "loadingInfo": "Đang tải thông tin...",
+      "basicInfo": "Thông tin cơ bản",
+      "basicInfoHelp": "Lưu trực tiếp vào tài khoản và hồ sơ thành viên.",
+      "displayNameHint": "Tên hiển thị đầy đủ (Gõ vào đây sẽ tự tách họ tên)",
+      "surname": "Họ",
+      "middleName": "Tên đệm",
+      "generation": "Đời",
+      "saveBasic": "Lưu thông tin cơ bản",
+      "photoBio": "Ảnh và tiểu sử",
+      "photoBioHelp": "Thông tin này được gửi vào hàng chờ duyệt của quản lý.",
+      "pendingUpdate": "Đang có yêu cầu cập nhật hồ sơ chờ duyệt.",
+      "avatar": "Ảnh đại diện",
+      "chooseAvatar": "Chọn ảnh từ máy",
+      "adjustAvatar": "Chỉnh khung ảnh",
+      "removeSelectedAvatar": "Xóa ảnh đã chọn",
+      "avatarHelp": "Sau khi chọn ảnh, bấm vào avatar hoặc nút “Chỉnh khung ảnh” để căn ảnh.",
+      "editAvatar": "Chỉnh sửa ảnh đại diện",
+      "editAvatarHelp": "Kéo ảnh trong khung tròn và điều chỉnh thu phóng.",
+      "apply": "Áp dụng",
+      "bio": "Tiểu sử / giới thiệu",
+      "bioPlaceholder": "Viết vài dòng giới thiệu...",
+      "submitContent": "Gửi duyệt ảnh và tiểu sử",
+      "changePassword": "Đổi mật khẩu",
+      "changePasswordHelp": "Mật khẩu mới sẽ được mã hóa và lưu lại trong database.",
+      "currentPassword": "Mật khẩu hiện tại",
+      "newPassword": "Mật khẩu mới",
+      "confirmPassword": "Xác nhận mật khẩu mới",
+      "changingPassword": "Đang đổi...",
+      "examples": {
+        "fullName": "Ví dụ: Nguyễn Văn A",
+        "surname": "Ví dụ: Nguyễn",
+        "middleName": "Ví dụ: Minh",
+        "firstName": "Ví dụ: Quân",
+        "hometown": "Ví dụ: Thanh Hóa",
+        "generation": "Ví dụ: 3"
+      },
+      "maxSize": "Ảnh không được vượt quá 5MB.",
+      "canvasFailed": "Không thể tạo canvas để xử lý ảnh.",
+      "processAvatarFailed": "Không thể xử lý ảnh đã chọn.",
+      "noAvatarToApply": "Không có ảnh để áp dụng.",
+      "avatarApplied": "Đã áp dụng khung ảnh. Bấm “Gửi duyệt ảnh và tiểu sử” để lưu.",
+      "avatarApplyFailed": "Không thể áp dụng chỉnh sửa ảnh.",
+      "loadFailed": "Không tải được thông tin cá nhân.",
+      "notLinked": "Tài khoản chưa liên kết hồ sơ người nên chưa thể cập nhật.",
+      "invalidGeneration": "Đời phải là một số hợp lệ.",
+      "basicSaved": "Đã lưu thông tin cơ bản vào database.",
+      "basicSaveFailed": "Không thể lưu thông tin cá nhân.",
+      "notLinkedContent": "Tài khoản chưa liên kết hồ sơ người nên chưa thể cập nhật ảnh/tiểu sử.",
+      "uploadMissingUrl": "Upload ảnh thành công nhưng server không trả về url.",
+      "contentSubmitted": "Đã lưu yêu cầu cập nhật ảnh và tiểu sử vào database để quản lý duyệt.",
+      "contentSubmitFailed": "Lỗi gửi yêu cầu cập nhật hồ sơ.",
+      "passwordRequired": "Vui lòng nhập mật khẩu hiện tại và mật khẩu mới.",
+      "passwordChanged": "Đã đổi mật khẩu và lưu vào database.",
+      "passwordChangeFailed": "Không thể đổi mật khẩu.",
+      "noAvatarSelected": "Chưa chọn ảnh",
+      "clickEditAvatar": "Bấm để chỉnh sửa ảnh"
+    }
+  },
+  "timeCapsule": {
+    "title": "Kỉ niệm dòng họ",
+    "heroDescription": "Lưu giữ câu chuyện, hình ảnh, video và ghi âm của dòng họ. Thành viên gửi kỉ niệm sẽ chờ trưởng họ duyệt trước khi đăng công khai.",
+    "defaultMemoryTitle": "Kỉ niệm dòng họ",
+    "defaultAuthor": "Thành viên dòng họ",
+    "notUpdated": "Chưa cập nhật",
+    "openAttachment": "Mở tệp đính kèm",
+    "readerCount": "{{count}} người được đọc",
+    "scheduledPost": "Hẹn đăng: {{date}}",
+    "pendingNotice": "Kỉ niệm này đang chờ trưởng họ duyệt trước khi hiển thị công khai.",
+    "rejectionReason": "Lý do từ chối: {{reason}}",
+    "status": {
+      "approved": "Đã duyệt",
+      "rejected": "Từ chối",
+      "pending": "Chờ duyệt"
+    },
+    "visibility": {
+      "clan": "Cả dòng họ",
+      "selected": "Người được chọn",
+      "private": "Chỉ mình tôi"
+    },
+    "errors": {
+      "loadMemories": "Không thể tải kỉ niệm dòng họ.",
+      "uploadMemory": "Không thể tải tệp kỉ niệm.",
+      "cameraUnsupported": "Trình duyệt hoặc thiết bị này chưa hỗ trợ mở camera/micro trực tiếp.",
+      "cameraOpen": "Không thể mở camera. Hãy kiểm tra quyền camera/micro của trình duyệt.",
+      "capturePhoto": "Không thể chụp ảnh từ camera.",
+      "mediaRecorderUnsupported": "Trình duyệt chưa hỗ trợ ghi âm/quay video trực tiếp.",
+      "recordingData": "Không thể ghi dữ liệu từ micro/camera. Hãy thử lại.",
+      "emptyRecording": "Không có dữ liệu ghi âm. Hãy kiểm tra micro rồi thử lại.",
+      "saveRecording": "Không thể lưu bản ghi trực tiếp.",
+      "audioUnsupported": "Trình duyệt hoặc thiết bị này chưa hỗ trợ ghi âm trực tiếp.",
+      "microphoneOpen": "Không thể mở micro. Hãy kiểm tra quyền micro của trình duyệt.",
+      "emptySubmit": "Vui lòng nhập nội dung hoặc tải ảnh/video/ghi âm.",
+      "selectReader": "Vui lòng chọn ít nhất một người được đọc kỉ niệm.",
+      "submitMemory": "Không thể gửi kỉ niệm dòng họ."
+    },
+    "messages": {
+      "uploaded": "Đã lưu tệp kỉ niệm vào database. Bạn có thể gửi kỉ niệm để chờ duyệt.",
+      "submitted": "Đã gửi kỉ niệm dòng họ."
+    },
+    "postMemory": {
+      "title": "Đăng kỉ niệm",
+      "managerNotice": "Kỉ niệm của trưởng họ được đăng ngay.",
+      "memberNotice": "Kỉ niệm của thành viên sẽ gửi vào hàng chờ duyệt.",
+      "mediaBadge": "Ảnh • Video • Ghi âm",
+      "titlePlaceholder": "Ví dụ: Họp mặt đầu xuân, kỉ niệm gia đình...",
+      "contentPlaceholder": "Chia sẻ câu chuyện hoặc lời nhắn đi kèm kỉ niệm...",
+      "accessTitle": "Ai được đọc kỉ niệm này",
+      "accessDescription": "Chọn phạm vi hiển thị sau khi kỉ niệm được duyệt và tới giờ hẹn.",
+      "readerEmpty": "Chưa có danh sách thành viên để chọn.",
+      "scheduleLabel": "Hẹn thời gian gửi / hiển thị",
+      "scheduleHelp": "Bỏ trống để hiển thị ngay sau khi được duyệt.",
+      "uploadFile": "Tải tệp từ máy",
+      "uploadHelp": "Chọn ảnh, video hoặc audio đã có sẵn.",
+      "takePhoto": "Chụp ảnh",
+      "takePhotoHelp": "Mở camera thiết bị để chụp trực tiếp.",
+      "recordVideo": "Quay video",
+      "recordVideoHelp": "Quay video trực tiếp từ camera.",
+      "recordAudio": "Ghi âm trực tiếp",
+      "stopAudio": "Dừng ghi âm",
+      "recordAudioHelp": "Chỉ lưu file âm thanh, không chuyển giọng nói thành văn bản.",
+      "captureThisPhoto": "Chụp ảnh này",
+      "stopVideo": "Dừng quay video",
+      "startRecording": "Bắt đầu quay",
+      "recordingAudio": "Đang ghi âm trực tiếp từ micro...",
+      "previewAlt": "Xem trước",
+      "clearForm": "Xóa form",
+      "submit": "Gửi kỉ niệm"
+    },
+    "stats": {
+      "approved": "Kỉ niệm đã duyệt",
+      "pending": "Đang chờ duyệt",
+      "media": "Có tệp đính kèm"
+    },
+    "list": {
+      "title": "Kỉ niệm đã lưu",
+      "description": "Hiển thị kỉ niệm đã duyệt và kỉ niệm của chính bạn đang chờ duyệt.",
+      "loading": "Đang tải kỉ niệm...",
+      "empty": "Chưa có kỉ niệm nào."
+    }
+  },
+  "eventsTasks": {
+    "title": "Quản lý công việc",
+    "stats": {
+      "total": "tổng việc",
+      "open": "việc đang mở",
+      "inProgressLabel": "đang thực hiện",
+      "completedLabel": "đã hoàn thành",
+      "totalTasks": "{{count}} tổng việc",
+      "openTasks": "{{count}} việc đang mở",
+      "inProgress": "{{count}} đang thực hiện",
+      "completed": "{{count}} đã hoàn thành",
+      "totalTasksLabel": "Công việc",
+      "aiSuggestions": "{{count}} gợi ý",
+      "activeEvents": "{{count}} sự kiện đang diễn ra",
+      "endedEvents": "{{count}} sự kiện đã kết thúc"
+    },
+    "member": {
+      "title": "Sự kiện dòng họ",
+      "description": "Theo dõi các sự kiện dòng họ và công việc được giao."
+    },
+    "status": {
+      "assigned": "Đã giao",
+      "in_progress": "Đang làm",
+      "completed": "Hoàn thành",
+      "ongoing": "Đang diễn ra",
+      "ended": "Đã kết thúc",
+      "upcoming": "Sắp diễn ra"
+    },
+    "admin": {
+      "title": "Sự kiện & Công việc toàn hệ thống",
+      "description": "Theo dõi và quản lý công việc, sự kiện của tất cả dòng tộc.",
+      "clanTasks": "Công việc dòng họ {{clanName}}",
+      "eventScopeNotice": "Quyền quản trị toàn hệ thống."
+    },
+    "manager": {
+      "title": "Sự kiện & Công việc dòng họ",
+      "eventScopeNotice": "Điều phối công việc và sự kiện trong dòng tộc."
+    },
+    "actions": {
+      "createEvent": "Tạo sự kiện",
+      "addEvent": "Thêm sự kiện mới",
+      "createTask": "Giao việc",
+      "deleteEvent": "Xóa sự kiện",
+      "editEvent": "Sửa sự kiện",
+      "saveEvent": "Lưu sự kiện",
+      "bulkAssign": "Giao việc hàng loạt",
+      "archive": "Lưu trữ",
+      "aiGenerate": "AI gợi ý công việc",
+      "aiGenerating": "AI đang tạo...",
+      "aiFillForm": "Tạo Sự kiện",
+      "aiCreateTitle": "Tạo sự kiện bằng AI",
+      "viewEvent": "Xem sự kiện",
+      "closeAdd": "Đóng thêm mới",
+      "closeArchive": "Đóng lưu trữ",
+      "closeAi": "Đóng form AI",
+      "selectFiltered": "Chọn danh sách đang lọc",
+      "deleteAiTask": "Xóa gợi ý này",
+      "sendThisTask": "Giao việc này",
+      "eventList": "Danh sách sự kiện",
+      "manageEvent": "Quản lý sự kiện",
+      "taskActions": "Thao tác công việc"
+    },
+    "form": {
+      "eventName": "Tên sự kiện",
+      "taskName": "Tên công việc",
+      "description": "Mô tả",
+      "startDate": "Ngày bắt đầu",
+      "endDate": "Ngày kết thúc",
+      "descriptionShort": "Mô tả",
+      "time": "Thời gian",
+      "deadline": "Hạn hoàn thành",
+      "deadlineShort": "Hạn",
+      "assignee": "Người thực hiện",
+      "title": "Tiêu đề",
+      "event": "Sự kiện",
+      "manager": "Người quản lý",
+      "assignedAt": "Đã giao lúc",
+      "completedAt": "Hoàn thành lúc"
+    },
+    "messages": {
+      "confirmDeleteEvent": "Xóa sự kiện \"{{title}}\"? Các công việc đã giao sẽ được giữ lại nhưng không còn gắn với sự kiện này.",
+      "eventCreated": "Đã tạo sự kiện mới.",
+      "eventUpdated": "Đã cập nhật sự kiện.",
+      "eventDeleted": "Đã xóa sự kiện.",
+      "taskAssigned": "Đã giao việc cho {{count}} thành viên.",
+      "statusUpdated": "Đã cập nhật trạng thái.",
+      "completedSuccess": "Đã đánh dấu hoàn thành.",
+      "aiFilling": "AI đã điền form sự kiện. Sau khi lưu, danh sách công việc AI sẽ hiện trong chi tiết sự kiện.",
+      "selectEventFirst": "Vui lòng chọn sự kiện trước khi giao việc.",
+      "selectMemberFirst": "Vui lòng chọn ít nhất một thành viên.",
+      "enterTaskTitle": "Vui lòng nhập tiêu đề công việc.",
+      "enterEventTitle": "Vui lòng nhập tên sự kiện.",
+      "enterStartDate": "Vui lòng nhập ngày bắt đầu sự kiện.",
+      "invalidDateRange": "Ngày kết thúc không được nhỏ hơn ngày bắt đầu.",
+      "aiSuggestionsReady": "AI đã gợi ý công việc. Bạn có thể chỉnh sửa và giao cho thành viên.",
+      "taskAssignedOne": "Đã giao công việc \"{{title}}\".",
+      "taskAssignedBulk": "Đã giao hàng loạt {{count}} công việc.",
+      "taskInfoIncomplete": "Thông tin công việc chưa đầy đủ.",
+      "taskNotSelected": "Vui lòng chọn công việc cần giao.",
+      "enterDescription": "Vui lòng nhập mô tả.",
+      "enterDeadline": "Vui lòng nhập hạn hoàn thành.",
+      "confirmDeleteEventTitle": "Xóa sự kiện?",
+      "confirmDeleteEventSubtitle": "Hành động này không thể hoàn tác. Tất cả công việc liên quan sẽ bị ảnh hưởng.",
+      "invalidTask": "Công việc không hợp lệ.",
+      "taskUpdated": "Đã cập nhật công việc và gửi thông báo cho người được giao.",
+      "taskDeleted": "Đã xóa công việc và gửi thông báo cho người được giao.",
+      "confirmDeleteTask": "Xóa công việc \"{{title}}\"? Người được giao sẽ nhận thông báo."
+    },
+    "errors": {
+      "loadFailed": "Không tải được dữ liệu công việc.",
+      "assignFailed": "Không thể giao việc.",
+      "createEventFailed": "Không thể tạo sự kiện.",
+      "updateEventFailed": "Không thể cập nhật sự kiện.",
+      "updateStatusFailed": "Không thể cập nhật trạng thái.",
+      "selectEventFirst": "Vui lòng chọn sự kiện trước.",
+      "aiNotSupported": "AI chưa hỗ trợ yêu cầu này.",
+      "aiTaskNotSupported": "AI chưa thể sinh công việc cho yêu cầu này.",
+      "aiFailed": "Không thể tạo sự kiện bằng AI.",
+      "aiTaskFailed": "Không thể tạo gợi ý công việc bằng AI.",
+      "speechUnsupported": "Trình duyệt không hỗ trợ nhận diện giọng nói.",
+      "micBlocked": "Không thể truy cập micro. Vui lòng kiểm tra quyền trình duyệt.",
+      "noSpeechDetected": "Chưa nhận diện được giọng nói.",
+      "speechConversionFailed": "Không thể chuyển giọng nói thành văn bản.",
+      "speechSecureContextRequired": "Nhận diện giọng nói của trình duyệt cần chạy bằng HTTPS hoặc localhost.",
+      "speechNetworkFailed": "Dịch vụ nhận diện giọng nói của trình duyệt không kết nối được. Vui lòng kiểm tra mạng hoặc thử chạy bằng HTTPS/localhost.",
+      "updateTaskFailed": "Không thể cập nhật công việc.",
+      "deleteTaskFailed": "Không thể xóa công việc."
+    },
+    "placeholders": {
+      "searchEvents": "Tìm sự kiện...",
+      "aiPrompt": "Gợi ý thêm các công việc còn thiếu cho sự kiện này",
+      "aiPromptHint": "Nhập yêu cầu cho AI (ví dụ: 'Thêm công việc hậu cần cho đám giỗ')",
+      "selectAssignee": "Chọn người thực hiện",
+      "peopleSelected": "{{count}} người đã chọn",
+      "searchByNameId": "Tìm theo tên hoặc ID",
+      "noMemberFound": "Không tìm thấy thành viên.",
+      "comboboxHint": "Có thể tick nhiều thành viên trong combobox.",
+      "assignTaskHelp": "Chọn người thực hiện và nhập nội dung công việc trước khi giao.",
+      "taskTitleExample": "Ví dụ: Chuẩn bị bàn ghế và nước uống",
+      "noTaskForYou": "Không có việc nào dành cho bạn",
+      "archiveTitle": "Lưu trữ sự kiện",
+      "archiveHelp": "Các sự kiện đã kết thúc sẽ được lưu tại đây.",
+      "searchArchive": "Tìm trong lưu trữ...",
+      "noArchivedFound": "Không tìm thấy sự kiện lưu trữ nào.",
+      "addEventHelp": "Khởi tạo một sự kiện mới để quản lý công việc.",
+      "manageEventHelp": "Theo dõi sự kiện, sinh gợi ý AI và giao việc cho thành viên.",
+      "eventTitleExample": "Ví dụ: Giỗ tổ dòng họ Nguyễn",
+      "eventDescriptionHint": "Mô tả ngắn gọn về mục đích hoặc lưu ý của sự kiện...",
+      "aiTaskCount": "Số lượng công việc",
+      "aiMaxNotice": "Tối đa 20 việc",
+      "aiPending": "Gợi ý chờ duyệt",
+      "aiSuggestions": "AI Gợi ý",
+      "aiTasksGenerated": "Công việc AI đề xuất",
+      "aiTasksHelp": "Xem và chỉnh sửa các công việc AI vừa gợi ý trước khi giao.",
+      "aiStatsLabel": "Thống kê AI",
+      "aiStatus": "Trạng thái AI",
+      "requested": "Yêu cầu",
+      "generated": "Đã tạo",
+      "selected": "Đã chọn",
+      "infoComplete": "Đủ thông tin",
+      "infoIncomplete": "Thiếu thông tin",
+      "noAiTasks": "Chưa có gợi ý nào từ AI.",
+      "aiCreateHelp": "Nhập mô tả sự kiện để AI điền nháp thông tin và công việc chuẩn bị.",
+      "aiPromptLabel": "Nội dung yêu cầu",
+      "aiPromptCreateExample": "Ví dụ: Tạo sự kiện giỗ tổ tháng 8 tại nhà thờ họ",
+      "aiTaskCountLabel": "Số công việc AI cần gợi ý",
+      "listening": "Đang lắng nghe...",
+      "noTasks": "Chưa có công việc nào.",
+      "noTime": "Chưa đặt thời gian",
+      "notSet": "Chưa đặt",
+      "eventTasks": "Công việc sự kiện",
+      "eventTasksTitle": "Danh sách công việc đã giao",
+      "assignmentHistory": "Lịch sử giao việc",
+      "noEventLinked": "Không gắn sự kiện",
+      "managerScopeNotice": "Phạm vi quản lý",
+      "clanList": "Danh sách dòng họ",
+      "clanDetail": "Chi tiết dòng họ",
+      "noClanFound": "Không tìm thấy dòng họ.",
+      "noManager": "Chưa có người quản lý",
+      "noActiveEventFound": "Không tìm thấy sự kiện đang hoạt động.",
+      "noEventFound": "Chưa có sự kiện nào.",
+      "noDescription": "Chưa có mô tả.",
+      "noActiveMembers": "Chưa có thành viên đang hoạt động để giao việc.",
+      "enterDescription": "Nhập mô tả...",
+      "enterEventDescription": "Nhập mô tả sự kiện...",
+      "enterTaskTitle": "Nhập tiêu đề việc...",
+      "suggestion": "Gợi ý vai trò",
+      "infoIncompleteHelp": "Vui lòng điền đủ Tiêu đề, Mô tả, Hạn chót và Người thực hiện."
+    }
+  },
+  "fund": {
+    "title": "Quản lý tài chính dòng họ",
+    "subtitle": "Hệ thống Quản trị Quỹ",
+    "description": "Tối ưu hóa dòng tiền, đợt thu và các khoản chi minh bạch.",
+    "stats": {
+      "balance": "Số dư hiện tại",
+      "totalIncome": "Tổng thu",
+      "totalExpense": "Tổng chi",
+      "activeCampaigns": "Đợt thu đang mở"
+    },
+    "actions": {
+      "importExcel": "Nhập Excel",
+      "approveTransactions": "Duyệt Giao Dịch",
+      "yearlyReport": "Báo Cáo Năm",
+      "expenseCash": "Chi Tiền Mặt",
+      "newCampaign": "Đợt Thu Mới",
+      "processing": "Đang xử lý...",
+      "createRound": "Tạo đợt thu",
+      "manage": "Quản lý",
+      "exportExcel": "Xuất Excel Đợt Thu"
+    },
+    "methods": {
+      "cash": "Tiền mặt",
+      "transfer": "Chuyển khoản"
+    },
+    "member": {
+      "hero": {
+        "title": "Quỹ Dòng Họ",
+        "subtitle": "Góp sức xây dựng dòng họ vững mạnh qua các hoạt động đóng góp minh bạch."
+      },
+      "sections": {
+        "obligations": "Nghĩa Vụ Đóng Góp",
+        "transparency": "Minh Bạch Thu Chi"
+      },
+      "actions": {
+        "voluntaryContribution": "Đóng Góp Tự Nguyện",
+        "payNow": "Đóng Quỹ Ngay",
+        "sendReport": "Gửi Báo Cáo",
+        "sendContribution": "Gửi Đóng Góp"
+      },
+      "labels": {
+        "deadline": "Hạn",
+        "amountPerUnit": "Mức đóng (1 suất)",
+        "target": "Đối tượng"
+      },
+      "contributionUnits": {
+        "malesOnly": "Nam giới",
+        "adultsAll": "Người trưởng thành"
+      },
+      "ledger": {
+        "defaultNote": "Đóng góp dòng họ",
+        "pending": "Đang duyệt"
+      },
+      "modal": {
+        "payTitle": "Xác Nhận Đóng Quỹ"
+      },
+      "bank": {
+        "bankName": "Ngân hàng",
+        "bankAccount": "STK",
+        "bankOwner": "Chủ TK",
+        "qrHelp": "Quét mã QR để thanh toán nhanh"
+      },
+      "cash": {
+        "title": "Thanh toán tiền mặt",
+        "desc1": "Vui lòng nộp tiền trực tiếp cho Trưởng họ hoặc người phụ trách ngân quỹ.",
+        "desc2": "Sau khi nộp, hãy gửi báo cáo này để Trưởng họ xác nhận vào sổ quỹ."
+      },
+      "form": {
+        "reportTitle": "Báo cáo đóng góp",
+        "contributionAmount": "Số tiền đóng",
+        "billImage": "Ảnh bill chuyển khoản",
+        "billAttached": "Đã đính kèm ảnh",
+        "uploadBill": "Tải ảnh bill",
+        "notePlaceholder": "Nhập ghi chú nếu có...",
+        "contributionNote": "Đóng góp"
+      },
+      "messages": {
+        "loadCampaignDetailError": "Không thể tải chi tiết đợt thu",
+        "uploadBillError": "Lỗi khi upload ảnh bill",
+        "reportSuccess": "Gửi báo cáo thành công! Chờ trưởng họ xác nhận.",
+        "reportError": "Lỗi khi gửi báo cáo",
+        "generalSuccess": "Đã ghi nhận đóng góp của bạn.",
+        "thankYou": "Cảm ơn bạn!"
+      }
+    },
+    "analytics": {
+      "loading": "Đang tải phân tích dữ liệu...",
+      "title": "Thống Kê & Phân Tích",
+      "yearlyGrowth": "Tăng trưởng Quỹ theo Năm",
+      "expenseCategories": "Hạng mục Chi ({{prevYear}} vs {{curYear}})",
+      "income": "Thu vào",
+      "expense": "Chi ra",
+      "yearLabel": "Năm {{year}}"
+    },
+    "campaigns": {
+      "title": "Danh sách đợt thu",
+      "allYears": "Tất cả các năm",
+      "allMonths": "Tất cả các tháng",
+      "monthLabel": "Tháng {{month}}",
+      "spent": "Đã chi",
+      "balance": "Còn lại",
+      "noCampaignFound": "Không tìm thấy đợt thu nào"
+    },
+    "ledger": {
+      "title": "Nhật ký quỹ chung",
+      "transaction": "Giao dịch",
+      "amount": "Số tiền",
+      "method": "Hình thức",
+      "generalExpense": "Khoản chi ngoài",
+      "generalFund": "Quỹ chung",
+      "noTransaction": "Chưa có giao dịch",
+      "noTransactionInCampaign": "Chưa có giao dịch nào trong đợt thu này"
+    },
+    "placeholders": {
+      "memberId": "Thành viên #{{id}}",
+      "member": "Thành viên",
+      "campaignName": "Ví dụ: Quỹ khuyến học 2024",
+      "targetGoal": "Nhập số tiền mục tiêu",
+      "amountPerMember": "Nhập số tiền/thành viên"
+    },
+    "messages": {
+      "exportError": "Lỗi xuất báo cáo",
+      "importSuccess": "Nhập dữ liệu thành công!",
+      "importError": "Lỗi khi nhập Excel",
+      "qrUploadError": "Lỗi khi tải mã QR lên",
+      "createCampaignError": "Lỗi khi tạo đợt thu",
+      "updateCampaignError": "Lỗi khi cập nhật đợt thu",
+      "approveError": "Lỗi khi duyệt giao dịch",
+      "expenseError": "Lỗi khi ghi nhận khoản chi",
+      "loadCampaignDetailError": "Không thể tải chi tiết đợt thu",
+      "managerPersonIdNotFound": "Không tìm thấy Person ID của quản lý"
+    },
+    "export": {
+      "campaignFilename": "Bao_Cao_Chien_Dich_{{campaignId}}.xlsx",
+      "yearlyFilename": "Bao_Cao_Nam_{{year}}.xlsx"
+    },
+    "modal": {
+      "createCampaign": {
+        "title": "Tạo đợt thu mới",
+        "subtitle": "Thiết lập thông tin đợt thu cho dòng tộc",
+        "goalHelp": "Để trống nếu muốn hệ thống tự tính theo số thành viên."
+      },
+      "ledger": {
+        "subtitle": "Danh sách giao dịch và trạng thái đóng góp"
+      },
+      "form": {
+        "campaignName": "Tên đợt thu",
+        "year": "Năm",
+        "targetGoal": "Mục tiêu cần thu",
+        "amountPerMember": "Số tiền mỗi thành viên",
+        "deadline": "Hạn chót",
+        "paymentInfo": "Thông tin thanh toán",
+        "bankName": "Tên ngân hàng",
+        "bankAccount": "Số tài khoản",
+        "bankOwner": "Chủ tài khoản",
+        "qrCode": "Mã QR thanh toán",
+        "contributionUnit": "Định nghĩa suất đóng",
+        "status": "Trạng thái",
+        "currentContributionRate": "Mức đóng góp hiện tại",
+        "amountPerMemberLabel": "VND/suất",
+        "qrCodeLabel": "Mã QR",
+        "collected": "Số người đã đóng",
+        "collectedTotal": "Tổng tiền đã thu",
+        "completionRate": "Tỷ lệ hoàn thành",
+        "payer": "Người đóng",
+        "date": "Ngày đóng",
+        "amount": "Số tiền",
+        "action": "Thao tác",
+        "approveNow": "Duyệt ngay",
+        "completed": "Đã xong",
+        "contributionUnits": {
+          "males_only": "Chỉ nam giới (theo truyền thống)",
+          "adults_all": "Tất cả người trưởng thành (trên 18 tuổi)",
+          "per_family": "Tính theo từng hộ gia đình"
+        },
+        "statuses": {
+          "open": "Đang mở (Nhận đóng góp)",
+          "closed": "Đã đóng (Khóa chiến dịch)"
+        }
+      },
+      "approval": {
+        "title": "Phê duyệt giao dịch",
+        "subtitle": "Kiểm tra bằng chứng chuyển khoản và xác nhận",
+        "member": "Thành viên",
+        "amount": "Số tiền",
+        "bill": "Ảnh minh chứng",
+        "note": "Ghi chú của quản lý",
+        "notePlaceholder": "Nhập ghi chú (nếu có)...",
+        "waitLater": "Để sau",
+        "confirm": "Xác nhận duyệt"
+      },
+      "cashExpense": {
+        "title": "Ghi nhận khoản chi",
+        "subtitle": "Lập phiếu chi tiền mặt từ quỹ chung",
+        "summaryTitle": "Chi tiền mặt",
+        "summaryDesc": "Số tiền sẽ được trừ trực tiếp vào số dư quỹ dòng họ.",
+        "amount": "Số tiền chi",
+        "date": "Ngày chi",
+        "category": "Phân loại",
+        "campaign": "Thuộc đợt thu (nếu có)",
+        "noCampaign": "Chi ngoài đợt thu",
+        "recipientTitle": "Người nhận tiền",
+        "recipientDesc": "Chọn thành viên nhận tiền hoặc quản lý tạm ứng.",
+        "quickManager": "Quản lý nhận",
+        "recipient": "Chọn người nhận",
+        "selectRecipient": "Tìm thành viên...",
+        "loadingMembers": "Đang tải danh sách...",
+        "noMemberData": "Không tìm thấy dữ liệu thành viên.",
+        "purpose": "Nội dung chi (để in phiếu)",
+        "purposePlaceholder": "Ví dụ: Mua lễ vật cúng tổ...",
+        "internalNote": "Ghi chú nội bộ",
+        "internalNotePlaceholder": "Chi tiết thêm về khoản chi này...",
+        "confirm": "Ghi nhận khoản chi",
+        "categories": {
+          "study": "Khuyến học",
+          "visit": "Thăm hỏi",
+          "ops": "Vận hành"
+        }
+      },
+      "transactionDetail": {
+        "title": "Chi tiết giao dịch",
+        "type": "Loại giao dịch",
+        "income": "Khoản thu",
+        "expense": "Khoản chi",
+        "amount": "Số tiền",
+        "date": "Ngày thực hiện",
+        "method": "Phương thức",
+        "content": "Nội dung",
+        "category": "Phân loại",
+        "payer": "Người đóng",
+        "recipient": "Người nhận",
+        "managerNote": "Ghi chú quản lý",
+        "recipientNote": "Ghi chú người nhận",
+        "bill": "Chứng từ đính kèm",
+        "approve": "Duyệt",
+        "reject": "Từ chối"
+      },
+      "pending": {
+        "title": "Giao dịch chờ duyệt",
+        "subtitle": "Có {{count}} giao dịch đang chờ bạn xác nhận",
+        "approve": "Duyệt ngay",
+        "noPending": "Không có giao dịch nào đang chờ duyệt.",
+        "income": "Khoản thu",
+        "expense": "Khoản chi"
+      }
+    }
+  },
+  "billingPayment": {
+    "title": "Thanh toán & Gói dịch vụ",
+    "hero": {
+      "kicker": "Gói sử dụng dòng họ",
+      "title": "Quản lý dung lượng & nâng cấp",
+      "subtitle": "Theo dõi giới hạn hồ sơ, tài khoản đăng nhập và nâng cấp gói bằng thanh toán VietQR."
+    },
+    "alerts": {
+      "adminTitle": "Chế độ quản trị hệ thống",
+      "adminDesc": "Bạn có thể chọn cây gia phả để kiểm tra hoặc nâng cấp thử nghiệm gói sử dụng.",
+      "adminSelectClan": "Chọn cây gia phả",
+      "payReadyTitle": "Thanh toán SePay / VietQR đã sẵn sàng",
+      "payReadyDesc": "Tài khoản manager có thể nâng cấp gói cho dòng họ bằng chuyển khoản VietQR.",
+      "loadingBilling": "Đang tải gói sử dụng của cây gia phả đã chọn..."
+    },
+    "currentPlan": {
+      "title": "Gói hiện tại",
+      "expiresAt": "Ngày hết hạn",
+      "unlimited": "Không giới hạn",
+      "records": "Hồ sơ gia phả",
+      "accounts": "Tài khoản đăng nhập",
+      "limitReached": "Dòng họ đã đạt một số giới hạn của gói hiện tại. Hãy nâng cấp để tiếp tục mở rộng."
+    },
+    "history": {
+      "title": "Lịch sử nâng cấp",
+      "count": "{{count}} giao dịch",
+      "noTransactions": "Chưa có giao dịch nào.",
+      "unknown": "Không rõ",
+      "unpaid": "Chưa thanh toán"
+    },
+    "transactionDetail": {
+      "title": "Chi tiết giao dịch",
+      "orderCode": "Mã giao dịch",
+      "plan": "Gói",
+      "amount": "Số tiền",
+      "status": "Trạng thái",
+      "createdAt": "Ngày tạo",
+      "paidAt": "Ngày thanh toán",
+      "email": "Email thanh toán",
+      "provider": "Nhà cung cấp",
+      "actions": {
+        "paid": "Đã thanh toán",
+        "cancelled": "Giao dịch đã hủy",
+        "cannotDowngrade": "Không thể thanh toán gói thấp hơn",
+        "payNow": "Thanh toán giao dịch này",
+        "cancel": "Hủy giao dịch"
+      }
+    },
+    "paymentDialog": {
+      "title": "Thanh toán SePay",
+      "amount": "Số tiền",
+      "content": "Nội dung chuyển khoản",
+      "recipient": "Tài khoản nhận",
+      "notConfigured": "Chưa cấu hình",
+      "checking": "Đang kiểm tra...",
+      "verify": "Tôi đã thanh toán - kiểm tra",
+      "scanQR": "Quét mã để thanh toán",
+      "qrError": "Chưa tạo được mã QR."
+    },
+    "plans": {
+      "title": "Danh sách gói",
+      "subtitle": "Chọn gói phù hợp với quy mô dòng họ",
+      "current": "Đang dùng",
+      "featured": "Phổ biến",
+      "monthly": "/tháng",
+      "recordsUnit": "hồ sơ trong cây gia phả",
+      "accountsUnit": "tài khoản đăng nhập",
+      "upgradeTest": "Nâng cấp thử nghiệm",
+      "upgradeNow": "Nâng cấp ngay",
+      "pending": "Đang có giao dịch chờ",
+      "cannotDowngrade": "Không thể hạ gói"
+    },
+    "planCatalog": {
+      "free": {
+        "name": "Free",
+        "description": "Gói miễn phí cho cây gia phả nhỏ"
+      },
+      "basic": {
+        "name": "Basic",
+        "description": "Mở rộng cây gia phả đến 100 người"
+      },
+      "pro": {
+        "name": "Pro",
+        "description": "Mở rộng cây gia phả đến 500 người"
+      },
+      "plus": {
+        "name": "Family Plus",
+        "description": "Gói lớn cho dòng họ đông thành viên"
+      }
+    },
+    "statusLabel": {
+      "active": "Đang hoạt động",
+      "pending": "Chờ thanh toán",
+      "paid": "Đã thanh toán",
+      "cancelled": "Đã hủy",
+      "expired": "Hết hạn",
+      "ended": "Đã kết thúc"
+    },
+    "status": {
+      "paid": "Giao dịch đã thanh toán, không thể thanh toán lại.",
+      "pendingExpired": "Giao dịch đã quá 24 giờ, hệ thống sẽ tự hủy.",
+      "pendingDowngrade": "Không thể thanh toán gói thấp hơn khi gói hiện tại vẫn còn hiệu lực.",
+      "pendingActive": "Có thể tiếp tục thanh toán giao dịch này.",
+      "cancelled": "Giao dịch đã bị hủy hoặc đã quá hạn, không thể thanh toán tiếp.",
+      "ended": "Giao dịch đã kết thúc, không thể thanh toán tiếp."
+    },
+    "messages": {
+      "loading": "Đang tải gói sử dụng...",
+      "loadingDesc": "Hệ thống đang kiểm tra thông tin dòng họ và lịch sử thanh toán.",
+      "loadError": "Không tải được thông tin gói sử dụng.",
+      "noClans": "Chưa có cây gia phả nào để kiểm tra gói sử dụng.",
+      "unknownClan": "Không xác định được dòng họ của manager.",
+      "loadDataError": "Không tải được dữ liệu billing.",
+      "pendingExists": "Bạn đang có giao dịch chờ thanh toán. Vui lòng thanh toán hoặc hủy giao dịch đó trước khi tạo giao dịch mới.",
+      "downgradeError": "Không thể mua gói thấp hơn khi gói hiện tại vẫn còn hiệu lực.",
+      "createError": "Không tạo được thanh toán.",
+      "paySuccess": "Thanh toán thành công. Gói sử dụng đã được cập nhật.",
+      "payNotConfirmed": "Thanh toán chưa được xác nhận. Vui lòng kiểm tra lại sau.",
+      "checkStatusError": "Không kiểm tra được trạng thái thanh toán.",
+      "cancelConfirm": "Bạn có chắc muốn hủy giao dịch này không?",
+      "cancelSuccess": "Đã hủy giao dịch chờ thanh toán.",
+      "cancelError": "Không thể hủy giao dịch.",
+      "expiredAlert": "Giao dịch đã quá 24 giờ. Vui lòng tải lại trang để hệ thống cập nhật trạng thái.",
+      "upgradeTestConfirm": "Nâng cấp thử nghiệm cây gia phả #{{id}} lên gói {{name}}?",
+      "upgradeTestSuccess": "Đã nâng cấp thử nghiệm cây gia phả #{{id}} lên gói {{name}}.",
+      "upgradeTestError": "Không thể nâng cấp thử nghiệm."
+    }
+  },
+  "member": {
+    "dashboard": {
+      "title": "Bảng điều khiển thành viên",
+      "kicker": "Trang thành viên",
+      "clanConnected": "Bạn đang xem dữ liệu của dòng họ {{name}}.",
+      "clanNotConnected": "Tài khoản chưa được gắn với dòng họ nào.",
+      "viewTree": "Xem cây gia phả",
+      "updateProfile": "Cập nhật hồ sơ",
+      "stats": {
+        "treeMembers": "Thành viên trong dòng họ",
+        "generations": "Số đời đã ghi nhận",
+        "openTasks": "Công việc đang mở",
+        "profileComplete": "Hồ sơ hoàn thiện",
+        "unreadNotifications": "Thông báo chưa đọc"
+      },
+      "tasks": {
+        "title": "Công việc được giao",
+        "subtitle": "Theo dõi và cập nhật tiến độ cho quản lý dòng họ.",
+        "empty": "Bạn chưa có công việc được giao.",
+        "manager": "Người giao: {{name}}",
+        "deadline": "Hạn: {{date}}",
+        "status": {
+          "completed": "Đã hoàn thành",
+          "inProgress": "Đang làm",
+          "assigned": "Đã giao"
+        },
+        "actions": {
+          "start": "Đang làm",
+          "complete": "Hoàn thành"
+        }
+      },
+      "reminders": {
+        "title": "Nhắc việc và sự kiện",
+        "subtitle": "Thêm lịch nhắc chung cho dòng họ.",
+        "placeholderTitle": "Tiêu đề nhắc việc",
+        "placeholderNote": "Ghi chú",
+        "submit": "Thêm nhắc việc",
+        "empty": "Chưa có sự kiện hoặc nhắc việc."
+      },
+      "posts": {
+        "title": "Bảng tin dòng họ",
+        "subtitle": "Các bài viết đã được quản lý phê duyệt.",
+        "addPost": "Thêm bài đăng",
+        "empty": "Chưa có bài viết nào được phê duyệt."
+      },
+      "aiChat": {
+        "title": "Trợ lý AI",
+        "subtitle": "Hỏi nhanh về dữ liệu gia phả và thông tin dòng họ.",
+        "welcome": "Chào bạn, tôi có thể hỗ trợ tra cứu thông tin dòng họ, công việc được giao và lịch nhắc.",
+        "placeholder": "Nhập câu hỏi...",
+        "send": "Gửi"
+      },
+      "notifications": {
+        "title": "Thông báo gần đây",
+        "subtitle": "Cập nhật từ quản lý và hệ thống.",
+        "defaultTitle": "Thông báo",
+        "empty": "Chưa có thông báo mới."
+      },
+      "messages": {
+        "loading": "Đang tải dữ liệu thành viên...",
+        "loadError": "Không thể tải dữ liệu trang thành viên.",
+        "taskUpdateSuccess": "Đã đánh dấu hoàn thành công việc.",
+        "taskUpdateGeneralSuccess": "Đã cập nhật trạng thái công việc.",
+        "taskUpdateError": "Không thể cập nhật công việc.",
+        "reminderRequired": "Vui lòng nhập tiêu đề và ngày nhắc.",
+        "reminderSuccess": "Đã thêm nhắc việc vào lịch dòng họ.",
+        "reminderError": "Không thể tạo nhắc việc.",
+        "chatError": "Không thể gửi tin nhắn."
+      }
+    },
+    "profile": {
+      "title": "Hồ sơ cá nhân",
+      "subtitle": "Cập nhật thông tin cơ bản, quan hệ gia đình, ảnh đại diện và mật khẩu đăng nhập.",
+      "status": {
+        "pending": "Chờ duyệt",
+        "approved": "Đã duyệt",
+        "rejected": "Từ chối",
+        "none": "Chưa gửi"
+      },
+      "basicInfo": {
+        "title": "Thông tin cơ bản",
+        "subtitle": "Thông tin này được lưu trực tiếp vào hồ sơ người trong gia phả.",
+        "fields": {
+          "surname": "Họ",
+          "middleName": "Tên đệm",
+          "firstName": "Tên",
+          "generation": "Đời",
+          "email": "Email đăng nhập",
+          "hometown": "Quê quán"
+        },
+        "submit": "Lưu thông tin cơ bản"
+      },
+      "mediaBio": {
+        "title": "Ảnh và tiểu sử",
+        "statusLabel": "Trạng thái:",
+        "uploadLabel": "Tải ảnh hồ sơ",
+        "urlLabel": "URL ảnh hiện tại",
+        "bioLabel": "Tiểu sử",
+        "moderationNote": "Ghi chú duyệt: {{reason}}",
+        "submit": "Gửi duyệt ảnh và tiểu sử"
+      },
+      "relations": {
+        "title": "Quan hệ gia đình",
+        "subtitle": "Chọn vợ/chồng và con trong danh sách thành viên cùng dòng họ.",
+        "lockedNote": "Member không còn chỉnh sửa quan hệ gia đình từ trang hồ sơ. Khi manager cấp temporary edit key hợp lệ, hãy vào trang cây gia phả để sửa trong phạm vi được phép.",
+        "spouse": "Vợ / chồng",
+        "unselected": "Chưa chọn",
+        "children": "Con cái",
+        "empty": "Không có thành viên phù hợp để chọn.",
+        "submit": "Lưu quan hệ"
+      },
+      "password": {
+        "title": "Đổi mật khẩu",
+        "subtitle": "Mật khẩu mới cần tối thiểu 6 ký tự.",
+        "fields": {
+          "current": "Mật khẩu hiện tại",
+          "next": "Mật khẩu mới",
+          "confirm": "Xác nhận mật khẩu mới"
+        },
+        "submit": "Đổi mật khẩu"
+      },
+      "messages": {
+        "loading": "Đang tải hồ sơ...",
+        "loadError": "Không thể tải hồ sơ thành viên.",
+        "generationInvalid": "Đời phải là số hợp lệ.",
+        "basicSuccess": "Đã lưu thông tin cơ bản.",
+        "basicError": "Không thể lưu thông tin cơ bản.",
+        "proposeSuccess": "Đã gửi ảnh và tiểu sử để quản lý duyệt.",
+        "proposeError": "Không thể gửi yêu cầu duyệt hồ sơ.",
+        "relationsSuccess": "Đã lưu quan hệ gia đình.",
+        "relationsError": "Không thể lưu quan hệ gia đình.",
+        "passwordCurrentRequired": "Vui lòng nhập mật khẩu hiện tại.",
+        "passwordLength": "Mật khẩu mới cần ít nhất 6 ký tự.",
+        "passwordMismatch": "Mật khẩu xác nhận không khớp.",
+        "passwordSuccess": "Đã đổi mật khẩu.",
+        "passwordError": "Không thể đổi mật khẩu."
+      }
+    },
+    "submissions": {
+      "title": "Yêu cầu đã gửi",
+      "history": "Lịch sử đóng góp",
+      "heroSubtitle": "Theo dõi trạng thái bài đã gửi. Việc thêm bài mới, thích và bình luận nằm trong trang bảng tin.",
+      "stats": {
+        "postToFeed": "Đăng bài trên bảng tin",
+        "postToFeedSubtitle": "Sử dụng nút thêm bài ở bảng tin để tạo bài đăng có mô tả, ảnh và nội dung đầy đủ.",
+        "openComposer": "Mở form thêm bài",
+        "approvedPosts": "Bài đã duyệt",
+        "approvedPostsSubtitle": "Các bài viết đang hiển thị trong bảng tin dòng họ.",
+        "openFeed": "Mở bảng tin"
+      },
+      "table": {
+        "title": "Lịch sử đóng góp của tôi",
+        "subtitle": "Theo dõi trạng thái duyệt bài viết và yêu cầu cập nhật hồ sơ.",
+        "cols": {
+          "type": "Loại",
+          "content": "Nội dung",
+          "status": "Trạng thái",
+          "time": "Thời gian",
+          "note": "Ghi chú"
+        },
+        "types": {
+          "post": "Bài viết",
+          "profile": "Cập nhật hồ sơ"
+        },
+        "status": {
+          "approved": "Đã duyệt",
+          "rejected": "Từ chối",
+          "pending": "Chờ duyệt",
+          "processing": "Đang xử lý"
+        },
+        "none": "Không có",
+        "empty": "Bạn chưa gửi đóng góp nào."
+      },
+      "messages": {
+        "loading": "Đang tải bảng tin và lịch sử đóng góp...",
+        "loadError": "Không thể tải dữ liệu đóng góp."
+      }
+    }
+  },
+  "admin": {
+    "dashboard": {
+      "title": "Bảng điều khiển quản trị",
+      "overview": "Tổng quan hệ thống",
+      "subtitle": "Thống kê riêng cho Admin: dòng họ, thành viên, sự kiện, media, gói sử dụng và cảnh báo nâng cấp.",
+      "adminOnly": "Chỉ tài khoản Admin",
+      "stats": {
+        "totalClans": "Tổng số dòng họ",
+        "totalClansNote": "Tất cả dòng họ trong hệ thống",
+        "totalMembers": "Tổng số thành viên",
+        "totalMembersNote": "Hồ sơ thành viên gia phả",
+        "totalEvents": "Tổng số sự kiện",
+        "totalEventsNote": "Sự kiện dòng họ đã tạo",
+        "totalMedia": "Tổng media đã tải",
+        "totalMediaNote": "Ảnh, video và tệp media",
+        "totalAccounts": "Tổng số tài khoản",
+        "totalAccountsNote": "Tài khoản đăng nhập trong hệ thống"
+      },
+      "plans": {
+        "title": "Gói sử dụng",
+        "subtitle": "Tỷ lệ gói đăng ký",
+        "countLabel": "{{count}} dòng họ",
+        "donutLabel": "Dòng họ",
+        "unknownPlan": "Không rõ gói",
+        "clanCount": "{{count}} dòng họ",
+        "systemPercent": "hệ thống",
+        "empty": "Chưa có dữ liệu gói sử dụng."
+      },
+      "topClans": {
+        "title": "Dòng họ nổi bật",
+        "subtitle": "Top dòng họ nhiều thành viên",
+        "memberCount": "Thành viên",
+        "badge": "Top {{count}}"
+      },
+      "growth": {
+        "accountsTitle": "Tăng trưởng tài khoản",
+        "accountsSubtitle": "Số tài khoản được tạo",
+        "clansTitle": "Tăng trưởng dòng họ",
+        "clansSubtitle": "Số dòng tộc được tạo",
+        "last12Months": "12 tháng gần nhất",
+        "newAccounts": "Tài khoản mới",
+        "newClans": "Dòng họ mới"
+      },
+      "upgrades": {
+        "title": "Cảnh báo nâng cấp",
+        "subtitle": "Dòng họ gần vượt giới hạn gói",
+        "alertCount": "{{count}} cảnh báo",
+        "currentPlan": "Gói hiện tại: {{name}}",
+        "noPlan": "Chưa có gói",
+        "people": "Thành viên",
+        "accounts": "Tài khoản",
+        "exceeded": "Đã vượt giới hạn",
+        "usage": "Đã dùng {{percent}}",
+        "emptyTitle": "Chưa có dòng họ nào cần cảnh báo.",
+        "emptySubtitle": "Các dòng họ hiện vẫn nằm trong giới hạn gói sử dụng."
+      },
+      "messages": {
+        "loading": "Đang tải dữ liệu hệ thống...",
+        "loadError": "Không tải được dữ liệu dashboard"
+      }
+    },
+    "accounts": {
+      "title": "Quản lý tài khoản đăng nhập",
+      "subtitle": "Quản lý toàn bộ tài khoản của hệ thống. Tài khoản Admin được tách thành một tệp riêng, không nằm trong các dòng họ.",
+      "stats": {
+        "total": "Tổng tài khoản:"
+      },
+      "actions": {
+        "add": "Thêm tài khoản",
+        "edit": "Sửa",
+        "delete": "Xóa",
+        "back": "Quay lại danh sách tệp"
+      },
+      "folders": {
+        "title": "Chọn tệp để xem tài khoản",
+        "subtitle": "Chọn “Tài khoản Admin” hoặc một dòng họ để mở danh sách tài khoản bên trong.",
+        "searchPlaceholder": "Tìm kiếm dòng họ hoặc tài khoản admin...",
+        "adminFolder": "Tài khoản Admin",
+        "adminSubtitle": "Tài khoản quản trị hệ thống",
+        "allFolder": "Tất cả dòng họ",
+        "noneFolder": "Chưa gán dòng họ",
+        "countLabel": "{{count}} tài khoản",
+        "empty": "Không tìm thấy dòng họ phù hợp."
+      },
+      "detail": {
+        "folderTitle": "Tệp tài khoản: {{name}}",
+        "adminNote": "Đang xem riêng các tài khoản Admin của hệ thống.",
+        "generalNote": "Đang xem tài khoản thuộc tệp đã chọn. Có thể tìm kiếm, thêm, sửa hoặc xóa tài khoản bên dưới.",
+        "searchPlaceholder": "Tìm theo tên, email hoặc dòng họ...",
+        "filterRoleAll": "Tất cả vai trò"
+      },
+      "table": {
+        "cols": {
+          "account": "Tài khoản",
+          "clan": "Dòng họ",
+          "role": "Vai trò",
+          "status": "Trạng thái",
+          "createdAt": "Ngày tạo",
+          "actions": "Thao tác"
+        },
+        "unassigned": "Chưa gán",
+        "empty": "Không tìm thấy tài khoản nào trong tệp này."
+      },
+      "modal": {
+        "addTitle": "Thêm tài khoản đăng nhập",
+        "editTitle": "Sửa tài khoản",
+        "addSubtitle": "Tạo tài khoản mới và gán vào dòng họ.",
+        "editSubtitle": "Cập nhật thông tin, vai trò và dòng họ.",
+        "fields": {
+          "email": "Email đăng nhập",
+          "password": "Mật khẩu",
+          "passwordEdit": "Mật khẩu mới (bỏ trống nếu không đổi)",
+          "displayName": "Tên hiển thị",
+          "surname": "Họ",
+          "middleName": "Tên đệm",
+          "firstName": "Tên",
+          "role": "Vai trò",
+          "status": "Trạng thái",
+          "clan": "Dòng họ"
+        },
+        "actions": {
+          "cancel": "Hủy",
+          "save": "Lưu tài khoản",
+          "saving": "Đang lưu..."
+        }
+      },
+      "roles": {
+        "admin": "Admin",
+        "manager": "Manager",
+        "member": "Member"
+      },
+      "messages": {
+        "loading": "Đang tải dữ liệu...",
+        "loadError": "Không tải được dữ liệu tài khoản",
+        "saveError": "Lưu tài khoản thất bại",
+        "deleteConfirm": "Bạn có chắc muốn xóa tài khoản đăng nhập {{email}}?",
+        "deleteError": "Xóa tài khoản thất bại",
+        "defaultAccountName": "Tài khoản"
+      }
+    },
+    "posts": {
+      "title": "Quản lý bài viết",
+      "subtitle": "Bài viết dòng họ {{name}}",
+      "selectClan": "Chọn dòng họ để quản lý",
+      "breadcrumbs": {
+        "overview": "Tổng quan",
+        "posts": "Quản lý bài viết"
+      },
+      "folders": {
+        "noOwner": "Chưa có chủ quản"
+      },
+      "list": {
+        "empty": "Dòng họ này chưa có bài viết nào.",
+        "back": "Quay lại danh sách",
+        "clanId": "Dòng họ #{{id}}",
+        "table": {
+          "cols": {
+            "author": "Người đăng",
+            "content": "Nội dung",
+            "date": "Ngày đăng",
+            "status": "Trạng thái",
+            "actions": "Thao tác"
+          },
+          "anonymous": "Ẩn danh",
+          "previewImage": "Xem trước ảnh",
+          "statuses": {
+            "approved": "Đã duyệt",
+            "pending": "Chờ duyệt",
+            "rejected": "Đã ẩn"
+          }
+        },
+        "pagination": "Hiển thị {{start}} - {{end}} trong {{total}} bài"
+      },
+      "actions": {
+        "approve": "Duyệt bài viết",
+        "hide": "Ẩn bài viết",
+        "delete": "Xóa vĩnh viễn"
+      },
+      "messages": {
+        "loading": "Đang tải dữ liệu...",
+        "statusUpdateSuccess": "Đã chuyển bài viết sang \"{{status}}\" thành công!",
+        "statusUpdateError": "Lỗi khi cập nhật bài viết: {{error}}",
+        "deleteSuccess": "Đã xóa vĩnh viễn bài viết hoàn tất!",
+        "deleteError": "Lỗi khi xóa bài viết: {{error}}"
+      },
+      "confirmDelete": {
+        "title": "Xác nhận xóa bài viết?",
+        "subtitle": "Thao tác này sẽ xóa vĩnh viễn nội dung bài viết khỏi hệ thống và KHÔNG THỂ phục hồi lại.",
+        "cancel": "Hủy bỏ",
+        "confirm": "Xác nhận Xóa"
+      }
+    },
+    "genealogy": {
+      "sidebar": {
+        "title": "Danh sách Dòng họ",
+        "addBtn": "Thêm dòng họ",
+        "searchPlaceholder": "Tìm kiếm dòng họ...",
+        "clearSearch": "Xóa tìm kiếm",
+        "empty": "Không tìm thấy dòng họ phù hợp.",
+        "stats": "{{count}} thành viên · {{managerCount}} manager",
+        "owner": "QL: {{name}}"
+      },
+      "main": {
+        "empty": "Chưa có dòng họ nào. Hãy bấm “Thêm dòng họ” để tạo phả hệ mới."
+      },
+      "modal": {
+        "createTitle": "Thêm dòng họ",
+        "editTitle": "Sửa dòng họ",
+        "fields": {
+          "clanName": "Tên dòng họ",
+          "clanNamePlaceholder": "Ví dụ: Hà Văn",
+          "history": "Lịch sử dòng họ",
+          "historyPlaceholder": "Nhập mô tả/lịch sử dòng họ nếu có",
+          "hallAddress": "Địa chỉ nhà thờ họ",
+          "hallAddressPlaceholder": "Nhập địa chỉ nếu có",
+          "managerSection": {
+            "title": "Tài khoản Manager phụ trách",
+            "subtitle": "Manager này sẽ được gán quyền quản lý dòng họ vừa tạo và có quyền thêm người vào cây gia phả.",
+            "email": "Email Manager",
+            "password": "Mật khẩu Manager",
+            "passwordHint": "Tối thiểu 6 ký tự",
+            "surname": "Họ Manager",
+            "surnamePlaceholder": "Ví dụ: Nguyễn",
+            "middleName": "Tên đệm",
+            "middleNamePlaceholder": "Ví dụ: Văn",
+            "firstName": "Tên Manager",
+            "firstNamePlaceholder": "Ví dụ: An"
+          }
+        },
+        "actions": {
+          "cancel": "Hủy",
+          "save": "Lưu",
+          "saving": "Đang lưu..."
+        }
+      },
+      "messages": {
+        "loadClansError": "Không tải được danh sách dòng họ",
+        "clanNameRequired": "Vui lòng nhập tên dòng họ.",
+        "managerAccountRequired": "Vui lòng nhập email và mật khẩu tài khoản Manager phụ trách dòng họ.",
+        "passwordMinLength": "Mật khẩu Manager tối thiểu 6 ký tự.",
+        "managerNameRequired": "Vui lòng nhập ít nhất họ hoặc tên của Manager phụ trách.",
+        "operationFailed": "Thao tác thất bại.",
+        "deleteConfirm": "Xóa dòng họ \"{{name}}\"? Toàn bộ phả hệ, thành viên, bài viết, sự kiện và dữ liệu liên quan của dòng họ này sẽ bị xóa.",
+        "deleteError": "Xóa dòng họ thất bại",
+        "loading": "Đang tải danh sách dòng họ..."
+      }
+    },
+    "actions": {
+      "lock": "Khóa",
+      "unlock": "Mở khóa"
+    }
+  },
+  "posts": {
+    "title": "Bảng tin dòng họ",
+    "subtitle": "Nơi lưu giữ câu chuyện, hình ảnh và kỷ niệm của các thành viên.",
+    "composer": {
+      "placeholder": "Chia sẻ điều gì với dòng họ...",
+      "media": "Ảnh / Video",
+      "story": "Câu chuyện"
+    },
+    "card": {
+      "notUpdated": "Chưa cập nhật",
+      "imagePost": "Bài viết hình ảnh",
+      "clanMember": "Thành viên dòng họ",
+      "postMediaAlt": "Media bài đăng",
+      "likes": "{{count}} lượt thích",
+      "comments": "{{count}} bình luận",
+      "like": "Thích",
+      "comment": "Bình luận",
+      "view": "Xem"
+    },
+    "modal": {
+      "create": {
+        "title": "Tạo bài đăng",
+        "subtitle": "Bài của thành viên sẽ hiển thị sau khi quản lý duyệt.",
+        "tabs": {
+          "media": "Ảnh / Video",
+          "story": "Câu chuyện",
+          "ariaLabel": "Loại bài đăng"
+        },
+        "fields": {
+          "title": "Tiêu đề / mô tả ngắn",
+          "titlePlaceholder": "Ví dụ: Ngày họp mặt dòng họ, ảnh kỷ niệm...",
+          "content": "Nội dung bài viết",
+          "contentPlaceholder": "Bạn muốn chia sẻ điều gì với dòng họ?",
+          "uploadLabel": "Tải ảnh hoặc video bài đăng"
+        },
+        "submit": "Gửi bài đăng"
+      },
+      "detail": {
+        "comments": "Bình luận",
+        "loadingComments": "Đang tải bình luận...",
+        "noComments": "Chưa có bình luận.",
+        "member": "Thành viên",
+        "commentPlaceholder": "Viết bình luận...",
+        "submitComment": "Bình luận"
+      }
+    },
+    "messages": {
+      "loadError": "Không thể tải bài viết.",
+      "loadCommentsError": "Không thể tải bình luận.",
+      "titleRequired": "Vui lòng nhập tiêu đề hoặc mô tả ngắn cho bài đăng.",
+      "mediaRequired": "Vui lòng chọn ảnh hoặc video cho bài đăng.",
+      "contentRequired": "Vui lòng nhập nội dung câu chuyện.",
+      "postSuccess": "Đã gửi bài đăng.",
+      "postError": "Không thể gửi bài đăng.",
+      "likeError": "Không thể cập nhật lượt thích.",
+      "commentRequired": "Vui lòng nhập bình luận.",
+      "commentError": "Không thể gửi bình luận.",
+      "noPosts": "Chưa có bài viết nào được phê duyệt."
+    },
+    "sidebar": {
+      "title": "Bảng tin",
+      "description": "Các bài viết đã duyệt sẽ hiển thị cho thành viên trong dòng họ.",
+      "addPost": "Thêm bài đăng"
+    }
+  },
+  "tree": {
+    "page": {
+      "memberFallback": "Thành viên",
+      "clanFallback": "Dòng họ",
+      "keyDefaultExpiry": "1 giờ từ lúc tạo key",
+      "clanInfo": "Thông tin dòng họ",
+      "managerClanInfoHelp": "Manager có thể chỉnh sửa tên dòng họ, lịch sử và địa chỉ nhà thờ/từ đường.",
+      "memberClanInfoHelp": "Thành viên chỉ được xem thông tin dòng họ do quản trị viên cập nhật.",
+      "clanDbId": "ID dòng họ trong database",
+      "clanId": "ID dòng họ",
+      "clanName": "Tên dòng họ",
+      "clanNamePlaceholder": "Ví dụ: Nguyễn Minh",
+      "clanHistory": "Lịch sử dòng họ",
+      "clanHistoryPlaceholder": "Ghi lại nguồn gốc, lịch sử, truyền thống của dòng họ...",
+      "clanHallAddress": "Địa chỉ nhà thờ / từ đường",
+      "clanHallAddressShort": "Nhà thờ / từ đường",
+      "clanHallAddressPlaceholder": "Nhập địa chỉ nhà thờ họ, từ đường hoặc nơi sinh hoạt dòng họ...",
+      "emptyClanHistory": "Chưa cập nhật lịch sử dòng họ.",
+      "emptyClanHallAddress": "Chưa cập nhật địa chỉ nhà thờ hoặc từ đường.",
+      "members": "Thành viên",
+      "families": "Gia đình",
+      "childLinks": "Liên kết con",
+      "saving": "Đang lưu...",
+      "saveClanInfo": "Lưu thông tin dòng họ",
+      "temporaryEditKey": "Temporary edit key",
+      "temporaryEditKeyHelp": "Hiệu lực 1 giờ từ lúc tạo key",
+      "searchMemberByName": "Tìm member theo tên",
+      "searchMemberPlaceholder": "Nhập tên, email hoặc account id",
+      "selectedMembers": "{{count}} member đã chọn",
+      "selectFiltered": "Chọn kết quả lọc",
+      "clearSelection": "Bỏ chọn",
+      "generating": "Đang tạo...",
+      "generateKeys": "Generate {{count}} edit key",
+      "noMatchingMember": "Không có member phù hợp",
+      "activeKeys": "Key còn hiệu lực",
+      "noActiveKeys": "Chưa có key còn hiệu lực",
+      "noNewKeys": "Không có key mới",
+      "copy": "Copy",
+      "copyAllNewKeys": "Copy tất cả key mới",
+      "hiddenOldKey": "Key cũ không thể hiển thị",
+      "keyCreatedAt": "Tạo: {{value}}",
+      "keyExpiresAt": "Hết hạn: {{value}}",
+      "managerDescription": "Quan hệ cha, mẹ, vợ/chồng và con được lấy trực tiếp từ bảng people, families và children.",
+      "editorTitle": "Trình chỉnh sửa cây gia phả",
+      "memberCount": "{{count}} thành viên",
+      "generatedKeysTitle": "Key vừa tạo",
+      "generatedKeysSubtitle": "{{count}} key mới, sắp xếp theo thời gian tạo mới nhất",
+      "refreshActiveKeys": "Cập nhật key còn hiệu lực",
+      "newestFirst": "Mới nhất đến lâu nhất",
+      "exitFullscreen": "Thu nhỏ",
+      "treeInfo": "Thông tin cây",
+      "memberTreeInfoHelp": "Thành viên chỉ được xem cây gia phả, phóng to/thu nhỏ, toàn màn hình và xem chi tiết từng người.",
+      "memberTreeNote": "Bấm vào một người trên cây để xem thông tin chi tiết. Các thao tác thêm, sửa, xóa và chỉnh quan hệ chỉ dành cho quản trị viên dòng họ.",
+      "memberHeroDescription": "Xem toàn bộ cây gia phả của dòng họ. Thành viên chỉ có quyền xem, phóng to thu nhỏ và xem chi tiết từng người.",
+      "enterTemporaryKey": "Nhập temporary edit key",
+      "checking": "Đang kiểm tra...",
+      "enableEdit": "Mở quyền sửa",
+      "disableEdit": "Tắt quyền sửa",
+      "remainingTime": "Còn hạn: {{value}}",
+      "emptyTree": "Chưa có dữ liệu cây gia phả để hiển thị.",
+      "generationLabel": "đời {{generation}}",
+      "currentGenerationPlusMinus": "đời hiện tại ±1",
+      "messages": {
+        "saveClanSuccess": "Đã lưu thông tin dòng họ.",
+        "temporaryEditEnabled": "Bạn có quyền chỉnh sửa tạm thời đến khi temporary edit key hết hạn. Phạm vi: đời hiện tại, trên 1 đời và dưới 1 đời.",
+        "temporaryEditExpired": "Temporary edit key đã hết hạn. Cây gia phả đã quay về chế độ chỉ xem.",
+        "temporaryEditDisabled": "Đã tắt quyền chỉnh sửa tạm thời."
+      },
+      "errors": {
+        "loadTree": "Không thể tải cây gia phả từ database.",
+        "loadKeys": "Không thể tải danh sách key còn hiệu lực.",
+        "selectMemberForKey": "Vui lòng chọn ít nhất một member cần cấp quyền.",
+        "createKey": "Không thể tạo temporary edit key.",
+        "copyKey": "Không thể copy key tự động. Hãy copy thủ công.",
+        "copyKeyList": "Không thể copy danh sách key tự động. Hãy copy thủ công.",
+        "saveClan": "Không thể lưu thông tin dòng họ.",
+        "enterTemporaryKey": "Vui lòng nhập temporary edit key.",
+        "keyExpiredAskManager": "Temporary edit key đã hết hạn. Vui lòng xin manager tạo key mới.",
+        "invalidTemporaryKey": "Temporary edit key không hợp lệ hoặc đã hết hạn."
+      }
+    },
+    "title": "Gia phả",
+    "sidebar": {
+      "title": "Tìm người",
+      "placeholder": "Tên, đời, ngày sinh, năm sinh",
+      "findMe": "Tìm tôi",
+      "search": "Tìm",
+      "noResults": "Không tìm thấy người phù hợp."
+    },
+    "toolbar": {
+      "addPerson": "Thêm người",
+      "addPersonHint": "Thêm người vào cây gia phả",
+      "addPersonAdminOnly": "Chỉ quản trị viên dòng họ mới được thêm người",
+      "autoLayout": "Tự sắp xếp",
+      "autoLayoutHint": "Tự động sắp xếp lại và lưu vào database",
+      "autoLayoutViewerHint": "Thành viên chỉ được xem, không được tự sắp xếp",
+      "exportPng": "Export PNG",
+      "validate": "Kiểm tra cây",
+      "zoomIn": "Phóng to",
+      "zoomOut": "Thu nhỏ",
+      "fullscreen": "Toàn màn hình",
+      "exitFullscreen": "Thoát toàn màn hình",
+      "limitedEdit": "Chỉnh sửa tạm thời: đời hiện tại ±1"
+    },
+    "genealogyAi": {
+      "open": "AI trích xuất gia phả",
+      "eyebrow": "AI gia phả",
+      "title": "Trích xuất dữ liệu gia phả",
+      "sourceLabel": "Nguồn dữ liệu",
+      "sourceText": "Văn bản",
+      "sourceVoice": "Transcript giọng nói",
+      "promptLabel": "Mô tả gia đình/dòng họ",
+      "promptPlaceholder": "Ví dụ: Ông Nguyễn Văn A có vợ là bà Trần Thị B, hai người có con là Nguyễn Văn C",
+      "voiceHelp": "Bấm micro, đọc nội dung, bấm dừng rồi đợi hệ thống chuyển thành transcript.",
+      "draftNotice": "AI chỉ tạo dữ liệu nháp, chưa lưu vào cây.",
+      "extract": "Trích xuất",
+      "extracting": "Đang trích xuất...",
+      "members": "Thành viên",
+      "relationships": "Quan hệ",
+      "needsReview": "Cần kiểm tra",
+      "yes": "Có",
+      "no": "Không",
+      "unknownName": "Chưa rõ tên",
+      "uncertain": "Chưa chắc chắn",
+      "warnings": "Cảnh báo",
+      "warning": "Cảnh báo",
+      "editMembers": "Chỉnh sửa thành viên nháp",
+      "editRelationships": "Chỉnh sửa quan hệ nháp",
+      "confidence": "Độ tin cậy",
+      "fullName": "Họ tên",
+      "status": "Tình trạng",
+      "gender": "Giới tính",
+      "male": "Nam",
+      "female": "Nữ",
+      "unknown": "Chưa rõ",
+      "birthYear": "Năm sinh",
+      "deathYear": "Năm mất",
+      "birthDate": "Ngày sinh",
+      "deathDate": "Ngày mất",
+      "accountEmail": "Email tài khoản",
+      "accountPassword": "Mật khẩu",
+      "accountCreateHint": "Người còn sống sẽ được tạo tài khoản đăng nhập khi lưu vào cây.",
+      "notes": "Ghi chú",
+      "relationshipType": "Loại quan hệ",
+      "relationshipOptions": {
+        "parentChild": "Cha/mẹ - Con / Parent - Child (parent_child)",
+        "spouse": "Vợ/chồng / Spouse (spouse)"
+      },
+      "parent": "Cha/mẹ",
+      "child": "Con",
+      "parentRole": "Lưu là",
+      "father": "Cha",
+      "mother": "Mẹ",
+      "from": "Người 1",
+      "to": "Người 2",
+      "saveNotice": "Kiểm tra kỹ dữ liệu nháp trước khi lưu vào database.",
+      "saveToTree": "Lưu vào cây",
+      "saving": "Đang lưu...",
+      "existingMatched": "Đã có trong cây",
+      "existingPerson": "Người đã có trong cây",
+      "createNewPerson": "Tạo người mới",
+      "selectExistingHint": "Tên này trùng nhiều người. Hãy chọn đúng người đã tồn tại hoặc đổi tên nháp rõ hơn.",
+      "saveSuccess": "Đã thêm {{count}} thành viên mới và dùng lại {{existingCount}} thành viên đã có.",
+      "confirmSave": "Lưu dữ liệu AI vào database? Sẽ tạo mới {{createCount}} người và dùng lại {{existingCount}} người đã có.",
+      "birthYearNote": "Năm sinh AI",
+      "deathYearNote": "Năm mất AI",
+      "aiDraftNote": "Tạo từ AI gia phả, cần người quản lý kiểm tra lại.",
+      "emptyMembers": "Chưa phát hiện thành viên.",
+      "emptyRelationships": "Chưa phát hiện quan hệ.",
+      "emptyUncertain": "Không có mục chưa chắc chắn.",
+      "emptyWarnings": "Không có cảnh báo.",
+      "errors": {
+        "emptyPrompt": "Vui lòng nhập mô tả hoặc transcript cần trích xuất.",
+        "emptyTranscript": "Không nhận được transcript từ bản ghi âm.",
+        "extractFailed": "Không thể trích xuất dữ liệu gia phả lúc này.",
+        "noMembersToSave": "Chưa có thành viên hợp lệ để lưu.",
+        "invalidRelationship": "Có quan hệ thiếu người hoặc tự liên kết chính mình. Vui lòng chỉnh sửa trước khi lưu.",
+        "selectExistingDuplicate": "Trong cây đang có nhiều người cùng tên \"{{name}}\". Vui lòng chọn đúng người đã tồn tại trong dòng đó hoặc đổi tên nháp rõ hơn trước khi lưu.",
+        "missingLivingAccount": "Người còn sống \"{{name}}\" cần email và mật khẩu tối thiểu 6 ký tự để tạo tài khoản.",
+        "createdIdMissing": "Không nhận được ID người vừa tạo.",
+        "saveFailed": "Không thể lưu dữ liệu AI vào cây."
+      }
+    },
+    "viewMode": {
+      "full": "Toàn bộ cây",
+      "setRoot": "Làm gốc",
+      "rootPlaceholder": "Nhập tên để chọn",
+      "rootLabel": "Gốc: {{name}}"
+    },
+    "card": {
+      "fallbackName": "Thành viên",
+      "chief": "Tộc trưởng",
+      "generation": "Đời {{count}}",
+      "born": "Sinh: {{date}}",
+      "died": "Mất: {{date}}",
+      "lifeInfo": "{{born}} - {{died}}",
+      "noBirthDate": "Chưa có ngày sinh",
+      "edit": "Sửa thành viên",
+      "delete": "Xóa thành viên",
+      "addRelation": "Thêm người liên kết",
+      "resize": "Kéo để đổi kích thước ô",
+      "badges": {
+        "self": "Tôi",
+        "online": "Online",
+        "search": "Kết quả tìm",
+        "editing": "Đang sửa",
+        "error": "Lỗi dữ liệu"
+      },
+      "collapse": {
+        "expand": "Mở nhánh con",
+        "collapse": "Thu gọn nhánh con"
+      }
+    },
+    "inspector": {
+      "title": "Thông tin thành viên",
+      "spouseLabel": "Vợ/chồng: {{name}}",
+      "fallbackSubtitle": "Thông tin hồ sơ gia phả",
+      "closePanel": "Đóng panel",
+      "readOnlyNote": "Chế độ chỉ xem. Thành viên không có quyền chỉnh sửa cây gia phả.",
+      "limitedNote": "Bạn có quyền chỉnh sửa tạm thời trong phạm vi cho phép. Không thể tạo, xóa hoặc đổi quan hệ node.",
+      "fields": {
+        "displayName": "Tên hiển thị",
+        "surname": "Họ",
+        "middleName": "Tên đệm",
+        "firstName": "Tên",
+        "gender": "Giới tính",
+        "genderOptions": {
+          "male": "Nam",
+          "female": "Nữ",
+          "unknown": "Không rõ"
+        },
+        "role": "Vai trò",
+        "roleOptions": {
+          "noAccount": "Chưa có tài khoản",
+          "chief": "Tộc trưởng",
+          "member": "Thành viên"
+        },
+        "status": "Tình trạng",
+        "statusOptions": {
+          "living": "Còn sống",
+          "deceased": "Đã mất"
+        },
+        "birthDate": "Ngày sinh",
+        "deathDate": "Ngày mất",
+        "lunarBirth": "Ngày sinh âm lịch",
+        "lunarDeath": "Ngày mất âm lịch",
+        "generation": "Đời thứ",
+        "branch": "Chi nhánh",
+        "hometown": "Quê quán",
+        "address": "Địa chỉ",
+        "phone": "Điện thoại",
+        "email": "Email",
+        "avatarUrl": "Ảnh đại diện URL",
+        "bio": "Giới thiệu",
+        "note": "Ghi chú"
+      },
+      "actions": {
+        "addSpouse": "Chọn vợ/chồng",
+        "addChild": "Chọn con",
+        "addFather": "Chọn cha",
+        "addMother": "Chọn mẹ",
+        "save": "Lưu",
+        "saving": "Đang lưu...",
+        "delete": "Xóa"
+      }
+    },
+    "relationModal": {
+      "titles": {
+        "spouse": "Chọn vợ/chồng",
+        "child": "Chọn con",
+        "father": "Chọn cha",
+        "mother": "Chọn mẹ",
+        "generic": "Chọn quan hệ"
+      },
+      "pickOnTree": "Chọn trực tiếp trên cây phả hệ",
+      "divider": "hoặc",
+      "searchLabel": "Tìm trong thành viên đã có",
+      "searchPlaceholder": "Nhập tên, email hoặc số điện thoại",
+      "isLinked": "Đang liên kết",
+      "noResults": "Không có thành viên phù hợp.",
+      "actions": {
+        "unlink": "Bỏ liên kết",
+        "link": "Liên kết",
+        "linking": "Đang liên kết..."
+      }
+    },
+    "quickCreate": {
+      "title": "Chọn loại liên kết cần tạo",
+      "spouse": {
+        "title": "Tạo vợ/chồng",
+        "desc": "Tạo thành viên mới và liên kết vợ/chồng với người này"
+      },
+      "child": {
+        "title": "Tạo con",
+        "desc": "Tạo thành viên mới và tự nối làm con của người này"
+      }
+    },
+    "createModal": {
+      "titles": {
+        "person": "Thêm người",
+        "spouse": "Thêm vợ/chồng",
+        "child": "Thêm con",
+        "father": "Thêm cha",
+        "mother": "Thêm mẹ",
+        "for": "{{title}} cho {{name}}",
+        "new": "Tạo {{relation}} mới"
+      },
+      "fields": {
+        "displayPlaceholder": "Ví dụ: Hà Văn Hải Đăng",
+        "accountBoxTitle": "Tạo tài khoản đăng nhập cho người này",
+        "accountEmail": "Email đăng nhập",
+        "accountPassword": "Mật khẩu đăng nhập",
+        "passwordHint": "Tối thiểu 6 ký tự"
+      },
+      "actions": {
+        "create": "Tạo",
+        "creating": "Đang tạo..."
+      }
+    },
+    "messages": {
+      "loading": "Đang tải cây gia phả...",
+      "loadError": "Không tải được cây gia phả.",
+      "saveLayoutError": "Không thể lưu bố cục cây vào database.",
+      "autoLayoutConfirm": "Tự động sắp xếp lại sẽ ghi đè vị trí thủ công hiện tại. Bạn có chắc muốn tiếp tục?",
+      "autoLayoutSuccess": "Đã tự động sắp xếp và lưu bố cục mới vào database.",
+      "autoLayoutError": "Không thể lưu bố cục mới.",
+      "exportSuccess": "Đã xuất PNG.",
+      "exportError": "Không thể xuất PNG",
+      "saveSuccess": "Đã lưu thông tin thành viên.",
+      "saveError": "Không thể lưu thông tin.",
+      "deleteConfirm": "Xóa thành viên {{name}} khỏi cây gia phả?",
+      "deleteSuccess": "Đã xóa thành viên khỏi cây.",
+      "deleteError": "Không thể xóa thành viên.",
+      "unlinkSuccess": "Đã bỏ liên kết {{relation}}.",
+      "unlinkError": "Không thể bỏ liên kết quan hệ.",
+      "linkSuccess": "Đã liên kết {{relation}}.",
+      "linkError": "Không thể liên kết quan hệ.",
+      "linkTargetError": "Không thể liên kết thành viên này.",
+      "linkSourceNotFound": "Không tìm thấy thành viên gốc để liên kết.",
+      "linkAlreadyExists": "Thành viên này đã được liên kết với quan hệ đang chọn.",
+      "linkNotAllowed": "Thành viên này không phù hợp hoặc đã được liên kết. Hãy chọn thành viên khác trên cây.",
+      "noAccountLinked": "Tài khoản hiện tại chưa liên kết person_id trong cây gia phả.",
+      "validationTitle": "Lỗi dữ liệu trong cây",
+      "validationSummary": "{{count}} node cần sửa",
+      "validationSuccess": "Kiểm tra cây: chưa phát hiện lỗi dữ liệu.",
+      "validationErrorCount": "Kiểm tra cây: phát hiện {{count}} node có lỗi dữ liệu.",
+      "validationFixed": "Kiểm tra cây: các lỗi dữ liệu đã được xử lý.",
+      "validationMore": "Còn {{count}} lỗi khác. Bấm vào node đỏ để xem tooltip chi tiết.",
+      "constraintViolation": "Cảnh báo vi phạm ràng buộc",
+      "constraintHint": "Bấm ra ngoài khung cảnh báo để đóng.",
+      "billingLimit": "Đã đạt giới hạn gói sử dụng",
+      "billingUpgrade": "Xem gói nâng cấp",
+      "personLimitReached": "Dòng họ đã đạt giới hạn {{current}}/{{limit}} người của {{plan}}. Vui lòng nâng cấp gói để thêm tiếp.",
+      "subscriptionExpired": "Gói sử dụng đã hết hạn. Vui lòng gia hạn để tiếp tục thêm người.",
+      "treePickHint": "Đang chọn {{relation}} cho {{name}}. Bấm trực tiếp vào một ô thành viên trên cây để liên kết.",
+      "noPermissionAction": "Bạn không có quyền thực hiện hành động này.",
+      "genericError": "Thao tác thất bại.",
+      "multipleFamiliesError": "Vui lòng chọn family/cuộc hôn nhân cụ thể để thêm con.",
+      "noFamilyError": "Cần tạo family trước khi thêm con.",
+      "validationRequiresKey": "Vui lòng nhập temporary edit key do Manager cung cấp để sử dụng kiểm tra cây."
+    },
+    "relations": {
+      "spouse": "vợ/chồng",
+      "child": "con",
+      "father": "cha",
+      "mother": "mẹ"
+    }
+  },
+  "calendar": {
+    "title": "Lịch Việt Nam",
+    "today": "Hôm nay",
+    "events": "Sự kiện trong ngày"
+  },
+  "clan": {
+    "register": {
+      "title": "Đăng ký dòng họ",
+      "form": {
+        "clanName": "Tên dòng họ",
+        "description": "Mô tả dòng họ"
+      }
+    }
+  },
+  "aiChat": {
+    "title": "Trợ lý ảo AI",
+    "placeholder": "Hỏi AI về gia phả hoặc sự kiện...",
+    "send": "Gửi"
+  },
+  "voice": {
+    "title": "Điều khiển giọng nói",
+    "record": "Bắt đầu ghi",
+    "stop": "Dừng ghi",
+    "transcript": "Văn bản chuyển đổi",
+    "recorder": {
+      "idle": "Mic",
+      "uploading": "Đang tải ghi âm...",
+      "transcribing": "Đang chuyển giọng nói...",
+      "receiveSuccess": "Đã nhận bản văn.",
+      "receiveEmpty": "Bản văn trống.",
+      "noData": "Không có dữ liệu ghi âm.",
+      "title": {
+        "stop": "Dừng ghi âm",
+        "start": "Ghi âm câu hỏi"
+      },
+      "errors": {
+        "unsupported": "Trình duyệt không hỗ trợ ghi âm.",
+        "failed": "Xử lý ghi âm thất bại.",
+        "startFailed": "Không thể bắt đầu ghi âm.",
+        "noId": "Máy chủ chưa trả về ID ghi âm.",
+        "transcriptionFailed": "Chuyển giọng nói thất bại.",
+        "timeout": "Hết thời gian chờ bản văn."
+      }
+    }
+  },
+  "public": {
+    "hero": {
+      "title": "Gìn giữ cội nguồn,<br />Kết nối thế hệ",
+      "subtitle": "Nền tảng giúp bạn kết nối và lưu giữ giá trị gia phả Việt Nam, từ cội nguồn đến tương lai.",
+      "explore": "Khám phá ngay",
+      "createClan": "Tạo Dòng Họ"
+    },
+    "about": {
+      "tag": "Về chúng tôi",
+      "title": "Gia Phả Việt: Gìn giữ nguồn cội - Kết nối tương lai",
+      "p1": "Gia phả không chỉ là danh sách tên tuổi, mà là dòng chảy linh thiêng của văn hóa và đạo đức. Trong kỷ nguyên số, chúng tôi mang sứ mệnh chuyển đổi những trang giấy ố vàng thành di sản trường tồn.",
+      "p2": "Gia Phả Việt được thiết kế dựa trên giá trị truyền thống, kết hợp cùng công nghệ quản lý dữ liệu hiện đại để giúp mỗi gia đình lưu giữ, kết nối và truyền lại câu chuyện dòng tộc.",
+      "quote": "“Chim có tổ, người có tông.”",
+      "imageAlt": "Đình làng truyền thống"
+    },
+    "features": {
+      "demo": {
+        "tag": "Frame tính năng chi tiết",
+        "title": "Sơ đồ phả hệ thông minh",
+        "desc": "Trực quan hóa cây phả hệ đa nhánh, theo dõi quan hệ trực hệ và thông tin từng thành viên ngay trên một màn hình.",
+        "viewImage": "Xem dưới dạng hình ảnh",
+        "createGenerations": "Tạo nhiều thế hệ",
+        "point1": "Tự động sắp xếp thứ tự vai vế theo đời",
+        "point2": "Đính kèm tiểu sử, ảnh chân dung và tư liệu gốc",
+        "point3": "Tìm kiếm theo tên, chi họ, khu vực và mốc thời gian"
+      },
+      "advanced": {
+        "tag": "Công nghệ dẫn đầu",
+        "title": "Tính năng vượt trội",
+        "items": {
+          "auto": {
+            "title": "Lập phả hệ tự động",
+            "desc": "Nhập dữ liệu nhanh chóng từ file Excel hoặc thông tin rời rạc, hệ thống tự động liên kết."
+          },
+          "events": {
+            "title": "Quản lý ngày lễ",
+            "desc": "Nhắc lịch đám giỗ, tết, các ngày kỷ niệm dòng tộc qua điện thoại và email."
+          },
+          "security": {
+            "title": "Bảo mật & phân quyền",
+            "desc": "Dữ liệu được mã hóa chuẩn quốc tế, phân quyền truy cập chi tiết cho từng thành viên."
+          }
+        }
+      },
+      "events": {
+        "title": "Quản lý Sự kiện & Ngày lễ",
+        "desc": "Lưu nhắc lễ hội con cháu, đám giỗ và nghi thức truyền thống qua hệ thống điện tử hiện đại.",
+        "calendarLabel": "LỊCH ÂM DƯƠNG",
+        "lunarMonth": "Tháng Tám, Giáp Thìn",
+        "sampleEvent1": "Ngày giỗ Tổ họ Nguyễn",
+        "sampleTime1": "8:00 sáng",
+        "sampleEvent2": "Lễ dâng hương từ đường",
+        "sampleTime2": "6:30 chiều",
+        "cards": {
+          "notifications": {
+            "title": "Thông báo tự động",
+            "desc": "Hệ thống tự động gửi nhắc qua SMS, email và app cho các dịp quan trọng của từng nhánh họ."
+          },
+          "connection": {
+            "title": "Kết nối đại gia đình",
+            "desc": "Đồng bộ nhiều thế hệ, mời thành viên ở xa và cập nhật lịch chung theo từng chi tộc."
+          },
+          "rituals": {
+            "title": "Lưu trữ nghi thức",
+            "desc": "Tạo kho tư liệu về văn khấn, bài cúng và hướng dẫn nghi lễ chuẩn cho từng ngày lễ."
+          },
+          "budget": {
+            "title": "Tạo đề nghị tự chi",
+            "desc": "Quản lý công tác hậu cần, ngân sách và nguồn lực phục vụ các sự kiện của gia tộc."
+          }
+        }
+      },
+      "preservation": {
+        "title": "Số hóa & Bảo mật di sản",
+        "desc": "Lưu trữ gia phả theo chuẩn số hóa hiện đại, bảo toàn tư liệu cổ và tăng cường khả năng truy cập an toàn cho từng thành viên trong họ tộc.",
+        "points": [
+          "Chuyển ngữ Hán-Nôm",
+          "Lưu trữ đám mây bảo mật",
+          "Phân quyền truy cập"
+        ]
+      },
+      "cta": {
+        "title": "Sẵn sàng khởi tạo di sản số cho dòng họ?",
+        "subtitle": "Tham gia cùng hàng nghìn dòng tộc Việt Nam trong hành trình bảo tồn nguồn cội bền vững.",
+        "start": "Bắt đầu ngay",
+        "learnMore": "Tìm hiểu thêm"
+      }
+    },
+    "benefits": {
+      "title": "Lợi Ích Của Việc Lưu Giữ Gia Phả",
+      "subtitle": "“Cây có cội, nước có nguồn. Con người có tổ, có tông mới thành.” Hành trình kết nối tâm linh giữa quá khứ, hiện tại và tương lai.",
+      "cards": {
+        "connection": {
+          "title": "Kết Nối Huyết Thống",
+          "desc": "Theo dõi dòng mạch thế hệ trong một không gian trực quan, minh bạch và dễ cập nhật cho toàn bộ gia tộc."
+        },
+        "preservation": {
+          "title": "Gìn Giữ Di Sản",
+          "desc": "Số hóa những trang gia phả cổ cùng hình ảnh, tư liệu và câu chuyện truyền thống để lưu giữ bền vững."
+        },
+        "education": {
+          "title": "Giáo Dục Truyền Thống",
+          "desc": "Lưu trữ sinh hoạt dòng họ giúp thế hệ trẻ hiểu nguồn cội, tiếp nối sứ mệnh và đạo lý gia tộc."
+        }
+      },
+      "why": {
+        "title": "Tại Sao Nên Chọn Gia Phả Việt?",
+        "items": {
+          "ai": {
+            "title": "Gợi ý thành viên AI",
+            "desc": "Tự động đề xuất kết nối quan hệ dựa trên tên, đời và dữ liệu lịch sử của từng nhánh."
+          },
+          "security": {
+            "title": "Bảo mật đa tầng",
+            "desc": "Dữ liệu được mã hóa theo nhiều lớp và xác thực nghiêm ngặt đến từng quyền truy cập."
+          },
+          "reminder": {
+            "title": "Nhắc nhở ngày giỗ tự động",
+            "desc": "Thông báo được gửi đều đặn theo âm lịch đến ứng dụng, email và nhóm thành viên liên quan."
+          },
+          "storage": {
+            "title": "Lưu trữ vĩnh viễn",
+            "desc": "Mọi hình ảnh, văn bản và phim tư liệu được sao lưu định kỳ trên hạ tầng đám mây."
+          }
+        }
+      }
+    },
+    "guide": {
+      "title": "Hướng dẫn sử dụng",
+      "subtitle": "Từng bước khám phá và quản lý gia phả Việt",
+      "stepsTitle": "6 Bước Dễ Dàng Để Bắt Đầu",
+      "steps": {
+        "step1": {
+          "title": "Tạo Dòng Họ",
+          "desc": "Bước đầu tiên là tạo tài khoản và thiết lập tên dòng họ. Hệ thống sẽ tạo không gian riêng cho gia tộc của bạn."
+        },
+        "step2": {
+          "title": "Thêm Thành Viên",
+          "desc": "Nhập thông tin các thành viên gia tộc: tên, ngày sinh, mối quan hệ. Bạn có thể thêm từng người hoặc nhập danh sách từ file Excel."
+        },
+        "step3": {
+          "title": "Kết Nối Quan Hệ",
+          "desc": "Định nghĩa mối quan hệ giữa các thành viên: cha mẹ, vợ chồng, anh chị em. Hệ thống tự động vẽ sơ đồ phả hệ."
+        },
+        "step4": {
+          "title": "Lưu Trữ Tư Liệu",
+          "desc": "Tải lên hình ảnh, tài liệu, video của gia phả cổ. Mọi file được mã hóa và lưu trữ an toàn trên đám mây."
+        },
+        "step5": {
+          "title": "Mời Thành Viên",
+          "desc": "Gửi lời mời cho các thành viên gia tộc để họ tham gia và cập nhật thông tin cá nhân của mình."
+        },
+        "step6": {
+          "title": "Quản Lý Sự Kiện",
+          "desc": "Thiết lập các ngày giỗ, lễ hội, sự kiện dòng họ. Nhận thông báo tự động vào những dịp quan trọng."
+        }
+      },
+      "videoTitle": "Xem Video Hướng Dẫn",
+      "videos": {
+        "v1": {
+          "title": "Cách tạo dòng họ trong 2 phút",
+          "desc": "Hướng dẫn nhanh gọn cho người mới"
+        },
+        "v2": {
+          "title": "Nhập dữ liệu từ file Excel",
+          "desc": "Thêm hàng trăm thành viên cùng lúc"
+        },
+        "v3": {
+          "title": "Quản lý quyền truy cập",
+          "desc": "Kiểm soát ai được xem hoặc chỉnh sửa"
+        }
+      },
+      "faqTitle": "Câu Hỏi Thường Gặp",
+      "faqs": [
+        {
+          "q": "Tôi có thể bắt đầu từ đâu nếu chưa biết toàn bộ thành viên gia tộc?",
+          "a": "Bạn hoàn toàn có thể bắt đầu với những thành viên gần nhất như bố mẹ, anh chị em. Sau đó, dần dần thêm những người khác khi có thông tin."
+        },
+        {
+          "q": "Dữ liệu của tôi có được bảo vệ?",
+          "a": "Tất cả dữ liệu gia phả được mã hóa theo chuẩn quốc tế (AES-256). Chỉ những người được phép mới có thể truy cập."
+        },
+        {
+          "q": "Có thể nhập dữ liệu từ gia phả cũ có sẵn không?",
+          "a": "Có, bạn có thể tải lên file Excel hoặc hình ảnh gia phả cũ. Hệ thống có thể giúp bạn chuyển đổi sang định dạng số hóa."
+        },
+        {
+          "q": "Thành viên khác cần làm gì để tham gia?",
+          "a": "Họ chỉ cần nhận email mời, đăng ký tài khoản và đăng nhập. Không cần kỹ năng kỹ thuật gì đặc biệt."
+        },
+        {
+          "q": "Tôi có thể xóa hoặc chỉnh sửa thông tin không?",
+          "a": "Có thể, nhưng mọi chỉnh sửa sẽ được ghi lại để bảo toàn tính lịch sử. Quản trị viên gia tộc có thể quản lý quyền hạn."
+        },
+        {
+          "q": "Giá cước là bao nhiêu?",
+          "a": "Hiện tại, Gia Phả Việt đang ở giai đoạn beta miễn phí. Bạn có thể sử dụng đầy đủ tính năng mà không tốn chi phí."
+        }
+      ],
+      "support": {
+        "title": "Cần Giúp Đỡ ?",
+        "desc": "Đội ngũ hỗ trợ của chúng tôi luôn sẵn sàng trả lời mọi câu hỏi.",
+        "email": "Gửi Email",
+        "chat": "Chat Trực Tiếp"
+      }
+    },
+    "news": {
+      "title": "Bản Tin Di Sản",
+      "subtitle": "Gìn giữ cội nguồn - Phát huy truyền thống",
+      "featured": "Tin Tức Nổi Bật",
+      "categories": "Chuyên Mục",
+      "subscribe": {
+        "title": "Đăng Ký Nhận Tin",
+        "desc": "Để cập nhật tin tức mới nhất, hãy nhập email của bạn.",
+        "placeholder": "Địa chỉ Email của bạn",
+        "submit": "ĐĂNG KÝ NGAY"
+      },
+      "readMore": "Xem thêm »",
+      "categoryList": {
+        "history": "Lịch Sử Dòng Họ",
+        "rituals": "Nghi Lễ & Phong Tục",
+        "tech": "Công Nghệ & Số Hóa",
+        "people": "Nhân Vật Kiệt Xuất"
+      }
+    },
+    "notFound": {
+      "title": "404 - Không tìm thấy trang",
+      "desc": "Trang bạn đang tìm kiếm không tồn tại hoặc đã được di chuyển.",
+      "backHome": "Quay lại trang chủ"
+    },
+    "stats": {
+      "clans": "Dòng họ tham gia",
+      "members": "Thành viên kết nối",
+      "documents": "Tư liệu số hóa",
+      "provinces": "Tỉnh thành phủ sóng"
+    }
+  }
+}

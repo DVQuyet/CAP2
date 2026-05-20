@@ -1,0 +1,30 @@
+CHÍNH SÁCH BẢO MẬT HỆ THỐNG GIA PHẢ CAP2
+Điều 1: Mục đích thu thập dữ liệu duy nhất
+Chúng tôi thu thập dữ liệu cá nhân chỉ nhằm mục đích: Xác lập cây gia phả chính xác, kết nối các thành viên trong dòng họ, quản lý ngày giỗ/sự kiện gia tộc và xác thực quyền truy cập hệ thống.
+
+Điều 2: Danh mục dữ liệu lưu trữ chi tiết
+Dữ liệu thu thập bao gồm nhưng không giới hạn: Họ tên khai sinh, Email, Số điện thoại, Ngày tháng năm sinh (và ngày mất), Giới tính, Quê quán, Địa chỉ thường trú, và mối quan hệ nhân thân (Cha/Mẹ/Con). Các dữ liệu này là cơ sở để xây dựng sơ đồ huyết thống bền vững.
+
+Điều 3: Bảo mật đa lớp và Mã hóa dữ liệu
+Hệ thống áp dụng các giao thức bảo mật tiên tiến (như SSL/TLS) để mã hóa đường truyền. Mật khẩu người dùng được băm (hash) một chiều, đảm bảo ngay cả quản trị viên hệ thống cũng không thể đọc được mật khẩu gốc của bạn.
+
+Điều 4: Quyền riêng tư của cây gia phả (Clan Privacy)
+Dữ liệu gia phả của một dòng họ chỉ hiển thị cho các thành viên đã được phê duyệt trong dòng họ đó. Người ngoài hoặc thành viên dòng họ khác không có quyền truy cập, sao chép hoặc xem thông tin chi tiết nếu không được sự cho phép của Clan Admin.
+
+Điều 5: Cam kết không chia sẻ bên thứ ba
+Chúng tôi cam kết không bán, trao đổi hoặc cho thuê thông tin cá nhân của người dùng cho bất kỳ bên thứ ba nào vì mục đích quảng cáo. Dữ liệu chỉ được cung cấp khi có yêu cầu bằng văn bản từ cơ quan chức năng có thẩm quyền theo pháp luật Việt Nam.
+
+Điều 6: Quản lý quyền truy cập thiết bị (Session)
+Hệ thống ghi lại nhật ký đăng nhập (IP, thời gian, thiết bị) để bảo vệ tài khoản của bạn. Nếu phát hiện truy cập bất thường từ địa lý xa lạ, hệ thống có quyền tạm khóa để bảo vệ dữ liệu gia tộc khỏi nguy cơ bị đánh cắp.
+
+Điều 7: Chính sách về hình ảnh và tư liệu số
+Hình ảnh đại diện, ảnh tư liệu gia đình hoặc file tiểu sử tải lên phải thuộc quyền sở hữu của người dùng. Chúng tôi bảo lưu quyền xóa các hình ảnh vi phạm pháp luật hoặc không phù hợp với thuần phong mỹ tục mà không cần thông báo.
+
+Điều 8: Quyền chỉnh sửa và Xóa dữ liệu (Right to be Forgotten)
+Người dùng có quyền cập nhật thông tin cá nhân bất cứ lúc nào. Trong trường hợp xóa tài khoản, thông tin định danh cá nhân (Email, Mật khẩu) sẽ bị xóa khỏi hệ thống. Tuy nhiên, vị trí của bạn trong cây gia phả có thể được giữ lại dưới dạng "Thành viên ẩn danh" để không làm đứt gãy sơ đồ huyết thống của dòng họ.
+
+Điều 9: Bảo vệ dữ liệu trẻ em và người đã khuất
+Thông tin của thành viên dưới 15 tuổi hoặc người đã khuất phải được nhập bởi người giám hộ hoặc người đại diện hợp pháp trong gia đình. Hệ thống không chịu trách nhiệm nếu thông tin này bị lạm dụng do sự thiếu cẩn trọng của người nhập liệu.
+
+Điều 10: Thông báo thay đổi và Liên hệ
+Chính sách bảo mật có thể được cập nhật để phản ánh các thay đổi về công nghệ hoặc luật pháp. Mọi thay đổi lớn sẽ được thông báo qua Email hoặc trang chủ hệ thống. Nếu bạn tiếp tục sử dụng dịch vụ, đồng nghĩa với việc bạn chấp nhận các cập nhật này.

@@ -1,0 +1,13 @@
+Chính sách bảo mật tạo dòng họ
+
+1. Mục đích thu thập
+   Dữ liệu dòng họ (tên, 1st manager info) được thu thập để xác thực và quản lý hệ thống.
+
+2. Dữ liệu lưu trữ
+   Dữ liệu cá nhân chỉ dùng nội bộ, không chia sẻ ngoài trừ khi có yêu cầu pháp lý.
+
+3. Bảo mật
+   Áp dụng tiêu chuẩn bảo mật để bảo vệ dữ liệu, mã hóa và kiểm soát truy cập.
+
+4. Quyền người dùng
+   Quản lý dòng họ có quyền yêu cầu cập nhật/xóa thông tin theo yêu cầu hợp lệ.

@@ -1,0 +1,36 @@
+ĐIỀU LỆ SỬ DỤNG HỆ THỐNG GIA PHẢ CAP2
+Điều 1: Tính chính danh của chủ tài khoản
+Người dùng bắt buộc phải sử dụng Họ và Tên khai sinh đúng theo Giấy khai sinh hoặc Căn cước công dân (CCCD). Nghiêm cấm sử dụng biệt danh, nghệ danh, tên viết tắt hoặc các ký tự đặc biệt không có trong văn bản pháp quy.
+
+Điều 2: Xác minh thông tin nhân thân
+Hệ thống có quyền yêu cầu người dùng cung cấp ảnh chụp giấy tờ tùy thân hoặc các tài liệu chứng minh quan hệ huyết thống trong trường hợp có tranh chấp hoặc nghi ngờ giả mạo. Thông tin này chỉ dùng để đối soát và được bảo mật tuyệt đối.
+
+Điều 3: Quyền xóa và đình chỉ tài khoản (Trọng tâm)
+Ban quản trị (BQT) có toàn quyền xóa vĩnh viễn tài khoản mà không cần thông báo trước nếu:
+
+Tên tài khoản không khớp với thông tin thực tế.
+
+Người dùng mạo danh là con, cháu hoặc thành viên của một dòng họ mà không có sự đồng ý của Clan Admin (Quản trị dòng họ).
+
+Sử dụng hình ảnh đại diện xúc phạm hoặc không phù hợp với văn hóa gia tộc.
+
+Điều 4: Trách nhiệm đối với dữ liệu gia phả
+Mọi thông tin về ngày sinh, ngày mất, mộ phần và tiểu sử tổ tiên phải được nhập liệu dựa trên sự thật lịch sử. Việc cố ý làm sai lệch thứ tự vai vế, nhầm lẫn giữa các đời hoặc chi phái vì mục đích cá nhân sẽ dẫn đến việc khóa tài khoản ngay lập tức.
+
+Điều 5: Bảo mật và Quyền riêng tư của thành viên
+Người dùng không được phép đăng tải, chia sẻ thông tin cá nhân (số điện thoại, địa chỉ, hình ảnh) của các thành viên khác trong gia tộc lên các nền tảng công cộng nếu chưa được sự đồng ý của họ hoặc của Ban quản lý dòng họ.
+
+Điều 6: Hành vi ứng xử và Văn hóa dòng họ
+Nghiêm cấm các hành vi dùng ngôn từ xúc phạm, phỉ báng tổ tiên, bài xích các dòng họ khác hoặc gây mất đoàn kết nội bộ trên các không gian thảo luận chung của hệ thống.
+
+Điều 7: Giới hạn mỗi cá nhân một tài khoản
+Để tránh việc nhiễu loạn cây gia phả, mỗi cá nhân (dựa trên email và số định danh) chỉ được phép tạo và quản lý một tài khoản duy nhất. Các tài khoản phụ (clone) sẽ bị hệ thống quét và xóa bỏ định kỳ.
+
+Điều 8: Quyền sở hữu dữ liệu tập thể
+Dữ liệu gia phả sau khi đóng góp vào hệ thống sẽ trở thành tài sản chung của dòng họ đó. Ngay cả khi người dùng xóa tài khoản cá nhân, các thông tin liên quan đến vị trí của họ trong cây gia phả vẫn có thể được giữ lại để đảm bảo tính liên tục của lịch sử gia tộc.
+
+Điều 9: Chống phá hoại hệ thống
+Nghiêm cấm mọi hành vi tấn công kỹ thuật, thay đổi mã nguồn, hoặc sử dụng phần mềm can thiệp vào cơ sở dữ liệu gia phả. Mọi hành vi phá hoại dữ liệu sẽ bị truy tố theo pháp luật hiện hành về an ninh mạng.
+
+Điều 10: Hiệu lực và Thay đổi điều khoản
+Điều lệ này có hiệu lực ngay khi người dùng nhấn nút "Đăng ký". Hệ thống có quyền cập nhật các quy định mới để phù hợp với tình hình thực tế. Việc tiếp tục sử dụng hệ thống đồng nghĩa với việc bạn chấp nhận các thay đổi này.

@@ -1,0 +1,3 @@
+faster-whisper
+mysql-connector-python
+python-dotenv
