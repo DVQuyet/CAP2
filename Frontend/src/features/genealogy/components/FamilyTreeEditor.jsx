@@ -96,6 +96,8 @@ const DEFAULT_TREE_TITLE_LABEL = {
   fontSize: 42,
 };
 
+const TREE_MOBILE_QUERY = "(max-width: 760px)";
+
 // Giữ tiêu đề luôn nằm trong vùng an toàn của canvas.
 // Nếu người dùng kéo lệch quá xa hoặc localStorage đang lưu tọa độ cũ ngoài màn hình,
 // normalizeTreeTitleLabel sẽ tự đưa về vùng nhìn thấy được.
@@ -366,6 +368,24 @@ export default function FamilyTreeEditor({
   readOnly = false,
   enableRealtime = true,
 }) {
+  const [isTreeMobile, setIsTreeMobile] = useState(() => (
+    typeof window !== "undefined" && window.matchMedia(TREE_MOBILE_QUERY).matches
+  ));
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const mediaQuery = window.matchMedia(TREE_MOBILE_QUERY);
+    const syncMobileState = (event) => setIsTreeMobile(event.matches);
+
+    syncMobileState(mediaQuery);
+    mediaQuery.addEventListener?.("change", syncMobileState);
+
+    return () => {
+      mediaQuery.removeEventListener?.("change", syncMobileState);
+    };
+  }, []);
+
   const { t, language } = useLanguage();
   const treeRef = useRef(null);
   const viewportRef = useRef(null);
@@ -2069,8 +2089,8 @@ const submitCreateDialog = async () => {
   const treeEditorShell = (
     <section className={`fte-shell ${treeFullscreen ? "is-fullscreen" : ""}`}>
       <TransformWrapper
-        initialScale={0.85}
-        minScale={0.35}
+        initialScale={isTreeMobile ? 0.55 : 0.85}
+        minScale={isTreeMobile ? 0.2 : 0.35}
         maxScale={2.6}
         centerOnInit={true}
         limitToBounds={false}
