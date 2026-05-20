@@ -153,6 +153,14 @@ export default function MemberLayout() {
           </button>
         </div>
       </aside>
+      {sidebarOpen ? (
+        <button
+          type="button"
+          className="portal-sidebar-backdrop"
+          aria-label={t("layout.collapseMenu")}
+          onClick={() => setSidebarOpen(false)}
+        />
+      ) : null}
 
       <main className="member-main-content">
         <header className="member-topbar glass-effect">
@@ -163,6 +171,15 @@ export default function MemberLayout() {
             </span>
           </div>
           <div className="member-topbar-actions">
+            <button
+              type="button"
+              className="top-icon-btn glass-btn mobile-sidebar-open"
+              onClick={() => setSidebarOpen(true)}
+              aria-label={t("layout.openMenu")}
+              title={t("layout.openMenu")}
+            >
+              <span className="material-symbols-outlined">menu</span>
+            </button>
             <NotificationBell role="member" buttonClassName="top-icon-btn glass-btn" />
             <LanguageToggle className="top-icon-btn glass-btn" />
             <div className="divider" />
