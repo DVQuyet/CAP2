@@ -6,6 +6,7 @@ import { formatDate } from "../shared/utils/dateFormat";
 import { apiRequest } from "../services/api";
 import { connectSocketFromStorage } from "../services/socket";
 import { resolveImageUrl } from "../shared/utils/media";
+import { useResponsiveSidebar } from "../shared/hooks/useResponsiveSidebar";
 import NotificationBell from "./NotificationBell";
 import LanguageToggle from "../shared/components/LanguageToggle";
 import ProfileDrawer from "../shared/components/ProfileDrawer";
@@ -28,7 +29,7 @@ export default function ManagerLayout() {
   const { t, i18n } = useTranslation();
   const location = useLocation();
   const [currentUser, setCurrentUser] = useState(() => getStoredUser());
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useResponsiveSidebar(true);
   const [accountOpen, setAccountOpen] = useState(false);
   const [accountLoading, setAccountLoading] = useState(false);
   const [accountSaving, setAccountSaving] = useState(false);

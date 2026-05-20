@@ -637,7 +637,9 @@
     position: fixed;
     left: 0;
     top: 0;
-    height: calc(100vh - 2rem);
+    height: calc(100dvh - 2rem);
+    max-width: min(300px, calc(100vw - 36px));
+    overflow-y: auto;
   }
 
   .sidebar-collapsed .manager-sidebar {
@@ -659,14 +661,44 @@
 }
 
 @media (max-width: 640px) {
+  .manager-main-content {
+    padding: 0.75rem;
+  }
+
   .manager-top-header {
     padding: 1rem;
     align-items: flex-start;
     gap: 1rem;
+    flex-wrap: wrap;
+    border-radius: 18px;
+    margin-bottom: 1rem;
+  }
+
+  .header-context {
+    min-width: 0;
+  }
+
+  .header-context h1 {
+    font-size: 1.22rem;
+    overflow-wrap: anywhere;
+  }
+
+  .header-context p {
+    font-size: 0.78rem;
+    line-height: 1.45;
   }
 
   .header-utils {
     gap: 0.6rem;
+    margin-left: auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .util-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
   }
 
   .manager-account-overlay {
@@ -679,6 +711,12 @@
 
   .manager-account-grid {
     grid-template-columns: 1fr;
+  }
+
+  .manager-data-header,
+  .manager-list-toolbar {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 

@@ -7,12 +7,14 @@
 
 html {
   scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
   padding: 0;
   font-family: 'Lora', serif;
+  overflow-x: hidden;
 }
 
 a {
@@ -25,6 +27,57 @@ input,
 textarea,
 select {
   font: inherit;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.material-symbols-outlined {
+  flex-shrink: 0;
+}
+
+@media (max-width: 760px) {
+  body {
+    min-width: 0;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  button,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"] {
+    min-height: 42px;
+  }
+
+  table {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .recharts-wrapper,
+  .recharts-responsive-container {
+    max-width: 100%;
+  }
 }
 
 /* Scrollbar toàn dự án: gọn, chỉ nổi rõ khi người dùng hover/cuộn vùng nội dung */

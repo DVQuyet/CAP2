@@ -5,6 +5,7 @@ import { getStoredUser, isAuthenticated, logout as clearAuth } from "../shared/u
 import { apiRequest } from "../services/api";
 import { connectSocketFromStorage, disconnectSocket } from "../services/socket";
 import { resolveImageUrl } from "../shared/utils/media";
+import { useResponsiveSidebar } from "../shared/hooks/useResponsiveSidebar";
 import NotificationBell from "./NotificationBell";
 import LanguageToggle from "../shared/components/LanguageToggle";
 import ProfileDrawer from "../shared/components/ProfileDrawer";
@@ -28,7 +29,7 @@ export default function MemberLayout() {
   const { t } = useTranslation();
   const location = useLocation();
   const [currentUser, setCurrentUser] = useState(() => getStoredUser() || {});
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useResponsiveSidebar(true);
   const [profileOpen, setProfileOpen] = useState(false);
 
   useEffect(() => {
