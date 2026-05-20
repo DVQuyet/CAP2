@@ -1,0 +1,4115 @@
+:root {
+    --mgr-bg: #f4f7fb;
+    --mgr-surface: #ffffff;
+    --mgr-text: #1d2b44;
+    --mgr-muted: #6f7f98;
+    --mgr-border: #e4ebf5;
+    --mgr-primary: #1b9b71;
+    --mgr-primary-2: #2f9bff;
+    --mgr-shadow: 0 10px 30px rgba(20, 35, 70, 0.10);
+    --mgr-shadow-soft: 0 8px 18px rgba(20, 35, 70, 0.08);
+    --mgr-radius: 16px;
+}
+
+.mgr-shell {
+    min-height: 100vh;
+    background: var(--mgr-bg);
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 18px;
+    padding: 18px;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--mgr-text);
+}
+
+@media (max-width: 980px) {
+    .mgr-shell {
+        grid-template-columns: 1fr;
+    }
+}
+
+.mgr-sidebar {
+    background: rgba(255, 255, 255, 0.76);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--mgr-border);
+    border-radius: var(--mgr-radius);
+    box-shadow: var(--mgr-shadow-soft);
+    padding: 14px;
+    position: sticky;
+    top: 18px;
+    align-self: start;
+    height: fit-content;
+}
+
+.mgr-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 6px 12px 6px;
+}
+
+.mgr-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, var(--mgr-primary), #1cc48a);
+    display: grid;
+    place-items: center;
+    color: #fff;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
+
+.mgr-brandTitle {
+    font-weight: 800;
+    line-height: 1.1;
+}
+
+.mgr-brandSub {
+    font-size: 0.84rem;
+    color: var(--mgr-muted);
+}
+
+.mgr-sidebarBlock {
+    padding: 10px;
+    border-radius: 14px;
+    border: 1px solid var(--mgr-border);
+    background: var(--mgr-surface);
+    box-shadow: var(--mgr-shadow-soft);
+}
+
+.mgr-sidebarHeading {
+    font-size: 0.86rem;
+    color: var(--mgr-muted);
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.mgr-miniStats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.mgr-miniStat {
+    border: 1px solid var(--mgr-border);
+    border-radius: 12px;
+    padding: 10px 8px;
+    background: #fbfdff;
+    text-align: center;
+}
+
+.mgr-miniValue {
+    font-size: 1.25rem;
+    font-weight: 800;
+}
+
+.mgr-miniLabel {
+    margin-top: 2px;
+    font-size: 0.78rem;
+    color: var(--mgr-muted);
+}
+
+.mgr-nav {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.mgr-navItem {
+    text-align: left;
+    border: 1px solid transparent;
+    background: transparent;
+    padding: 10px 10px;
+    border-radius: 12px;
+    cursor: pointer;
+    color: #2a3a58;
+    font-weight: 700;
+    transition: 0.16s ease;
+}
+
+.mgr-navItem:hover {
+    background: rgba(47, 155, 255, 0.08);
+    border-color: rgba(47, 155, 255, 0.12);
+}
+
+.mgr-navItem.isActive {
+    background: rgba(27, 155, 113, 0.12);
+    border-color: rgba(27, 155, 113, 0.18);
+    color: #16694d;
+}
+
+.mgr-navDivider {
+    height: 1px;
+    background: var(--mgr-border);
+    margin: 6px 2px;
+}
+
+.mgr-main {
+    min-width: 0;
+}
+
+.mgr-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.mgr-search {
+    flex: 1;
+    max-width: 520px;
+    background: var(--mgr-surface);
+    border: 1px solid var(--mgr-border);
+    border-radius: 14px;
+    box-shadow: var(--mgr-shadow-soft);
+    padding: 10px 12px;
+}
+
+.mgr-search input {
+    width: 100%;
+    border: none;
+    outline: none;
+    font-size: 0.95rem;
+    background: transparent;
+}
+
+select.mgr-search.mgr-selectMulti {
+    max-width: none;
+    width: 100%;
+    min-height: 140px;
+    display: block;
+}
+
+.mgr-topActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.mgr-pill {
+    border: 1px solid var(--mgr-border);
+    background: var(--mgr-surface);
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: var(--mgr-shadow-soft);
+}
+
+.mgr-iconBtn {
+    border: 1px solid var(--mgr-border);
+    background: var(--mgr-surface);
+    border-radius: 12px;
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    box-shadow: var(--mgr-shadow-soft);
+    font-size: 1.1rem;
+}
+
+.mgr-hero {
+    border-radius: 18px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--mgr-shadow);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background:
+        radial-gradient(900px 300px at 20% 10%, rgba(27, 155, 113, 0.35), transparent 60%),
+        radial-gradient(900px 300px at 75% 20%, rgba(47, 155, 255, 0.25), transparent 60%),
+        linear-gradient(120deg, rgba(16, 36, 64, 0.85), rgba(16, 36, 64, 0.55));
+    min-height: 150px;
+    margin-bottom: 14px;
+}
+
+.mgr-heroOverlay {
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(90deg, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.10)),
+        url("https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1600&q=60");
+    background-size: cover;
+    background-position: center;
+    filter: saturate(0.95);
+    opacity: 0.55;
+}
+
+.mgr-heroContent {
+    position: relative;
+    padding: 18px;
+    color: #fff;
+    max-width: 980px;
+}
+
+.mgr-heroKicker {
+    font-size: 0.85rem;
+    opacity: 0.9;
+    font-weight: 700;
+}
+
+.mgr-heroTitle {
+    margin-top: 6px;
+    font-size: 1.6rem;
+    font-weight: 900;
+}
+
+.mgr-heroDesc {
+    margin-top: 6px;
+    font-size: 0.95rem;
+    opacity: 0.92;
+}
+
+.mgr-heroBadges {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.mgr-badge {
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-weight: 800;
+    font-size: 0.82rem;
+}
+
+.mgr-sectionHeader {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 6px 0 12px 0;
+}
+
+.mgr-sectionHeader h2 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 900;
+}
+
+.mgr-alert {
+    background: rgba(220, 53, 69, 0.12);
+    border: 1px solid rgba(220, 53, 69, 0.20);
+    color: #8b1c2a;
+    padding: 8px 10px;
+    border-radius: 12px;
+    font-weight: 700;
+}
+
+.mgr-subtle {
+    color: var(--mgr-muted);
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.mgr-grid2 {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.mgr-grid2 .mgr-panel--wide {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 980px) {
+    .mgr-grid2 {
+        grid-template-columns: 1fr;
+    }
+
+    .mgr-grid2 .mgr-panel--wide {
+        grid-column: auto;
+    }
+}
+
+.mgr-overviewFormGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+}
+
+.mgr-field {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--mgr-border);
+    font-weight: 600;
+    font-size: 0.92rem;
+    background: #fbfdff;
+    color: var(--mgr-text);
+}
+
+.mgr-field:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.mgr-logoutBtn {
+    white-space: nowrap;
+}
+
+.mgr-panel {
+    background: var(--mgr-surface);
+    border: 1px solid var(--mgr-border);
+    border-radius: var(--mgr-radius);
+    box-shadow: var(--mgr-shadow-soft);
+    padding: 14px;
+}
+
+.mgr-panelTitle {
+    font-weight: 900;
+    font-size: 1rem;
+}
+
+.mgr-panelText {
+    margin-top: 6px;
+    color: var(--mgr-muted);
+    font-weight: 600;
+    line-height: 1.45;
+}
+
+.mgr-panelEmpty {
+    margin-top: 10px;
+    border: 1px dashed rgba(111, 127, 152, 0.35);
+    background: rgba(244, 247, 251, 0.7);
+    border-radius: 12px;
+    padding: 10px;
+    color: #51637c;
+    font-weight: 700;
+}
+
+.mgr-panelActions {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.mgr-btnPrimary {
+    border: none;
+    background: linear-gradient(135deg, var(--mgr-primary), #1cc48a);
+    color: #fff;
+    padding: 9px 12px;
+    border-radius: 12px;
+    font-weight: 900;
+}
+
+.mgr-btnPrimary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.mgr-btnGhost {
+    border: 1px solid var(--mgr-border);
+    background: #fff;
+    color: #2a3a58;
+    padding: 9px 12px;
+    border-radius: 12px;
+    font-weight: 900;
+}
+
+.mgr-btnGhost:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.mgr-listHeader {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 6px 2px 12px 2px;
+    flex-wrap: wrap;
+}
+
+.mgr-listTitle {
+    font-weight: 900;
+}
+
+.mgr-listHint {
+    color: var(--mgr-muted);
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.mgr-cardGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+}
+
+.mgr-card {
+    border-radius: 18px;
+    overflow: hidden;
+    background: var(--mgr-surface);
+    border: 1px solid var(--mgr-border);
+    box-shadow: var(--mgr-shadow-soft);
+}
+
+.mgr-cardCover {
+    height: 96px;
+    position: relative;
+    background:
+        radial-gradient(280px 120px at 10% 20%, rgba(27, 155, 113, 0.35), transparent 70%),
+        radial-gradient(280px 120px at 85% 20%, rgba(47, 155, 255, 0.28), transparent 70%),
+        linear-gradient(120deg, rgba(16, 36, 64, 0.9), rgba(16, 36, 64, 0.55));
+}
+
+.mgr-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    background: #ff4bd8;
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    box-shadow: 0 0 0 4px rgba(255, 75, 216, 0.18);
+}
+
+.mgr-chip {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    color: #fff;
+    font-weight: 900;
+    font-size: 0.78rem;
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.mgr-cardBody {
+    padding: 12px 12px 14px 12px;
+}
+
+.mgr-cardName {
+    font-weight: 950;
+    font-size: 1.02rem;
+}
+
+.mgr-cardMeta {
+    margin-top: 2px;
+    color: var(--mgr-muted);
+    font-weight: 700;
+    font-size: 0.9rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mgr-cardRows {
+    margin-top: 10px;
+    display: grid;
+    gap: 8px;
+}
+
+.mgr-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 0.9rem;
+}
+
+.mgr-rowKey {
+    color: var(--mgr-muted);
+    font-weight: 800;
+}
+
+.mgr-rowVal {
+    font-weight: 900;
+    color: #2a3a58;
+}
+
+.mgr-cardActions {
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+}
+
+.mgr-btnOk {
+    flex: 1;
+    border: none;
+    background: linear-gradient(135deg, #28a745, #4bd37a);
+    color: #fff;
+    padding: 9px 10px;
+    border-radius: 12px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.mgr-btnDanger {
+    flex: 1;
+    border: none;
+    background: linear-gradient(135deg, #dc3545, #ff6b7a);
+    color: #fff;
+    padding: 9px 10px;
+    border-radius: 12px;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.mgr-empty {
+    grid-column: 1 / -1;
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px dashed rgba(111, 127, 152, 0.35);
+    border-radius: 18px;
+    padding: 18px;
+    text-align: center;
+    color: #52647d;
+    font-weight: 800;
+}
+
+.mgr-card--clickable {
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.mgr-card--clickable:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--mgr-shadow);
+}
+
+.mgr-card--clickable:focus-visible {
+    outline: 2px solid var(--mgr-primary-2);
+    outline-offset: 2px;
+}
+
+.mgr-modalOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(20, 35, 70, 0.45);
+    display: grid;
+    place-items: center;
+    padding: 16px;
+    overflow-y: auto;
+}
+
+.mgr-modal {
+    position: relative;
+    width: min(720px, 100%);
+    max-height: min(92vh, 900px);
+    overflow-y: auto;
+    background: var(--mgr-surface);
+    border-radius: var(--mgr-radius);
+    box-shadow: var(--mgr-shadow);
+    border: 1px solid var(--mgr-border);
+    padding: 18px 18px 20px;
+}
+
+.mgr-modalClose {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 10px;
+    background: rgba(244, 247, 251, 0.95);
+    font-size: 1.35rem;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--mgr-text);
+}
+
+.mgr-modalClose:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.mgr-modalTitle {
+    margin: 0 40px 4px 0;
+    font-size: 1.15rem;
+    font-weight: 900;
+}
+
+.mgr-modalMeta {
+    margin: 0 0 14px;
+    font-size: 0.85rem;
+    color: var(--mgr-muted);
+    font-weight: 700;
+}
+
+.mgr-modalSectionTitle {
+    margin: 14px 0 8px;
+    font-size: 0.82rem;
+    font-weight: 900;
+    color: var(--mgr-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.mgr-modalGrid {
+    margin-bottom: 4px;
+}
+
+.mgr-fieldTextarea {
+    min-height: 56px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+.mgr-modalActions {
+    margin-top: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.member-stack {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.collapsible-section {
+    display: grid;
+    gap: 1rem;
+}
+
+.collapsible-toggle {
+    width: 100%;
+    border: 1px solid var(--mgr-border);
+    border-radius: 12px;
+    background: #f8fafc;
+    color: var(--mgr-text);
+    padding: 0.9rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    font-weight: 900;
+    cursor: pointer;
+}
+
+.collapsible-toggle .material-symbols-outlined {
+    font-size: 1.35rem;
+}
+
+.relation-form {
+    border-top: 1px solid var(--mgr-border);
+    padding-top: 1.25rem;
+}
+
+.relation-form .manager-panel-subtitle {
+    margin: 0 !important;
+}
+
+.relation-form .manager-panel-subtitle h2 {
+    margin-bottom: 0.35rem;
+}
+
+.relation-form .manager-panel-subtitle p {
+    margin: 0;
+    color: var(--mgr-muted);
+    font-size: 0.9rem;
+    font-weight: 700;
+    line-height: 1.45;
+}
+
+.relation-note {
+    margin: 0;
+    color: var(--mgr-muted);
+    font-size: 0.9rem;
+    font-weight: 700;
+    line-height: 1.45;
+}
+
+.relation-field {
+    display: grid;
+    gap: 0.45rem;
+    color: var(--mgr-text);
+    font-weight: 900;
+}
+
+.relation-field > span {
+    color: var(--mgr-text) !important;
+    -webkit-text-fill-color: var(--mgr-text) !important;
+    font-size: 0.88rem;
+}
+
+.relation-children-select {
+    min-height: 150px;
+    line-height: 1.45;
+}
+
+.relation-summary {
+    display: grid;
+    gap: 0.35rem;
+    border: 1px dashed var(--mgr-border);
+    border-radius: 12px;
+    background: #f8fafc;
+    padding: 0.85rem;
+    color: var(--mgr-text);
+    font-size: 0.9rem;
+}
+
+.relation-summary strong {
+    color: var(--mgr-text);
+}
+
+.relation-summary span {
+    color: var(--mgr-muted) !important;
+    -webkit-text-fill-color: var(--mgr-muted) !important;
+}
+
+.management-grid--single {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.manager-genealogy-page .management-grid.management-grid--single {
+    grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.manager-genealogy-page .panel-card.tree-preview-panel {
+    width: 100% !important;
+    max-width: none !important;
+    padding: 2rem !important;
+}
+
+.manager-genealogy-page .tree-container {
+    min-height: 720px !important;
+    overflow: auto !important;
+    padding: 2.25rem !important;
+}
+
+.manager-genealogy-page .family-tree-container {
+    min-width: max-content !important;
+    width: max-content !important;
+    max-width: none !important;
+    overflow: visible !important;
+    padding: 2rem 3rem !important;
+}
+
+.manager-genealogy-page .node-card {
+    min-width: 250px !important;
+    max-width: 320px !important;
+    padding: 1.35rem !important;
+}
+
+.manager-genealogy-page .node-avatar {
+    width: 62px !important;
+    height: 62px !important;
+}
+
+.manager-genealogy-page .node-avatar .material-symbols-outlined {
+    font-size: 2.5rem !important;
+}
+
+.manager-genealogy-page .node-content h4 {
+    font-size: 1.25rem !important;
+}
+
+.manager-genealogy-page .root-card .node-content h4 {
+    font-size: 1.35rem !important;
+}
+
+.tree-panel-actions {
+    position: relative;
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.tree-action-popover {
+    position: relative;
+}
+
+.mgr-btnGhost.is-active {
+    border-color: rgba(27, 155, 113, 0.45);
+    background: rgba(27, 155, 113, 0.1);
+    color: #16694d;
+}
+
+.tree-key-panel {
+    display: grid;
+    gap: 1rem;
+}
+
+.tree-key-panel--compact {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    z-index: 80;
+    width: min(760px, calc(100vw - 48px));
+    max-height: min(78vh, 760px);
+    overflow: auto;
+    padding: 1.1rem;
+    text-align: left;
+}
+
+.tree-key-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 1rem;
+    align-items: end;
+}
+
+.tree-key-field {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.tree-key-field span {
+    font-weight: 700;
+    color: var(--mgr-text);
+}
+
+.tree-key-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.tree-key-result {
+    display: grid;
+    gap: 0.35rem;
+    padding: 1rem 1.1rem;
+    border-radius: 14px;
+    background: rgba(148, 163, 184, 0.08);
+    border: 1px dashed rgba(148, 163, 184, 0.35);
+}
+
+.tree-key-result strong,
+.tree-key-result span {
+    color: var(--mgr-text);
+}
+
+.tree-key-result code {
+    display: inline-block;
+    width: fit-content;
+    max-width: 100%;
+    padding: 0.6rem 0.8rem;
+    border-radius: 10px;
+    background: rgba(15, 23, 42, 0.08);
+    color: var(--mgr-primary);
+    font-weight: 700;
+    overflow-wrap: anywhere;
+}
+
+.tree-key-bulk {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.tree-key-toolbar,
+.tree-key-section-head,
+.tree-key-modal-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.tree-key-toolbar {
+    justify-content: space-between;
+}
+
+.tree-key-toolbar > span,
+.tree-key-section-head > span {
+    color: var(--mgr-muted);
+    font-weight: 800;
+    font-size: 0.9rem;
+}
+
+.tree-key-member-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 0.7rem;
+    max-height: 260px;
+    overflow: auto;
+    padding: 0.25rem;
+}
+
+.tree-key-member {
+    min-height: 64px;
+    border: 1px solid var(--mgr-border);
+    border-radius: 12px;
+    background: #fff;
+    padding: 0.7rem 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    cursor: pointer;
+}
+
+.tree-key-member.is-selected {
+    border-color: rgba(27, 155, 113, 0.45);
+    background: rgba(27, 155, 113, 0.08);
+}
+
+.tree-key-member input {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 auto;
+}
+
+.tree-key-member span {
+    min-width: 0;
+    display: grid;
+    gap: 0.2rem;
+}
+
+.tree-key-member strong {
+    color: var(--mgr-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tree-key-member small {
+    color: var(--mgr-muted);
+    font-weight: 800;
+}
+
+.tree-key-active,
+.tree-key-modal-section {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.tree-key-section-head {
+    justify-content: space-between;
+}
+
+.tree-key-list {
+    display: grid;
+    gap: 0.65rem;
+}
+
+.tree-key-row {
+    border: 1px solid var(--mgr-border);
+    border-radius: 12px;
+    background: #fff;
+    padding: 0.8rem;
+    display: grid;
+    grid-template-columns: minmax(170px, 1fr) minmax(220px, 1.2fr) auto;
+    gap: 0.75rem;
+    align-items: center;
+}
+
+.tree-key-row-main {
+    min-width: 0;
+    display: grid;
+    gap: 0.2rem;
+}
+
+.tree-key-row-main strong {
+    color: var(--mgr-text);
+}
+
+.tree-key-row-main span {
+    color: var(--mgr-muted);
+    font-size: 0.84rem;
+    font-weight: 750;
+}
+
+.tree-key-row code {
+    min-width: 0;
+    padding: 0.55rem 0.65rem;
+    border-radius: 10px;
+    background: rgba(15, 23, 42, 0.08);
+    color: var(--mgr-primary);
+    font-weight: 800;
+    overflow-wrap: anywhere;
+}
+
+.tree-key-empty {
+    border: 1px dashed rgba(111, 127, 152, 0.35);
+    border-radius: 12px;
+    background: rgba(244, 247, 251, 0.72);
+    padding: 0.9rem;
+    color: var(--mgr-muted);
+    font-weight: 800;
+}
+
+.tree-key-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 3500;
+    background: rgba(15, 23, 42, 0.56);
+    backdrop-filter: blur(6px);
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+}
+
+.tree-key-modal {
+    width: min(900px, 100%);
+    max-height: min(88vh, 900px);
+    overflow: auto;
+    display: grid;
+    gap: 1rem;
+    background: #fff;
+    border: 1px solid var(--mgr-border);
+    border-radius: 16px;
+    box-shadow: var(--mgr-shadow);
+    padding: 1.1rem;
+}
+
+.tree-key-modal-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.tree-key-modal-head h2 {
+    margin: 0;
+    color: var(--mgr-text);
+}
+
+.tree-key-modal-head span {
+    display: inline-block;
+    margin-top: 0.25rem;
+    color: var(--mgr-muted);
+    font-weight: 800;
+}
+
+@media (max-width: 900px) {
+    .tree-key-controls {
+        grid-template-columns: 1fr;
+    }
+
+    .tree-key-row {
+        grid-template-columns: 1fr;
+    }
+
+    .tree-action-popover,
+    .tree-action-popover > button {
+        width: 100%;
+    }
+
+    .tree-key-panel--compact {
+        position: static;
+        width: 100%;
+        max-height: none;
+        margin-top: 0.75rem;
+    }
+}
+
+.tree-fullscreen-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    background: rgba(15, 23, 42, 0.72);
+    backdrop-filter: blur(6px);
+    padding: 1rem;
+}
+
+.tree-fullscreen-panel {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.3);
+    padding: 1.25rem;
+}
+
+.tree-container--fullscreen {
+    flex: 1;
+    min-height: 0;
+    height: 100%;
+}
+/* Premium Modal Styles (Matching Member Dashboard) */
+.usr-modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: usr-fadeIn 0.3s ease;
+}
+
+@keyframes usr-fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.usr-modal {
+  background: #fff;
+  width: 100%;
+  max-width: 500px;
+  border-radius: 24px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+  animation: usr-slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes usr-slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.usr-modalHeader {
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.usr-modalBody {
+  padding: 24px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.usr-modalTitle {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0;
+}
+
+.usr-modalClose {
+  background: #f1f5f9;
+  border: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #64748b;
+  font-size: 1.25rem;
+  transition: all 0.2s;
+}
+
+.usr-modalClose:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+  transform: rotate(90deg);
+}
+
+.usr-accountModal-avatarSection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.usr-accountModal-avatarLabel {
+  font-weight: 700;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.usr-accountModal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.usr-accountModal-full {
+  grid-column: 1 / -1;
+}
+
+.usr-accountModal-sectionTitle {
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: #1e293b;
+  margin: 24px 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #1b9b71;
+  display: inline-block;
+}
+
+.usr-accountModal-footer {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* Reusing some member styles for the modal inputs */
+.usr-input, .mgr-field {
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.usr-input:focus, .mgr-field:focus {
+  border-color: #1b9b71;
+}
+
+.usr-textarea {
+  width: 100%;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  outline: none;
+  resize: vertical;
+}
+
+.usr-btnPrimary {
+  background: #1b9b71;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 18px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.usr-btnPrimary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.usr-btnDanger {
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 18px;
+  font-weight: 800;
+  cursor: pointer;
+}
+/* Sửa lỗi ẩn chữ cho các ô nhập liệu và label trong Manager */
+
+/* 1. Ép màu cho các ô input/field */
+.mgr-field {
+    color: #1d2b44 !important; /* Màu xanh đen đậm */
+    background-color: #ffffff !important;
+    opacity: 1 !important;
+}
+
+/* 2. Ép màu cho các nhãn (Labels) và tiêu đề */
+.mgr-panelTitle, 
+.mgr-sidebarHeading, 
+.mgr-listTitle, 
+.mgr-sectionHeader h2 {
+    color: #1d2b44 !important;
+}
+
+/* 3. Chữ mô tả phụ */
+.mgr-panelText, 
+.mgr-subtle, 
+.mgr-modalMeta {
+    color: #6f7f98 !important;
+}
+
+/* 4. Placeholder (chữ gợi ý ẩn) */
+.mgr-field::placeholder {
+    color: #a0aec0 !important;
+}
+
+/* 5. Khắc phục lỗi chữ trắng trong Select option (nếu có) */
+.mgr-field option {
+    color: #1d2b44;
+    background-color: #fff;
+}
+/* Ép màu đen cho toàn bộ chữ trong form Manager */
+.mgr-main input, 
+.mgr-main select, 
+.mgr-main textarea,
+.mgr-main label,
+.mgr-main span {
+    color: #1d2b44 !important; /* Màu xanh đen */
+    -webkit-text-fill-color: #1d2b44 !important; /* Dành cho Chrome/Safari */
+}
+
+/* Đảm bảo nền của các ô nhập liệu luôn là màu trắng */
+.mgr-main input, 
+.mgr-main select, 
+.mgr-main textarea {
+    background-color: #ffffff !important;
+    border: 1px solid #d1d5db !important;
+}
+
+/* Sửa lỗi chữ trong dropdown (Select option) bị trắng */
+.mgr-main option {
+    color: #000000 !important;
+    background-color: #ffffff !important;
+}
+
+/* Manager member management: brown system theme */
+.manager-data-page {
+  --member-deep: #261008;
+  --member-brown: #4a1d12;
+  --member-brown-2: #6b2b1c;
+  --member-gold: #d7a94b;
+  --member-cream: #fffaf3;
+  --member-surface: rgba(255, 250, 244, 0.96);
+  --member-surface-2: rgba(255, 246, 235, 0.92);
+  --member-text: #261008;
+  --member-muted: #765b4d;
+  --member-border: rgba(74, 29, 18, 0.18);
+  --member-shadow: 0 20px 45px rgba(38, 16, 8, 0.22);
+}
+
+.manager-data-page .manager-data-header {
+  align-items: center;
+  background: linear-gradient(135deg, rgba(255, 250, 244, 0.98) 0%, rgba(255, 244, 232, 0.94) 100%);
+  border: 1px solid rgba(215, 169, 75, 0.35);
+  border-radius: 22px;
+  box-shadow: var(--member-shadow);
+  color: var(--member-text);
+  padding: 1.55rem 1.75rem;
+}
+
+.manager-data-page .manager-data-header h2 {
+  color: var(--member-text);
+  font-family: 'Noto Serif', Georgia, serif;
+  font-size: clamp(1.8rem, 3vw, 2.55rem);
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.manager-data-page .manager-data-header p {
+  color: var(--member-muted);
+  font-weight: 800;
+  margin-top: 0.45rem;
+}
+
+.manager-data-page .manager-data-grid {
+  grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
+  gap: 1.35rem;
+}
+
+.manager-data-page .panel-card {
+  background: var(--member-surface);
+  border: 1px solid var(--member-border);
+  border-radius: 22px;
+  box-shadow: var(--member-shadow);
+  padding: 1.35rem;
+}
+
+.manager-data-page .panel-card h2,
+.manager-data-page .manager-list-toolbar h2 {
+  color: #610000;
+  font-family: 'Noto Serif', Georgia, serif;
+  font-size: 1.45rem;
+  font-weight: 900;
+}
+
+.manager-data-page .member-stack {
+  gap: 1.15rem;
+}
+
+.manager-data-page .collapsible-section {
+  border: 1px solid rgba(74, 29, 18, 0.12);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.58);
+  padding: 0.85rem;
+}
+
+.manager-data-page .relation-form {
+  border-top: none;
+  padding-top: 0.85rem;
+}
+
+.manager-data-page .collapsible-toggle {
+  background: linear-gradient(180deg, #4a1d12 0%, #261008 100%);
+  border: 1px solid rgba(215, 169, 75, 0.28);
+  border-radius: 15px;
+  box-shadow: 0 12px 26px rgba(38, 16, 8, 0.22);
+  color: #fff7e8;
+  padding: 0.95rem 1rem;
+}
+
+.manager-data-page .collapsible-toggle span {
+  color: #fff7e8 !important;
+  -webkit-text-fill-color: #fff7e8 !important;
+}
+
+.manager-data-page .member-form {
+  gap: 0.9rem;
+  padding-top: 0.25rem;
+}
+
+.manager-data-page .form-row {
+  gap: 0.75rem;
+}
+
+.manager-data-page .mgr-field {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 1px solid rgba(74, 29, 18, 0.18) !important;
+  border-radius: 14px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  color: var(--member-text) !important;
+  font-weight: 700;
+  min-height: 44px;
+}
+
+.manager-data-page .mgr-field:focus {
+  border-color: rgba(215, 169, 75, 0.78) !important;
+  box-shadow: 0 0 0 4px rgba(215, 169, 75, 0.18);
+}
+
+.manager-data-page .mgr-field::placeholder {
+  color: rgba(118, 91, 77, 0.66) !important;
+}
+
+.manager-data-page .mgr-btnPrimary,
+.manager-data-page .mgr-btnGhost,
+.manager-data-page .small-action-btn {
+  border-radius: 14px;
+  font-weight: 900;
+}
+
+.manager-data-page .mgr-btnPrimary,
+.manager-data-page .small-action-btn {
+  background: linear-gradient(180deg, #4a1d12 0%, #261008 100%) !important;
+  border: 1px solid rgba(215, 169, 75, 0.28) !important;
+  box-shadow: 0 12px 22px rgba(38, 16, 8, 0.22);
+  color: #fff7e8 !important;
+}
+
+.manager-data-page .mgr-btnPrimary:hover,
+.manager-data-page .small-action-btn:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+.manager-data-page .mgr-btnGhost {
+  background: rgba(255, 250, 244, 0.86) !important;
+  border: 1px solid rgba(74, 29, 18, 0.18) !important;
+  color: #4a1d12 !important;
+}
+
+.manager-data-page .mgr-btnGhost:hover {
+  background: rgba(255, 238, 216, 0.96) !important;
+  border-color: rgba(215, 169, 75, 0.5) !important;
+}
+
+.manager-data-page .manager-list-toolbar {
+  align-items: stretch;
+  background: linear-gradient(180deg, rgba(255, 250, 244, 0.9), rgba(255, 243, 231, 0.72));
+  border: 1px solid rgba(74, 29, 18, 0.12);
+  border-radius: 18px;
+  padding: 0.85rem;
+}
+
+.manager-data-page .manager-list-toolbar h2 {
+  min-width: 155px;
+  display: flex;
+  align-items: center;
+}
+
+.manager-data-page .manager-member-table {
+  gap: 0.85rem;
+}
+
+.manager-data-page .manager-member-row {
+  background: linear-gradient(135deg, rgba(255, 253, 249, 0.98), rgba(255, 245, 235, 0.88));
+  border: 1px solid rgba(74, 29, 18, 0.12);
+  border-radius: 16px;
+  box-shadow: 0 10px 24px rgba(38, 16, 8, 0.08);
+  padding: 1rem;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.manager-data-page .manager-member-row:hover {
+  border-color: rgba(215, 169, 75, 0.42);
+  box-shadow: 0 16px 30px rgba(38, 16, 8, 0.14);
+  transform: translateY(-2px);
+}
+
+.manager-data-page .manager-member-row strong {
+  color: var(--member-text);
+  font-family: 'Noto Serif', Georgia, serif;
+  font-size: 1.02rem;
+}
+
+.manager-data-page .manager-member-row span,
+.manager-data-page .relation-note,
+.manager-data-page .relation-summary span,
+.manager-data-page .mgr-subtle {
+  color: var(--member-muted) !important;
+  -webkit-text-fill-color: var(--member-muted) !important;
+}
+
+.manager-data-page .relation-field,
+.manager-data-page .relation-field > span {
+  color: var(--member-text) !important;
+  -webkit-text-fill-color: var(--member-text) !important;
+}
+
+.manager-data-page .relation-summary {
+  background: linear-gradient(135deg, rgba(255, 250, 244, 0.98), rgba(255, 239, 220, 0.74));
+  border: 1px dashed rgba(74, 29, 18, 0.24);
+  border-radius: 16px;
+}
+
+.manager-data-page .relation-summary strong {
+  color: #610000;
+}
+
+.manager-data-page .manager-inline-message {
+  background: rgba(255, 245, 223, 0.96);
+  border: 1px solid rgba(215, 169, 75, 0.5);
+  color: #5a2b0f;
+}
+
+.manager-data-page .manager-inline-error {
+  background: rgba(255, 235, 235, 0.96);
+  border: 1px solid rgba(155, 28, 28, 0.22);
+  color: #8a1111;
+}
+
+.manager-data-page .mgr-empty {
+  background: rgba(255, 250, 244, 0.76);
+  border: 1px dashed rgba(74, 29, 18, 0.22);
+  border-radius: 16px;
+  color: var(--member-muted);
+  font-weight: 800;
+  padding: 1.1rem;
+  text-align: center;
+}
+
+.manager-data-page .mgr-modal {
+  background: linear-gradient(135deg, rgba(255, 250, 244, 0.99), rgba(255, 244, 232, 0.98));
+  border: 1px solid rgba(215, 169, 75, 0.35);
+  border-radius: 24px;
+  box-shadow: 0 26px 70px rgba(38, 16, 8, 0.34);
+}
+
+.manager-data-page .mgr-modalTitle {
+  color: var(--member-text);
+  font-family: 'Noto Serif', Georgia, serif;
+  font-size: 1.55rem;
+}
+
+.manager-data-page .mgr-modalClose {
+  background: linear-gradient(180deg, #4a1d12 0%, #261008 100%);
+  color: #fff7e8;
+  border: 1px solid rgba(215, 169, 75, 0.28);
+}
+
+.manager-data-page .mgr-modalClose:hover {
+  filter: brightness(1.08);
+}
+
+@media (max-width: 1100px) {
+  .manager-data-page .manager-data-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .manager-data-page .manager-list-toolbar {
+    display: grid;
+  }
+}
+
+/* Clan info modal for manager genealogy */
+.clan-info-modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(22, 8, 5, 0.58);
+  backdrop-filter: blur(8px);
+}
+
+.clan-info-modal {
+  width: min(720px, calc(100vw - 32px));
+  max-height: calc(100vh - 44px);
+  overflow: auto;
+  display: grid;
+  gap: 16px;
+  border-radius: 28px;
+  border: 1px solid rgba(224, 188, 102, 0.72);
+  background: linear-gradient(145deg, #fffaf0, #f9ecd1);
+  box-shadow: 0 34px 95px rgba(0, 0, 0, 0.36);
+  padding: 22px;
+  color: #381307;
+}
+
+.clan-info-modalHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border-radius: 22px;
+  color: #fff8dc;
+  background: linear-gradient(135deg, #441207, #7f2215);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.clan-info-modalHead span {
+  display: block;
+  color: #f5d064;
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.clan-info-modalHead h2 {
+  margin: 3px 0 5px;
+  font-size: clamp(1.5rem, 3vw, 2.2rem);
+}
+
+.clan-info-modalHead p {
+  margin: 0;
+  color: rgba(255, 248, 220, 0.82);
+  font-weight: 700;
+}
+
+.clan-info-close {
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(255, 248, 220, 0.28);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff8dc;
+  font-size: 1.7rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.clan-info-field {
+  display: grid;
+  gap: 7px;
+  font-weight: 900;
+  color: #5b3012;
+}
+
+.clan-info-field input,
+.clan-info-field textarea {
+  width: 100%;
+  border: 1px solid rgba(203, 167, 86, 0.62);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #301106;
+  font: inherit;
+  font-weight: 700;
+  padding: 13px 15px;
+  outline: none;
+  resize: vertical;
+}
+
+.clan-info-field input:focus,
+.clan-info-field textarea:focus {
+  border-color: #b77a19;
+  box-shadow: 0 0 0 4px rgba(217, 169, 58, 0.17);
+}
+
+.clan-info-metaGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.clan-info-metaGrid div {
+  display: grid;
+  gap: 3px;
+  place-items: center;
+  min-height: 82px;
+  border-radius: 18px;
+  border: 1px solid rgba(203, 167, 86, 0.45);
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.clan-info-metaGrid strong {
+  color: #8c2417;
+  font-size: 1.55rem;
+}
+
+.clan-info-metaGrid span {
+  color: #6b4b28;
+  font-weight: 800;
+}
+
+.clan-info-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.manager-inline-success {
+  border: 1px solid rgba(38, 130, 72, 0.28);
+  background: rgba(232, 248, 236, 0.95);
+  color: #176235;
+  border-radius: 14px;
+  padding: 11px 14px;
+  font-weight: 800;
+}
+
+.mgr-dateField {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.mgr-lunarHint {
+  color: #9a3412;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.3;
+  padding-left: 2px;
+}
+
+.mgr-lunarHint::before {
+  content: "☾ ";
+  color: #c28a2c;
+}
+/* ================================
+   MANAGER DASHBOARD COMPACT CSS
+   Dán cuối file CSS của Manager
+================================ */
+
+/* Tổng thể dashboard */
+.manager-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-bottom: 24px;
+}
+
+/* Card trắng chung */
+.manager-dashboard .section-card {
+  border-radius: 18px;
+  background: rgba(255, 252, 247, 0.98);
+  box-shadow: 0 8px 22px rgba(65, 25, 15, 0.14);
+  border: 1px solid rgba(214, 169, 93, 0.22);
+}
+
+/* 1. Khối chào mừng: đẩy lên, gọn lại, không dính 4 ô stats */
+.manager-dashboard .welcome-banner {
+  padding: 18px 22px;
+  margin-bottom: 2px;
+  min-height: unset;
+}
+
+.manager-dashboard .welcome-banner h2 {
+  margin: 0 0 8px;
+  font-size: 22px;
+  line-height: 1.25;
+  color: #8b0000;
+}
+
+.manager-dashboard .welcome-banner p {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: #4f2d20;
+}
+
+.manager-dashboard .small-action-btn {
+  min-height: 32px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* 4 ô thống kê: nằm giữa, có khoảng cách rõ */
+.manager-dashboard .stats-grid-dashboard {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0 0 2px;
+}
+
+.manager-dashboard .stat-card {
+  min-height: 72px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-radius: 16px;
+  background: rgba(255, 252, 247, 0.98);
+  overflow: hidden;
+}
+
+.manager-dashboard .stat-icon {
+  width: 46px;
+  height: 46px;
+  min-width: 46px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.manager-dashboard .stat-icon .material-symbols-outlined {
+  font-size: 26px;
+  color: #fff;
+}
+
+.manager-dashboard .stat-content h3 {
+  margin: 0 0 4px;
+  font-size: 24px;
+  line-height: 1;
+  color: #2d140e;
+}
+
+.manager-dashboard .stat-content p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #5c3829;
+}
+
+/* 2. Layout biểu đồ: gọn lại để nhìn được trong 1 trang */
+.manager-dashboard .dashboard-chart-area,
+.manager-dashboard .dashboard-chart-area-clean {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+/* Card biểu đồ chung */
+.manager-dashboard .chart-card {
+  padding: 18px 20px;
+  min-height: unset;
+  overflow: hidden;
+}
+
+.manager-dashboard .chart-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.manager-dashboard .chart-title-row h2 {
+  margin: 0 0 4px;
+  font-size: 21px;
+  line-height: 1.15;
+  color: #9b0000;
+}
+
+.manager-dashboard .chart-title-row p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #6d3c26;
+}
+
+.manager-dashboard .chart-badge {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #fff5d9;
+  border: 1px solid #e5bd58;
+  color: #b37b00;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* Thành viên theo giới tính */
+.manager-dashboard .gender-chart-card {
+  min-height: 260px;
+}
+
+.manager-dashboard .gender-chart-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px;
+  align-items: center;
+  gap: 12px;
+}
+
+.manager-dashboard .gender-chart-card .recharts-responsive-container {
+  height: 220px !important;
+}
+
+.manager-dashboard .gender-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.manager-dashboard .gender-summary-item {
+  min-height: 58px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid #efd8ad;
+  background: #fff8ea;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.manager-dashboard .gender-summary-item > span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  min-width: 12px;
+}
+
+.manager-dashboard .gender-summary-item strong {
+  font-size: 20px;
+  line-height: 1;
+  color: #9b0000;
+}
+
+.manager-dashboard .gender-summary-item p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: #4e2a1c;
+}
+
+/* Gia đình theo quý */
+.manager-dashboard .family-chart-card {
+  min-height: 260px;
+}
+
+.manager-dashboard .family-chart-card .recharts-responsive-container {
+  height: 220px !important;
+}
+
+/* Thu chi nhỏ lại 1 nửa và nằm cùng hàng với phân công */
+.manager-dashboard .finance-quarter-card {
+  grid-column: auto;
+  min-height: 260px;
+}
+
+.manager-dashboard .finance-quarter-card .recharts-responsive-container {
+  height: 215px !important;
+}
+
+/* Phân công công việc đẩy lên cùng hàng với thu chi */
+.manager-dashboard .manager-task-card {
+  grid-column: auto;
+  min-height: 260px;
+}
+
+.manager-dashboard .manager-task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 205px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.manager-dashboard .quick-stat-item {
+  min-height: 42px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #fbf2e4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.manager-dashboard .quick-stat-item span {
+  font-size: 14px;
+  font-weight: 700;
+  color: #3d2118;
+}
+
+.manager-dashboard .status-badge {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #ffe8a6;
+  color: #9b6a00;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.manager-dashboard .chart-empty,
+.manager-dashboard .activity-item {
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #7b5d46;
+  font-weight: 700;
+}
+
+/* Giảm khoảng trắng mặc định của biểu đồ recharts */
+.manager-dashboard .recharts-wrapper {
+  margin: 0 auto;
+}
+
+.manager-dashboard .recharts-legend-wrapper {
+  font-size: 13px;
+}
+
+/* Responsive tablet */
+@media (max-width: 1200px) {
+  .manager-dashboard .stats-grid-dashboard {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .manager-dashboard .dashboard-chart-area,
+  .manager-dashboard .dashboard-chart-area-clean {
+    grid-template-columns: 1fr;
+  }
+
+  .manager-dashboard .finance-quarter-card,
+  .manager-dashboard .manager-task-card {
+    grid-column: auto;
+  }
+}
+
+/* Responsive mobile */
+@media (max-width: 768px) {
+  .manager-dashboard {
+    gap: 12px;
+  }
+
+  .manager-dashboard .welcome-banner {
+    padding: 16px;
+  }
+
+  .manager-dashboard .welcome-banner h2 {
+    font-size: 19px;
+  }
+
+  .manager-dashboard .stats-grid-dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  .manager-dashboard .stat-card {
+    min-height: 68px;
+  }
+
+  .manager-dashboard .chart-card {
+    padding: 16px;
+  }
+
+  .manager-dashboard .chart-title-row h2 {
+    font-size: 18px;
+  }
+
+  .manager-dashboard .gender-chart-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .manager-dashboard .gender-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+/* =====================================================
+   FIX MANAGER DASHBOARD LAYOUT LẦN 2
+   Ép Thu/Chi nhỏ 1/2 + Phân công lên cùng hàng
+   Dán cuối cùng file CSS
+===================================================== */
+
+/* Ép toàn bộ khu biểu đồ thành 2 cột cố định */
+.manager-dashboard .dashboard-chart-area,
+.manager-dashboard .dashboard-chart-area-clean {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 16px !important;
+  align-items: start !important;
+}
+
+/* Hàng 1: giới tính bên trái */
+.manager-dashboard .gender-chart-card {
+  grid-column: 1 / 2 !important;
+  grid-row: 1 !important;
+  min-height: 300px !important;
+  max-height: 300px !important;
+}
+
+/* Hàng 1: gia đình bên phải */
+.manager-dashboard .family-chart-card {
+  grid-column: 2 / 3 !important;
+  grid-row: 1 !important;
+  min-height: 300px !important;
+  max-height: 300px !important;
+}
+
+/* Hàng 2 bên trái: Thu / Chi, chỉ chiếm nửa hàng */
+.manager-dashboard .finance-quarter-card {
+  grid-column: 1 / 2 !important;
+  grid-row: 2 !important;
+  min-height: 300px !important;
+  max-height: 300px !important;
+}
+
+/* Hàng 2 bên phải: Phân công công việc, nằm ngang hàng Thu / Chi */
+.manager-dashboard .manager-task-card {
+  grid-column: 2 / 3 !important;
+  grid-row: 2 !important;
+  min-height: 300px !important;
+  max-height: 300px !important;
+}
+
+/* Card biểu đồ gọn hơn */
+.manager-dashboard .chart-card {
+  padding: 16px 18px !important;
+  overflow: hidden !important;
+}
+
+/* Tiêu đề gọn lại */
+.manager-dashboard .chart-title-row {
+  margin-bottom: 6px !important;
+}
+
+.manager-dashboard .chart-title-row h2 {
+  font-size: 20px !important;
+  margin-bottom: 3px !important;
+}
+
+.manager-dashboard .chart-title-row p {
+  font-size: 12.5px !important;
+}
+
+/* Sửa biểu đồ giới tính bị to và mất không gian */
+.manager-dashboard .gender-chart-layout {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 140px !important;
+  gap: 8px !important;
+  align-items: center !important;
+}
+
+/* Thu nhỏ vùng biểu đồ tròn */
+.manager-dashboard .gender-chart-card .recharts-responsive-container {
+  height: 210px !important;
+  max-height: 210px !important;
+}
+
+/* Thu nhỏ 2 ô Nam/Nữ */
+.manager-dashboard .gender-summary {
+  gap: 8px !important;
+}
+
+.manager-dashboard .gender-summary-item {
+  min-height: 52px !important;
+  padding: 8px 10px !important;
+  border-radius: 12px !important;
+}
+
+.manager-dashboard .gender-summary-item strong {
+  font-size: 18px !important;
+}
+
+.manager-dashboard .gender-summary-item p {
+  font-size: 12px !important;
+}
+
+/* Thu nhỏ biểu đồ gia đình */
+.manager-dashboard .family-chart-card .recharts-responsive-container {
+  height: 210px !important;
+  max-height: 210px !important;
+}
+
+/* Thu nhỏ biểu đồ thu chi */
+.manager-dashboard .finance-quarter-card .recharts-responsive-container {
+  height: 210px !important;
+  max-height: 210px !important;
+}
+
+/* Danh sách phân công gọn lại */
+.manager-dashboard .manager-task-list {
+  max-height: 220px !important;
+  overflow-y: auto !important;
+  gap: 8px !important;
+}
+
+.manager-dashboard .quick-stat-item {
+  min-height: 40px !important;
+  padding: 9px 12px !important;
+}
+
+.manager-dashboard .quick-stat-item span {
+  font-size: 13px !important;
+}
+
+.manager-dashboard .status-badge {
+  font-size: 10px !important;
+  padding: 5px 9px !important;
+}
+
+/* Fix nếu CSS cũ đang ép Thu/Chi full width */
+.manager-dashboard .finance-quarter-card,
+.manager-dashboard .manager-task-card {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Tablet thì mới xuống 1 cột */
+@media (max-width: 1100px) {
+  .manager-dashboard .dashboard-chart-area,
+  .manager-dashboard .dashboard-chart-area-clean {
+    grid-template-columns: 1fr !important;
+  }
+
+  .manager-dashboard .gender-chart-card,
+  .manager-dashboard .family-chart-card,
+  .manager-dashboard .finance-quarter-card,
+  .manager-dashboard .manager-task-card {
+    grid-column: 1 / 2 !important;
+    grid-row: auto !important;
+    max-height: none !important;
+  }
+}
+.manager-dashboard .section-card,
+.manager-dashboard .stat-card {
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease,
+    border-color 0.22s ease;
+}
+
+.manager-dashboard .section-card:hover,
+.manager-dashboard .stat-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 30px rgba(68, 20, 10, 0.24);
+  border-color: rgba(212, 166, 42, 0.48);
+}
+.manager-dashboard .stat-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.manager-dashboard .stat-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -80%;
+  width: 45%;
+  height: 100%;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255, 220, 140, 0.28),
+    transparent
+  );
+  transform: skewX(-18deg);
+  transition: left 0.55s ease;
+}
+
+.manager-dashboard .stat-card:hover::after {
+  left: 120%;
+}
+.manager-dashboard .stat-card:hover .stat-icon {
+  animation: statIconPulse 0.55s ease;
+}
+
+@keyframes statIconPulse {
+  0% {
+    transform: scale(1);
+  }
+
+  45% {
+    transform: scale(1.12) rotate(-3deg);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+.manager-dashboard .quick-stat-item {
+  transition:
+    transform 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.manager-dashboard .quick-stat-item:hover {
+  transform: translateX(4px);
+  background: #fff2d6;
+  box-shadow: 0 6px 14px rgba(91, 42, 20, 0.14);
+}
+.manager-dashboard .welcome-banner,
+.manager-dashboard .stat-card,
+.manager-dashboard .chart-card {
+  animation: dashboardFadeUp 0.38s ease both;
+}
+
+.manager-dashboard .stat-card:nth-child(1) {
+  animation-delay: 0.04s;
+}
+
+.manager-dashboard .stat-card:nth-child(2) {
+  animation-delay: 0.08s;
+}
+
+.manager-dashboard .stat-card:nth-child(3) {
+  animation-delay: 0.12s;
+}
+
+.manager-dashboard .stat-card:nth-child(4) {
+  animation-delay: 0.16s;
+}
+
+@keyframes dashboardFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+/* =====================================================
+   MANAGER DASHBOARD COMPACT TOP LAYOUT
+   Dán cuối cùng file CSS để ghi đè các CSS trước
+===================================================== */
+
+/* Toàn bộ vùng nội dung manager gọn lại */
+.manager-dashboard {
+  gap: 10px !important;
+  padding-top: 0 !important;
+}
+
+/* Header "Hệ thống quản trị Gia Phả" gọn lại */
+.manager-main-header,
+.manager-header,
+.manager-topbar,
+.admin-header {
+  min-height: 70px !important;
+  height: 70px !important;
+  padding: 12px 28px !important;
+  margin-bottom: 12px !important;
+  border-radius: 18px !important;
+}
+
+.manager-main-header h1,
+.manager-header h1,
+.manager-topbar h1,
+.admin-header h1 {
+  font-size: 28px !important;
+  line-height: 1.15 !important;
+  margin: 0 0 6px !important;
+}
+
+.manager-main-header p,
+.manager-header p,
+.manager-topbar p,
+.admin-header p {
+  font-size: 14px !important;
+  margin: 0 !important;
+}
+
+/* 3 icon góc phải nhỏ hơn */
+.manager-main-header button,
+.manager-header button,
+.manager-topbar button,
+.admin-header button {
+  width: 46px !important;
+  height: 46px !important;
+  min-width: 46px !important;
+  border-radius: 14px !important;
+}
+
+/* Ô chào mừng gọn lại, không chiếm nhiều chiều cao */
+.manager-dashboard .welcome-banner {
+  min-height: 92px !important;
+  padding: 16px 22px !important;
+  margin-bottom: 6px !important;
+  border-radius: 18px !important;
+}
+
+.manager-dashboard .welcome-banner h2 {
+  font-size: 22px !important;
+  line-height: 1.15 !important;
+  margin: 0 0 6px !important;
+}
+
+.manager-dashboard .welcome-banner p {
+  font-size: 14px !important;
+  margin: 0 0 10px !important;
+}
+
+.manager-dashboard .welcome-banner .small-action-btn {
+  height: 30px !important;
+  min-height: 30px !important;
+  padding: 5px 13px !important;
+  font-size: 12.5px !important;
+}
+
+/* Đẩy 4 ô thống kê lên và làm nhỏ hơn */
+.manager-dashboard .stats-grid-dashboard {
+  gap: 12px !important;
+  margin-top: 0 !important;
+  margin-bottom: 10px !important;
+}
+
+.manager-dashboard .stat-card {
+  min-height: 68px !important;
+  height: 68px !important;
+  padding: 12px 16px !important;
+  border-radius: 16px !important;
+}
+
+.manager-dashboard .stat-icon {
+  width: 44px !important;
+  height: 44px !important;
+  min-width: 44px !important;
+  border-radius: 12px !important;
+}
+
+.manager-dashboard .stat-icon .material-symbols-outlined {
+  font-size: 24px !important;
+}
+
+.manager-dashboard .stat-content h3 {
+  font-size: 24px !important;
+  margin-bottom: 3px !important;
+}
+
+.manager-dashboard .stat-content p {
+  font-size: 13px !important;
+  line-height: 1.2 !important;
+}
+
+/* 4 biểu đồ gọn lại để nhìn được nhiều hơn trong 1 màn */
+.manager-dashboard .dashboard-chart-area,
+.manager-dashboard .dashboard-chart-area-clean {
+  gap: 12px !important;
+  align-items: start !important;
+}
+
+/* Card biểu đồ nhỏ hơn, mềm hơn */
+.manager-dashboard .chart-card {
+  padding: 15px 18px !important;
+  border-radius: 18px !important;
+  box-shadow: 0 8px 22px rgba(65, 25, 15, 0.14) !important;
+}
+
+/* Hàng tiêu đề biểu đồ gọn lại */
+.manager-dashboard .chart-title-row {
+  margin-bottom: 4px !important;
+}
+
+.manager-dashboard .chart-title-row h2 {
+  font-size: 21px !important;
+  line-height: 1.05 !important;
+  margin: 0 0 4px !important;
+}
+
+.manager-dashboard .chart-title-row p {
+  font-size: 12.5px !important;
+  line-height: 1.15 !important;
+}
+
+/* Card giới tính thấp hơn */
+.manager-dashboard .gender-chart-card {
+  min-height: 255px !important;
+  max-height: 255px !important;
+}
+
+.manager-dashboard .gender-chart-layout {
+  grid-template-columns: minmax(0, 1fr) 130px !important;
+  gap: 4px !important;
+}
+
+/* Vùng biểu đồ tròn thấp hơn */
+.manager-dashboard .gender-chart-card .recharts-responsive-container {
+  height: 170px !important;
+  max-height: 170px !important;
+}
+
+/* Kéo biểu đồ tròn lên một chút */
+.manager-dashboard .gender-chart-card .recharts-wrapper {
+  transform: translateY(-4px) scale(0.94) !important;
+  transform-origin: center center !important;
+}
+
+/* Nam/Nữ gọn hơn */
+.manager-dashboard .gender-summary {
+  gap: 7px !important;
+}
+
+.manager-dashboard .gender-summary-item {
+  min-height: 45px !important;
+  padding: 7px 9px !important;
+  border-radius: 12px !important;
+}
+
+.manager-dashboard .gender-summary-item strong {
+  font-size: 17px !important;
+}
+
+.manager-dashboard .gender-summary-item p {
+  font-size: 11.5px !important;
+  margin-top: 2px !important;
+}
+
+/* Card gia đình thấp hơn */
+.manager-dashboard .family-chart-card {
+  min-height: 255px !important;
+  max-height: 255px !important;
+}
+
+.manager-dashboard .family-chart-card .recharts-responsive-container {
+  height: 178px !important;
+  max-height: 178px !important;
+}
+
+/* Thu/Chi và phân công nằm cùng hàng, nhỏ hơn */
+.manager-dashboard .finance-quarter-card,
+.manager-dashboard .manager-task-card {
+  min-height: 250px !important;
+  max-height: 250px !important;
+}
+
+.manager-dashboard .finance-quarter-card .recharts-responsive-container {
+  height: 175px !important;
+  max-height: 175px !important;
+}
+
+/* Danh sách công việc gọn hơn */
+.manager-dashboard .manager-task-list {
+  max-height: 178px !important;
+  gap: 7px !important;
+  overflow-y: auto !important;
+}
+
+.manager-dashboard .quick-stat-item {
+  min-height: 36px !important;
+  padding: 8px 12px !important;
+  border-radius: 11px !important;
+}
+
+.manager-dashboard .quick-stat-item span {
+  font-size: 13px !important;
+}
+
+.manager-dashboard .status-badge {
+  padding: 4px 9px !important;
+  font-size: 10px !important;
+}
+
+/* Làm scrollbar phân công đẹp hơn */
+.manager-dashboard .manager-task-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.manager-dashboard .manager-task-list::-webkit-scrollbar-track {
+  background: rgba(236, 217, 188, 0.45);
+  border-radius: 999px;
+}
+
+.manager-dashboard .manager-task-list::-webkit-scrollbar-thumb {
+  background: rgba(150, 78, 43, 0.45);
+  border-radius: 999px;
+}
+
+/* Mobile/tablet giữ dễ nhìn */
+@media (max-width: 1100px) {
+  .manager-dashboard .gender-chart-card,
+  .manager-dashboard .family-chart-card,
+  .manager-dashboard .finance-quarter-card,
+  .manager-dashboard .manager-task-card {
+    min-height: auto !important;
+    max-height: none !important;
+  }
+}
+.manager-dashboard .section-card,
+.manager-dashboard .stat-card {
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease,
+    border-color 0.22s ease;
+}
+
+.manager-dashboard .section-card:hover,
+.manager-dashboard .stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px rgba(70, 22, 12, 0.22) !important;
+  border-color: rgba(212, 166, 42, 0.45) !important;
+}
+
+.manager-dashboard .stat-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.manager-dashboard .stat-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -80%;
+  width: 42%;
+  height: 100%;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255, 218, 132, 0.26),
+    transparent
+  );
+  transform: skewX(-18deg);
+  transition: left 0.55s ease;
+}
+
+.manager-dashboard .stat-card:hover::after {
+  left: 120%;
+}
+/* =====================================================
+   WELCOME BANNER COMPACT - THANH CHÀO MỪNG MỎNG
+   Dán cuối cùng file CSS
+===================================================== */
+
+.manager-dashboard .welcome-banner-compact {
+  min-height: 68px !important;
+  height: 68px !important;
+  padding: 12px 18px !important;
+  margin-bottom: 4px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 18px !important;
+  border-radius: 18px !important;
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255, 252, 247, 0.98),
+      rgba(255, 247, 231, 0.96)
+    ) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+/* Vệt trang trí nhẹ bên phải banner */
+.manager-dashboard .welcome-banner-compact::after {
+  content: "";
+  position: absolute;
+  right: -36px;
+  top: -48px;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: rgba(212, 166, 42, 0.14);
+  pointer-events: none;
+}
+
+.manager-dashboard .welcome-left {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.manager-dashboard .welcome-icon {
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  border-radius: 13px;
+  background: linear-gradient(135deg, #9b0000, #c99a2c);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  box-shadow: 0 8px 18px rgba(139, 0, 0, 0.18);
+}
+
+.manager-dashboard .welcome-banner-compact h2 {
+  margin: 0 0 4px !important;
+  font-size: 20px !important;
+  line-height: 1.1 !important;
+  color: #8b0000 !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.manager-dashboard .welcome-banner-compact p {
+  margin: 0 !important;
+  font-size: 13px !important;
+  line-height: 1.2 !important;
+  color: #5f3828 !important;
+}
+
+.manager-dashboard .welcome-banner-compact p strong {
+  color: #9b0000;
+  font-weight: 900;
+}
+
+.manager-dashboard .welcome-reload-btn {
+  height: 34px !important;
+  min-height: 34px !important;
+  padding: 0 14px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  border-radius: 999px !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  position: relative;
+  z-index: 1;
+  white-space: nowrap;
+}
+
+.manager-dashboard .welcome-reload-btn .material-symbols-outlined {
+  font-size: 18px;
+}
+
+/* Đẩy cụm 4 ô thống kê sát lên sau banner */
+.manager-dashboard .stats-grid-dashboard {
+  margin-top: 0 !important;
+  margin-bottom: 8px !important;
+}
+
+/* Làm 4 ô thống kê gọn thêm một chút */
+.manager-dashboard .stat-card {
+  height: 64px !important;
+  min-height: 64px !important;
+  padding: 10px 15px !important;
+}
+
+.manager-dashboard .stat-icon {
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+}
+
+.manager-dashboard .stat-content h3 {
+  font-size: 22px !important;
+}
+
+.manager-dashboard .stat-content p {
+  font-size: 12.5px !important;
+}
+
+/* Kéo toàn bộ chart lên thêm */
+.manager-dashboard .dashboard-chart-area,
+.manager-dashboard .dashboard-chart-area-clean {
+  margin-top: 0 !important;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .manager-dashboard .welcome-banner-compact {
+    height: auto !important;
+    min-height: 78px !important;
+    align-items: flex-start !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+
+  .manager-dashboard .welcome-banner-compact h2 {
+    white-space: normal;
+    font-size: 18px !important;
+  }
+
+  .manager-dashboard .welcome-reload-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+/* Header trên cùng gọn hơn nữa */
+.manager-main-header,
+.manager-header,
+.manager-topbar,
+.admin-header {
+  min-height: 62px !important;
+  height: 62px !important;
+  padding: 10px 24px !important;
+  margin-bottom: 10px !important;
+}
+
+.manager-main-header h1,
+.manager-header h1,
+.manager-topbar h1,
+.admin-header h1 {
+  font-size: 26px !important;
+  margin-bottom: 4px !important;
+}
+
+.manager-main-header p,
+.manager-header p,
+.manager-topbar p,
+.admin-header p {
+  font-size: 13px !important;
+}
+
+.manager-main-header button,
+.manager-header button,
+.manager-topbar button,
+.admin-header button {
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+}
+/* =====================================================
+   FIX DASHBOARD GAP + FIX CHART BỊ CẮT DƯỚI
+   Dán cuối cùng file CSS
+===================================================== */
+
+/* Kéo phần nội dung dashboard lên sát header */
+.manager-dashboard {
+  margin-top: -8px !important;
+  padding-top: 0 !important;
+  gap: 8px !important;
+}
+
+/* Giảm khoảng cách dưới header quản trị */
+.manager-main-header,
+.manager-header,
+.manager-topbar,
+.admin-header {
+  margin-bottom: 6px !important;
+}
+
+/* Nếu wrapper content/layout có padding top thì ép nhỏ lại */
+.manager-content,
+.manager-main-content,
+.manager-page-content,
+.manager-layout-content,
+.admin-content,
+.admin-main-content {
+  padding-top: 6px !important;
+}
+
+/* Banner chào mừng sát header hơn */
+.manager-dashboard .welcome-banner-compact,
+.manager-dashboard .welcome-banner {
+  margin-top: 0 !important;
+  margin-bottom: 8px !important;
+}
+
+/* 4 ô thống kê sát banner hơn */
+.manager-dashboard .stats-grid-dashboard {
+  margin-top: 0 !important;
+  margin-bottom: 10px !important;
+}
+
+/* Khu biểu đồ không cách quá xa */
+.manager-dashboard .dashboard-chart-area,
+.manager-dashboard .dashboard-chart-area-clean {
+  margin-top: 0 !important;
+  gap: 12px !important;
+  align-items: start !important;
+}
+
+/* Quan trọng: không cắt nội dung biểu đồ nữa */
+.manager-dashboard .chart-card {
+  overflow: visible !important;
+}
+
+/* ================================
+   FIX Ô THÀNH VIÊN THEO GIỚI TÍNH
+================================ */
+
+.manager-dashboard .gender-chart-card {
+  min-height: 285px !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.manager-dashboard .gender-chart-layout {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 135px !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-height: 205px !important;
+}
+
+/* Không để biểu đồ tròn bị mất phần dưới */
+.manager-dashboard .gender-chart-card .recharts-responsive-container {
+  height: 205px !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.manager-dashboard .gender-chart-card .recharts-wrapper {
+  transform: translateY(-4px) scale(0.88) !important;
+  transform-origin: center center !important;
+  overflow: visible !important;
+}
+
+/* Legend Nam/Nữ không bị cắt */
+.manager-dashboard .gender-chart-card .recharts-legend-wrapper {
+  bottom: -2px !important;
+  font-size: 12px !important;
+}
+
+/* Ô Nam/Nữ bên phải gọn */
+.manager-dashboard .gender-summary {
+  gap: 8px !important;
+}
+
+.manager-dashboard .gender-summary-item {
+  min-height: 48px !important;
+  padding: 8px 10px !important;
+}
+
+/* ================================
+   FIX Ô GIA ĐÌNH THEO QUÝ
+================================ */
+
+.manager-dashboard .family-chart-card {
+  min-height: 285px !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.manager-dashboard .family-chart-card .recharts-responsive-container {
+  height: 210px !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.manager-dashboard .family-chart-card .recharts-wrapper {
+  overflow: visible !important;
+}
+
+/* Để chữ Quý 2/2026 không bị mất */
+.manager-dashboard .family-chart-card .recharts-cartesian-axis-tick text {
+  font-size: 12px !important;
+}
+
+/* ================================
+   FIX THU CHI + PHÂN CÔNG
+================================ */
+
+.manager-dashboard .finance-quarter-card,
+.manager-dashboard .manager-task-card {
+  min-height: 270px !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+
+.manager-dashboard .finance-quarter-card .recharts-responsive-container {
+  height: 205px !important;
+  max-height: none !important;
+}
+
+.manager-dashboard .manager-task-list {
+  max-height: 195px !important;
+  overflow-y: auto !important;
+}
+
+/* Giảm tiêu đề các card để có thêm chỗ cho biểu đồ */
+.manager-dashboard .chart-title-row {
+  margin-bottom: 4px !important;
+}
+
+.manager-dashboard .chart-title-row h2 {
+  font-size: 20px !important;
+  line-height: 1.1 !important;
+}
+
+.manager-dashboard .chart-title-row p {
+  font-size: 12.5px !important;
+  line-height: 1.15 !important;
+}
+/* =====================================================
+   KÉO Ô CHÀO MỪNG LÊN SÁT HEADER
+   Dán cuối cùng file CSS
+===================================================== */
+
+/* Giảm khoảng cách dưới header */
+.manager-main-header,
+.manager-header,
+.manager-topbar,
+.admin-header {
+  margin-bottom: 0 !important;
+}
+
+/* Kéo toàn bộ dashboard lên */
+.manager-dashboard {
+  margin-top: -18px !important;
+  padding-top: 0 !important;
+}
+
+/* Riêng banner chào mừng kéo lên sát header */
+.manager-dashboard .welcome-banner-compact,
+.manager-dashboard .welcome-banner {
+  margin-top: -8px !important;
+  margin-bottom: 8px !important;
+}
+
+/* Nếu layout cha vẫn tạo khoảng hở thì ép tiếp */
+.manager-content,
+.manager-main-content,
+.manager-page-content,
+.manager-layout-content,
+.admin-content,
+.admin-main-content {
+  padding-top: 0 !important;
+}
+/* Sidebar gọn hơn một chút */
+.manager-sidebar {
+  border-radius: 24px !important;
+}
+
+.manager-sidebar .logo,
+.manager-sidebar-logo {
+  margin-top: 8px !important;
+  margin-bottom: 22px !important;
+}
+
+.manager-sidebar .user-card,
+.manager-profile-card {
+  padding: 16px !important;
+  min-height: 92px !important;
+}
+
+.manager-sidebar nav,
+.manager-sidebar-menu {
+  gap: 8px !important;
+}
+
+.manager-sidebar nav a,
+.manager-sidebar-menu a,
+.manager-sidebar .menu-item {
+  min-height: 48px !important;
+  padding: 12px 18px !important;
+}
+/* =====================================================
+   FIX THU/CHI + PHÂN CÔNG BỊ LỆCH HÀNG
+   Dán cuối cùng file CSS
+===================================================== */
+
+/* Grid 2 cột căn theo hàng */
+.manager-dashboard .dashboard-chart-area,
+.manager-dashboard .dashboard-chart-area-clean {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  gap: 14px !important;
+  align-items: stretch !important;
+}
+
+/* Ép vị trí 4 ô */
+.manager-dashboard .gender-chart-card {
+  grid-column: 1 / 2 !important;
+  grid-row: 1 !important;
+}
+
+.manager-dashboard .family-chart-card {
+  grid-column: 2 / 3 !important;
+  grid-row: 1 !important;
+}
+
+.manager-dashboard .finance-quarter-card {
+  grid-column: 1 / 2 !important;
+  grid-row: 2 !important;
+}
+
+.manager-dashboard .manager-task-card {
+  grid-column: 2 / 3 !important;
+  grid-row: 2 !important;
+}
+
+/* Ép 2 ô hàng dưới cao bằng nhau */
+.manager-dashboard .finance-quarter-card,
+.manager-dashboard .manager-task-card {
+  height: 300px !important;
+  min-height: 300px !important;
+  max-height: 300px !important;
+  overflow: hidden !important;
+}
+
+/* Thu nhỏ vùng biểu đồ Thu/Chi để không đội chiều cao */
+.manager-dashboard .finance-quarter-card .recharts-responsive-container {
+  height: 205px !important;
+  max-height: 205px !important;
+}
+
+/* Giảm khoảng cách legend của Thu/Chi */
+.manager-dashboard .finance-quarter-card .recharts-legend-wrapper {
+  bottom: -4px !important;
+  font-size: 12px !important;
+}
+
+/* Phân công dùng cùng chiều cao với Thu/Chi */
+.manager-dashboard .manager-task-list {
+  max-height: 210px !important;
+  overflow-y: auto !important;
+  padding-right: 4px !important;
+}
+
+/* Item công việc gọn lại để không tràn */
+.manager-dashboard .quick-stat-item {
+  min-height: 36px !important;
+  height: 36px !important;
+  padding: 7px 12px !important;
+  border-radius: 11px !important;
+}
+
+.manager-dashboard .quick-stat-item span {
+  font-size: 13px !important;
+  line-height: 1.15 !important;
+}
+
+.manager-dashboard .status-badge {
+  font-size: 10px !important;
+  padding: 4px 9px !important;
+}
+
+/* Tiêu đề 2 ô hàng dưới bằng nhau */
+.manager-dashboard .finance-quarter-card .chart-title-row,
+.manager-dashboard .manager-task-card .chart-title-row {
+  height: 48px !important;
+  margin-bottom: 4px !important;
+  align-items: flex-start !important;
+}
+
+.manager-dashboard .finance-quarter-card .chart-title-row h2,
+.manager-dashboard .manager-task-card .chart-title-row h2 {
+  font-size: 20px !important;
+  line-height: 1.1 !important;
+  margin: 0 0 4px !important;
+}
+
+.manager-dashboard .finance-quarter-card .chart-title-row p,
+.manager-dashboard .manager-task-card .chart-title-row p {
+  font-size: 12.5px !important;
+  line-height: 1.1 !important;
+  margin: 0 !important;
+}
+
+/* Tablet/mobile xuống 1 cột */
+@media (max-width: 1100px) {
+  .manager-dashboard .dashboard-chart-area,
+  .manager-dashboard .dashboard-chart-area-clean {
+    grid-template-columns: 1fr !important;
+  }
+
+  .manager-dashboard .gender-chart-card,
+  .manager-dashboard .family-chart-card,
+  .manager-dashboard .finance-quarter-card,
+  .manager-dashboard .manager-task-card {
+    grid-column: 1 / 2 !important;
+    grid-row: auto !important;
+    height: auto !important;
+    min-height: 260px !important;
+    max-height: none !important;
+  }
+}
+/* =====================================================
+   MEMBER MANAGER PRO DESIGN - FINAL OVERRIDE
+   Dán cuối file manager.css
+===================================================== */
+
+.member-manager-pro {
+  --member-deep: #2b0d08;
+  --member-red: #8b1e17;
+  --member-red-2: #a83225;
+  --member-gold: #d7a84d;
+  --member-cream: #fff8ea;
+  --member-surface: rgba(255, 248, 234, 0.94);
+  --member-border: rgba(215, 168, 77, 0.28);
+  --member-text: #3b160d;
+  --member-muted: #7a5a46;
+  --member-shadow: 0 16px 36px rgba(37, 12, 7, 0.2);
+
+  display: grid;
+  gap: 12px;
+  margin-top: -12px;
+  padding-bottom: 28px;
+}
+
+.member-pro-header {
+  position: relative;
+  overflow: hidden;
+  padding: 16px 18px;
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 90% -20%, rgba(215, 168, 77, 0.32), transparent 34%),
+    linear-gradient(135deg, rgba(76, 22, 15, 0.96), rgba(128, 37, 27, 0.92));
+  border: 1px solid rgba(240, 212, 135, 0.22);
+  box-shadow: 0 18px 42px rgba(37, 12, 7, 0.26);
+  color: #fff8df;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+}
+
+.member-pro-header::after {
+  content: "";
+  position: absolute;
+  right: -52px;
+  top: -72px;
+  width: 190px;
+  height: 190px;
+  border-radius: 50%;
+  background: rgba(255, 234, 180, 0.12);
+  pointer-events: none;
+}
+
+.member-pro-header > div {
+  position: relative;
+  z-index: 1;
+}
+
+.member-pro-header span {
+  display: inline-block;
+  color: #f1d37d !important;
+  -webkit-text-fill-color: #f1d37d !important;
+  font-weight: 900;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+.member-pro-header h2 {
+  margin: 0;
+  color: #fff8df;
+  font-size: clamp(1.45rem, 2.5vw, 2.1rem);
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+}
+
+.member-pro-header p {
+  margin: 6px 0 0;
+  max-width: 760px;
+  color: rgba(255, 248, 223, 0.78);
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.member-pro-header-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.member-pro-btn {
+  min-height: 38px;
+  padding: 0 13px;
+  border-radius: 13px;
+  border: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 900;
+  transition: transform 0.18s ease, filter 0.18s ease;
+  white-space: nowrap;
+}
+
+.member-pro-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.04);
+}
+
+.member-pro-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.member-pro-btn .material-symbols-outlined {
+  font-size: 1.15rem;
+}
+
+.member-pro-btn-light {
+  background: rgba(255, 248, 234, 0.96);
+  color: #5c2116;
+  border: 1px solid rgba(240, 212, 135, 0.32);
+}
+
+.member-pro-btn-gold {
+  background: linear-gradient(135deg, #d7a84d, #b77a19);
+  color: #fff8df;
+}
+
+.member-pro-summary {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.member-pro-stat {
+  min-height: 72px;
+  padding: 12px;
+  border-radius: 18px;
+  background: var(--member-surface);
+  border: 1px solid var(--member-border);
+  box-shadow: 0 10px 22px rgba(37, 12, 7, 0.11);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.member-pro-stat > .material-symbols-outlined {
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  border-radius: 15px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #8b1e17, #c04632);
+  color: #fff8df !important;
+  -webkit-text-fill-color: #fff8df !important;
+  font-size: 1.35rem;
+}
+
+.member-pro-stat strong {
+  display: block;
+  color: var(--member-text);
+  font-size: 1.35rem;
+  line-height: 1.05;
+  font-weight: 950;
+}
+
+.member-pro-stat p {
+  margin: 3px 0 0;
+  color: var(--member-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.member-pro-tools-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.member-pro-panel,
+.member-pro-main-panel {
+  min-width: 0;
+  padding: 14px;
+  border-radius: 22px;
+  background: var(--member-surface);
+  border: 1px solid var(--member-border);
+  box-shadow: 0 12px 28px rgba(37, 12, 7, 0.13);
+}
+
+.member-pro-panel-head,
+.member-pro-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.member-pro-panel-head h3,
+.member-pro-toolbar h3 {
+  margin: 0;
+  color: #6b1d14;
+  font-size: 1.1rem;
+  font-weight: 950;
+}
+
+.member-pro-panel-head p,
+.member-pro-toolbar p {
+  margin: 4px 0 0;
+  color: var(--member-muted);
+  font-size: 0.83rem;
+  font-weight: 750;
+  line-height: 1.35;
+}
+
+.member-pro-toolbar p strong {
+  color: #8b1e17;
+}
+
+.member-pro-icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  border: 1px solid rgba(139, 30, 23, 0.16);
+  background: rgba(139, 30, 23, 0.08);
+  color: #8b1e17;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.member-pro-form {
+  display: grid;
+  gap: 12px;
+}
+
+.member-pro-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.member-pro-full {
+  grid-column: 1 / -1;
+}
+
+.member-manager-pro .mgr-field {
+  min-height: 44px !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(74, 29, 18, 0.16) !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  color: var(--member-text) !important;
+  -webkit-text-fill-color: var(--member-text) !important;
+  font-weight: 750 !important;
+}
+
+.member-manager-pro .mgr-field:focus {
+  border-color: rgba(215, 168, 77, 0.78) !important;
+  box-shadow: 0 0 0 4px rgba(215, 168, 77, 0.16) !important;
+}
+
+.member-manager-pro .mgr-btnPrimary {
+  border-radius: 14px;
+  min-height: 42px;
+  background: linear-gradient(135deg, #8b1e17, #4a1d12) !important;
+  border: 1px solid rgba(215, 168, 77, 0.28) !important;
+  color: #fff8df !important;
+  box-shadow: 0 12px 22px rgba(38, 16, 8, 0.2);
+}
+
+.member-manager-pro .mgr-btnGhost {
+  border-radius: 13px;
+  background: rgba(255, 250, 244, 0.86) !important;
+  border: 1px solid rgba(74, 29, 18, 0.18) !important;
+  color: #4a1d12 !important;
+  font-weight: 900;
+}
+
+.member-pro-filter-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 1.5fr) repeat(4, minmax(130px, 0.75fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.member-pro-table {
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(74, 29, 18, 0.12);
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.member-pro-table-head,
+.member-pro-row {
+  display: grid;
+  grid-template-columns: minmax(240px, 1.5fr) minmax(90px, 0.55fr) minmax(160px, 0.85fr) minmax(150px, 0.9fr) minmax(80px, 0.4fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.member-pro-table-head {
+  padding: 12px 14px;
+  background: rgba(91, 40, 27, 0.07);
+  color: #5d4638;
+  font-size: 0.78rem;
+  font-weight: 950;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.member-pro-table-body {
+  display: grid;
+}
+
+.member-pro-row {
+  padding: 13px 14px;
+  border-top: 1px solid rgba(92, 54, 35, 0.08);
+  background: rgba(255, 248, 234, 0.45);
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.member-pro-row:hover {
+  background: rgba(255, 242, 214, 0.7);
+}
+
+.member-pro-person {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.member-pro-avatar {
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, #8b1e17, #c04632);
+  color: #fff8df;
+  font-weight: 950;
+}
+
+.member-pro-person strong {
+  display: block;
+  color: var(--member-text);
+  font-weight: 950;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-pro-person span,
+.member-pro-person small,
+.member-pro-meta span,
+.member-pro-hometown {
+  display: block;
+  color: var(--member-muted) !important;
+  -webkit-text-fill-color: var(--member-muted) !important;
+  font-size: 0.8rem;
+  font-weight: 750;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-pro-meta strong {
+  color: var(--member-text);
+}
+
+.member-pro-status-stack {
+  display: grid;
+  gap: 5px;
+  justify-items: start;
+}
+
+.member-pro-pill,
+.member-pro-soft-pill {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.member-pro-pill {
+  background: rgba(34, 120, 60, 0.12);
+  color: #22783c;
+}
+
+.member-pro-pill.pending {
+  background: rgba(215, 168, 77, 0.18);
+  color: #8a5a07;
+}
+
+.member-pro-pill.rejected {
+  background: rgba(174, 42, 31, 0.12);
+  color: #ae2a1f;
+}
+
+.member-pro-soft-pill {
+  background: rgba(139, 30, 23, 0.08);
+  color: #8b1e17;
+}
+
+.member-pro-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.member-pro-modal {
+  width: min(900px, 100%) !important;
+  background: linear-gradient(135deg, rgba(255, 250, 244, 0.99), rgba(255, 244, 232, 0.98)) !important;
+  border: 1px solid rgba(215, 169, 75, 0.35) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 26px 70px rgba(38, 16, 8, 0.34) !important;
+}
+
+.member-pro-modal .mgr-modalTitle {
+  color: var(--member-text);
+  font-size: 1.45rem;
+}
+
+.member-pro-modal .mgr-modalMeta {
+  color: var(--member-muted) !important;
+  font-weight: 800;
+}
+
+@media (max-width: 1180px) {
+  .member-pro-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .member-pro-tools-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .member-pro-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .member-pro-table-head {
+    display: none;
+  }
+
+  .member-pro-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .member-pro-actions {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 760px) {
+  .member-manager-pro {
+    margin-top: 0;
+  }
+
+  .member-pro-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .member-pro-header-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .member-pro-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .member-pro-summary,
+  .member-pro-filter-grid,
+  .member-pro-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .member-pro-toolbar,
+  .member-pro-panel-head {
+    flex-direction: column;
+  }
+
+  .member-pro-full {
+    grid-column: auto;
+  }
+}
+
+.clan-info-dbId {
+  margin-top: 6px !important;
+  color: #ffe8a3 !important;
+  font-weight: 800 !important;
+}
+
+.clan-info-metaGrid--four {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+}
+
+@media (max-width: 760px) {
+  .clan-info-metaGrid--four {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Dashboard package usage monitor */
+.manager-dashboard .manager-usage-card {
+  margin: 12px 0 4px;
+  padding: 18px 20px;
+  background: rgba(255, 252, 247, 0.98);
+  border: 1px solid rgba(212, 175, 55, 0.32);
+  border-radius: 18px;
+}
+
+.manager-dashboard .manager-usage-card.is-warning {
+  border-color: rgba(185, 28, 28, 0.35);
+  box-shadow: 0 16px 32px rgba(127, 29, 29, 0.14);
+}
+
+.manager-dashboard .manager-usage-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.manager-dashboard .manager-usage-head h2 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  color: #9b1c1c;
+}
+
+.manager-dashboard .manager-usage-head p {
+  margin: 0;
+  color: #6b4b36;
+  font-size: 13px;
+}
+
+.manager-dashboard .manager-usage-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #7a4f00;
+  background: rgba(245, 204, 88, 0.2);
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  white-space: nowrap;
+}
+
+.manager-dashboard .manager-usage-badge.is-warning {
+  color: #991b1b;
+  background: rgba(254, 226, 226, 0.85);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.manager-dashboard .manager-usage-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.manager-dashboard .manager-usage-item {
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(255, 247, 237, 0.72);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.manager-dashboard .manager-usage-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  font-size: 13px;
+  color: #6b4b36;
+}
+
+.manager-dashboard .manager-usage-row strong {
+  color: #451a03;
+  font-size: 14px;
+}
+
+.manager-dashboard .manager-usage-bar {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(120, 53, 15, 0.12);
+}
+
+.manager-dashboard .manager-usage-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #d4a72c, #9b1c1c);
+  transition: width 0.25s ease;
+}
+
+.manager-dashboard .manager-usage-item small {
+  display: block;
+  margin-top: 6px;
+  text-align: right;
+  color: #7a4f00;
+  font-weight: 800;
+}
+
+@media (max-width: 900px) {
+  .manager-dashboard .manager-usage-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .manager-dashboard .manager-usage-head {
+    flex-direction: column;
+  }
+}
+
+.manager-dashboard .stats-grid-dashboard {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+@media (max-width: 1200px) {
+  .manager-dashboard .stats-grid-dashboard {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .manager-dashboard .stats-grid-dashboard {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Patch: make Manager overview stat cards as large and readable as Admin dashboard */
+.manager-dashboard .stats-grid-dashboard {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important;
+  gap: 18px !important;
+  margin: 0 0 18px !important;
+}
+
+.manager-dashboard .stat-card {
+  min-height: 92px !important;
+  height: auto !important;
+  padding: 18px 22px !important;
+  border-radius: 18px !important;
+  box-shadow: 0 12px 28px rgba(46, 18, 8, 0.12) !important;
+}
+
+.manager-dashboard .stat-icon {
+  width: 54px !important;
+  height: 54px !important;
+  min-width: 54px !important;
+  border-radius: 14px !important;
+}
+
+.manager-dashboard .stat-icon .material-symbols-outlined {
+  font-size: 30px !important;
+}
+
+.manager-dashboard .stat-content h3 {
+  font-size: 30px !important;
+  line-height: 1.05 !important;
+  margin-bottom: 6px !important;
+}
+
+.manager-dashboard .stat-content p {
+  font-size: 14px !important;
+  line-height: 1.25 !important;
+}
+
+.member-pro-no-account {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(151, 112, 56, 0.12);
+  color: #7a4b19;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+/* Patch: richer Manager package limit monitor with chart cards */
+.manager-dashboard .manager-usage-card {
+  position: relative !important;
+  overflow: hidden !important;
+  margin: 18px 0 22px !important;
+  padding: 24px !important;
+  border-radius: 24px !important;
+  background:
+    radial-gradient(circle at top right, rgba(212, 167, 44, 0.22), transparent 34%),
+    linear-gradient(135deg, rgba(255, 253, 247, 0.98), rgba(255, 247, 231, 0.96)) !important;
+  border: 1px solid rgba(212, 167, 44, 0.46) !important;
+  box-shadow: 0 18px 42px rgba(58, 20, 8, 0.16) !important;
+}
+
+.manager-dashboard .manager-usage-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(139, 28, 28, 0.08), transparent 48%, rgba(212, 167, 44, 0.12));
+}
+
+.manager-dashboard .manager-usage-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.manager-dashboard .manager-usage-head {
+  align-items: center !important;
+  margin-bottom: 22px !important;
+}
+
+.manager-dashboard .manager-usage-kicker {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  color: #8a4f0a;
+  background: rgba(212, 167, 44, 0.15);
+  border: 1px solid rgba(212, 167, 44, 0.3);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.manager-dashboard .manager-usage-head h2 {
+  margin: 0 0 5px !important;
+  font-size: 24px !important;
+  color: #8b1e16 !important;
+  letter-spacing: -0.02em;
+}
+
+.manager-dashboard .manager-usage-head p {
+  font-size: 14px !important;
+  color: #6f4a2e !important;
+}
+
+.manager-dashboard .manager-usage-badge {
+  gap: 7px !important;
+  min-height: 36px !important;
+  padding: 7px 14px !important;
+  border-radius: 999px !important;
+  font-size: 13px !important;
+  background: rgba(30, 115, 72, 0.12) !important;
+  border-color: rgba(30, 115, 72, 0.24) !important;
+  color: #166534 !important;
+}
+
+.manager-dashboard .manager-usage-badge .material-symbols-outlined {
+  font-size: 19px;
+}
+
+.manager-dashboard .manager-usage-badge.is-warning {
+  color: #991b1b !important;
+  background: rgba(254, 226, 226, 0.9) !important;
+  border-color: rgba(239, 68, 68, 0.35) !important;
+}
+
+.manager-dashboard .manager-usage-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.manager-dashboard .manager-usage-chart-card {
+  --usage-color: #1f8a4c;
+  --usage-soft: rgba(31, 138, 76, 0.12);
+  padding: 18px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(212, 167, 44, 0.28);
+  box-shadow: 0 14px 28px rgba(79, 38, 11, 0.09);
+}
+
+.manager-dashboard .manager-usage-chart-card.is-warning {
+  --usage-color: #d19a12;
+  --usage-soft: rgba(209, 154, 18, 0.16);
+}
+
+.manager-dashboard .manager-usage-chart-card.is-danger {
+  --usage-color: #b91c1c;
+  --usage-soft: rgba(185, 28, 28, 0.14);
+}
+
+.manager-dashboard .manager-usage-chart-main {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.manager-dashboard .manager-usage-donut {
+  width: 126px;
+  height: 126px;
+  flex: 0 0 126px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, #fff8e8 0 56%, transparent 57%),
+    conic-gradient(var(--usage-color) var(--usage-percent), rgba(120, 53, 15, 0.13) 0);
+  box-shadow: inset 0 0 0 1px rgba(120, 53, 15, 0.08), 0 14px 28px rgba(82, 38, 12, 0.12);
+}
+
+.manager-dashboard .manager-usage-donut span {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 999px;
+  background: #fffdf7;
+  color: var(--usage-color);
+  font-size: 22px;
+  font-weight: 900;
+  box-shadow: 0 6px 14px rgba(82, 38, 12, 0.08);
+}
+
+.manager-dashboard .manager-usage-chart-copy {
+  min-width: 0;
+  color: #4a2514;
+}
+
+.manager-dashboard .manager-usage-chart-copy .material-symbols-outlined {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  color: var(--usage-color);
+  background: var(--usage-soft);
+  font-size: 24px;
+}
+
+.manager-dashboard .manager-usage-chart-copy h3 {
+  margin: 0 0 5px;
+  color: #8b1e16;
+  font-size: 17px;
+  line-height: 1.2;
+}
+
+.manager-dashboard .manager-usage-chart-copy strong {
+  display: block;
+  color: #2f160c;
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.manager-dashboard .manager-usage-chart-copy small {
+  display: block;
+  margin-top: 6px;
+  color: #7a563c;
+  font-weight: 700;
+}
+
+.manager-dashboard .manager-usage-chart-card .manager-usage-bar {
+  height: 12px !important;
+  margin-top: 16px;
+  background: rgba(120, 53, 15, 0.1) !important;
+}
+
+.manager-dashboard .manager-usage-chart-card .manager-usage-bar span {
+  background: linear-gradient(90deg, var(--usage-color), #d4a72c) !important;
+}
+
+@media (max-width: 980px) {
+  .manager-dashboard .manager-usage-chart-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .manager-dashboard .manager-usage-card {
+    padding: 18px !important;
+  }
+
+  .manager-dashboard .manager-usage-head {
+    align-items: flex-start !important;
+  }
+
+  .manager-dashboard .manager-usage-chart-main {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .manager-dashboard .manager-usage-donut {
+    width: 112px;
+    height: 112px;
+    flex-basis: 112px;
+  }
+}

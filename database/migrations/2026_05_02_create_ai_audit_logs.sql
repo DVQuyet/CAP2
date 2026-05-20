@@ -1,0 +1,20 @@
+CREATE TABLE IF NOT EXISTS ai_audit_logs (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  account_id INT NULL,
+  person_id INT NULL,
+  clan_id INT NULL,
+  role VARCHAR(50) NULL,
+  prompt TEXT NOT NULL,
+  intent VARCHAR(80) NULL,
+  confidence DECIMAL(5,4) NULL,
+  row_count INT NOT NULL DEFAULT 0,
+  duration_ms INT NOT NULL DEFAULT 0,
+  error TEXT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_ai_audit_account (account_id),
+  KEY idx_ai_audit_clan (clan_id),
+  KEY idx_ai_audit_created (created_at),
+  CONSTRAINT fk_ai_audit_account FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE SET NULL,
+  CONSTRAINT fk_ai_audit_person FOREIGN KEY (person_id) REFERENCES people(id) ON DELETE SET NULL,
+  CONSTRAINT fk_ai_audit_clan FOREIGN KEY (clan_id) REFERENCES clans(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

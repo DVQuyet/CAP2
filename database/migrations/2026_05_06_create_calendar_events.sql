@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS calendar_events (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  clan_id INT NULL,
+  creator_account_id INT NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  event_date DATE NOT NULL,
+  event_time VARCHAR(10) NULL,
+  type VARCHAR(30) NOT NULL DEFAULT 'personal',
+  note TEXT NULL,
+  visibility ENUM('personal','global') NOT NULL DEFAULT 'global',
+  reminder_days INT NOT NULL DEFAULT 0,
+  reminder_sent_at DATETIME NULL,
+  email_sent_at DATETIME NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY idx_calendar_events_clan_date (clan_id, event_date),
+  KEY idx_calendar_events_visibility (clan_id, visibility, event_date),
+  KEY idx_calendar_events_reminder (reminder_sent_at, event_date),
+  KEY idx_calendar_events_creator (creator_account_id),
+  CONSTRAINT fk_calendar_events_creator FOREIGN KEY (creator_account_id) REFERENCES accounts(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

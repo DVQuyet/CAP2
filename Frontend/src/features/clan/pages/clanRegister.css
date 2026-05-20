@@ -1,0 +1,284 @@
+.clan-register-page {
+    --auth-gold: #f3c63f;
+    --auth-gold-soft: #f6deb0;
+    --auth-dark: #4a1208;
+    --auth-border: #d4a017;
+    --auth-panel: rgba(70, 20, 10, 0.97);
+    --auth-panel-deep: rgba(47, 12, 8, 0.98);
+    font-family: Lora, serif;
+    position: relative;
+    isolation: isolate;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 120px 20px 48px;
+    background:
+        url('/backgroundbanner.png') center top / cover no-repeat,
+        linear-gradient(135deg, #4b0404 0%, #8b0000 48%, #260b06 100%);
+}
+
+.clan-register-page::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(90deg, rgba(28, 8, 4, 0.78), rgba(28, 8, 4, 0.36));
+}
+
+.clan-register-page .back-btn {
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 42px;
+    padding: 0 18px;
+    border: 1px solid rgba(243, 198, 63, 0.55);
+    border-radius: 12px;
+    background: rgba(47, 12, 8, 0.72);
+    color: var(--auth-gold);
+    font-weight: 800;
+    text-decoration: none;
+    box-shadow: inset 0 1px 0 rgba(255, 235, 186, 0.2), 0 8px 18px rgba(25, 8, 4, 0.35);
+    transition: transform 0.18s ease, border-color 0.18s ease, filter 0.18s ease;
+}
+
+.clan-register-page .back-btn:hover {
+    border-color: var(--auth-gold);
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+}
+
+.clan-register-container {
+    width: min(560px, 100%);
+    padding: 34px 30px 28px;
+    border: 2px solid var(--auth-border);
+    border-radius: 22px;
+    background: linear-gradient(180deg, var(--auth-panel), var(--auth-panel-deep));
+    box-shadow: 0 22px 52px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 235, 186, 0.12);
+}
+
+.clan-register-container h2 {
+    margin: 0 0 10px;
+    color: var(--auth-gold);
+    text-align: center;
+    font-family: "Cinzel", Lora, serif;
+    font-size: clamp(26px, 4vw, 34px);
+    line-height: 1.16;
+    font-weight: 800;
+}
+
+.clan-register-page .subtitle {
+    margin: 0 0 20px;
+    color: var(--auth-gold-soft);
+    text-align: center;
+    font-size: 15px;
+}
+
+.clan-register-container input,
+.clan-register-container select {
+    width: 100%;
+    height: 52px;
+    padding: 0 16px;
+    margin: 9px 0;
+    border: 1px solid var(--auth-border);
+    border-radius: 12px;
+    box-sizing: border-box;
+    background: rgba(255, 255, 255, 0.98);
+    color: #2b130a;
+    font-size: 15px;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.clan-register-container input:focus,
+.clan-register-container select:focus {
+    border-color: var(--auth-gold);
+    box-shadow: 0 0 0 4px rgba(243, 198, 63, 0.18);
+    outline: none;
+}
+
+.clan-register-page .input-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.clan-register-page .submit-btn,
+.clan-register-page .link-button {
+    min-height: 52px;
+    border-radius: 12px;
+    font-weight: 900;
+    cursor: pointer;
+    transition: transform 0.18s ease, filter 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.clan-register-page .submit-btn {
+    width: 100%;
+    margin-top: 14px;
+    padding: 0 18px;
+    border: 1px solid var(--auth-gold);
+    background: var(--auth-gold);
+    color: var(--auth-dark);
+    font-size: 16px;
+    box-shadow: 0 10px 24px rgba(25, 8, 4, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+.clan-register-page .submit-btn:hover:not(:disabled) {
+    filter: brightness(1.06);
+    transform: translateY(-1px);
+}
+
+.clan-register-page .link-button {
+    padding: 0 16px;
+    border: 1px solid rgba(243, 198, 63, 0.55);
+    background: transparent;
+    color: var(--auth-gold);
+}
+
+.clan-register-page .link-button:hover {
+    background: var(--auth-gold);
+    color: var(--auth-dark);
+}
+
+.clan-register-page .submit-btn:disabled {
+    opacity: 0.65;
+    cursor: not-allowed;
+}
+
+.clan-register-page .error-box {
+    margin-bottom: 14px;
+    padding: 12px 14px;
+    border: 1px solid rgba(255, 179, 179, 0.5);
+    border-radius: 12px;
+    background: rgba(127, 29, 29, 0.28);
+    color: #ffb3b3;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.clan-register-page .checkbox-group {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin: 18px 0 6px;
+}
+
+.clan-register-page .checkbox-group input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    accent-color: var(--auth-gold);
+    margin: 3px 0 0;
+    cursor: pointer;
+}
+
+.clan-register-page .checkbox-group label {
+    color: var(--auth-gold-soft);
+    font-size: 14px;
+    line-height: 1.55;
+}
+
+.clan-register-page .footer-link {
+    margin: 18px 0 0;
+    color: var(--auth-gold-soft);
+    text-align: center;
+    font-size: 15px;
+}
+
+.clan-register-page .footer-link a,
+.clan-register-page .policy-link {
+    color: var(--auth-gold);
+    font-weight: 800;
+    text-decoration: none;
+}
+
+.clan-register-page .footer-link a:hover,
+.clan-register-page .policy-link:hover {
+    color: #ffe58a;
+    text-decoration: underline;
+}
+
+.clan-register-page .policy-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(20, 8, 5, 0.7);
+}
+
+.clan-register-page .policy-modal-card {
+    width: min(850px, 95vw);
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 2px solid var(--auth-border);
+    border-radius: 18px;
+    background: linear-gradient(180deg, var(--auth-panel), var(--auth-panel-deep));
+    box-shadow: 0 22px 52px rgba(0, 0, 0, 0.42);
+}
+
+.clan-register-page .policy-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 18px;
+    border-bottom: 1px solid rgba(243, 198, 63, 0.28);
+}
+
+.clan-register-page .policy-modal-header h3 {
+    margin: 0;
+    color: var(--auth-gold);
+    font-size: 22px;
+}
+
+.clan-register-page .policy-modal-close {
+    width: 36px;
+    height: 36px;
+    border: 0;
+    background: transparent;
+    color: var(--auth-gold);
+    font-size: 28px;
+    cursor: pointer;
+}
+
+.clan-register-page .policy-modal-body {
+    overflow: auto;
+    padding: 18px;
+}
+
+.clan-register-page .policy-modal-body pre {
+    margin: 0;
+    color: var(--auth-gold-soft);
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: inherit;
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+@media (max-width: 620px) {
+    .clan-register-page {
+        padding: 96px 16px 32px;
+    }
+
+    .clan-register-page .back-btn {
+        top: 16px;
+        left: 16px;
+    }
+
+    .clan-register-container {
+        padding: 28px 22px 24px;
+    }
+
+    .clan-register-page .input-row {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+}

@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+docker/.env
+node_modules/
+.codex-logs/
+Backend/storage/
+.venv/
+.venv-whisper/
+__pycache__/
+*.pyc*
+backend/.env

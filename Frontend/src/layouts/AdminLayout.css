@@ -1,0 +1,266 @@
+.admin-portal-container {
+  display: flex;
+  min-height: 100vh;
+  background: url('/backgroundbanner.png') center/cover no-repeat fixed;
+  color: #fff;
+  transition: padding 0.25s ease;
+}
+
+.admin-sidebar {
+  width: 280px;
+  box-sizing: border-box;
+  margin: 1rem;
+  border-radius: 28px;
+  display: flex;
+  flex-direction: column;
+  padding: 2.1rem 1.4rem;
+  position: sticky;
+  top: 1rem;
+  height: calc(100vh - 2rem);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  transition: width 0.25s ease, padding 0.25s ease, border-radius 0.25s ease;
+  z-index: 5;
+}
+
+.sidebar-collapsed .admin-sidebar {
+  width: 88px;
+  padding: 1.5rem 0.75rem;
+  border-radius: 24px;
+}
+
+.sidebar-toggle {
+  position: absolute;
+  top: 28px;
+  right: -18px;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: #7f1d1d; /* Admin Crimson */
+  color: #fef3c7;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28);
+  z-index: 2;
+}
+
+.sidebar-toggle:hover {
+  background: #d4af37; /* Admin Gold */
+  color: #7f1d1d;
+}
+
+.sidebar-header .sidebar-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  margin-bottom: 2.25rem;
+  min-height: 60px;
+}
+
+.sidebar-header .sidebar-brand img {
+  max-width: 100%;
+  max-height: 50px;
+  transition: width 0.25s ease;
+}
+
+.sidebar-collapsed .sidebar-header .sidebar-brand img {
+  width: 48px;
+}
+
+.sidebar-user-section {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.admin-avatar-wrapper {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #7f1d1d 0%, #d4af37 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(127, 29, 29, 0.4);
+  flex: 0 0 auto;
+}
+
+.user-details strong {
+  display: block;
+  font-size: 0.95rem;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.admin-badge-chip {
+  font-size: 0.7rem;
+  background: rgba(127, 29, 29, 0.3);
+  color: #fef3c7;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  text-decoration: none;
+  color: rgba(255, 255, 255, 0.7);
+  border-radius: 16px;
+  transition: all 0.3s;
+}
+
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.nav-item.active {
+  background: #7f1d1d;
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 8px 16px rgba(127, 29, 29, 0.3);
+}
+
+.sidebar-collapsed .user-details,
+.sidebar-collapsed .nav-item span:last-child,
+.sidebar-collapsed .logout-btn span:last-child {
+  display: none;
+}
+
+.logout-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: #ff6b6b;
+  border-radius: 16px;
+  cursor: pointer;
+  font-weight: 700;
+  transition: all 0.3s;
+}
+
+.logout-btn:hover {
+  background: rgba(255, 107, 107, 0.1);
+}
+
+.admin-main-content {
+  flex-grow: 1;
+  padding: 1rem 2rem 2rem 1rem;
+  min-width: 0;
+}
+
+.admin-top-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 2.5rem;
+  border-radius: 24px;
+  margin-bottom: 2rem;
+}
+
+.admin-header-utils {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.admin-util-btn {
+  width: 46px;
+  height: 46px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.admin-util-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.header-context h1 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 0;
+  color: #fff;
+}
+
+.header-context p {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.glass-effect {
+  background: rgba(17, 20, 32, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.admin-view-body {
+  padding: 0;
+  min-height: calc(100vh - 180px);
+}
+
+/* Unified Gia Phả Việt logo: full when expanded, G mark when collapsed */
+.sidebar-header .sidebar-brand {
+  width: 100%;
+  min-height: 86px;
+  margin: 0 auto 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+.sidebar-header .sidebar-brand img {
+  width: min(210px, 100%);
+  max-width: 210px;
+  max-height: 86px;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+}
+.sidebar-collapsed .sidebar-header .sidebar-brand {
+  min-height: 64px;
+  margin-bottom: 1.4rem;
+}
+.sidebar-collapsed .sidebar-header .sidebar-brand img {
+  width: 54px;
+  height: 54px;
+  max-width: 54px;
+  max-height: 54px;
+  object-fit: contain;
+}

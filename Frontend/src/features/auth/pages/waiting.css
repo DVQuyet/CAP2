@@ -1,0 +1,20 @@
+.waiting-page {
+    font-family: sans-serif;
+    text-align: center;
+    padding-top: 100px;
+    background: #f8f9fa;
+    min-height: 100vh;
+}
+
+.waiting-card {
+    background: white;
+    display: inline-block;
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.waiting-icon {
+    font-size: 50px;
+    color: #ffc107;
+}

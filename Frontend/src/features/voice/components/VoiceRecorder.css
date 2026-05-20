@@ -1,0 +1,70 @@
+.voice-recorder {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.voice-recorder-button {
+  min-width: 38px;
+  width: 38px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 1px solid #d8def0;
+  border-radius: 999px;
+  background: #f6f8ff;
+  color: #5367d8;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+
+.voice-recorder-button .material-symbols-outlined {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.voice-recorder-time {
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.voice-recorder-button:hover:not(:disabled) {
+  border-color: #6e8efb;
+  background: #eef2ff;
+}
+
+.voice-recorder-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.voice-recorder-button.is-recording {
+  border-color: #d7263d;
+  background: #fff1f3;
+  color: #b71d31;
+}
+
+.voice-recorder-button.is-transcribing,
+.voice-recorder-button.is-uploading {
+  border-color: #0f766e;
+  background: #ecfdf5;
+  color: #0f766e;
+}
+
+.voice-recorder-status {
+  max-width: 150px;
+  color: #5c6475;
+  font-size: 0.72rem;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.voice-recorder-status.is-failed {
+  color: #b71d31;
+}

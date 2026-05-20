@@ -1,0 +1,4 @@
+{
+  "compilerOptions": {"allowJs": true, "checkJs": false, "jsx": "react-jsx", "noEmit": true, "module": "ESNext", "target": "ES2022", "moduleResolution": "Bundler", "skipLibCheck": true},
+  "include": ["src/features/genealogy/components/FamilyTreeEditor.jsx", "src/features/admin/pages/GenealogyManagement.jsx"]
+}

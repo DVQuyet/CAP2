@@ -1,0 +1,15 @@
+.language-toggle {
+  gap: 4px;
+  font-weight: 900;
+}
+
+.language-toggle strong {
+  font-size: 0.72rem;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.language-toggle .material-symbols-outlined {
+  font-size: 20px;
+}
+
