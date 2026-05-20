@@ -993,3 +993,41 @@
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
+
+@media (max-width: 760px) {
+  .member-tree-layout--viewer {
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+  }
+
+  .member-tree-layout--viewer .member-tree-main,
+  .member-tree-layout--viewer .member-tree-editorWrap,
+  .member-tree-layout--viewer .fte-shell {
+    width: 100%;
+    min-height: calc(100dvh - 98px);
+  }
+
+  .member-tree-layout--viewer .member-tree-main {
+    padding: 0;
+    border-radius: 0;
+  }
+
+  .member-tree-layout--viewer .member-tree-editorWrap {
+    padding: 0;
+  }
+
+  .member-tree-layout--viewer .fte-workspace,
+  .member-tree-layout--viewer .fte-viewport,
+  .member-tree-layout--viewer .fte-transformWrapper {
+    width: 100% !important;
+    height: calc(100dvh - 98px) !important;
+    min-height: calc(100dvh - 98px) !important;
+  }
+
+  .member-tree-layout--viewer .fte-viewport {
+    border-radius: 0 !important;
+    border-left: 0;
+    border-right: 0;
+  }
+}
