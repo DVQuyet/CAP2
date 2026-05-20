@@ -367,7 +367,9 @@
     position: fixed;
     left: 0;
     top: 0;
-    height: calc(100vh - 2rem);
+    height: calc(100dvh - 2rem);
+    max-width: min(300px, calc(100vw - 36px));
+    overflow-y: auto;
   }
 
   .sidebar-collapsed .member-sidebar {
@@ -380,14 +382,45 @@
 }
 
 @media (max-width: 640px) {
+  .member-main-content {
+    padding: 0.75rem;
+  }
+
   .member-topbar {
     padding: 1rem;
     align-items: flex-start;
     gap: 1rem;
+    flex-wrap: wrap;
+    border-radius: 18px;
+    margin-bottom: 1rem;
   }
 
   .topbar-welcome {
     min-width: 0;
+    flex: 1 1 180px;
+    font-size: 0.95rem;
+    line-height: 1.35;
+  }
+
+  .topbar-welcome span:last-child {
+    overflow-wrap: anywhere;
+  }
+
+  .member-topbar-actions {
+    margin-left: auto;
+    gap: 0.55rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .glass-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+  }
+
+  .divider {
+    display: none;
   }
 }
 

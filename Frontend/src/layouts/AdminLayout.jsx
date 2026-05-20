@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { getStoredUser, logout, isAuthenticated } from "../shared/utils/auth";
 import { formatDate } from "../shared/utils/dateFormat";
+import { useResponsiveSidebar } from "../shared/hooks/useResponsiveSidebar";
 import LanguageToggle from "../shared/components/LanguageToggle";
 import "./AdminLayout.css";
 
@@ -20,7 +21,7 @@ const menuItems = [
 export default function AdminLayout() {
   const { t, i18n } = useTranslation();
   const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useResponsiveSidebar(true);
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
