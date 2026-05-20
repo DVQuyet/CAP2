@@ -3047,3 +3047,270 @@ body.fte-bodyFullscreen {
 .fte-canvasTitleColor .material-symbols-outlined {
     font-size: 18px;
 }
+
+/* Mobile tree editor: compact controls and a canvas-first experience. */
+@media (max-width: 760px) {
+    .fte-shell {
+        width: 100%;
+        max-width: 100vw;
+        gap: 8px;
+        font-size: 0.95rem;
+    }
+
+    .fte-toolbar {
+        position: sticky;
+        top: max(8px, env(safe-area-inset-top));
+        z-index: 60;
+        display: grid !important;
+        grid-template-columns: 1fr;
+        align-items: stretch;
+        gap: 8px;
+        width: 100%;
+        max-width: 100%;
+        max-height: min(46dvh, 360px);
+        padding: 8px;
+        border-radius: 16px;
+        overflow-x: hidden !important;
+        overflow-y: auto;
+        background: rgba(255, 250, 238, 0.98);
+        box-shadow: 0 14px 34px rgba(82, 28, 12, 0.18);
+    }
+
+    .fte-toolbarGroup,
+    .fte-toolbarGroup--edit,
+    .fte-toolbarGroup--actions,
+    .fte-toolbarGroup--icons {
+        width: 100%;
+        min-width: 0;
+        margin: 0;
+        display: flex;
+        flex-wrap: wrap !important;
+        justify-content: stretch;
+        gap: 6px;
+    }
+
+    .fte-toolbarGroup--edit button,
+    .fte-toolbarGroup--actions button {
+        flex: 1 1 42px;
+    }
+
+    .fte-toolbar button,
+    .fte-toolbar .fte-iconButton,
+    .fte-toolbarGroup--icons button,
+    .fte-zoomValue {
+        width: auto !important;
+        min-width: 42px;
+        min-height: 40px;
+        height: 40px;
+        padding: 0 10px;
+        border-radius: 12px;
+        font-size: 0.88rem;
+    }
+
+    .fte-toolbar .material-symbols-outlined {
+        font-size: 22px;
+    }
+
+    .fte-readOnlyBadge {
+        width: 100%;
+        min-height: 38px;
+        justify-content: center;
+        font-size: 0.82rem;
+    }
+
+    .fte-viewMode {
+        width: 100%;
+        min-width: 0;
+        display: grid;
+        grid-template-columns: 44px minmax(0, 1fr);
+        align-items: end;
+        gap: 6px;
+        padding: 8px;
+    }
+
+    .fte-viewMode > button {
+        width: 44px !important;
+        min-width: 44px;
+        padding: 0 !important;
+        overflow: hidden;
+        font-size: 0;
+    }
+
+    .fte-viewMode > button .material-symbols-outlined {
+        font-size: 22px;
+    }
+
+    .fte-rootPicker {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .fte-rootPicker input,
+    .fte-searchForm input {
+        width: 100%;
+        min-width: 0;
+        height: 40px;
+        min-height: 40px;
+        font-size: 16px;
+    }
+
+    .fte-viewModeRoot {
+        grid-column: 1 / -1;
+        width: 100%;
+        max-width: 100%;
+        min-height: 28px;
+        font-size: 0.78rem;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .fte-rootPickerResults {
+        left: auto;
+        right: 0;
+        width: min(320px, calc(100vw - 34px));
+        max-height: 220px;
+    }
+
+    .fte-searchPanel {
+        width: 100%;
+        min-width: 0;
+        padding: 8px;
+    }
+
+    .fte-searchForm {
+        width: 100%;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 40px 40px 40px;
+        align-items: end;
+        gap: 6px;
+    }
+
+    .fte-searchForm label,
+    .fte-viewMode label {
+        min-width: 0;
+        font-size: 0.75rem;
+    }
+
+    .fte-searchForm button {
+        width: 40px !important;
+        min-width: 40px;
+        padding: 0 !important;
+    }
+
+    .fte-searchResults {
+        position: static;
+        width: 100%;
+        max-height: 180px;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 6px;
+        overflow-x: hidden;
+        overflow-y: auto;
+        padding: 8px;
+        box-shadow: inset 0 0 0 1px rgba(220, 193, 122, 0.45);
+    }
+
+    .fte-searchResults button {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .fte-toolbarGroup--icons {
+        align-items: center;
+        justify-content: center;
+        padding: 6px;
+    }
+
+    .fte-zoomValue {
+        flex: 0 0 auto;
+        min-width: 58px;
+        padding: 0 8px;
+    }
+
+    .fte-status,
+    .fte-treePickFloating,
+    .fte-validationPanel,
+    .fte-billingWarning {
+        border-radius: 14px;
+        padding: 10px;
+        font-size: 0.88rem;
+    }
+
+    .fte-treePickFloating,
+    .fte-billingWarning {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .fte-treePickFloating button,
+    .fte-billingWarning button {
+        width: 100%;
+    }
+
+    .fte-workspace {
+        height: min(68dvh, 640px);
+        min-height: 480px;
+    }
+
+    .fte-viewport,
+    .fte-loading {
+        width: 100%;
+        height: 100%;
+        min-height: 0 !important;
+        border-radius: 16px;
+    }
+
+    .fte-transformWrapper {
+        min-height: 0 !important;
+    }
+
+    .fte-canvasTitle {
+        transform: scale(0.76);
+        transform-origin: left top;
+        max-width: 420px;
+    }
+
+    .fte-personCard:hover {
+        filter: none;
+    }
+
+    .fte-inspectorOverlay,
+    .fte-modalOverlay {
+        padding: 10px;
+        align-items: stretch;
+        justify-items: stretch;
+    }
+
+    .fte-inspector,
+    .fte-modal {
+        width: 100%;
+        max-height: calc(100dvh - 20px);
+        border-radius: 16px;
+        padding: 14px;
+    }
+
+    .fte-formGrid,
+    .fte-inspectorActions,
+    .fte-aiSummary,
+    .fte-aiResultGrid,
+    .fte-aiReviewGrid,
+    .fte-aiEditableGrid,
+    .fte-aiAccountFields,
+    .fte-aiDraftFields,
+    .fte-aiDraftFields:has(label:nth-child(3)),
+    .fte-accountCreateBox,
+    .fte-quickCreateChoices {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 760px) and (orientation: landscape) {
+    .fte-toolbar {
+        max-height: 52dvh;
+    }
+
+    .fte-workspace {
+        height: 74dvh;
+        min-height: 360px;
+    }
+}

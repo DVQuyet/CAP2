@@ -643,7 +643,18 @@
   }
 
   .sidebar-collapsed .manager-sidebar {
-    transform: translateX(calc(-100% + 28px));
+    transform: translateX(-100%);
+  }
+
+  .sidebar-collapsed .manager-sidebar .sidebar-toggle {
+    right: -58px;
+    top: 88px;
+    width: 46px;
+    height: 46px;
+    border-radius: 16px;
+    background: rgba(255, 248, 232, 0.96);
+    color: #7a1d12;
+    border-color: rgba(201, 154, 44, 0.65);
   }
 
   .manager-main-content {
