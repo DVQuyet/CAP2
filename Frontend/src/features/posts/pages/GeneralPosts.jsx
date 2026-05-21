@@ -3,10 +3,12 @@ import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import {
   addPostComment,
+  deletePost,
   getGeneralPosts,
   getPostComments,
   submitMaterial,
   togglePostLike,
+  updatePost as updatePostApi,
 } from "../../../api/memberService";
 import ImageUpload from "../../../shared/components/ImageUpload";
 import { formatDateTimeVN } from "../../../shared/utils/dateFormat";
@@ -66,7 +68,7 @@ function PostMedia({ url, mediaType = "", detail = false, t }) {
   return <img src={url} alt={t("posts.card.postMediaAlt")} />;
 }
 
-function PostCard({ post, onOpen, onLike, liking, t }) {
+function PostCard({ post, onOpen, onLike, liking, onDelete, onEdit, canModify, t }) {
   const text = post.content || post.description || t("posts.card.imagePost");
   const mediaUrl = getPostMediaUrl(post);
 
@@ -82,6 +84,12 @@ function PostCard({ post, onOpen, onLike, liking, t }) {
             <time>{formatDate(post.created_at, t)}</time>
           </span>
         </button>
+        {canModify && (
+          <div className="feed-post-card-actions">
+            <button type="button" className="feed-post-action-btn" onClick={() => onEdit(post)} title="Sửa"><span className="material-symbols-outlined">edit</span></button>
+            <button type="button" className="feed-post-action-btn is-danger" onClick={() => onDelete(post.id)} title="Xóa"><span className="material-symbols-outlined">delete</span></button>
+          </div>
+        )}
       </header>
 
       <button type="button" className="feed-post-content-button" onClick={() => onOpen(post)}>
@@ -346,6 +354,13 @@ export default function GeneralPosts() {
   const [commentError, setCommentError] = useState("");
   const [commenting, setCommenting] = useState(false);
   const [likingPostId, setLikingPostId] = useState(null);
+  const [editingPost, setEditingPost] = useState(null); // { id, description, content }
+  const currentUserId = useMemo(() => {
+    try { return Number(JSON.parse(localStorage.getItem("user") || localStorage.getItem("auth_user") || "{}").id || 0); } catch { return 0; }
+  }, []);
+  const currentUserRole = useMemo(() => {
+    try { return Number(JSON.parse(localStorage.getItem("user") || localStorage.getItem("auth_user") || "{}").role_id || 0); } catch { return 0; }
+  }, []);
 
   const selectedPostData = useMemo(
     () => (selectedPost ? posts.find((post) => post.id === selectedPost.id) || selectedPost : null),
@@ -524,8 +539,29 @@ export default function GeneralPosts() {
     }
   };
 
-  const openAddModal = (type = "story") => {
-    setForm((current) => ({
+  const handleDeletePost = async (postId) => {
+    if (!window.confirm("Bạn có chắc muốn xóa bài đăng này không?")) return;
+    try {
+      await deletePost(postId);
+      setPosts((prev) => prev.filter((p) => p.id !== postId));
+      if (selectedPost?.id === postId) setSelectedPost(null);
+    } catch (err) {
+      setError(err?.message || "Không thể xóa bài đăng.");
+    }
+  };
+
+  const handleSaveEditPost = async () => {
+    if (!editingPost) return;
+    try {
+      await updatePostApi(editingPost.id, { description: editingPost.description, content: editingPost.content });
+      setPosts((prev) => prev.map((p) => p.id === editingPost.id ? { ...p, description: editingPost.description, content: editingPost.content } : p));
+      setEditingPost(null);
+    } catch (err) {
+      setError(err?.message || "Không thể cập nhật bài đăng.");
+    }
+  };
+
+  const openAddModal = (type = "story") => {    setForm((current) => ({
       ...current,
       type: type === "media" ? "media" : "story",
       image_url: type === "media" ? current.image_url : "",
@@ -584,7 +620,17 @@ export default function GeneralPosts() {
           ) : (
             <div className="feed-post-list">
               {posts.map((post) => (
-                <PostCard key={post.id} post={post} onOpen={openPost} onLike={handleToggleLike} liking={likingPostId === post.id} t={t} />
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  onOpen={openPost}
+                  onLike={handleToggleLike}
+                  liking={likingPostId === post.id}
+                  onDelete={handleDeletePost}
+                  onEdit={(p) => setEditingPost({ id: p.id, description: p.description || "", content: p.content || "" })}
+                  canModify={currentUserRole <= 2 || Number(post.author_id) === currentUserId}
+                  t={t}
+                />
               ))}
             </div>
           )}
@@ -633,6 +679,32 @@ export default function GeneralPosts() {
           onCommentSubmit={handleSubmitComment}
           t={t}
         />
+      )}
+
+      {/* Modal sửa bài đăng */}
+      {editingPost && (
+        <div className="post-modal-backdrop" onMouseDown={() => setEditingPost(null)}>
+          <section className="post-modal post-compose-modal" role="dialog" aria-modal="true" onMouseDown={(e) => e.stopPropagation()}>
+            <header className="post-modal-head">
+              <h2>Sửa bài đăng</h2>
+              <button type="button" className="post-icon-btn" onClick={() => setEditingPost(null)}><span className="material-symbols-outlined">close</span></button>
+            </header>
+            <div className="post-compose-form">
+              <label className="post-field">
+                <span>Tiêu đề</span>
+                <input value={editingPost.description} onChange={(e) => setEditingPost((p) => ({ ...p, description: e.target.value }))} />
+              </label>
+              <label className="post-field">
+                <span>Nội dung</span>
+                <textarea rows={6} value={editingPost.content} onChange={(e) => setEditingPost((p) => ({ ...p, content: e.target.value }))} />
+              </label>
+              <div className="post-form-actions">
+                <button type="button" className="post-secondary-btn" onClick={() => setEditingPost(null)}>Hủy</button>
+                <button type="button" className="post-primary-btn" onClick={handleSaveEditPost}>Lưu</button>
+              </div>
+            </div>
+          </section>
+        </div>
       )}
     </div>
   );

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiRequest } from "../../../services/api";
 import { uploadImage } from "../../../api/memberService";
+import { deleteMemory, updateMemory } from "../../../api/memberService";
 import { mediaUrlFromId } from "../../../shared/utils/media";
 import { formatDateTimeVN } from "../../../shared/utils/dateFormat";
 import "./TimeCapsulePage.css";
@@ -82,7 +83,8 @@ function MemoryMedia({ memory, t, showCarouselControls = false, onPrevious, onNe
   );
 }
 
-function MemoryCard({ memory, isManagerView = false, t, showCarouselControls = false, onPrevious, onNext }) {
+function MemoryCard({ memory, isManagerView = false, t, showCarouselControls = false, onPrevious, onNext, onDelete, onEdit, currentUserId }) {
+  const canModify = onDelete && (isManagerView || Number(memory.author_account_id) === Number(currentUserId));
   return (
     <article className={`memory-card is-${memory.status || "approved"}`}>
       <div className="memory-card-head">
@@ -95,7 +97,15 @@ function MemoryCard({ memory, isManagerView = false, t, showCarouselControls = f
             {memory.author_name || t("timeCapsule.defaultAuthor")} • {memory.created_at ? formatDateTimeVN(memory.created_at) : t("timeCapsule.notUpdated")}
           </p>
         </div>
-        <span className={`memory-status is-${memory.status || "approved"}`}>{getStatusLabel(memory.status, t)}</span>
+        <div className="memory-card-head-right">
+          <span className={`memory-status is-${memory.status || "approved"}`}>{getStatusLabel(memory.status, t)}</span>
+          {canModify && (
+            <div className="memory-card-actions">
+              {onEdit && <button type="button" className="memory-action-btn" onClick={() => onEdit(memory)} title="Sửa"><span className="material-symbols-outlined">edit</span></button>}
+              <button type="button" className="memory-action-btn is-danger" onClick={() => onDelete(memory.id)} title="Xóa"><span className="material-symbols-outlined">delete</span></button>
+            </div>
+          )}
+        </div>
       </div>
       {memory.content && <p className="memory-content">{memory.content}</p>}
       <MemoryMedia memory={memory} t={t} showCarouselControls={showCarouselControls} onPrevious={onPrevious} onNext={onNext} />
@@ -118,6 +128,10 @@ function MemoryCard({ memory, isManagerView = false, t, showCarouselControls = f
 export default function TimeCapsulePage({ role = "member" }) {
   const { t } = useTranslation();
   const isManager = role === "manager" || role === "admin";
+  // Lấy currentUserId từ localStorage để kiểm tra quyền sửa/xóa
+  const currentUserId = useMemo(() => {
+    try { return Number(JSON.parse(localStorage.getItem("user") || localStorage.getItem("auth_user") || "{}").id || 0); } catch { return 0; }
+  }, []);
   const [memories, setMemories] = useState([]);
   const [readerOptions, setReaderOptions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -128,10 +142,12 @@ export default function TimeCapsulePage({ role = "member" }) {
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [filter, setFilter] = useState("all");
+  const [editingMemory, setEditingMemory] = useState(null); // { id, title, content }
   const [albumCategory, setAlbumCategory] = useState("image");
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [captureMode, setCaptureMode] = useState("none");
   const [cameraStream, setCameraStream] = useState(null);
+  const [facingMode, setFacingMode] = useState("environment"); // "environment" = camera sau, "user" = camera trước
   const [recorderState, setRecorderState] = useState("idle");
   const [cameraError, setCameraError] = useState("");
   const [pendingVideo, setPendingVideo] = useState(null);
@@ -175,11 +191,15 @@ export default function TimeCapsulePage({ role = "member" }) {
     loadReaderOptions();
   }, [loadMemories, loadReaderOptions]);
 
-  useEffect(() => {
-    if (liveVideoRef.current && cameraStream) {
-      liveVideoRef.current.srcObject = cameraStream;
+  // Ref callback: gán srcObject ngay khi video element mount vào DOM
+  // Dùng callback thay useEffect để tránh race condition (element chưa mount khi effect chạy)
+  const liveVideoRefCallback = useCallback((videoEl) => {
+    liveVideoRef.current = videoEl;
+    if (videoEl && streamRef.current) {
+      videoEl.srcObject = streamRef.current;
+      videoEl.play().catch(() => {});
     }
-  }, [cameraStream, captureMode]);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -355,7 +375,7 @@ export default function TimeCapsulePage({ role = "member" }) {
     setCameraError("");
   };
 
-  const openCamera = async (mode) => {
+  const openCamera = async (mode, facing = "environment") => {
     if (!navigator.mediaDevices?.getUserMedia) {
       setCameraError(t("timeCapsule.errors.cameraUnsupported"));
       return;
@@ -366,30 +386,43 @@ export default function TimeCapsulePage({ role = "member" }) {
       setPendingVideo(null);
       setCameraError("");
 
-      // Thử environment (camera sau) trước, fallback về user (camera trước) nếu không có
+      // Thử facingMode được chọn, fallback về video: true nếu không hỗ trợ
       let stream = null;
-      if (mode === "photo") {
-        try {
-          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
-        } catch {
-          stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-        }
-      } else {
-        try {
-          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: true });
-        } catch {
-          stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        }
+      const videoConstraint = { facingMode: facing };
+      const audioNeeded = mode !== "photo";
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: videoConstraint,
+          audio: audioNeeded,
+        });
+      } catch {
+        // Fallback: không chỉ định facingMode
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: audioNeeded,
+        });
       }
 
       streamRef.current = stream;
+      // Gán srcObject trực tiếp nếu video element đã mount
+      if (liveVideoRef.current) {
+        liveVideoRef.current.srcObject = stream;
+        liveVideoRef.current.play().catch(() => {});
+      }
       setCameraStream(stream);
+      setFacingMode(facing);
       setCaptureMode(mode);
       setRecorderState("idle");
       setRecordingSeconds(0);
     } catch (err) {
       setCameraError(t("timeCapsule.errors.cameraOpen"));
     }
+  };
+
+  const switchCamera = async () => {
+    if (recorderState === "recording") return; // Không đổi khi đang quay
+    const nextFacing = facingMode === "environment" ? "user" : "environment";
+    await openCamera(captureMode, nextFacing);
   };
 
   const capturePhoto = async () => {
@@ -537,6 +570,27 @@ export default function TimeCapsulePage({ role = "member" }) {
     stopCameraStream();
   };
 
+  const handleDeleteMemory = async (memoryId) => {
+    if (!window.confirm("Bạn có chắc muốn xóa kỷ niệm này không?")) return;
+    try {
+      await deleteMemory(memoryId);
+      setMemories((prev) => prev.filter((m) => m.id !== memoryId));
+    } catch (err) {
+      setError(err?.message || "Không thể xóa kỷ niệm.");
+    }
+  };
+
+  const handleSaveEditMemory = async () => {
+    if (!editingMemory) return;
+    try {
+      await updateMemory(editingMemory.id, { title: editingMemory.title, content: editingMemory.content });
+      setMemories((prev) => prev.map((m) => m.id === editingMemory.id ? { ...m, title: editingMemory.title, content: editingMemory.content } : m));
+      setEditingMemory(null);
+    } catch (err) {
+      setError(err?.message || "Không thể cập nhật kỷ niệm.");
+    }
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     const hasText = form.title.trim() || form.content.trim();
@@ -678,12 +732,6 @@ export default function TimeCapsulePage({ role = "member" }) {
               <strong>{t("timeCapsule.postMemory.recordVideo")}</strong>
               <small>{t("timeCapsule.postMemory.recordVideoHelp")}</small>
             </button>
-
-            <button type="button" className={`memory-capture-button ${recorderState === "recording" && captureMode === "audio" ? "is-recording" : ""}`} onClick={recorderState === "recording" && captureMode === "audio" ? stopRecording : startAudioRecording} disabled={uploading || submitting || recorderState === "stopping" || (recorderState === "recording" && captureMode !== "audio")}>
-              <span className="material-symbols-outlined">mic</span>
-              <strong>{recorderState === "recording" && captureMode === "audio" ? t("timeCapsule.postMemory.stopAudio") : t("timeCapsule.postMemory.recordAudio")}</strong>
-              <small>{t("timeCapsule.postMemory.recordAudioHelp")}</small>
-            </button>
           </div>
 
           {showLiveCapture ? (
@@ -693,18 +741,31 @@ export default function TimeCapsulePage({ role = "member" }) {
                   <span className="material-symbols-outlined">{captureMode === "photo" ? "photo_camera" : "videocam"}</span>
                   {captureMode === "photo" ? t("timeCapsule.postMemory.takePhoto") : t("timeCapsule.postMemory.recordVideo")}
                 </span>
-                {captureMode === "video" && recorderState === "recording" ? (
-                  <span className="memory-recording-timer">
-                    <span className="memory-recording-dot" />
-                    {formatRecordingTime(recordingSeconds)}
-                  </span>
-                ) : null}
+                <div className="memory-live-topbar-actions">
+                  {/* Nút đổi camera trước/sau — chỉ hiện khi đang xem live (chưa có pendingVideo) */}
+                  {!pendingVideo && recorderState !== "recording" && (
+                    <button
+                      type="button"
+                      className="memory-switch-camera"
+                      onClick={switchCamera}
+                      title={facingMode === "environment" ? "Chuyển camera trước" : "Chuyển camera sau"}
+                    >
+                      <span className="material-symbols-outlined">flip_camera_ios</span>
+                    </button>
+                  )}
+                  {captureMode === "video" && recorderState === "recording" ? (
+                    <span className="memory-recording-timer">
+                      <span className="memory-recording-dot" />
+                      {formatRecordingTime(recordingSeconds)}
+                    </span>
+                  ) : null}
+                </div>
               </div>
 
               {pendingVideo ? (
                 <video className="memory-live-video" src={pendingVideo.url} controls playsInline />
               ) : (
-                <video className="memory-live-video" ref={liveVideoRef} autoPlay muted playsInline />
+                <video className="memory-live-video" ref={liveVideoRefCallback} autoPlay muted playsInline />
               )}
 
               <div className="memory-live-actions">
@@ -724,13 +785,6 @@ export default function TimeCapsulePage({ role = "member" }) {
                 )}
                 <button type="button" className="time-capsule-secondary" onClick={stopCameraStream} disabled={uploading || recorderState === "stopping" || recorderState === "recording"}>{t("common.closeCamera")}</button>
               </div>
-            </div>
-          ) : null}
-
-          {captureMode === "audio" && recorderState === "recording" ? (
-            <div className="memory-recording-strip">
-              <span className="memory-recording-dot" />
-              {t("timeCapsule.postMemory.recordingAudio")}
             </div>
           ) : null}
 
@@ -803,6 +857,10 @@ export default function TimeCapsulePage({ role = "member" }) {
               showCarouselControls={visibleMemories.length > 1}
               onPrevious={goToPreviousMemory}
               onNext={goToNextMemory}
+              onDelete={handleDeleteMemory}
+              onEdit={setEditingMemory}
+              currentUserId={currentUserId}
+              isManagerView={isManager}
             />
             <div className="memory-carousel-counter">
               {carouselIndex + 1} / {visibleMemories.length}
@@ -810,10 +868,41 @@ export default function TimeCapsulePage({ role = "member" }) {
           </div>
         ) : (
           <div className="memory-feed">
-            {visibleMemories.map((memory) => <MemoryCard key={memory.id} memory={memory} t={t} />)}
+            {visibleMemories.map((memory) => (
+              <MemoryCard
+                key={memory.id}
+                memory={memory}
+                t={t}
+                onDelete={handleDeleteMemory}
+                onEdit={setEditingMemory}
+                currentUserId={currentUserId}
+                isManagerView={isManager}
+              />
+            ))}
           </div>
         )}
       </section>
+
+      {/* Modal sửa kỷ niệm */}
+      {editingMemory && (
+        <div className="memory-edit-overlay" onClick={() => setEditingMemory(null)}>
+          <div className="memory-edit-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>Sửa kỷ niệm</h3>
+            <label>
+              <span>Tiêu đề</span>
+              <input value={editingMemory.title || ""} onChange={(e) => setEditingMemory((prev) => ({ ...prev, title: e.target.value }))} />
+            </label>
+            <label>
+              <span>Nội dung</span>
+              <textarea rows={4} value={editingMemory.content || ""} onChange={(e) => setEditingMemory((prev) => ({ ...prev, content: e.target.value }))} />
+            </label>
+            <div className="memory-edit-actions">
+              <button type="button" className="time-capsule-secondary" onClick={() => setEditingMemory(null)}>Hủy</button>
+              <button type="button" className="time-capsule-primary" onClick={handleSaveEditMemory}>Lưu</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

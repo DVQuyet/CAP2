@@ -998,6 +998,34 @@
   gap: 0.75rem;
 }
 
+.memory-live-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.memory-switch-camera {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.18);
+  border: none;
+  border-radius: 50%;
+  width: 2.2rem;
+  height: 2.2rem;
+  cursor: pointer;
+  color: #fff;
+  transition: background 0.2s;
+}
+
+.memory-switch-camera:hover {
+  background: rgba(255, 255, 255, 0.32);
+}
+
+.memory-switch-camera .material-symbols-outlined {
+  font-size: 1.3rem;
+}
+
 .memory-live-mode,
 .memory-recording-timer {
   display: inline-flex;
@@ -1338,4 +1366,81 @@
   .memory-album-tabs button {
     flex: 1 1 150px;
   }
+}
+
+/* Nút sửa/xóa kỷ niệm */
+.memory-card-head-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.memory-card-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.memory-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  width: 2rem;
+  height: 2rem;
+  cursor: pointer;
+  color: #888;
+  transition: background 0.15s, color 0.15s;
+}
+
+.memory-action-btn:hover { background: #f0ece6; color: #5a3e2b; }
+.memory-action-btn.is-danger:hover { background: #fdecea; color: #c0392b; }
+.memory-action-btn .material-symbols-outlined { font-size: 1.1rem; }
+
+/* Modal sửa kỷ niệm */
+.memory-edit-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.memory-edit-modal {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  width: min(480px, 92vw);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.memory-edit-modal h3 { margin: 0; font-size: 1.1rem; }
+
+.memory-edit-modal label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+}
+
+.memory-edit-modal input,
+.memory-edit-modal textarea {
+  border: 1px solid #d4c5b0;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.95rem;
+  resize: vertical;
+}
+
+.memory-edit-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
 }

@@ -232,6 +232,42 @@ export const togglePostLike = async (postId) =>
     "Không thể cập nhật lượt thích",
   );
 
+export const deletePost = async (postId) =>
+  requestJson(
+    `/posts/${postId}`,
+    { method: "DELETE", headers: getAuthHeaders() },
+    "Không thể xóa bài đăng",
+  );
+
+export const updatePost = async (postId, payload) =>
+  requestJson(
+    `/posts/${postId}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      body: JSON.stringify(payload),
+    },
+    "Không thể cập nhật bài đăng",
+  );
+
+export const deleteMemory = async (memoryId) =>
+  requestJson(
+    `/memories/${memoryId}`,
+    { method: "DELETE", headers: getAuthHeaders() },
+    "Không thể xóa kỷ niệm",
+  );
+
+export const updateMemory = async (memoryId, payload) =>
+  requestJson(
+    `/memories/${memoryId}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...getAuthHeaders() },
+      body: JSON.stringify(payload),
+    },
+    "Không thể cập nhật kỷ niệm",
+  );
+
 export const getMySubmissions = async () =>
   requestJson(
     "/submissions",
