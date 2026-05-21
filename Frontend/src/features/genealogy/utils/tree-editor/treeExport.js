@@ -3,14 +3,17 @@ import { asArray, formatDisplayDate, fullName, toInt } from "./treePersonUtils";
 import { getCardSize } from "./treeStorage";
 import { numbersFromPath } from "./treeLines";
 
+const EXPORT_PADDING = 180;
+const EXPORT_FONT_FAMILY = '"Segoe UI", Arial, sans-serif';
+const TITLE_BOX = { x: 42, y: 26, width: 300, height: 76 };
+
 export function getTreeExportBounds(people, lines = [], cardSizes = {}) {
   if (!people.length) {
     return { x: 0, y: 0, width: 1200, height: 800 };
   }
 
-  const padding = 110;
-  const xs = [40];
-  const ys = [30];
+  const xs = [TITLE_BOX.x, TITLE_BOX.x + TITLE_BOX.width];
+  const ys = [TITLE_BOX.y, TITLE_BOX.y + TITLE_BOX.height];
 
   people.forEach((person) => {
     const size = getCardSize(cardSizes, person.id);
@@ -27,25 +30,25 @@ export function getTreeExportBounds(people, lines = [], cardSizes = {}) {
     }
   });
 
-  const rawMinX = Math.min(...xs) - padding;
-  const rawMinY = Math.min(...ys) - padding;
+  const rawMinX = Math.min(...xs) - EXPORT_PADDING;
+  const rawMinY = Math.min(...ys) - EXPORT_PADDING;
   const minX = Math.max(0, Math.floor(rawMinX));
   const minY = Math.max(0, Math.floor(rawMinY));
-  const maxX = Math.ceil(Math.max(...xs) + padding);
-  const maxY = Math.ceil(Math.max(...ys) + padding);
+  const maxX = Math.ceil(Math.max(...xs) + EXPORT_PADDING);
+  const maxY = Math.ceil(Math.max(...ys) + EXPORT_PADDING);
 
   return {
     x: minX,
     y: minY,
-    width: Math.max(900, maxX - minX),
-    height: Math.max(620, maxY - minY),
+    width: Math.max(1000, maxX - minX),
+    height: Math.max(720, maxY - minY),
   };
 }
 
 export function getExportPixelRatio(bounds) {
   const largestEdge = Math.max(bounds.width, bounds.height);
-  if (!largestEdge) return 2;
-  return Math.max(0.75, Math.min(2, EXPORT_MAX_CANVAS_EDGE / largestEdge));
+  if (!largestEdge) return 3;
+  return Math.max(1, Math.min(3, EXPORT_MAX_CANVAS_EDGE / largestEdge));
 }
 
 export function exportFileName(name) {
@@ -66,6 +69,28 @@ export function downloadBlob(blob, fileName) {
   link.click();
   link.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+export async function saveCanvasImage(blob, fileName) {
+  const safeFileName = fileName || "gia-pha.png";
+
+  if (typeof File !== "undefined" && typeof navigator !== "undefined" && navigator.canShare && navigator.share) {
+    const file = new File([blob], safeFileName, { type: blob.type || "image/png" });
+    if (navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: safeFileName.replace(/\.png$/i, ""),
+        });
+        return "shared";
+      } catch (error) {
+        if (error?.name === "AbortError") return "cancelled";
+      }
+    }
+  }
+
+  downloadBlob(blob, safeFileName);
+  return "downloaded";
 }
 
 export function canvasToBlob(canvas, t) {
@@ -100,9 +125,9 @@ export function drawTextFit(ctx, text, x, y, maxWidth, options = {}) {
   const value = String(text || "").trim();
   if (!value) return;
   const fontSize = options.fontSize || 16;
-  const minFontSize = options.minFontSize || 10;
+  const minFontSize = options.minFontSize || 11;
   const weight = options.weight || "700";
-  const family = options.family || "Georgia, 'Times New Roman', serif";
+  const family = options.family || EXPORT_FONT_FAMILY;
   let size = fontSize;
   ctx.font = `${weight} ${size}px ${family}`;
   while (size > minFontSize && ctx.measureText(value).width > maxWidth) {
@@ -110,6 +135,62 @@ export function drawTextFit(ctx, text, x, y, maxWidth, options = {}) {
     ctx.font = `${weight} ${size}px ${family}`;
   }
   ctx.fillText(value, x, y);
+}
+
+function splitTextToLines(ctx, text, maxWidth, maxLines = 2) {
+  const words = String(text || "").trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return [];
+
+  const lines = [];
+  let current = "";
+  words.forEach((word) => {
+    const next = current ? `${current} ${word}` : word;
+    if (ctx.measureText(next).width <= maxWidth || !current) {
+      current = next;
+      return;
+    }
+    lines.push(current);
+    current = word;
+  });
+  if (current) lines.push(current);
+
+  if (lines.length <= maxLines) return lines;
+  const result = lines.slice(0, maxLines);
+  let last = result[maxLines - 1];
+  while (last.length > 1 && ctx.measureText(`${last}...`).width > maxWidth) {
+    last = last.slice(0, -1).trim();
+  }
+  result[maxLines - 1] = `${last || result[maxLines - 1].slice(0, 1)}...`;
+  return result;
+}
+
+export function drawTextFitLines(ctx, text, x, y, maxWidth, options = {}) {
+  const value = String(text || "").trim();
+  if (!value) return;
+  const fontSize = options.fontSize || 16;
+  const minFontSize = options.minFontSize || 11;
+  const maxLines = options.maxLines || 2;
+  const lineHeight = options.lineHeight || 1.18;
+  const weight = options.weight || "700";
+  const family = options.family || EXPORT_FONT_FAMILY;
+  let size = fontSize;
+  let lines = [];
+
+  while (size >= minFontSize) {
+    ctx.font = `${weight} ${size}px ${family}`;
+    lines = splitTextToLines(ctx, value, maxWidth, maxLines);
+    if (lines.length <= maxLines && lines.every((line) => ctx.measureText(line).width <= maxWidth)) break;
+    size -= 1;
+  }
+
+  const resolvedSize = Math.max(size, minFontSize);
+  ctx.font = `${weight} ${resolvedSize}px ${family}`;
+  const resolvedLines = lines.length ? lines : [value];
+  const step = Math.max(minFontSize + 2, Math.round(resolvedSize * lineHeight));
+  const startY = y - ((resolvedLines.length - 1) * step) / 2;
+  resolvedLines.slice(0, maxLines).forEach((line, index) => {
+    ctx.fillText(line, x, startY + index * step);
+  });
 }
 
 export function drawSvgPathFallback(ctx, pathText) {
@@ -125,19 +206,28 @@ export function drawSvgPathFallback(ctx, pathText) {
   ctx.stroke();
 }
 
+function strokeTreePath(ctx, pathText) {
+  try {
+    ctx.stroke(new Path2D(pathText));
+  } catch {
+    drawSvgPathFallback(ctx, pathText);
+  }
+}
+
 export function drawTreeLine(ctx, line) {
   if (!line?.d || line.type === "route-control") return;
   ctx.save();
   ctx.fillStyle = "transparent";
-  ctx.strokeStyle = line.type === "spouse" ? "#7f1d12" : line.color || "#1E3A8A";
-  ctx.lineWidth = line.type === "spouse" ? 4 : 4.5;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  try {
-    ctx.stroke(new Path2D(line.d));
-  } catch {
-    drawSvgPathFallback(ctx, line.d);
-  }
+
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+  ctx.lineWidth = line.type === "spouse" ? 9 : 10;
+  strokeTreePath(ctx, line.d);
+
+  ctx.strokeStyle = line.type === "spouse" ? "#6f120b" : line.color || "#123f91";
+  ctx.lineWidth = line.type === "spouse" ? 5.5 : 6.5;
+  strokeTreePath(ctx, line.d);
   ctx.restore();
 }
 
@@ -149,11 +239,12 @@ export function drawPersonCardOnCanvas(ctx, person, cardSizes = {}, t) {
   const height = size.height;
   const isFounder = Number(person.generation) === 1 || Number(person.role_id) === 1;
   const isChief = Number(person.role_id) === 2;
-  const name = String(fullName(person, t ? t("tree.card.fallbackName") : "Thành viên")).toUpperCase();
+  const name = String(fullName(person, t ? t("tree.card.fallbackName") : "Thành viên"));
   const birthText = formatDisplayDate(person.birth_date);
   const deathText = formatDisplayDate(person.death_date);
   const deceased = Number(person.is_living) === 0;
   const lifeParts = [];
+
   if (birthText && t) lifeParts.push(t("tree.card.born", { date: birthText }));
   else if (birthText) lifeParts.push(`Sinh: ${birthText}`);
 
@@ -194,8 +285,12 @@ export function drawPersonCardOnCanvas(ctx, person, cardSizes = {}, t) {
     ctx.fillStyle = "#fff7ce";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.font = "700 11px Georgia, 'Times New Roman', serif";
-    ctx.fillText(t ? t("tree.card.chief").toUpperCase() : "TỘC TRƯỞNG", x + 12 + Math.min(width - 24, 92) / 2, y + 21);
+    ctx.font = `700 11px ${EXPORT_FONT_FAMILY}`;
+    ctx.fillText(
+      (t ? t("tree.card.chief") : "TỘC TRƯỞNG").toLocaleUpperCase("vi-VN"),
+      x + 12 + Math.min(width - 24, 92) / 2,
+      y + 21,
+    );
   }
 
   const iconY = y + Math.max(24, Math.min(45, height * 0.17));
@@ -219,12 +314,25 @@ export function drawPersonCardOnCanvas(ctx, person, cardSizes = {}, t) {
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillStyle = isFounder ? "#fffbe8" : "#8a2418";
-  drawTextFit(ctx, name, iconX, y + height * 0.48, width - 24, { fontSize: Math.max(12, Math.min(20, width * 0.105)), minFontSize: 9, weight: "800" });
-  const genText = t ? t("tree.card.generation", { count: person.generation || "?" }).toUpperCase() : `ĐỜI ${person.generation || "?"}`;
-  drawTextFit(ctx, genText, iconX, y + height * 0.61, width - 28, { fontSize: Math.max(11, Math.min(17, width * 0.09)), minFontSize: 9, weight: "800" });
+  drawTextFitLines(ctx, name, iconX, y + height * 0.48, width - 24, {
+    fontSize: Math.max(13, Math.min(20, width * 0.105)),
+    minFontSize: 11,
+    maxLines: 2,
+    weight: "800",
+  });
+  const genText = (t ? t("tree.card.generation", { count: person.generation || "?" }) : `ĐỜI ${person.generation || "?"}`).toLocaleUpperCase("vi-VN");
+  drawTextFit(ctx, genText, iconX, y + height * 0.64, width - 28, {
+    fontSize: Math.max(12, Math.min(17, width * 0.09)),
+    minFontSize: 11,
+    weight: "800",
+  });
   if (lifeText) {
     ctx.fillStyle = isFounder ? "#fff4c7" : "#9a4f20";
-    drawTextFit(ctx, lifeText, iconX, y + height - 22, width - 18, { fontSize: Math.max(9, Math.min(12, width * 0.06)), minFontSize: 8, weight: "700" });
+    drawTextFit(ctx, lifeText, iconX, y + height - 22, width - 18, {
+      fontSize: Math.max(11, Math.min(13, width * 0.065)),
+      minFontSize: 11,
+      weight: "700",
+    });
   }
   ctx.restore();
 }
@@ -240,6 +348,9 @@ export async function renderFamilyTreePngBlob({ people, lines, cardSizes, clan, 
 
   ctx.save();
   ctx.scale(pixelRatio, pixelRatio);
+  ctx.fillStyle = "#fff7dc";
+  ctx.fillRect(0, 0, bounds.width, bounds.height);
+
   const bg = ctx.createLinearGradient(0, 0, bounds.width, bounds.height);
   bg.addColorStop(0, "#fff7c8");
   bg.addColorStop(0.48, "#f6da82");
@@ -248,16 +359,16 @@ export async function renderFamilyTreePngBlob({ people, lines, cardSizes, clan, 
   ctx.fillRect(0, 0, bounds.width, bounds.height);
 
   ctx.translate(-bounds.x, -bounds.y);
-  ctx.fillStyle = "rgba(255, 255, 255, 0.38)";
-  drawRoundRect(ctx, 42, 26, 240, 70, 12);
+  ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
+  drawRoundRect(ctx, TITLE_BOX.x, TITLE_BOX.y, TITLE_BOX.width, TITLE_BOX.height, 12);
   ctx.fill();
   ctx.fillStyle = "#7d1f13";
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
-  ctx.font = "800 15px Georgia, 'Times New Roman', serif";
-  ctx.fillText(t ? t("tree.title").toUpperCase() : "GIA PHẢ", 58, 52);
-  ctx.font = "900 32px Georgia, 'Times New Roman', serif";
-  ctx.fillText(String(clan?.clan_name || (t ? t("tree.card.fallbackName") : "Dòng họ")).toUpperCase(), 58, 88);
+  ctx.font = `800 15px ${EXPORT_FONT_FAMILY}`;
+  ctx.fillText((t ? t("tree.title") : "GIA PHẢ").toLocaleUpperCase("vi-VN"), 58, 52);
+  ctx.font = `900 32px ${EXPORT_FONT_FAMILY}`;
+  ctx.fillText(String(clan?.clan_name || (t ? t("tree.card.fallbackName") : "Dòng họ")).toLocaleUpperCase("vi-VN"), 58, 88);
 
   asArray(lines).forEach((line) => drawTreeLine(ctx, line));
   asArray(people).forEach((person) => drawPersonCardOnCanvas(ctx, person, cardSizes, t));

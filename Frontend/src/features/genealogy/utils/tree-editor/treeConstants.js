@@ -14,7 +14,7 @@ export const CANVAS_PADDING = 180;
 export const SNAP_SIZE = 20;
 export const LINE_SNAP_SIZE = 5;
 export const EXPORT_BACKGROUND = "#f8edb2";
-export const EXPORT_MAX_CANVAS_EDGE = 14000;
+export const EXPORT_MAX_CANVAS_EDGE = 18000;
 export const SOURCE_BRANCH_STEP = 10;
 export const BLOOD_LINE_COLORS = [
   "#1E3A8A",
