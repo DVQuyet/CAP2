@@ -32,6 +32,11 @@ router.get("/submissions", verifyToken, checkRole(["admin", "manager", "member"]
 router.get("/memories", verifyToken, checkRole(["admin", "manager", "member"]), memberController.getFamilyMemories);
 router.get("/memories/reader-options", verifyToken, checkRole(["admin", "manager", "member"]), memberController.getMemoryReaderOptions);
 router.post("/memories", verifyToken, checkRole(["admin", "manager", "member"]), memberController.createFamilyMemory);
+router.patch("/memories/:id", verifyToken, checkRole(["admin", "manager", "member"]), memberController.updateFamilyMemory);
+router.delete("/memories/:id", verifyToken, checkRole(["admin", "manager", "member"]), memberController.deleteFamilyMemory);
+
+router.delete("/posts/:id", verifyToken, checkRole(["admin", "manager", "member"]), memberController.deletePost);
+router.patch("/posts/:id", verifyToken, checkRole(["admin", "manager", "member"]), memberController.updatePost);
 
 // --- 💰 QUẢN LÝ QUỸ DÒNG HỌ (CLAN FUND) 💰 ---
 const fundController = require("../fund/fund.controller");

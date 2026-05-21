@@ -2112,3 +2112,165 @@ exports.createFamilyMemory = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Không thể gửi kỉ niệm dòng họ' });
   }
 };
+
+// ─── XÓA / SỬA KỶ NIỆM ──────────────────────────────────────────────────────
+
+exports.deleteFamilyMemory = async (req, res) => {
+  try {
+    await ensureFamilyMemoriesSchema();
+    const memoryId = Number(req.params.id);
+    if (!Number.isFinite(memoryId) || memoryId <= 0) {
+      return res.status(400).json({ success: false, message: 'ID kỷ niệm không hợp lệ.' });
+    }
+
+    const [rows] = await db.query('SELECT id, author_account_id, clan_id FROM family_memories WHERE id = ? LIMIT 1', [memoryId]);
+    const memory = rows[0];
+    if (!memory) return res.status(404).json({ success: false, message: 'Không tìm thấy kỷ niệm.' });
+
+    const roleId = Number(req.user?.role_id);
+    const isOwner = Number(memory.author_account_id) === Number(req.user.id);
+    const isManagerOrAdmin = roleId === 1 || roleId === 2;
+
+    if (!isOwner && !isManagerOrAdmin) {
+      return res.status(403).json({ success: false, message: 'Bạn không có quyền xóa kỷ niệm này.' });
+    }
+
+    await db.query('DELETE FROM family_memories WHERE id = ?', [memoryId]);
+    return res.json({ success: true, message: 'Đã xóa kỷ niệm.' });
+  } catch (error) {
+    console.error('deleteFamilyMemory error:', error);
+    return res.status(500).json({ success: false, message: 'Không thể xóa kỷ niệm.' });
+  }
+};
+
+exports.updateFamilyMemory = async (req, res) => {
+  try {
+    await ensureFamilyMemoriesSchema();
+    const memoryId = Number(req.params.id);
+    if (!Number.isFinite(memoryId) || memoryId <= 0) {
+      return res.status(400).json({ success: false, message: 'ID kỷ niệm không hợp lệ.' });
+    }
+
+    const [rows] = await db.query('SELECT id, author_account_id, clan_id FROM family_memories WHERE id = ? LIMIT 1', [memoryId]);
+    const memory = rows[0];
+    if (!memory) return res.status(404).json({ success: false, message: 'Không tìm thấy kỷ niệm.' });
+
+    const roleId = Number(req.user?.role_id);
+    const isOwner = Number(memory.author_account_id) === Number(req.user.id);
+    const isManagerOrAdmin = roleId === 1 || roleId === 2;
+
+    if (!isOwner && !isManagerOrAdmin) {
+      return res.status(403).json({ success: false, message: 'Bạn không có quyền sửa kỷ niệm này.' });
+    }
+
+    const title = req.body?.title !== undefined ? String(req.body.title || '').trim() : undefined;
+    const content = req.body?.content !== undefined ? String(req.body.content || '').trim() : undefined;
+    const visibility = req.body?.visibility !== undefined ? normalizeMemoryVisibility(req.body.visibility) : undefined;
+
+    const sets = [];
+    const values = [];
+    if (title !== undefined) { sets.push('title = ?'); values.push(title || 'Kỷ niệm dòng họ'); }
+    if (content !== undefined) { sets.push('content = ?'); values.push(content || null); }
+    if (visibility !== undefined) { sets.push('visibility = ?'); values.push(visibility); }
+
+    if (sets.length === 0) {
+      return res.status(400).json({ success: false, message: 'Không có dữ liệu cập nhật.' });
+    }
+
+    values.push(memoryId);
+    await db.query(`UPDATE family_memories SET ${sets.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, values);
+    return res.json({ success: true, message: 'Đã cập nhật kỷ niệm.' });
+  } catch (error) {
+    console.error('updateFamilyMemory error:', error);
+    return res.status(500).json({ success: false, message: 'Không thể cập nhật kỷ niệm.' });
+  }
+};
+
+// ─── XÓA / SỬA BÀI ĐĂNG ─────────────────────────────────────────────────────
+
+exports.deletePost = async (req, res) => {
+  try {
+    const postId = Number(req.params.id);
+    if (!Number.isFinite(postId) || postId <= 0) {
+      return res.status(400).json({ success: false, message: 'ID bài đăng không hợp lệ.' });
+    }
+
+    const [rows] = await db.query('SELECT id, author_id, clan_id FROM posts WHERE id = ? LIMIT 1', [postId]);
+    const post = rows[0];
+    if (!post) return res.status(404).json({ success: false, message: 'Không tìm thấy bài đăng.' });
+
+    const roleId = Number(req.user?.role_id);
+    const isOwner = Number(post.author_id) === Number(req.user.id);
+    const isManagerOrAdmin = roleId === 1 || roleId === 2;
+
+    if (!isOwner && !isManagerOrAdmin) {
+      return res.status(403).json({ success: false, message: 'Bạn không có quyền xóa bài đăng này.' });
+    }
+
+    await db.query('DELETE FROM posts WHERE id = ?', [postId]);
+
+    const io = req.app?.locals?.io;
+    if (io) {
+      io.to(`clan_${post.clan_id}`).emit('post_feed_updated', {
+        action: 'post_deleted',
+        post_id: postId,
+        clan_id: post.clan_id,
+      });
+    }
+
+    return res.json({ success: true, message: 'Đã xóa bài đăng.' });
+  } catch (error) {
+    console.error('deletePost error:', error);
+    return res.status(500).json({ success: false, message: 'Không thể xóa bài đăng.' });
+  }
+};
+
+exports.updatePost = async (req, res) => {
+  try {
+    const postId = Number(req.params.id);
+    if (!Number.isFinite(postId) || postId <= 0) {
+      return res.status(400).json({ success: false, message: 'ID bài đăng không hợp lệ.' });
+    }
+
+    const [rows] = await db.query('SELECT id, author_id, clan_id FROM posts WHERE id = ? LIMIT 1', [postId]);
+    const post = rows[0];
+    if (!post) return res.status(404).json({ success: false, message: 'Không tìm thấy bài đăng.' });
+
+    const roleId = Number(req.user?.role_id);
+    const isOwner = Number(post.author_id) === Number(req.user.id);
+    const isManagerOrAdmin = roleId === 1 || roleId === 2;
+
+    if (!isOwner && !isManagerOrAdmin) {
+      return res.status(403).json({ success: false, message: 'Bạn không có quyền sửa bài đăng này.' });
+    }
+
+    const description = req.body?.description !== undefined ? String(req.body.description || '').trim() : undefined;
+    const content = req.body?.content !== undefined ? String(req.body.content || '').trim() : undefined;
+
+    const sets = [];
+    const values = [];
+    if (description !== undefined) { sets.push('description = ?'); values.push(description); }
+    if (content !== undefined) { sets.push('content = ?'); values.push(content || null); }
+
+    if (sets.length === 0) {
+      return res.status(400).json({ success: false, message: 'Không có dữ liệu cập nhật.' });
+    }
+
+    values.push(postId);
+    await db.query(`UPDATE posts SET ${sets.join(', ')} WHERE id = ?`, values);
+
+    const io = req.app?.locals?.io;
+    if (io) {
+      io.to(`clan_${post.clan_id}`).emit('post_feed_updated', {
+        action: 'post_updated',
+        post_id: postId,
+        clan_id: post.clan_id,
+      });
+    }
+
+    return res.json({ success: true, message: 'Đã cập nhật bài đăng.' });
+  } catch (error) {
+    console.error('updatePost error:', error);
+    return res.status(500).json({ success: false, message: 'Không thể cập nhật bài đăng.' });
+  }
+};
