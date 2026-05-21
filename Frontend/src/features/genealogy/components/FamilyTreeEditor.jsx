@@ -21,7 +21,7 @@ import { dedupePeopleByAccount, remapChildrenByPeople, remapFamiliesByPeople } f
 import { autoLayoutPeople, findFounderIds, generationY, mergeManualAndAutoLayout } from "../utils/tree-editor/treeLayout";
 import { buildTreeLines } from "../utils/tree-editor/treeLines";
 import { blankCreateForm, buildChildRelationPayload, findParentFamilyForChild, findSpouse, findSpouseFamily, getChildrenForFamily, getFamiliesForPerson, relationCandidates, relationLinkedIds } from "../utils/tree-editor/treeRelations";
-import { downloadBlob, exportFileName, renderFamilyTreePngBlob } from "../utils/tree-editor/treeExport";
+import { exportFileName, renderFamilyTreePngBlob, saveCanvasImage } from "../utils/tree-editor/treeExport";
 import { CenterNoticeDialog, CreatePersonDialog, PersonInspector, QuickCreateRelationDialog, RelationSelectDialog, ArchivedMembersDialog } from "./FamilyTreeEditorParts/index.js";
 import "./FamilyTreeEditor.css";
 
@@ -1509,11 +1509,11 @@ const quickCreateSourcePerson = useMemo(
   const handleExport = async () => {
     setSaving(true);
     setStatus("");
-    const renderPeople = visiblePeople.length ? visiblePeople : people;
+    const exportPeople = renderPeople.length ? renderPeople : people;
     try {
-      const blob = await renderFamilyTreePngBlob({ people: renderPeople, lines, cardSizes, clan, t });
-      downloadBlob(blob, exportFileName(clan?.clan_name));
-      setStatus(t("tree.messages.exportSuccess"));
+      const blob = await renderFamilyTreePngBlob({ people: exportPeople, lines, cardSizes, clan, t });
+      const result = await saveCanvasImage(blob, exportFileName(clan?.clan_name));
+      if (result !== "cancelled") setStatus(t("tree.messages.exportSuccess"));
     } catch (error) {
       console.error("Export PNG failed:", error);
       setStatus(`${t("tree.messages.exportError")}${error?.message ? `: ${error.message}` : "."}`);
