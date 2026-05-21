@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiRequest } from "../../../services/api";
+import { mediaUrlFromId } from "../../../shared/utils/media";
 import { formatDateTimeVN } from "../../../shared/utils/dateFormat";
 import "./TimeCapsulePage.css";
 
@@ -43,7 +44,7 @@ function getReaderKey(reader) {
 }
 
 function MemoryMedia({ memory, t, showCarouselControls = false, onPrevious, onNext }) {
-  const url = memory.media_url || (memory.media_id ? `/api/media/${memory.media_id}` : "");
+  const url = memory.media_url || mediaUrlFromId(memory.media_id);
   if (!url) return null;
   const kind = getMediaKind(memory);
   const mediaAlt = memory.title || t("timeCapsule.defaultMemoryTitle");
@@ -361,10 +362,23 @@ export default function TimeCapsulePage({ role = "member" }) {
       if (pendingVideo?.url) URL.revokeObjectURL(pendingVideo.url);
       setPendingVideo(null);
       setCameraError("");
-      const constraints = mode === "photo"
-        ? { video: { facingMode: "environment" }, audio: false }
-        : { video: { facingMode: "environment" }, audio: true };
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+      // Thử environment (camera sau) trước, fallback về user (camera trước) nếu không có
+      let stream = null;
+      if (mode === "photo") {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
+        } catch {
+          stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        }
+      } else {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: true });
+        } catch {
+          stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        }
+      }
+
       streamRef.current = stream;
       setCameraStream(stream);
       setCaptureMode(mode);
@@ -448,14 +462,18 @@ export default function TimeCapsulePage({ role = "member" }) {
       } finally {
         stream.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
-        setCameraStream(null);
         if (mode !== "video") {
+          // Video mode: giữ captureMode để hiển thị preview, chỉ clear stream thật
+          setCameraStream(null);
           setCaptureMode("none");
           setRecorderState("idle");
+        } else {
+          // Video mode: stream đã stop nhưng giữ captureMode + pendingVideo để user xem preview
+          setCameraStream(null);
         }
       }
     };
-    recorder.start();
+    recorder.start(1000); // fire ondataavailable mỗi 1 giây, tránh mất data
     setRecorderState("recording");
   };
 
