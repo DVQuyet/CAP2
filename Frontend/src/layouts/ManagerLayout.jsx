@@ -19,6 +19,7 @@ const menuItems = [
   { icon: "post_add", labelKey: "layout.portalMenu.posts", path: "/manager/posts" },
   { icon: "collections_bookmark", labelKey: "layout.portalMenu.memories", path: "/manager/time-capsule" },
   { icon: "group", labelKey: "layout.portalMenu.members", path: "/manager/account" },
+  { icon: "outgoing_mail", labelKey: "layout.portalMenu.invitations", path: "/manager/invitations" },
   { icon: "pending_actions", labelKey: "layout.portalMenu.pending", path: "/manager/pending" },
   { icon: "account_balance_wallet", labelKey: "layout.portalMenu.fund", path: "/manager/fund" },
   { icon: "calendar_month", labelKey: "layout.portalMenu.calendar", path: "/manager/calendar" },

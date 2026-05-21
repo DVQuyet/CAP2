@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import "./login.css";
 import { loginAPI } from "../../../api/authService";
+import { persistAuthSession } from "../../../shared/utils/auth";
 
 const initialLoginForm = {
   email: "",
@@ -16,18 +17,6 @@ function getRolePath(user) {
   if (roleId === 1 || roleName === "admin") return "/dashboard";
   if (roleId === 2 || roleName === "manager") return "/manager/dashboard";
   return "/user/dashboard";
-}
-
-function persistSession(result) {
-  if (result?.token) {
-    localStorage.setItem("token", result.token);
-    localStorage.setItem("auth_token", result.token);
-  }
-
-  if (result?.user) {
-    localStorage.setItem("user", JSON.stringify(result.user));
-    localStorage.setItem("auth_user", JSON.stringify(result.user));
-  }
 }
 
 export default function Login({ isOpen, onClose, onLoginSuccess, onOpenRegister }) {
@@ -94,7 +83,7 @@ export default function Login({ isOpen, onClose, onLoginSuccess, onOpenRegister 
         return;
       }
 
-      persistSession(result);
+      persistAuthSession(result);
       onLoginSuccess?.(result.user);
       setLoginForm(initialLoginForm);
 
@@ -105,6 +94,11 @@ export default function Login({ isOpen, onClose, onLoginSuccess, onOpenRegister 
 
       if (result.user.status === "pending") {
         navigate("/waiting", { replace: true });
+        return;
+      }
+
+      if (Number(result.user.profile_completed) === 0) {
+        navigate("/complete-profile", { replace: true });
         return;
       }
 

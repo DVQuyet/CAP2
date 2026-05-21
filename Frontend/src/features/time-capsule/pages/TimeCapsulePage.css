@@ -991,7 +991,36 @@
   margin-bottom: 1rem;
 }
 
-.memory-live-capture video {
+.memory-live-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.memory-live-mode,
+.memory-recording-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 999px;
+  padding: 0.42rem 0.75rem;
+  font-weight: 900;
+}
+
+.memory-live-mode {
+  background: rgba(255, 250, 241, 0.92);
+  color: #5b2418;
+}
+
+.memory-recording-timer {
+  background: rgba(139, 0, 0, 0.9);
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+
+.memory-live-capture video,
+.memory-live-video {
   width: 100%;
   max-height: 420px;
   object-fit: contain;
@@ -1004,6 +1033,10 @@
   flex-wrap: wrap;
   gap: 0.65rem;
   justify-content: flex-end;
+}
+
+.memory-shutter-button .material-symbols-outlined {
+  font-size: 1.35rem;
 }
 
 .memory-recording-strip,
@@ -1099,6 +1132,54 @@
   .memory-capture-tools {
     grid-template-columns: 1fr;
   }
+
+  .memory-live-capture {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: 0.75rem;
+    margin: 0;
+    padding:
+      max(0.85rem, env(safe-area-inset-top))
+      max(0.85rem, env(safe-area-inset-right))
+      max(0.95rem, env(safe-area-inset-bottom))
+      max(0.85rem, env(safe-area-inset-left));
+    border: 0;
+    border-radius: 0;
+    background: #0d0705;
+  }
+
+  .memory-live-capture video,
+  .memory-live-video {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    max-height: none;
+    object-fit: cover;
+    border-radius: 18px;
+  }
+
+  .memory-live-topbar {
+    color: #fff7e8;
+  }
+
+  .memory-live-mode {
+    background: rgba(255, 250, 241, 0.16);
+    color: #fff7e8;
+  }
+
+  .memory-recording-timer {
+    padding-inline: 0.8rem;
+  }
+
+  .memory-live-actions {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
   .memory-live-actions,
   .memory-preview-footer {
     align-items: stretch;

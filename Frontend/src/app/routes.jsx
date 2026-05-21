@@ -17,6 +17,9 @@ const GuideDetailPage = lazy(() => import("../features/public/pages/GuideDetailP
 const ClanRegister = lazy(() => import("../features/clan/pages/ClanRegister"));
 const ForgotPassword = lazy(() => import("../features/auth/pages/ForgotPassword"));
 const Waiting = lazy(() => import("../features/auth/pages/Waiting"));
+const InviteAccept = lazy(() => import("../features/auth/pages/InviteAccept"));
+const CompleteProfile = lazy(() => import("../features/auth/pages/CompleteProfile"));
+const InvitationPage = lazy(() => import("../features/invitations/pages/InvitationPage"));
 
 const DashboardHome = lazy(() => import("../features/admin/pages/DashboardHome"));
 const GenealogyManagement = lazy(() => import("../features/admin/pages/GenealogyManagement"));
@@ -52,6 +55,11 @@ export default function AppRoutes() {
         <Route path="/forgot" element={<ForgotPassword />} />
         <Route path="/forgot-password" element={<Navigate to="/forgot" replace />} />
         <Route path="/waiting" element={<Waiting />} />
+        <Route path="/invite/accept" element={<InviteAccept />} />
+
+        <Route element={<ProtectedRoute allowedRoles={["member", "manager", "admin"]} />}>
+          <Route path="/complete-profile" element={<CompleteProfile />} />
+        </Route>
 
         {/* Public Routes under UserLayout */}
         <Route element={<UserLayout />}>
@@ -85,6 +93,7 @@ export default function AppRoutes() {
             <Route path="/manager" element={<Navigate to="/manager/dashboard" replace />} />
             <Route path="/manager/dashboard" element={<ManagerDashboard />} />
             <Route path="/manager/account" element={<AccountPage />} />
+            <Route path="/manager/invitations" element={<InvitationPage />} />
             <Route path="/manager/genealogy" element={<GenealogySection />} />
             <Route path="/manager/tasks" element={<TaskManagementPage role="manager" />} />
             <Route path="/manager/tasks/:taskId" element={<TaskManagementPage role="manager" />} />
@@ -108,6 +117,7 @@ export default function AppRoutes() {
             <Route path="/dashboard/tasks" element={<TaskManagementPage role="admin" />} />
             <Route path="/dashboard/tasks/clan/:clanId" element={<TaskManagementPage role="admin" />} />
             <Route path="/dashboard/members" element={<MembersPage />} />
+            <Route path="/dashboard/invitations" element={<InvitationPage />} />
             <Route path="/dashboard/events" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard/gallery" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard/billing" element={<BillingPage />} />

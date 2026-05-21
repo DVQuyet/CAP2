@@ -3,6 +3,7 @@ const db = require('../../config/db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { getRoleName } = require('../../config/roles');
+const { ensureProfileCompletedColumn } = require('../../shared/utils/profileCompletion');
 
 const GENERIC_FORGOT_MSG = 'Nếu email đã đăng ký, bạn sẽ nhận mã xác nhận trong vài phút.';
 
@@ -153,6 +154,7 @@ exports.login = async (req, res) => {
     const emailTrim = String(email).trim().toLowerCase();
 
     try {
+        await ensureProfileCompletedColumn();
         await ensureArchivedMembersTable();
         const sql = `SELECT a.*, p.display_name FROM accounts a 
                      LEFT JOIN people p ON a.person_id = p.id 
@@ -198,7 +200,8 @@ exports.login = async (req, res) => {
                     role_id: user.role_id,
                     role_name,
                     role: role_name,
-                    email: user.email
+                    email: user.email,
+                    profile_completed: Number(user.profile_completed || 0)
                 },
                 secret, 
                 { expiresIn: '24h' }
@@ -216,7 +219,9 @@ exports.login = async (req, res) => {
                     role_name,
                     role: role_name,
                     status: user.status,
-                    name: user.display_name
+                    name: user.display_name,
+                    email: user.email,
+                    profile_completed: Number(user.profile_completed || 0)
                 }
             });
         } else {

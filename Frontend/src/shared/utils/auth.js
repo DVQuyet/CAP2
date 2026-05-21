@@ -25,6 +25,18 @@ export function isAuthenticated() {
   return Boolean(getAuthToken() && getStoredUser());
 }
 
+export function persistAuthSession(result) {
+  if (result?.token) {
+    localStorage.setItem(TOKEN_KEY, result.token);
+    localStorage.setItem(LEGACY_TOKEN_KEY, result.token);
+  }
+
+  if (result?.user) {
+    localStorage.setItem(USER_KEY, JSON.stringify(result.user));
+    localStorage.setItem(LEGACY_USER_KEY, JSON.stringify(result.user));
+  }
+}
+
 export function logout() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
