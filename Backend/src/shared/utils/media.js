@@ -20,11 +20,13 @@ const ALLOWED_POST_MEDIA_MIME_TYPES = new Set([
 ]);
 
 function isAllowedImageMimeType(mimeType) {
-  return ALLOWED_IMAGE_MIME_TYPES.has(String(mimeType || '').toLowerCase());
+  const mime = String(mimeType || '').toLowerCase().split(';')[0].trim();
+  return ALLOWED_IMAGE_MIME_TYPES.has(mime);
 }
 
 function isAllowedPostMediaMimeType(mimeType) {
-  return ALLOWED_POST_MEDIA_MIME_TYPES.has(String(mimeType || '').toLowerCase());
+  const mime = String(mimeType || '').toLowerCase().split(';')[0].trim();
+  return ALLOWED_POST_MEDIA_MIME_TYPES.has(mime) || mime.startsWith('video/') || mime.startsWith('audio/');
 }
 
 function getMediaUrl(req, mediaId) {

@@ -191,8 +191,7 @@ export default function TimeCapsulePage({ role = "member" }) {
     loadReaderOptions();
   }, [loadMemories, loadReaderOptions]);
 
-  // Ref callback: gán srcObject ngay khi video element mount vào DOM
-  // Dùng callback thay useEffect để tránh race condition (element chưa mount khi effect chạy)
+  // Ref callback: lưu ref khi element mount
   const liveVideoRefCallback = useCallback((videoEl) => {
     liveVideoRef.current = videoEl;
     if (videoEl && streamRef.current) {
@@ -200,6 +199,20 @@ export default function TimeCapsulePage({ role = "member" }) {
       videoEl.play().catch(() => {});
     }
   }, []);
+
+  // useEffect backup: gán srcObject sau khi captureMode thay đổi và element đã mount
+  useEffect(() => {
+    if (!streamRef.current) return;
+    if (captureMode !== "photo" && captureMode !== "video") return;
+    // Dùng requestAnimationFrame để chờ DOM render xong
+    const raf = requestAnimationFrame(() => {
+      if (liveVideoRef.current && streamRef.current && !liveVideoRef.current.srcObject) {
+        liveVideoRef.current.srcObject = streamRef.current;
+        liveVideoRef.current.play().catch(() => {});
+      }
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [captureMode, cameraStream]);
 
   useEffect(() => {
     return () => {
