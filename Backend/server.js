@@ -14,6 +14,7 @@ const app = express();
 // 1. Cấu hình middleware toàn cục
 const allowedOrigins = [
     process.env.FRONTEND_URL,
+    'https://cap-2-seven.vercel.app',
     'https://dinhvietquyet.website',
     'http://dinhvietquyet.website',
     'http://localhost:5173',
@@ -76,6 +77,8 @@ const aiRoutes = require('./src/modules/ai/ai.routes');
 const voiceRoutes = require('../voice/backend/backendRoutes');
 const mediaRoutes = require('./src/modules/media/media.routes');
 const calendarRoutes = require('./src/modules/calendar/calendar.routes');
+const invitationRoutes = require('./src/modules/invitations/invitation.routes');
+const meRoutes = require('./src/modules/me/me.routes');
 const { startCalendarReminderScheduler } = require('./src/modules/calendar/calendar.controller');
 
 const managerController = require('./src/modules/manager/manager.controller');
@@ -384,6 +387,8 @@ app.post('/api/upload-memory-media', verifyToken, (req, res) => {
 // 8. Main API routes
 app.use('/api/media', mediaRoutes);
 app.use('/api/calendar', calendarRoutes);
+app.use('/api/invitations', invitationRoutes);
+app.use('/api/me', meRoutes);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/billing', billingRoutes);

@@ -1099,15 +1099,16 @@ const quickCreateSourcePerson = useMemo(
       return;
     }
 
-    const livingMissingAccount = draftMembers.find((member) => {
+    const incompleteAccount = draftMembers.find((member) => {
       if (member.is_living !== "1") return false;
       const selectedExistingId = Number(member.existing_person_id);
       if (Number.isFinite(selectedExistingId) && selectedExistingId > 0) return false;
+      if (!member.account_password) return false;
       return !member.account_email || member.account_password.length < 6;
     });
 
-    if (livingMissingAccount) {
-      setGenealogyAiError(t("tree.genealogyAi.errors.missingLivingAccount", { name: livingMissingAccount.full_name }));
+    if (incompleteAccount) {
+      setGenealogyAiError(t("tree.genealogyAi.errors.incompleteAccount", { name: incompleteAccount.full_name }));
       return;
     }
 
@@ -1143,6 +1144,7 @@ const quickCreateSourcePerson = useMemo(
         }
 
         const isLiving = member.is_living === "1";
+        const shouldCreateAccount = isLiving && Boolean(member.account_email && member.account_password.length >= 6);
         const memberGeneration = generationByTemporaryId.get(member.temporary_id) || 1;
         const memberX = baseX + (index % 4) * (CARD_WIDTH + 70);
         const memberY = generationY(memberGeneration);
@@ -1162,9 +1164,9 @@ const quickCreateSourcePerson = useMemo(
           birth_date: member.birth_date || null,
           death_date: isLiving ? null : member.death_date || null,
           phone: member.phone || null,
-          email: isLiving ? member.account_email : null,
-          account_email: isLiving ? member.account_email : null,
-          account_password: isLiving ? member.account_password : null,
+          email: member.account_email || null,
+          account_email: shouldCreateAccount ? member.account_email : null,
+          account_password: shouldCreateAccount ? member.account_password : null,
           address: member.address || null,
           note: noteParts.join("\n"),
           tree_x: memberX,
@@ -1184,16 +1186,16 @@ const quickCreateSourcePerson = useMemo(
         createdPeople.push(normalizePerson({
           id: newPersonId,
           account_id: Number.isFinite(newAccountId) && newAccountId > 0 ? newAccountId : null,
-          account_email: isLiving ? member.account_email : null,
-          account_status: isLiving ? "active" : null,
-          role_id: isLiving ? 3 : null,
+          account_email: shouldCreateAccount ? member.account_email : null,
+          account_status: shouldCreateAccount ? "active" : null,
+          role_id: shouldCreateAccount ? 3 : null,
           display_name: member.full_name,
           gender: aiGenderToPersonGender(member.gender),
           is_living: isLiving ? 1 : 0,
           birth_date: member.birth_date || null,
           death_date: isLiving ? null : member.death_date || null,
           phone: member.phone || null,
-          email: isLiving ? member.account_email : null,
+          email: member.account_email || null,
           address: member.address || null,
           note: noteParts.join("\n"),
           tree_x: memberX,
@@ -1690,13 +1692,8 @@ const submitCreateDialog = async () => {
     const email = String(form.account_email || "").trim();
     const password = String(form.account_password || "");
 
-    if (!email) {
-      setStatus(t("tree.messages.genericError"));
-      return;
-    }
-
-    if (!password || password.length < 6) {
-      setStatus(t("tree.createModal.fields.passwordHint"));
+    if (password && (!email || password.length < 6)) {
+      setStatus(t("tree.createModal.fields.incompleteAccountHint"));
       return;
     }
   }
@@ -1746,6 +1743,9 @@ const submitCreateDialog = async () => {
   try {
     const birthDateIso = vietnamDateToIso(form.birth_date) || null;
     const deathDateIso = form.is_living === "1" ? null : vietnamDateToIso(form.death_date) || null;
+    const accountEmail = String(form.account_email || "").trim();
+    const accountPassword = String(form.account_password || "");
+    const shouldCreateAccount = form.is_living === "1" && Boolean(accountEmail && accountPassword.length >= 6);
     const createdResponse = await createPersonAPI({
       ...form,
       clan_id: clan?.id,
@@ -1757,8 +1757,9 @@ const submitCreateDialog = async () => {
       death_date: deathDateIso,
       tree_x: Number(form.tree_x) || 0,
       tree_y: Number(form.tree_y) || 0,
-      account_email: form.is_living === "1" ? String(form.account_email || "").trim() : null,
-      account_password: form.is_living === "1" ? String(form.account_password || "") : null,
+      email: accountEmail || null,
+      account_email: shouldCreateAccount ? accountEmail : null,
+      account_password: shouldCreateAccount ? accountPassword : null,
     });
 
     const newPersonId = extractCreatedPersonId(createdResponse);

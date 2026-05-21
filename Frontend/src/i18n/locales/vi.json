@@ -128,6 +128,7 @@
       "overview": "Tổng quan",
       "genealogy": "Quản lý phả hệ",
       "accounts": "Quản lý Tài khoản",
+      "invitations": "Mời thành viên",
       "posts": "Quản lý bài viết",
       "events": "Quản lý sự kiện",
       "billing": "Gói sử dụng",
@@ -141,6 +142,7 @@
       "posts": "Bảng tin dòng họ",
       "memories": "Kỉ niệm dòng họ",
       "members": "Thành viên dòng họ",
+      "invitations": "Mời thành viên",
       "pending": "Duyệt chờ",
       "fund": "Quỹ dòng họ",
       "calendar": "Lịch Việt Nam",
@@ -313,7 +315,7 @@
       },
       "form": {
         "createTitle": "Tạo thành viên",
-        "createDescription": "Thêm tài khoản và hồ sơ thành viên mới.",
+        "createDescription": "Thêm hồ sơ thành viên mới, có thể tạo tài khoản đăng nhập nếu cần.",
         "editTitle": "Chỉnh sửa thành viên",
         "editDescription": "Cập nhật thông tin tài khoản và hồ sơ thành viên.",
         "linkTitle": "Liên kết quan hệ",
@@ -329,8 +331,8 @@
         "spouse": "Vợ/chồng",
         "spousePrompt": "Chưa chọn vợ/chồng",
         "children": "Con cái",
-        "placeholderEmail": "Email đăng nhập",
-        "placeholderPassword": "Mật khẩu",
+        "placeholderEmail": "Email đăng nhập (nếu tạo tài khoản)",
+        "placeholderPassword": "Mật khẩu (nếu tạo tài khoản)",
         "placeholderSurname": "Họ",
         "placeholderMiddleName": "Tên đệm",
         "placeholderFirstName": "Tên",
@@ -704,6 +706,8 @@
       "captureThisPhoto": "Chụp ảnh này",
       "stopVideo": "Dừng quay video",
       "startRecording": "Bắt đầu quay",
+      "processingVideo": "Đang xử lý video...",
+      "saveVideo": "Lưu video",
       "recordingAudio": "Đang ghi âm trực tiếp từ micro...",
       "previewAlt": "Xem trước",
       "clearForm": "Xóa form",
@@ -1923,7 +1927,7 @@
       "deathDate": "Ngày mất",
       "accountEmail": "Email tài khoản",
       "accountPassword": "Mật khẩu",
-      "accountCreateHint": "Người còn sống sẽ được tạo tài khoản đăng nhập khi lưu vào cây.",
+      "accountCreateHint": "Bỏ trống email và mật khẩu nếu chỉ muốn tạo hồ sơ, không tạo tài khoản đăng nhập.",
       "notes": "Ghi chú",
       "relationshipType": "Loại quan hệ",
       "relationshipOptions": {
@@ -1960,7 +1964,7 @@
         "noMembersToSave": "Chưa có thành viên hợp lệ để lưu.",
         "invalidRelationship": "Có quan hệ thiếu người hoặc tự liên kết chính mình. Vui lòng chỉnh sửa trước khi lưu.",
         "selectExistingDuplicate": "Trong cây đang có nhiều người cùng tên \"{{name}}\". Vui lòng chọn đúng người đã tồn tại trong dòng đó hoặc đổi tên nháp rõ hơn trước khi lưu.",
-        "missingLivingAccount": "Người còn sống \"{{name}}\" cần email và mật khẩu tối thiểu 6 ký tự để tạo tài khoản.",
+        "incompleteAccount": "Nếu tạo tài khoản cho \"{{name}}\", vui lòng nhập email và mật khẩu tối thiểu 6 ký tự.",
         "createdIdMissing": "Không nhận được ID người vừa tạo.",
         "saveFailed": "Không thể lưu dữ liệu AI vào cây."
       }
@@ -2091,10 +2095,11 @@
       },
       "fields": {
         "displayPlaceholder": "Ví dụ: Hà Văn Hải Đăng",
-        "accountBoxTitle": "Tạo tài khoản đăng nhập cho người này",
+        "accountBoxTitle": "Tài khoản đăng nhập (không bắt buộc)",
         "accountEmail": "Email đăng nhập",
         "accountPassword": "Mật khẩu đăng nhập",
-        "passwordHint": "Tối thiểu 6 ký tự"
+        "passwordHint": "Bỏ trống nếu không tạo tài khoản",
+        "incompleteAccountHint": "Nếu tạo tài khoản, vui lòng nhập email và mật khẩu tối thiểu 6 ký tự"
       },
       "actions": {
         "create": "Tạo",

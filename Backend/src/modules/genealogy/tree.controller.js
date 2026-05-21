@@ -197,9 +197,11 @@ const createPerson = async (req, res) => {
             return res.status(400).json(relationPayload(lifeDateValidation));
         }
 
-        const shouldCreateAccount = livingValue === 1;
-        const accountEmail = String(account_email || email || '').trim().toLowerCase();
+        const personalEmail = email != null ? String(email).trim() : null;
+        const explicitAccountEmail = String(account_email || '').trim().toLowerCase();
         const accountPassword = String(account_password || '');
+        const accountEmail = explicitAccountEmail || (accountPassword ? String(personalEmail || '').trim().toLowerCase() : '');
+        const shouldCreateAccount = livingValue === 1 && Boolean(accountEmail || accountPassword);
 
         if (shouldCreateAccount) {
             if (!accountEmail) {
@@ -312,7 +314,7 @@ const createPerson = async (req, res) => {
                 normalizedDeathDate,
                 livingValue,
                 phone != null ? String(phone).trim() : null,
-                accountEmail || (email != null ? String(email).trim() : null),
+                accountEmail || personalEmail,
                 address != null ? String(address).trim() : null,
                 hometown != null ? String(hometown).trim() : null,
                 avatarUrlValue,

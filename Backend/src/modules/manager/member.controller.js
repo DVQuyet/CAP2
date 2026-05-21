@@ -574,10 +574,11 @@ const createMember = async(req, res) => {
 
         const emailTrim = String(email || '').trim().toLowerCase();
         const pwd = String(password || '');
-        if (!emailTrim || !pwd) {
+        const shouldCreateAccount = Boolean(pwd);
+        if (shouldCreateAccount && (!emailTrim || !pwd)) {
             return res.status(400).json({ success: false, message: 'Vui lòng nhập email và mật khẩu' });
         }
-        if (pwd.length < 6) {
+        if (shouldCreateAccount && pwd.length < 6) {
             return res.status(400).json({ success: false, message: 'Mật khẩu tối thiểu 6 ký tự' });
         }
         const sn = surname != null ? String(surname).trim() : '';
@@ -605,15 +606,22 @@ const createMember = async(req, res) => {
             clanId = cid;
         }
 
-        const accountLimitCheck = await ensureCanAddAccount(clanId);
+        if (shouldCreateAccount) {
+            const [emailRows] = await db.query('SELECT id FROM accounts WHERE email = ? LIMIT 1', [emailTrim]);
+            if (emailRows.length) {
+                return res.status(400).json({ success: false, message: 'Email da ton tai trong he thong' });
+            }
 
-        if (!accountLimitCheck.ok) {
-            return res.status(accountLimitCheck.status).json({
-                success: false,
-                code: accountLimitCheck.code,
-                message: accountLimitCheck.message,
-                billing: accountLimitCheck.billing,
-            });
+            const accountLimitCheck = await ensureCanAddAccount(clanId);
+
+            if (!accountLimitCheck.ok) {
+                return res.status(accountLimitCheck.status).json({
+                    success: false,
+                    code: accountLimitCheck.code,
+                    message: accountLimitCheck.message,
+                    billing: accountLimitCheck.billing,
+                });
+            }
         }
 
         const genRaw = generation === undefined || generation === null || String(generation).trim() === '' ? 1 : Number(generation);
@@ -629,21 +637,26 @@ const createMember = async(req, res) => {
         const ht = hometown != null ? String(hometown).trim() : '';
 
         const displayName = buildDisplayNameFromPartsMgr(sn, mid, fn) || emailTrim;
-        const hashedPassword = await bcrypt.hash(pwd, 10);
 
         const [personResult] = await db.query(
-            `INSERT INTO people (clan_id, display_name, first_name, middle_name, surname, gender, birth_date, hometown, generation) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, [clanId, displayName, fn, mid, sn, gVal, bd, ht, gen]
+            `INSERT INTO people (clan_id, display_name, first_name, middle_name, surname, gender, birth_date, hometown, generation, email) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [clanId, displayName, fn, mid, sn, gVal, bd, ht, gen, emailTrim || null]
         );
         const personId = personResult.insertId;
 
-        const [accResult] = await db.query(
-            `INSERT INTO accounts (email, password, person_id, role_id, status) VALUES (?, ?, ?, 3, 'active')`, [emailTrim, hashedPassword, personId]
-        );
+        let accountId = null;
+
+        if (shouldCreateAccount) {
+            const hashedPassword = await bcrypt.hash(pwd, 10);
+            const [accResult] = await db.query(
+                `INSERT INTO accounts (email, password, person_id, role_id, status) VALUES (?, ?, ?, 3, 'active')`, [emailTrim, hashedPassword, personId]
+            );
+            accountId = accResult.insertId;
+        }
 
         return res.status(201).json({
             success: true,
             message: 'Đã tạo thành viên mới (đã kích hoạt)',
-            account_id: accResult.insertId,
+            account_id: accountId,
             person_id: personId,
         });
     } catch (error) {

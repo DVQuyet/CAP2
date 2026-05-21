@@ -132,6 +132,7 @@
       "overview": "Overview",
       "genealogy": "Genealogy management",
       "accounts": "Account management",
+      "invitations": "Invitations",
       "posts": "Post management",
       "events": "Event management",
       "billing": "Subscription",
@@ -145,6 +146,7 @@
       "posts": "Family news",
       "memories": "Family memories",
       "members": "Family members",
+      "invitations": "Invitations",
       "pending": "Pending approvals",
       "fund": "Family fund",
       "calendar": "Vietnam calendar",
@@ -317,7 +319,7 @@
       },
       "form": {
         "createTitle": "Create Member",
-        "createDescription": "Add new user account and profile.",
+        "createDescription": "Add a new member profile, with an optional login account.",
         "editTitle": "Edit Member",
         "editDescription": "Update user account information and member profile.",
         "linkTitle": "Link Relations",
@@ -333,8 +335,8 @@
         "spouse": "Spouse",
         "spousePrompt": "Not selected",
         "children": "Children",
-        "placeholderEmail": "Login Email",
-        "placeholderPassword": "Password",
+        "placeholderEmail": "Login email (optional)",
+        "placeholderPassword": "Password (optional)",
         "placeholderSurname": "Surname",
         "placeholderMiddleName": "Middle Name",
         "placeholderFirstName": "First Name",
@@ -708,6 +710,8 @@
       "captureThisPhoto": "Capture this photo",
       "stopVideo": "Stop video recording",
       "startRecording": "Start recording",
+      "processingVideo": "Processing video...",
+      "saveVideo": "Save video",
       "recordingAudio": "Recording audio directly from the microphone...",
       "previewAlt": "Preview",
       "clearForm": "Clear form",
@@ -1930,7 +1934,7 @@
       "deathDate": "Death date",
       "accountEmail": "Account email",
       "accountPassword": "Password",
-      "accountCreateHint": "Living people will get a login account when saved to the tree.",
+      "accountCreateHint": "Leave email and password blank to create only a profile without a login account.",
       "notes": "Notes",
       "relationshipType": "Relationship type",
       "relationshipOptions": {
@@ -1967,7 +1971,7 @@
         "noMembersToSave": "There are no valid members to save.",
         "invalidRelationship": "A relationship is missing people or links a person to themselves. Edit it before saving.",
         "selectExistingDuplicate": "The tree has multiple people named \"{{name}}\". Select the correct existing person in that row or make the draft name clearer before saving.",
-        "missingLivingAccount": "Living person \"{{name}}\" needs an email and a password of at least 6 characters to create an account.",
+        "incompleteAccount": "To create an account for \"{{name}}\", enter an email and a password of at least 6 characters.",
         "createdIdMissing": "The created person ID was not returned.",
         "saveFailed": "Unable to save AI data to the tree."
       }
@@ -2098,10 +2102,11 @@
       },
       "fields": {
         "displayPlaceholder": "Example: John Doe",
-        "accountBoxTitle": "Create login account for this person",
+        "accountBoxTitle": "Login account (optional)",
         "accountEmail": "Login Email",
         "accountPassword": "Login Password",
-        "passwordHint": "Min 6 characters"
+        "passwordHint": "Leave blank for no account",
+        "incompleteAccountHint": "To create an account, enter an email and a password of at least 6 characters"
       },
       "actions": {
         "create": "Create",

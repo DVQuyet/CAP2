@@ -617,7 +617,6 @@ export default function AccountPage() {
                     value={createForm.email}
                     onChange={updateCreateField}
                     placeholder={t("manager.accounts.form.placeholderEmail")}
-                    required
                   />
 
                   <input
@@ -627,7 +626,6 @@ export default function AccountPage() {
                     value={createForm.password}
                     onChange={updateCreateField}
                     placeholder={t("manager.accounts.form.placeholderPassword")}
-                    required
                   />
 
                   <input
@@ -922,7 +920,6 @@ export default function AccountPage() {
                 value={createForm.email}
                 onChange={updateCreateField}
                 placeholder={t("manager.accounts.form.placeholderEmail")}
-                required
               />
 
               <input
@@ -932,7 +929,6 @@ export default function AccountPage() {
                 value={createForm.password}
                 onChange={updateCreateField}
                 placeholder={t("manager.accounts.form.placeholderPassword")}
-                required
               />
 
               <input

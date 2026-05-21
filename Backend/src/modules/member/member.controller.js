@@ -10,6 +10,7 @@ const { getTreeLayoutSettings } = require("../../shared/utils/treeLayoutSettings
 const { normalizeMediaId, extractMediaIdFromUrl } = require("../../shared/utils/media");
 const { ensureFamilyRelationshipColumns } = require("../genealogy/familyRelation.service");
 const { ensureArchivedMembersTable } = require("../manager/archive.service");
+const { ensureProfileCompletedColumn } = require("../../shared/utils/profileCompletion");
 const {
   ACTIVE_TREE_MEMBER_WHERE_SQL,
   ARCHIVED_MEMBER_JOIN_SQL,
@@ -42,6 +43,7 @@ const getAccountContext = async (accountId) => {
       a.email AS account_email,
       a.role_id,
       a.status,
+      a.profile_completed,
       COALESCE(a.person_id, ac.person_id) AS person_id,
       p.display_name,
       p.first_name,
@@ -559,6 +561,7 @@ exports.loadClanTreeForAdmin = async (clanId) => {
 
 exports.getDashboard = async (req, res) => {
   try {
+    await ensureProfileCompletedColumn();
     await ensureTaskTables();
     const accountId = req.user.id;
     const context = await getAccountContext(accountId);
@@ -722,6 +725,7 @@ exports.getDashboard = async (req, res) => {
         person_id: context.person_id,
         role_id: context.role_id,
         status: context.status,
+        profile_completed: Number(context.profile_completed || 0),
         email: context.account_email,
         display_name: context.display_name,
         first_name: context.first_name,
@@ -882,6 +886,7 @@ exports.verifyTreeEditSession = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
   try {
+    await ensureProfileCompletedColumn();
     const accountId = req.user.id;
     const { surname, middle_name, first_name, email, hometown, generation, family_id, spouse_id, children_ids } =
       req.body;
@@ -1028,6 +1033,7 @@ exports.updateProfile = async (req, res) => {
         person_id: fresh.person_id,
         role_id: fresh.role_id,
         status: fresh.status,
+        profile_completed: Number(fresh.profile_completed || 0),
         email: fresh.account_email,
         display_name: fresh.display_name,
         surname: fresh.surname,

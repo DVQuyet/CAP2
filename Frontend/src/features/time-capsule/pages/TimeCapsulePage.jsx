@@ -131,10 +131,13 @@ export default function TimeCapsulePage({ role = "member" }) {
   const [cameraStream, setCameraStream] = useState(null);
   const [recorderState, setRecorderState] = useState("idle");
   const [cameraError, setCameraError] = useState("");
+  const [pendingVideo, setPendingVideo] = useState(null);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
   const liveVideoRef = useRef(null);
   const recorderRef = useRef(null);
   const recordedChunksRef = useRef([]);
   const streamRef = useRef(null);
+  const recordingTimerRef = useRef(null);
 
   const visibilityOptions = useMemo(() => ([
     { value: "clan", label: t("timeCapsule.visibility.clan"), icon: "groups" },
@@ -183,12 +186,42 @@ export default function TimeCapsulePage({ role = "member" }) {
 
   useEffect(() => {
     return () => {
+      if (pendingVideo?.url) URL.revokeObjectURL(pendingVideo.url);
+    };
+  }, [pendingVideo?.url]);
+
+  useEffect(() => {
+    return () => {
       streamRef.current?.getTracks?.().forEach((track) => track.stop());
       if (recorderRef.current && recorderRef.current.state !== "inactive") {
         recorderRef.current.stop();
       }
+      if (recordingTimerRef.current) window.clearInterval(recordingTimerRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (recorderState !== "recording") {
+      if (recordingTimerRef.current) {
+        window.clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+      return;
+    }
+
+    const startedAt = Date.now();
+    setRecordingSeconds(0);
+    recordingTimerRef.current = window.setInterval(() => {
+      setRecordingSeconds(Math.floor((Date.now() - startedAt) / 1000));
+    }, 500);
+
+    return () => {
+      if (recordingTimerRef.current) {
+        window.clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+    };
+  }, [recorderState]);
 
   const stats = useMemo(() => {
     const approved = memories.filter((item) => item.status === "approved").length;
@@ -230,11 +263,19 @@ export default function TimeCapsulePage({ role = "member" }) {
   const currentCarouselMemory = showCarousel && visibleMemories.length ? visibleMemories[carouselIndex] : null;
   const goToPreviousMemory = () => setCarouselIndex((index) => (visibleMemories.length ? (index - 1 + visibleMemories.length) % visibleMemories.length : 0));
   const goToNextMemory = () => setCarouselIndex((index) => (visibleMemories.length ? (index + 1) % visibleMemories.length : 0));
+  const showLiveCapture = (captureMode === "photo" || captureMode === "video") && (cameraStream || pendingVideo);
 
   const updateField = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
     setError("");
     setMessage("");
+  };
+
+  const formatRecordingTime = (seconds) => {
+    const safeSeconds = Math.max(0, Number(seconds) || 0);
+    const minutes = Math.floor(safeSeconds / 60);
+    const remainingSeconds = safeSeconds % 60;
+    return `${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`;
   };
 
   const toggleReader = (reader) => {
@@ -257,7 +298,7 @@ export default function TimeCapsulePage({ role = "member" }) {
   };
 
   const uploadMemoryBlob = async (blob, filename) => {
-    if (!blob) return;
+    if (!blob) return false;
     setUploading(true);
     setError("");
     setMessage("");
@@ -281,8 +322,10 @@ export default function TimeCapsulePage({ role = "member" }) {
         original_filename: file.name,
       }));
       setMessage(t("timeCapsule.messages.uploaded"));
+      return true;
     } catch (err) {
       setError(err?.message || t("timeCapsule.errors.uploadMemory"));
+      return false;
     } finally {
       setUploading(false);
     }
@@ -299,9 +342,12 @@ export default function TimeCapsulePage({ role = "member" }) {
     if (cameraStream) cameraStream.getTracks().forEach((track) => track.stop());
     streamRef.current?.getTracks?.().forEach((track) => track.stop());
     streamRef.current = null;
+    if (pendingVideo?.url) URL.revokeObjectURL(pendingVideo.url);
+    setPendingVideo(null);
     setCameraStream(null);
     setCaptureMode("none");
     setRecorderState("idle");
+    setRecordingSeconds(0);
     setCameraError("");
   };
 
@@ -312,6 +358,8 @@ export default function TimeCapsulePage({ role = "member" }) {
     }
     try {
       if (cameraStream) cameraStream.getTracks().forEach((track) => track.stop());
+      if (pendingVideo?.url) URL.revokeObjectURL(pendingVideo.url);
+      setPendingVideo(null);
       setCameraError("");
       const constraints = mode === "photo"
         ? { video: { facingMode: "environment" }, audio: false }
@@ -321,6 +369,7 @@ export default function TimeCapsulePage({ role = "member" }) {
       setCameraStream(stream);
       setCaptureMode(mode);
       setRecorderState("idle");
+      setRecordingSeconds(0);
     } catch (err) {
       setCameraError(t("timeCapsule.errors.cameraOpen"));
     }
@@ -341,8 +390,8 @@ export default function TimeCapsulePage({ role = "member" }) {
         setError(t("timeCapsule.errors.capturePhoto"));
         return;
       }
-      await uploadMemoryBlob(blob, `ky-niem-${Date.now()}.jpg`);
-      stopCameraStream();
+      const saved = await uploadMemoryBlob(blob, `ky-niem-${Date.now()}.jpg`);
+      if (saved) stopCameraStream();
     }, "image/jpeg", 0.92);
   };
 
@@ -379,9 +428,20 @@ export default function TimeCapsulePage({ role = "member" }) {
         const blob = new Blob(recordedChunksRef.current, { type: blobType });
         if (!blob.size) {
           setCameraError(t("timeCapsule.errors.emptyRecording"));
+          if (mode === "video") {
+            setCaptureMode("none");
+            setRecorderState("idle");
+          }
           return;
         }
         const extension = blobType.includes("mp4") ? (mode === "audio" ? "m4a" : "mp4") : "webm";
+        if (mode === "video") {
+          const filename = `ky-niem-video-${Date.now()}.${extension}`;
+          if (pendingVideo?.url) URL.revokeObjectURL(pendingVideo.url);
+          setPendingVideo({ blob, url: URL.createObjectURL(blob), filename });
+          setRecorderState("recorded");
+          return;
+        }
         await uploadMemoryBlob(blob, `ky-niem-${mode === "audio" ? "ghi-am" : "video"}-${Date.now()}.${extension}`);
       } catch (err) {
         setError(err?.message || t("timeCapsule.errors.saveRecording"));
@@ -389,8 +449,10 @@ export default function TimeCapsulePage({ role = "member" }) {
         stream.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
         setCameraStream(null);
-        setCaptureMode("none");
-        setRecorderState("idle");
+        if (mode !== "video") {
+          setCaptureMode("none");
+          setRecorderState("idle");
+        }
       }
     };
     recorder.start();
@@ -425,6 +487,12 @@ export default function TimeCapsulePage({ role = "member" }) {
       recorderRef.current.stop();
       setRecorderState("stopping");
     }
+  };
+
+  const savePendingVideo = async () => {
+    if (!pendingVideo?.blob) return;
+    const saved = await uploadMemoryBlob(pendingVideo.blob, pendingVideo.filename);
+    if (saved) stopCameraStream();
   };
 
   const removeAttachedMedia = () => {
@@ -597,18 +665,43 @@ export default function TimeCapsulePage({ role = "member" }) {
             </button>
           </div>
 
-          {(captureMode === "photo" || captureMode === "video") && cameraStream ? (
-            <div className="memory-live-capture">
-              <video ref={liveVideoRef} autoPlay muted playsInline />
+          {showLiveCapture ? (
+            <div className={`memory-live-capture is-${captureMode}`}>
+              <div className="memory-live-topbar">
+                <span className="memory-live-mode">
+                  <span className="material-symbols-outlined">{captureMode === "photo" ? "photo_camera" : "videocam"}</span>
+                  {captureMode === "photo" ? t("timeCapsule.postMemory.takePhoto") : t("timeCapsule.postMemory.recordVideo")}
+                </span>
+                {captureMode === "video" && recorderState === "recording" ? (
+                  <span className="memory-recording-timer">
+                    <span className="memory-recording-dot" />
+                    {formatRecordingTime(recordingSeconds)}
+                  </span>
+                ) : null}
+              </div>
+
+              {pendingVideo ? (
+                <video className="memory-live-video" src={pendingVideo.url} controls playsInline />
+              ) : (
+                <video className="memory-live-video" ref={liveVideoRef} autoPlay muted playsInline />
+              )}
+
               <div className="memory-live-actions">
                 {captureMode === "photo" ? (
-                  <button type="button" className="time-capsule-primary" onClick={capturePhoto} disabled={uploading || submitting}>{t("timeCapsule.postMemory.captureThisPhoto")}</button>
+                  <button type="button" className="time-capsule-primary memory-shutter-button" onClick={capturePhoto} disabled={uploading || submitting}>
+                    <span className="material-symbols-outlined">camera</span>
+                    {t("timeCapsule.postMemory.captureThisPhoto")}
+                  </button>
                 ) : recorderState === "recording" ? (
                   <button type="button" className="time-capsule-danger" onClick={stopRecording}>{t("timeCapsule.postMemory.stopVideo")}</button>
+                ) : recorderState === "stopping" ? (
+                  <button type="button" className="time-capsule-secondary" disabled>{t("timeCapsule.postMemory.processingVideo")}</button>
+                ) : pendingVideo ? (
+                  <button type="button" className="time-capsule-primary" onClick={savePendingVideo} disabled={uploading || submitting}>{uploading ? t("common.uploading") : t("timeCapsule.postMemory.saveVideo")}</button>
                 ) : (
                   <button type="button" className="time-capsule-primary" onClick={startVideoRecording} disabled={uploading || submitting}>{t("timeCapsule.postMemory.startRecording")}</button>
                 )}
-                <button type="button" className="time-capsule-secondary" onClick={stopCameraStream} disabled={uploading || recorderState === "stopping"}>{t("common.closeCamera")}</button>
+                <button type="button" className="time-capsule-secondary" onClick={stopCameraStream} disabled={uploading || recorderState === "stopping" || recorderState === "recording"}>{t("common.closeCamera")}</button>
               </div>
             </div>
           ) : null}
