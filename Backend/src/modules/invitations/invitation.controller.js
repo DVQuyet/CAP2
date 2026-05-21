@@ -23,7 +23,6 @@ function getFrontendBaseUrl(req) {
   const configuredUrl =
     process.env.INVITE_FRONTEND_URL ||
     process.env.PUBLIC_APP_URL ||
-    process.env.FRONTEND_URL ||
     "";
   const baseUrl = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(configuredUrl)
     ? DEFAULT_INVITE_FRONTEND_URL
