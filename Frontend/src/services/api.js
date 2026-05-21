@@ -1,4 +1,4 @@
-const DEFAULT_API_BASE_URL = import.meta.env.PROD ? "https://dinhvietquyet.website" : "http://localhost:3000";
+const DEFAULT_API_BASE_URL = import.meta.env.PROD ? "https://cap2-backend.onrender.com" : "http://localhost:3000";
 const RAW_API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
   import.meta.env.VITE_API_URL ||
