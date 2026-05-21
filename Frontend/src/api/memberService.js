@@ -1,4 +1,5 @@
 import { buildApiUrl } from "../services/api";
+import { mediaUrlFromId } from "../shared/utils/media";
 
 const BASE_URL = "/api/member";
 
@@ -255,7 +256,7 @@ export const uploadImage = async (file, options = {}) => {
   const result = await parseResponse(res, "Không thể tải ảnh lên");
 
   const mediaId = result.mediaId || result.media_id || null;
-  const imageUrl = result.url || result.imageUrl || (mediaId ? `/api/media/${mediaId}` : "");
+  const imageUrl = result.url || result.imageUrl || (mediaId ? mediaUrlFromId(mediaId) : "");
   return {
     ...result,
     mediaId,

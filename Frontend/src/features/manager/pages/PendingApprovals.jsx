@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLanguage } from "../../../i18n/LanguageContext";
+import { mediaUrlFromId } from "../../../shared/utils/media";
 import {
   approvePostAPI,
   approveMemoryAPI,
@@ -38,7 +39,7 @@ const isImageUrl = (value) =>
 
 const getProfileAvatarPreviewUrl = (profile) => {
   if (profile?.pending_avatar_media_id) {
-    return `/api/media/${profile.pending_avatar_media_id}`;
+    return mediaUrlFromId(profile.pending_avatar_media_id);
   }
 
   if (isImageUrl(profile?.pending_avatar_url)) {
@@ -743,7 +744,7 @@ useEffect(() => {
                     <img
                       src={
                         previewProfile.current_avatar_media_id
-                          ? `/api/media/${previewProfile.current_avatar_media_id}`
+                          ? mediaUrlFromId(previewProfile.current_avatar_media_id)
                           : previewProfile.current_avatar_url
                       }
                       alt={t("manager.pending.preview.currentInfo")}

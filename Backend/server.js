@@ -11,6 +11,7 @@ const jwt = require('jsonwebtoken');
 const db = require('./src/config/db');
 
 const app = express();
+app.set("trust proxy", 1);
 
 // 1. Cấu hình middleware toàn cục
 const allowedOrigins = [
@@ -101,10 +102,12 @@ const upload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: MAX_POST_MEDIA_SIZE_BYTES || MAX_IMAGE_SIZE_BYTES },
     fileFilter: (req, file, cb) => {
-        if (!isAllowedPostMediaMimeType(file.mimetype)) {
-            return cb(new Error('Chỉ cho phép upload ảnh JPG, PNG, WEBP, GIF hoặc video MP4, WEBM, MOV'));
+        const mime = String(file.mimetype || '').toLowerCase();
+        // Cho phép ảnh, video và audio (ghi âm từ time capsule)
+        if (isAllowedPostMediaMimeType(file.mimetype) || mime.startsWith('audio/')) {
+            return cb(null, true);
         }
-        cb(null, true);
+        return cb(new Error('Chỉ cho phép upload ảnh, video hoặc ghi âm'));
     }
 });
 
