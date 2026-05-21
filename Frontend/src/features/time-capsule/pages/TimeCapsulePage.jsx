@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiRequest } from "../../../services/api";
+import { uploadImage } from "../../../api/memberService";
 import { mediaUrlFromId } from "../../../shared/utils/media";
 import { formatDateTimeVN } from "../../../shared/utils/dateFormat";
 import "./TimeCapsulePage.css";
@@ -44,7 +45,8 @@ function getReaderKey(reader) {
 }
 
 function MemoryMedia({ memory, t, showCarouselControls = false, onPrevious, onNext }) {
-  const url = memory.media_url || mediaUrlFromId(memory.media_id);
+  // Ưu tiên media_id để tạo URL đúng từ backend, fallback về media_url nếu không có id
+  const url = mediaUrlFromId(memory.media_id) || memory.media_url || "";
   if (!url) return null;
   const kind = getMediaKind(memory);
   const mediaAlt = memory.title || t("timeCapsule.defaultMemoryTitle");
@@ -304,20 +306,21 @@ export default function TimeCapsulePage({ role = "member" }) {
     setError("");
     setMessage("");
     try {
+      // Dùng cùng pattern với upload ảnh profile: field "image", endpoint /api/upload
       const file = blob instanceof File ? blob : new File([blob], filename, { type: blob.type || "application/octet-stream" });
-      const data = new FormData();
-      data.append("file", file);
-      const result = await apiRequest("/api/upload-memory-media", {
-        method: "POST",
-        body: data,
-      });
+      const result = await uploadImage(file, { usageType: "other" });
+
+      // result.imageUrl đã là URL đầy đủ từ backend (https://cap2-backend.onrender.com/api/media/ID)
+      const mediaId = result.mediaId || result.media_id || null;
+      const fullUrl = result.imageUrl || result.url || (mediaId ? mediaUrlFromId(mediaId) : "");
+
       if (filePreview?.url) URL.revokeObjectURL(filePreview.url);
       const previewUrl = URL.createObjectURL(file);
       setFilePreview({ url: previewUrl, kind: getMediaKind(file), name: file.name });
       setForm((prev) => ({
         ...prev,
-        media_id: result.media_id || result.mediaId,
-        media_url: result.url || result.mediaUrl || "",
+        media_id: mediaId,
+        media_url: fullUrl,
         media_type: getMediaKind(file),
         mime_type: file.type,
         original_filename: file.name,
