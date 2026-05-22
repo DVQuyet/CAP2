@@ -521,6 +521,7 @@ const updateTreePerson = async (req, res) => {
         const has = (key) => Object.prototype.hasOwnProperty.call(body, key);
         let pendingRoleAccountId = null;
         let pendingRoleId = null;
+        let pendingAccountCreation = null;
 
         const strOrKeep = (key, currentValue) => {
             if (!has(key)) return currentValue ?? '';
@@ -607,24 +608,62 @@ const updateTreePerson = async (req, res) => {
                     [personId]
                 );
                 if (!accountRows.length) {
-                    return res.status(400).json({ success: false, message: 'Thanh vien nay chua co tai khoan de doi vai tro.' });
-                }
-
-                const targetAccount = accountRows[0];
-                if (Number(req.user.role_id) === 2) {
-                    if (Number(targetAccount.id) === Number(req.user.id) && rid !== Number(targetAccount.role_id)) {
-                        return res.status(400).json({ success: false, message: 'Manager khong the tu doi vai tro cua chinh minh.' });
+                    if (rid !== 3) {
+                        return res.status(400).json({ success: false, message: 'Thanh vien chua co tai khoan chi co the bo sung o vai tro thanh vien.' });
                     }
-                    if (rid === 3 && Number(targetAccount.role_id) !== 3) {
-                        return res.status(403).json({ success: false, message: 'Manager khong duoc ha vai tro cua toc truong khac.' });
+                    pendingAccountCreation = { roleId: 3 };
+                } else {
+                    const targetAccount = accountRows[0];
+                    if (Number(req.user.role_id) === 2) {
+                        if (Number(targetAccount.id) === Number(req.user.id) && rid !== Number(targetAccount.role_id)) {
+                            return res.status(400).json({ success: false, message: 'Manager khong the tu doi vai tro cua chinh minh.' });
+                        }
+                        if (rid === 3 && Number(targetAccount.role_id) !== 3) {
+                            return res.status(403).json({ success: false, message: 'Manager khong duoc ha vai tro cua toc truong khac.' });
+                        }
                     }
-                }
 
-                if (rid !== Number(targetAccount.role_id)) {
-                    pendingRoleAccountId = targetAccount.id;
-                    pendingRoleId = rid;
+                    if (rid !== Number(targetAccount.role_id)) {
+                        pendingRoleAccountId = targetAccount.id;
+                        pendingRoleId = rid;
+                    }
                 }
             }
+        }
+
+        if (pendingAccountCreation) {
+            if (nextLiving !== 1) {
+                return res.status(400).json({ success: false, message: 'Chi tao tai khoan cho thanh vien con song.' });
+            }
+
+            const accountEmail = String(body.account_email || '').trim().toLowerCase();
+            const accountPassword = String(body.account_password || '');
+
+            if (!accountEmail) {
+                return res.status(400).json({ success: false, message: 'Can nhap email de tao tai khoan thanh vien.' });
+            }
+
+            if (!accountPassword || accountPassword.length < 6) {
+                return res.status(400).json({ success: false, message: 'Mat khau tai khoan toi thieu 6 ky tu.' });
+            }
+
+            const [emailRows] = await db.query('SELECT id FROM accounts WHERE email = ? LIMIT 1', [accountEmail]);
+            if (emailRows.length) {
+                return res.status(400).json({ success: false, message: 'Email nay da ton tai trong he thong.' });
+            }
+
+            const accountLimitCheck = await ensureCanAddAccount(nextClanId);
+            if (!accountLimitCheck.ok) {
+                return res.status(accountLimitCheck.status).json({
+                    success: false,
+                    code: accountLimitCheck.code,
+                    message: accountLimitCheck.message,
+                    billing: accountLimitCheck.billing,
+                });
+            }
+
+            pendingAccountCreation.email = accountEmail;
+            pendingAccountCreation.password = accountPassword;
         }
 
         let nextAvatarUrl = strOrKeep('avatar_url', current.avatar_url) || null;
@@ -768,6 +807,28 @@ const updateTreePerson = async (req, res) => {
 
         if (pendingRoleAccountId && pendingRoleId) {
             await db.query('UPDATE accounts SET role_id = ? WHERE id = ?', [pendingRoleId, pendingRoleAccountId]);
+        }
+
+        if (pendingAccountCreation) {
+            const hashedPassword = await bcrypt.hash(pendingAccountCreation.password, 10);
+            const [accountResult] = await db.query(
+                `INSERT INTO accounts (email, password, person_id, role_id, status)
+                 VALUES (?, ?, ?, ?, 'active')`,
+                [pendingAccountCreation.email, hashedPassword, personId, pendingAccountCreation.roleId]
+            );
+
+            await db.query(
+                `INSERT INTO account_clans (account_id, clan_id, person_id, status)
+                 VALUES (?, ?, ?, 'active')
+                 ON DUPLICATE KEY UPDATE
+                   person_id = VALUES(person_id),
+                   status = 'active'`,
+                [accountResult.insertId, nextClanId, personId]
+            );
+
+            if (!String(body.email || current.email || '').trim()) {
+                await db.query('UPDATE people SET email = ? WHERE id = ?', [pendingAccountCreation.email, personId]);
+            }
         }
 
         const [updatedRows] = await db.query(
