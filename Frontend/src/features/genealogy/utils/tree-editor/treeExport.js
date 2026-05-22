@@ -1,54 +1,107 @@
-import { EXPORT_MAX_CANVAS_EDGE } from "./treeConstants";
+import { CARD_HEIGHT, CARD_WIDTH, EXPORT_MAX_CANVAS_EDGE, EXPORT_MAX_CANVAS_PIXELS, EXPORT_TARGET_PIXEL_RATIO } from "./treeConstants";
 import { asArray, formatDisplayDate, fullName, toInt } from "./treePersonUtils";
 import { getCardSize } from "./treeStorage";
 import { numbersFromPath } from "./treeLines";
 
-const EXPORT_PADDING = 180;
-const EXPORT_FONT_FAMILY = '"Segoe UI", Arial, sans-serif';
+const EXPORT_SIDE_CARD_PADDING = 0.5;
+const EXPORT_VERTICAL_CARD_PADDING = 0.75;
+const EXPORT_FONT_FAMILY = 'Inter, Roboto, "Noto Sans", "Segoe UI", Arial, sans-serif';
 const TITLE_BOX = { x: 42, y: 26, width: 300, height: 76 };
+const EXPORT_COUPLE_PADDING = 8;
 
-export function getTreeExportBounds(people, lines = [], cardSizes = {}) {
+function rectForPerson(person, cardSizes = {}) {
+  const size = getCardSize(cardSizes, person?.id);
+  const x = toInt(person?.tree_x, 0);
+  const y = toInt(person?.tree_y, 0);
+  return {
+    x,
+    y,
+    width: size.width,
+    height: size.height,
+    right: x + size.width,
+    bottom: y + size.height,
+  };
+}
+
+function buildExportCoupleUnits(people = [], families = [], cardSizes = {}) {
+  const peopleById = new Map(asArray(people).map((person) => [Number(person.id), person]));
+  return asArray(families)
+    .map((family) => {
+      const husband = peopleById.get(Number(family.father_id));
+      const wife = peopleById.get(Number(family.mother_id));
+      if (!husband || !wife) return null;
+
+      const husbandRect = rectForPerson(husband, cardSizes);
+      const wifeRect = rectForPerson(wife, cardSizes);
+      const left = Math.min(husbandRect.x, wifeRect.x) - EXPORT_COUPLE_PADDING;
+      const top = Math.min(husbandRect.y, wifeRect.y) - EXPORT_COUPLE_PADDING;
+      const right = Math.max(husbandRect.right, wifeRect.right) + EXPORT_COUPLE_PADDING;
+      const bottom = Math.max(husbandRect.bottom, wifeRect.bottom) + EXPORT_COUPLE_PADDING;
+
+      return {
+        familyId: Number(family.id),
+        husband,
+        wife,
+        x: left,
+        y: top,
+        width: right - left,
+        height: bottom - top,
+      };
+    })
+    .filter(Boolean);
+}
+
+export function getTreeExportBounds(people, lines = [], cardSizes = {}, families = []) {
   if (!people.length) {
     return { x: 0, y: 0, width: 1200, height: 800 };
   }
 
-  const xs = [TITLE_BOX.x, TITLE_BOX.x + TITLE_BOX.width];
-  const ys = [TITLE_BOX.y, TITLE_BOX.y + TITLE_BOX.height];
+  const xs = [];
+  const ys = [];
+  const cardWidths = [];
+  const cardHeights = [];
 
   people.forEach((person) => {
     const size = getCardSize(cardSizes, person.id);
     xs.push(toInt(person.tree_x, 0), toInt(person.tree_x, 0) + size.width);
     ys.push(toInt(person.tree_y, 0), toInt(person.tree_y, 0) + size.height);
+    cardWidths.push(size.width);
+    cardHeights.push(size.height);
   });
 
-  lines.forEach((line) => {
-    if (line.type === "route-control") return;
-    const nums = numbersFromPath(line.d);
-    for (let index = 0; index < nums.length; index += 2) {
-      if (Number.isFinite(nums[index])) xs.push(nums[index]);
-      if (Number.isFinite(nums[index + 1])) ys.push(nums[index + 1]);
-    }
+  buildExportCoupleUnits(people, families, cardSizes).forEach((unit) => {
+    xs.push(unit.x, unit.x + unit.width);
+    ys.push(unit.y, unit.y + unit.height);
+    cardWidths.push(unit.width);
+    cardHeights.push(unit.height);
   });
 
-  const rawMinX = Math.min(...xs) - EXPORT_PADDING;
-  const rawMinY = Math.min(...ys) - EXPORT_PADDING;
-  const minX = Math.max(0, Math.floor(rawMinX));
-  const minY = Math.max(0, Math.floor(rawMinY));
-  const maxX = Math.ceil(Math.max(...xs) + EXPORT_PADDING);
-  const maxY = Math.ceil(Math.max(...ys) + EXPORT_PADDING);
+  const sidePadding = Math.max(CARD_WIDTH, ...cardWidths) * EXPORT_SIDE_CARD_PADDING;
+  const verticalPadding = Math.max(CARD_HEIGHT, ...cardHeights) * EXPORT_VERTICAL_CARD_PADDING;
+  const rawMinX = Math.min(...xs) - sidePadding;
+  const rawMinY = Math.min(...ys) - verticalPadding;
+  const minX = Math.floor(rawMinX);
+  const minY = Math.floor(rawMinY);
+  const maxX = Math.ceil(Math.max(...xs) + sidePadding);
+  const maxY = Math.ceil(Math.max(...ys) + verticalPadding);
 
   return {
     x: minX,
     y: minY,
-    width: Math.max(1000, maxX - minX),
-    height: Math.max(720, maxY - minY),
+    width: Math.max(1, maxX - minX),
+    height: Math.max(1, maxY - minY),
   };
 }
 
 export function getExportPixelRatio(bounds) {
   const largestEdge = Math.max(bounds.width, bounds.height);
-  if (!largestEdge) return 3;
-  return Math.max(1, Math.min(3, EXPORT_MAX_CANVAS_EDGE / largestEdge));
+  const area = Math.max(1, bounds.width * bounds.height);
+  if (!largestEdge) return EXPORT_TARGET_PIXEL_RATIO;
+
+  const edgeLimitedRatio = EXPORT_MAX_CANVAS_EDGE / largestEdge;
+  const areaLimitedRatio = Math.sqrt(EXPORT_MAX_CANVAS_PIXELS / area);
+  const ratio = Math.min(EXPORT_TARGET_PIXEL_RATIO, edgeLimitedRatio, areaLimitedRatio);
+  return Math.max(1, Math.floor(ratio * 100) / 100);
 }
 
 export function exportFileName(name) {
@@ -218,17 +271,110 @@ export function drawTreeLine(ctx, line) {
   if (!line?.d || line.type === "route-control") return;
   ctx.save();
   ctx.fillStyle = "transparent";
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
+  ctx.lineCap = "butt";
+  ctx.lineJoin = "miter";
+  ctx.miterLimit = 2;
 
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
-  ctx.lineWidth = line.type === "spouse" ? 9 : 10;
-  strokeTreePath(ctx, line.d);
-
-  ctx.strokeStyle = line.type === "spouse" ? "#6f120b" : line.color || "#123f91";
-  ctx.lineWidth = line.type === "spouse" ? 5.5 : 6.5;
+  ctx.strokeStyle = line.type === "spouse" ? "#6f120b" : line.color || "#0B4EA2";
+  ctx.lineWidth = line.type === "spouse" ? 5 : 5.5;
   strokeTreePath(ctx, line.d);
   ctx.restore();
+}
+
+function drawExportNameCard(ctx, { x, y, width, height, names = [], isFounder = false, isCouple = false }) {
+  ctx.save();
+  ctx.shadowColor = "rgba(69, 38, 8, 0.2)";
+  ctx.shadowBlur = 16;
+  ctx.shadowOffsetY = 7;
+  drawRoundRect(ctx, x, y, width, height, 10);
+
+  const grad = ctx.createLinearGradient(x, y, x, y + height);
+  grad.addColorStop(0, isCouple ? "#ffffff" : isFounder ? "#fff6d5" : "#fffdf2");
+  grad.addColorStop(1, isCouple ? "#fff9e8" : "#ffe18a");
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.shadowColor = "transparent";
+  ctx.strokeStyle = isFounder ? "#9f2a1c" : "#bd7d1f";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "#8a2418";
+
+  const visibleNames = names.map((item) => String(item || "").trim().toLocaleUpperCase("vi-VN")).filter(Boolean);
+  const textAreaWidth = width * 0.94;
+  const centerX = x + width / 2;
+  const centerY = y + height / 2;
+
+  if (visibleNames.length <= 1) {
+    const name = visibleNames[0] || "";
+    const oneLineFont = Math.min(56, height * 0.45);
+    ctx.font = `900 ${oneLineFont}px ${EXPORT_FONT_FAMILY}`;
+    if (ctx.measureText(name).width <= textAreaWidth) {
+      ctx.fillText(name, centerX, centerY);
+      ctx.restore();
+      return;
+    }
+
+    const blockHeight = height * 0.5;
+    const gap = blockHeight * 0.12;
+    const lineBoxHeight = (blockHeight - gap) / 2;
+    let fontSize = Math.min(48, lineBoxHeight * 0.92);
+    let lines = [];
+    while (fontSize >= 15) {
+      ctx.font = `900 ${fontSize}px ${EXPORT_FONT_FAMILY}`;
+      lines = splitTextToLines(ctx, name, textAreaWidth, 2);
+      if (lines.length <= 2 && lines.every((line) => ctx.measureText(line).width <= textAreaWidth)) break;
+      fontSize -= 1;
+    }
+    fontSize = fitFontSizeForLines(ctx, lines, textAreaWidth, fontSize, 13);
+    ctx.font = `900 ${fontSize}px ${EXPORT_FONT_FAMILY}`;
+    const firstY = centerY - (lineBoxHeight + gap) / 2;
+    lines.slice(0, 2).forEach((line, index) => {
+      ctx.fillText(line, centerX, firstY + index * (lineBoxHeight + gap));
+    });
+    ctx.restore();
+    return;
+  }
+
+  const blockHeight = height * 0.7;
+  const gap = blockHeight * 0.12;
+  const lineBoxHeight = (blockHeight - gap) / 2;
+  const lines = visibleNames.slice(0, 2);
+  const fontSize = fitFontSizeForLines(ctx, lines, textAreaWidth, Math.min(48, lineBoxHeight * 0.92), 13);
+  ctx.font = `900 ${fontSize}px ${EXPORT_FONT_FAMILY}`;
+  const firstY = centerY - (lineBoxHeight + gap) / 2;
+  lines.forEach((line, index) => {
+    ctx.fillText(line, centerX, firstY + index * (lineBoxHeight + gap));
+  });
+
+  ctx.restore();
+}
+
+function drawCoupleCardOnCanvas(ctx, unit, t) {
+  drawExportNameCard(ctx, {
+    x: unit.x,
+    y: unit.y,
+    width: unit.width,
+    height: unit.height,
+    names: [
+      fullName(unit.husband, t ? t("tree.card.fallbackName") : "Thanh vien"),
+      fullName(unit.wife, t ? t("tree.card.fallbackName") : "Thanh vien"),
+    ],
+    isFounder: Number(unit.husband?.generation) === 1 || Number(unit.wife?.generation) === 1,
+    isCouple: true,
+  });
+}
+
+function fitFontSizeForLines(ctx, lines, maxWidth, startSize, minSize, weight = "900", family = EXPORT_FONT_FAMILY) {
+  let size = startSize;
+  while (size > minSize) {
+    ctx.font = `${weight} ${size}px ${family}`;
+    if (lines.every((line) => ctx.measureText(line).width <= maxWidth)) return size;
+    size -= 1;
+  }
+  return minSize;
 }
 
 export function drawPersonCardOnCanvas(ctx, person, cardSizes = {}, t) {
@@ -239,6 +385,16 @@ export function drawPersonCardOnCanvas(ctx, person, cardSizes = {}, t) {
   const height = size.height;
   const isFounder = Number(person.generation) === 1 || Number(person.role_id) === 1;
   const isChief = Number(person.role_id) === 2;
+  const exportName = fullName(person, t ? t("tree.card.fallbackName") : "Thanh vien");
+  drawExportNameCard(ctx, {
+    x,
+    y,
+    width,
+    height,
+    names: [exportName],
+    isFounder,
+  });
+  return;
   const name = String(fullName(person, t ? t("tree.card.fallbackName") : "Thành viên"));
   const birthText = formatDisplayDate(person.birth_date);
   const deathText = formatDisplayDate(person.death_date);
@@ -315,36 +471,45 @@ export function drawPersonCardOnCanvas(ctx, person, cardSizes = {}, t) {
   ctx.textBaseline = "middle";
   ctx.fillStyle = isFounder ? "#fffbe8" : "#8a2418";
   drawTextFitLines(ctx, name, iconX, y + height * 0.48, width - 24, {
-    fontSize: Math.max(13, Math.min(20, width * 0.105)),
-    minFontSize: 11,
+    fontSize: Math.max(18, Math.min(20, width * 0.075)),
+    minFontSize: 14,
     maxLines: 2,
-    weight: "800",
+    weight: "900",
   });
   const genText = (t ? t("tree.card.generation", { count: person.generation || "?" }) : `ĐỜI ${person.generation || "?"}`).toLocaleUpperCase("vi-VN");
   drawTextFit(ctx, genText, iconX, y + height * 0.64, width - 28, {
-    fontSize: Math.max(12, Math.min(17, width * 0.09)),
+    fontSize: Math.max(12, Math.min(13, width * 0.05)),
     minFontSize: 11,
     weight: "800",
   });
   if (lifeText) {
     ctx.fillStyle = isFounder ? "#fff4c7" : "#9a4f20";
     drawTextFit(ctx, lifeText, iconX, y + height - 22, width - 18, {
-      fontSize: Math.max(11, Math.min(13, width * 0.065)),
-      minFontSize: 11,
+      fontSize: Math.max(14, Math.min(15, width * 0.056)),
+      minFontSize: 12,
       weight: "700",
     });
   }
   ctx.restore();
 }
 
-export async function renderFamilyTreePngBlob({ people, lines, cardSizes, clan, t }) {
-  const bounds = getTreeExportBounds(people, lines, cardSizes);
+export async function renderFamilyTreePngBlob({ people, lines, cardSizes, families = [], clan, t }) {
+  const coupleUnits = buildExportCoupleUnits(people, families, cardSizes);
+  const couplePersonIds = new Set(
+    coupleUnits.flatMap((unit) => [Number(unit.husband?.id), Number(unit.wife?.id)]).filter(Number.isFinite),
+  );
+  const singlePeople = asArray(people).filter((person) => !couplePersonIds.has(Number(person.id)));
+  const bounds = getTreeExportBounds(people, lines, cardSizes, families);
   const pixelRatio = getExportPixelRatio(bounds);
   const canvas = document.createElement("canvas");
   canvas.width = Math.max(1, Math.ceil(bounds.width * pixelRatio));
   canvas.height = Math.max(1, Math.ceil(bounds.height * pixelRatio));
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error(t ? t("tree.messages.exportError") : "Export failed");
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
+  if ("fontKerning" in ctx) ctx.fontKerning = "normal";
+  if ("textRendering" in ctx) ctx.textRendering = "geometricPrecision";
 
   ctx.save();
   ctx.scale(pixelRatio, pixelRatio);
@@ -371,7 +536,8 @@ export async function renderFamilyTreePngBlob({ people, lines, cardSizes, clan, 
   ctx.fillText(String(clan?.clan_name || (t ? t("tree.card.fallbackName") : "Dòng họ")).toLocaleUpperCase("vi-VN"), 58, 88);
 
   asArray(lines).forEach((line) => drawTreeLine(ctx, line));
-  asArray(people).forEach((person) => drawPersonCardOnCanvas(ctx, person, cardSizes, t));
+  coupleUnits.forEach((unit) => drawCoupleCardOnCanvas(ctx, unit, t));
+  singlePeople.forEach((person) => drawPersonCardOnCanvas(ctx, person, cardSizes, t));
   ctx.restore();
 
   return canvasToBlob(canvas, t);

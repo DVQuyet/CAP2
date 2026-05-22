@@ -1,9 +1,7 @@
 import { useLanguage } from "../../../i18n/LanguageContext";
 import { formatDateVN } from "../../../shared/utils/dateFormat";
 import { getPersonHighlightState, highlightClassNames } from "../utils/treeHighlight";
-
-const CARD_WIDTH = 170;
-const CARD_HEIGHT = 185;
+import { CARD_HEIGHT, CARD_WIDTH } from "../utils/tree-editor/treeConstants";
 
 function fullName(person, fallback) {
   return person?.display_name || [person?.surname, person?.middle_name, person?.first_name].filter(Boolean).join(" ").trim() || fallback;

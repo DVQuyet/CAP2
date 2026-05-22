@@ -35,6 +35,12 @@ export default function PersonInspector({
       if (field === "is_living" && value === "1") {
         return { ...current, is_living: value, death_date: "" };
       }
+      if (field === "is_living" && value === "0") {
+        return { ...current, is_living: value, account_email: "", account_password: "" };
+      }
+      if (field === "role_id" && !person.account_id && value !== "3") {
+        return { ...current, role_id: value, account_email: "", account_password: "" };
+      }
       return { ...current, [field]: value };
     });
 
@@ -138,10 +144,10 @@ export default function PersonInspector({
             <select
               value={form.role_id}
               onChange={(event) => setField("role_id", event.target.value)}
-              disabled={!canEditRole || !person.account_id}
+              disabled={!canEditRole}
             >
               <option value="">{t("tree.inspector.fields.roleOptions.noAccount")}</option>
-              <option value="2">{t("tree.inspector.fields.roleOptions.chief")}</option>
+              <option value="2" disabled={!person.account_id}>{t("tree.inspector.fields.roleOptions.chief")}</option>
               <option value="3">{t("tree.inspector.fields.roleOptions.member")}</option>
             </select>
           </label>
@@ -209,6 +215,40 @@ export default function PersonInspector({
             {t("tree.inspector.fields.email")}
             <input type="email" value={form.email} onChange={(event) => setField("email", event.target.value)} disabled={!canEdit} />
           </label>
+
+          {!person.account_id && form.role_id === "3" && form.is_living === "1" ? (
+            <div className="fte-accountCreateBox is-wide">
+              <div className="fte-accountCreateTitle">
+                <span className="material-symbols-outlined">manage_accounts</span>
+                {t("tree.createModal.fields.accountBoxTitle")}
+              </div>
+
+              <label>
+                {t("tree.createModal.fields.accountEmail")}
+                <input
+                  type="email"
+                  value={form.account_email || ""}
+                  onChange={(event) => setField("account_email", event.target.value)}
+                  placeholder="example@gmail.com"
+                  autoComplete="new-email"
+                  disabled={!canEdit}
+                />
+              </label>
+
+              <label>
+                {t("tree.createModal.fields.accountPassword")}
+                <input
+                  type="password"
+                  value={form.account_password || ""}
+                  onChange={(event) => setField("account_password", event.target.value)}
+                  placeholder={t("tree.createModal.fields.passwordHint")}
+                  autoComplete="new-password"
+                  minLength={6}
+                  disabled={!canEdit}
+                />
+              </label>
+            </div>
+          ) : null}
 
           <div className="fte-fieldGroup is-wide">
             <span className="fte-fieldLabel">{t("tree.inspector.fields.avatarUrl")}</span>

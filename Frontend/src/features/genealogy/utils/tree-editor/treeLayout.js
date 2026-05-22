@@ -190,7 +190,7 @@ export function autoLayoutPeople(sourcePeople, families = [], childRows = []) {
     };
   });
 
-  return normalizeGenerationSpacing(assignDisplayOrder(laidOut), familyRows);
+  return straightenLineageRows(assignDisplayOrder(laidOut));
 }
 
 export function hasManualLayout(people) {
@@ -318,6 +318,25 @@ export function normalizeGenerationSpacing(people, families = []) {
   });
 
   return positioned.sort((a, b) => toInt(a.generation, 1) - toInt(b.generation, 1) || personSort(a, b));
+}
+
+export function straightenLineageRows(people) {
+  const normalized = asArray(people).map(normalizePerson);
+  if (!normalized.length) return [];
+
+  const minX = Math.min(...normalized.map((person) => toInt(person.tree_x, CANVAS_PADDING)));
+  const offsetX = Math.max(0, CANVAS_PADDING - minX);
+
+  return assignDisplayOrder(
+    normalized.map((person) => {
+      const generation = toInt(person.generation, 1) || 1;
+      return {
+        ...person,
+        tree_x: snap(toInt(person.tree_x, CANVAS_PADDING) + offsetX),
+        tree_y: generationY(generation),
+      };
+    }),
+  );
 }
 
 export function mergeManualAndAutoLayout(sourcePeople, families = [], childRows = []) {

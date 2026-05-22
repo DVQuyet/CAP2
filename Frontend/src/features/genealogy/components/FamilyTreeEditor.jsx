@@ -12,11 +12,12 @@ import { useLanguage } from "../../../i18n/LanguageContext";
 import { useTreeSearch } from "../hooks/useTreeSearch";
 import { useTreeViewMode } from "../hooks/useTreeViewMode";
 import { useTreeRealtime } from "../hooks/useTreeRealtime";
+import { getHiddenDescendantIds } from "../utils/treeFilter";
 import VoiceRecorder from "../../voice/components/VoiceRecorder";
 import { validateTreeData } from "../utils/treeValidation";
 import { CANVAS_PADDING, CARD_WIDTH } from "../utils/tree-editor/treeConstants";
 import { asArray, extractCreatedPersonId, formatDisplayDate, fullName, normalizePerson, readCurrentAccount, snap, snapLine, clamp, toInt } from "../utils/tree-editor/treePersonUtils";
-import { getCardSize, loadCardSizes, loadLineRoutes, normalizeCardSize, normalizeLayoutObject, normalizeLayoutSettings, saveCardSizes, saveLineRoutes } from "../utils/tree-editor/treeStorage";
+import { clearCardSizes, clearLineRoutes, getCardSize, loadCardSizes, loadLineRoutes, normalizeCardSize, normalizeLayoutObject, normalizeLayoutSettings, saveCardSizes, saveLineRoutes } from "../utils/tree-editor/treeStorage";
 import { dedupePeopleByAccount, remapChildrenByPeople, remapFamiliesByPeople } from "../utils/tree-editor/treeNormalize";
 import { autoLayoutPeople, findFounderIds, generationY, mergeManualAndAutoLayout } from "../utils/tree-editor/treeLayout";
 import { buildTreeLines } from "../utils/tree-editor/treeLines";
@@ -402,6 +403,7 @@ export default function FamilyTreeEditor({
   const defaultTreeTitleText = String(clan?.clan_name || t("tree.card.fallbackName")).toUpperCase();
   const [currentScale, setCurrentScale] = useState(0.85);
   const lastDragRef = useRef(null);
+  const dragGroupRef = useRef(null);
   const lineDragRef = useRef(null);
   const titleDragRef = useRef(null);
   const [treeTitleLabel, setTreeTitleLabel] = useState(() => loadTreeTitleLabel(clan?.id));
@@ -446,6 +448,31 @@ export default function FamilyTreeEditor({
   });
   const layoutFlushTimerRef = useRef(null);
   const layoutFlushInFlightRef = useRef(false);
+
+  useEffect(() => {
+    if (!isTreeMobile || !mobileTreePanel) return;
+    if (
+      dialog ||
+      selectedId ||
+      relationDialog ||
+      quickCreateDialog ||
+      archiveDialogOpen ||
+      genealogyAiOpen ||
+      constraintNotice
+    ) {
+      setMobileTreePanel(null);
+    }
+  }, [
+    archiveDialogOpen,
+    constraintNotice,
+    dialog,
+    genealogyAiOpen,
+    isTreeMobile,
+    mobileTreePanel,
+    quickCreateDialog,
+    relationDialog,
+    selectedId,
+  ]);
 
   const getPendingLayoutChangeCount = useCallback(() => {
     const pending = pendingLayoutRef.current;
@@ -791,6 +818,36 @@ const quickCreateSourcePerson = useMemo(
     () => buildTreeLines(renderPeople, visibleFamilies, visibleChildRows, lineRoutes, cardSizes),
     [renderPeople, visibleFamilies, visibleChildRows, lineRoutes, cardSizes],
   );
+  const coupleUnits = useMemo(() => (
+    asArray(visibleFamilies)
+      .map((family) => {
+        const father = renderPersonById.get(Number(family.father_id));
+        const mother = renderPersonById.get(Number(family.mother_id));
+        if (!father || !mother) return null;
+
+        const fatherSize = getCardSize(cardSizes, father.id);
+        const motherSize = getCardSize(cardSizes, mother.id);
+        const left = Math.min(toInt(father.tree_x, 0), toInt(mother.tree_x, 0));
+        const top = Math.min(toInt(father.tree_y, 0), toInt(mother.tree_y, 0));
+        const right = Math.max(
+          toInt(father.tree_x, 0) + fatherSize.width,
+          toInt(mother.tree_x, 0) + motherSize.width,
+        );
+        const bottom = Math.max(
+          toInt(father.tree_y, 0) + fatherSize.height,
+          toInt(mother.tree_y, 0) + motherSize.height,
+        );
+        const padding = 8;
+        return {
+          id: Number(family.id),
+          left: left - padding,
+          top: top - padding,
+          width: right - left + padding * 2,
+          height: bottom - top + padding * 2,
+        };
+      })
+      .filter(Boolean)
+  ), [cardSizes, renderPersonById, visibleFamilies]);
 
   const persistFullLayout = useCallback(async (nextPeople = people, nextLineRoutes = lineRoutes, nextCardSizes = cardSizes) => {
     if (!canEditAll) return false;
@@ -818,13 +875,15 @@ const quickCreateSourcePerson = useMemo(
     const nextPeople = autoLayoutPeople(canonicalTree.people, canonicalTree.families, canonicalTree.childRows);
     try {
       setPeople(nextPeople);
-      const saved = await persistFullLayout(nextPeople, lineRoutes, cardSizes);
+      setLineRoutes({});
+      saveLineRoutes(clan?.id, {});
+      const saved = await persistFullLayout(nextPeople, {}, cardSizes);
       setStatus(saved ? t("tree.messages.autoLayoutSuccess") : t("tree.messages.autoLayoutError"));
       await onReload?.();
     } finally {
       setSaving(false);
     }
-  }, [canEditAll, canonicalTree, persistFullLayout, lineRoutes, cardSizes, onReload, t]);
+  }, [canEditAll, canonicalTree, persistFullLayout, cardSizes, clan?.id, onReload, t]);
 
   const canvasSize = useMemo(() => {
     const maxX = Math.max(2400, ...renderPeople.map((person) => toInt(person.tree_x, 0) + getCardSize(cardSizes, person.id).width + CANVAS_PADDING));
@@ -877,11 +936,12 @@ const quickCreateSourcePerson = useMemo(
       return;
     }
     setStatus("");
+    setMobileTreePanel(null);
     if (!visiblePeople.some((person) => Number(person.id) === Number(matched.id))) {
       treeViewMode.setFullMode();
     }
     focusPerson(matched.id, { self: true });
-  }, [currentAccount, focusPerson, people, treeViewMode, visiblePeople]);
+  }, [currentAccount, focusPerson, people, t, treeViewMode, visiblePeople]);
 
   const handleValidateTree = useCallback(() => {
     const errors = validateTreeData(people, canonicalTree.families, canonicalTree.childRows);
@@ -891,6 +951,7 @@ const quickCreateSourcePerson = useMemo(
 
   const openGenealogyAiDialog = useCallback(() => {
     if (!canEditAll) return;
+    setMobileTreePanel(null);
     setGenealogyAiOpen(true);
     setGenealogyAiError("");
   }, [canEditAll]);
@@ -1285,6 +1346,20 @@ const quickCreateSourcePerson = useMemo(
     const originX = toInt(person.tree_x, 0);
     const originY = toInt(person.tree_y, 0);
     lastDragRef.current = { tree_x: originX, tree_y: originY };
+    const draggedPersonId = Number(person.id);
+    const collapsedBranchIds = treeViewMode.collapsedIds.has(draggedPersonId)
+      ? getHiddenDescendantIds([draggedPersonId], people, canonicalTree.families, canonicalTree.childRows)
+      : new Set();
+    const movedIds = new Set([draggedPersonId, ...collapsedBranchIds]);
+    const originPositions = new Map(
+      people
+        .filter((item) => movedIds.has(Number(item.id)))
+        .map((item) => [Number(item.id), {
+          tree_x: toInt(item.tree_x, 0),
+          tree_y: toInt(item.tree_y, 0),
+        }]),
+    );
+    dragGroupRef.current = { movedIds, originPositions };
 
     const handleMove = (moveEvent) => {
       moveEvent.preventDefault();
@@ -1293,10 +1368,19 @@ const quickCreateSourcePerson = useMemo(
         tree_x: snap(originX + (moveEvent.clientX - startX) / scale),
         tree_y: snap(originY + (moveEvent.clientY - startY) / scale),
       };
+      const deltaX = nextPosition.tree_x - originX;
+      const deltaY = nextPosition.tree_y - originY;
       lastDragRef.current = nextPosition;
-      setPeople((current) =>
-        current.map((item) => (item.id === person.id ? { ...item, ...nextPosition } : item)),
-      );
+      const dragGroup = dragGroupRef.current;
+      setPeople((current) => current.map((item) => {
+        const origin = dragGroup?.originPositions.get(Number(item.id));
+        if (!origin) return item;
+        return {
+          ...item,
+          tree_x: snap(origin.tree_x + deltaX),
+          tree_y: snap(origin.tree_y + deltaY),
+        };
+      }));
     };
 
     const handleUp = async () => {
@@ -1304,17 +1388,26 @@ const quickCreateSourcePerson = useMemo(
       window.removeEventListener("pointerup", handleUp);
       setDraggingId(null);
       const finalPosition = lastDragRef.current;
+      const dragGroup = dragGroupRef.current;
+      dragGroupRef.current = null;
       if (!finalPosition) return;
       if (finalPosition.tree_x !== originX || finalPosition.tree_y !== originY) {
+        const deltaX = finalPosition.tree_x - originX;
+        const deltaY = finalPosition.tree_y - originY;
+        const nodes = Array.from(dragGroup?.originPositions.entries() || []).map(([personId, origin]) => ({
+          person_id: personId,
+          tree_x: snap(origin.tree_x + deltaX),
+          tree_y: snap(origin.tree_y + deltaY),
+        }));
         enqueueLayoutChanges({
-          nodes: [{ person_id: person.id, ...finalPosition }],
+          nodes: nodes.length ? nodes : [{ person_id: person.id, ...finalPosition }],
         });
       }
     };
 
     window.addEventListener("pointermove", handleMove, { passive: false });
     window.addEventListener("pointerup", handleUp);
-  }, [enqueueLayoutChanges]);
+  }, [canonicalTree.childRows, canonicalTree.families, enqueueLayoutChanges, people, treeViewMode.collapsedIds]);
 
   const openPersonEditor = useCallback((person) => {
     if (!person) return;
@@ -1451,17 +1544,72 @@ const quickCreateSourcePerson = useMemo(
     if (!Number.isFinite(familyId)) return;
 
     const routeKey = controlLine.routeKey || "baseY";
-    const startY = event.clientY;
-    const originY = Number(controlLine.y ?? lineRoutes?.[familyId]?.[routeKey]);
-    const minY = Number(controlLine.minY);
-    const maxY = Number(controlLine.maxY);
+    const axis = controlLine.dragAxis === "xy" ? "xy" : controlLine.dragAxis === "x" ? "x" : "y";
+    if (axis === "xy") {
+      const routeKeyX = controlLine.routeKeyX || `${routeKey}X`;
+      const routeKeyY = controlLine.routeKeyY || `${routeKey}Y`;
+      const originX = Number(controlLine.x ?? lineRoutes?.[familyId]?.[routeKeyX]);
+      const originY = Number(controlLine.y ?? lineRoutes?.[familyId]?.[routeKeyY]);
+      const minX = Number(controlLine.minX);
+      const maxX = Number(controlLine.maxX);
+      const minY = Number(controlLine.minY);
+      const maxY = Number(controlLine.maxY);
+      setDraggingLineId(`${familyId}:${routeKey}`);
+      lineDragRef.current = { familyId, routeKeyX, routeKeyY, x: originX, y: originY, axis };
+
+      const handleMove = (moveEvent) => {
+        moveEvent.preventDefault();
+        const scale = scaleRef.current || 1;
+        const nextX = snapLine(clamp(originX + (moveEvent.clientX - event.clientX) / scale, minX, maxX));
+        const nextY = snapLine(clamp(originY + (moveEvent.clientY - event.clientY) / scale, minY, maxY));
+        lineDragRef.current = { familyId, routeKeyX, routeKeyY, x: nextX, y: nextY, axis };
+        setLineRoutes((current) => ({
+          ...current,
+          [familyId]: { ...(current?.[familyId] || {}), [routeKeyX]: nextX, [routeKeyY]: nextY },
+        }));
+      };
+
+      const handleUp = () => {
+        window.removeEventListener("pointermove", handleMove);
+        window.removeEventListener("pointerup", handleUp);
+        setDraggingLineId(null);
+        const finalRoute = lineDragRef.current;
+        lineDragRef.current = null;
+        const finalX = finalRoute?.x ?? originX;
+        const finalY = finalRoute?.y ?? originY;
+        setLineRoutes((current) => {
+          const next = {
+            ...current,
+            [familyId]: { ...(current?.[familyId] || {}), [routeKeyX]: finalX, [routeKeyY]: finalY },
+          };
+          saveLineRoutes(clan?.id, next);
+          enqueueLayoutChanges({
+            lineRoutes: [
+              { family_id: familyId, route_key: routeKeyX, value: finalX },
+              { family_id: familyId, route_key: routeKeyY, value: finalY },
+            ],
+          });
+          return next;
+        });
+      };
+
+      window.addEventListener("pointermove", handleMove, { passive: false });
+      window.addEventListener("pointerup", handleUp);
+      return;
+    }
+
+    const startClient = axis === "x" ? event.clientX : event.clientY;
+    const originValue = Number((axis === "x" ? controlLine.x : controlLine.y) ?? lineRoutes?.[familyId]?.[routeKey]);
+    const minValue = Number(axis === "x" ? controlLine.minX : controlLine.minY);
+    const maxValue = Number(axis === "x" ? controlLine.maxX : controlLine.maxY);
     setDraggingLineId(`${familyId}:${routeKey}`);
-    lineDragRef.current = { familyId, routeKey, value: originY };
+    lineDragRef.current = { familyId, routeKey, value: originValue };
 
     const handleMove = (moveEvent) => {
       moveEvent.preventDefault();
       const scale = scaleRef.current || 1;
-      const nextValue = snapLine(clamp(originY + (moveEvent.clientY - startY) / scale, minY, maxY));
+      const currentClient = axis === "x" ? moveEvent.clientX : moveEvent.clientY;
+      const nextValue = snapLine(clamp(originValue + (currentClient - startClient) / scale, minValue, maxValue));
       lineDragRef.current = { familyId, routeKey, value: nextValue };
       setLineRoutes((current) => ({
         ...current,
@@ -1478,14 +1626,14 @@ const quickCreateSourcePerson = useMemo(
       setLineRoutes((current) => {
         const next = {
           ...current,
-          [familyId]: { ...(current?.[familyId] || {}), [routeKey]: finalRoute?.value ?? originY },
+          [familyId]: { ...(current?.[familyId] || {}), [routeKey]: finalRoute?.value ?? originValue },
         };
         saveLineRoutes(clan?.id, next);
         enqueueLayoutChanges({
           lineRoutes: [{
             family_id: familyId,
             route_key: routeKey,
-            value: finalRoute?.value ?? originY,
+            value: finalRoute?.value ?? originValue,
           }],
         });
         return next;
@@ -1496,24 +1644,36 @@ const quickCreateSourcePerson = useMemo(
     window.addEventListener("pointerup", handleUp);
   }, [canEditAll, clan?.id, enqueueLayoutChanges, lineRoutes]);
 
-  const resetLineRoutes = useCallback(() => {
-    setLineRoutes({});
-    saveLineRoutes(clan?.id, {});
-    if (canEditAll) {
-      persistFullLayout(people, {}, cardSizes).then((saved) => {
-        setStatus(saved ? t("tree.messages.autoLayoutSuccess") : t("tree.messages.saveLayoutError"));
-      });
-    } else {
-      setStatus(t("tree.messages.saveSuccess"));
+  const resetLineRoutes = useCallback(async () => {
+    if (!canEditAll) {
+      setStatus(t("tree.messages.noPermissionAction"));
+      return;
     }
-  }, [canEditAll, cardSizes, clan?.id, people, persistFullLayout, t]);
+
+    setSaving(true);
+    setStatus("");
+    setMobileTreePanel(null);
+    setLineRoutes({});
+    setCardSizes({});
+    clearLineRoutes(clan?.id);
+    clearCardSizes(clan?.id);
+    try {
+      const nextPeople = autoLayoutPeople(canonicalTree.people, canonicalTree.families, canonicalTree.childRows);
+      setPeople(nextPeople);
+      const saved = await persistFullLayout(nextPeople, {}, {});
+      if (saved) await onReload?.();
+      setStatus(saved ? t("tree.messages.saveSuccess") : t("tree.messages.saveLayoutError"));
+    } finally {
+      setSaving(false);
+    }
+  }, [canEditAll, canonicalTree.childRows, canonicalTree.families, canonicalTree.people, clan?.id, onReload, persistFullLayout, t]);
 
   const handleExport = async () => {
     setSaving(true);
     setStatus("");
     const exportPeople = renderPeople.length ? renderPeople : people;
     try {
-      const blob = await renderFamilyTreePngBlob({ people: exportPeople, lines, cardSizes, clan, t });
+      const blob = await renderFamilyTreePngBlob({ people: exportPeople, lines, cardSizes, families: visibleFamilies, clan, t });
       const result = await saveCanvasImage(blob, exportFileName(clan?.clan_name));
       if (result !== "cancelled") setStatus(t("tree.messages.exportSuccess"));
     } catch (error) {
@@ -1539,6 +1699,20 @@ const quickCreateSourcePerson = useMemo(
     try {
       const birthDateIso = vietnamDateToIso(form.birth_date) || null;
       const deathDateIso = form.is_living === "1" ? null : vietnamDateToIso(form.death_date) || null;
+      const wantsCreateAccount = canEditAll && !selectedPerson.account_id && form.role_id === "3";
+      const accountEmail = String(form.account_email || "").trim();
+      const accountPassword = String(form.account_password || "");
+
+      if (wantsCreateAccount && form.is_living !== "1") {
+        setConstraintNotice(t("tree.createModal.fields.incompleteAccountHint"));
+        return;
+      }
+
+      if (wantsCreateAccount && (!accountEmail || accountPassword.length < 6)) {
+        setConstraintNotice(t("tree.createModal.fields.incompleteAccountHint"));
+        return;
+      }
+
       const payload = {
         ...form,
         gender: form.gender === "" ? null : Number(form.gender),
@@ -1558,6 +1732,12 @@ const quickCreateSourcePerson = useMemo(
 
       if (canEditAll && selectedPerson.account_id && (form.role_id === "2" || form.role_id === "3")) {
         payload.role_id = Number(form.role_id);
+      }
+
+      if (wantsCreateAccount) {
+        payload.role_id = 3;
+        payload.account_email = accountEmail;
+        payload.account_password = accountPassword;
       }
       const result = await updatePersonAPI(selectedPerson.id, payload);
       if (result.person) {
@@ -1614,6 +1794,7 @@ const quickCreateSourcePerson = useMemo(
 
   const openQuickCreateDialog = (person) => {
   setBillingWarning(null);
+  setMobileTreePanel(null);
 
   if (!canEditAll) {
     setStatus(t("tree.inspector.limitedNote"));
@@ -1653,6 +1834,7 @@ const openCreateDialogFromQuickRelation = (relation) => {
 
   const openCreateDialog = (relation) => {
     setBillingWarning(null);
+    setMobileTreePanel(null);
     if (!canEditAll) {
       setStatus(t("tree.inspector.limitedNote"));
       return;
@@ -2214,6 +2396,15 @@ const submitCreateDialog = async () => {
                 </button>
                 <button
                   type="button"
+                  onClick={resetLineRoutes}
+                  disabled={!canEditAll || loading || saving}
+                  title="Reset line routes"
+                  className="fte-iconButton"
+                >
+                  <span className="material-symbols-outlined">alt_route</span>
+                </button>
+                <button
+                  type="button"
                   onClick={handleExport}
                   disabled={loading || saving}
                   title={t("tree.toolbar.exportPng")}
@@ -2292,8 +2483,9 @@ const submitCreateDialog = async () => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => centerView?.(0.75, 220)}
-                    title="Căn giữa"
+                    onClick={handleFindMe}
+                    aria-label={t("tree.sidebar.findMe")}
+                    title={t("tree.sidebar.findMe")}
                   >
                     <span className="material-symbols-outlined">my_location</span>
                   </button>
@@ -2369,6 +2561,10 @@ const submitCreateDialog = async () => {
                           <button type="button" onClick={applyAutoLayoutAndSave} disabled={loading || saving}>
                             <span className="material-symbols-outlined">auto_fix_high</span>
                             <span>{t("tree.toolbar.autoLayout")}</span>
+                          </button>
+                          <button type="button" onClick={resetLineRoutes} disabled={loading || saving}>
+                            <span className="material-symbols-outlined">alt_route</span>
+                            <span>Reset line</span>
                           </button>
                         </>
                       ) : null}
@@ -2524,7 +2720,7 @@ const submitCreateDialog = async () => {
                         {lines.filter((line) => line.type !== "route-control").map((line, index) => (
                           <path
                             key={line.id || `${line.type}-${index}`}
-                            className={`fte-line is-${line.type} ${canEditAll && line.dragAxis ? "is-draggable" : ""} ${draggingLineId === `${Number(line.familyId)}:${line.routeKey || "baseY"}` ? "is-dragging" : ""}`}
+                            className={`fte-line is-${line.type} ${line.dragAxis ? `is-axis-${line.dragAxis}` : ""} ${canEditAll && line.dragAxis ? "is-draggable" : ""} ${draggingLineId === `${Number(line.familyId)}:${line.routeKey || "baseY"}` ? "is-dragging" : ""}`}
                             d={line.d}
                             style={line.color ? { "--line-color": line.color } : undefined}
                             onPointerDown={canEditAll && line.dragAxis ? (event) => beginLineDrag(event, line) : undefined}
@@ -2533,16 +2729,42 @@ const submitCreateDialog = async () => {
                         {canEditAll ? lines.filter((line) => line.type === "route-control").map((line) => (
                           <g
                             key={line.id}
-                            className={`fte-lineControl ${draggingLineId === `${Number(line.familyId)}:${line.routeKey || "baseY"}` ? "is-dragging" : ""}`}
+                            className={`fte-lineControl ${line.dragAxis ? `is-axis-${line.dragAxis}` : ""} ${draggingLineId === `${Number(line.familyId)}:${line.routeKey || "baseY"}` ? "is-dragging" : ""}`}
                             transform={`translate(${line.x}, ${line.y})`}
                             onPointerDown={(event) => beginLineDrag(event, line)}
                           >
-                            <line x1="-28" y1="0" x2="28" y2="0" />
+                            {line.dragAxis === "xy" ? (
+                              <>
+                                <line x1="0" y1="-28" x2="0" y2="28" />
+                                <line x1="-28" y1="0" x2="28" y2="0" />
+                              </>
+                            ) : line.dragAxis === "x" ? (
+                              <line x1="0" y1="-28" x2="0" y2="28" />
+                            ) : (
+                              <line x1="-28" y1="0" x2="28" y2="0" />
+                            )}
                             <circle cx="0" cy="0" r="12" />
-                            <path d="M -5 -3 L 0 -8 L 5 -3 M -5 3 L 0 8 L 5 3" />
+                            <path d={line.dragAxis === "xy" ? "M -7 -7 L -2 -7 M 7 -7 L 2 -7 M -7 7 L -2 7 M 7 7 L 2 7 M -7 -7 L -7 -2 M -7 7 L -7 2 M 7 -7 L 7 -2 M 7 7 L 7 2" : line.dragAxis === "x" ? "M -3 -5 L -8 0 L -3 5 M 3 -5 L 8 0 L 3 5" : "M -5 -3 L 0 -8 L 5 -3 M -5 3 L 0 8 L 5 3"} />
                           </g>
                         )) : null}
                       </svg>
+                      {coupleUnits.map((unit) => (
+                        <div
+                          key={`couple-unit-${unit.id}`}
+                          className="fte-coupleUnit"
+                          style={{
+                            left: unit.left,
+                            top: unit.top,
+                            width: unit.width,
+                            height: unit.height,
+                          }}
+                          aria-hidden="true"
+                        >
+                          <span className="fte-coupleUnitBadge">
+                            <span className="material-symbols-outlined">favorite</span>
+                          </span>
+                        </div>
+                      ))}
                       {visiblePeople.map((person) => {
                         const renderPerson = renderPersonById.get(Number(person.id)) || person;
                         return (
@@ -3021,3 +3243,10 @@ const submitCreateDialog = async () => {
 
   return treeFullscreen ? createPortal(treeEditorShell, document.body) : treeEditorShell;
 }
+
+
+
+
+
+
+//thêm con cho ĐINH VIẾT HOÀI TÊN LÀ ĐINH THỊ TUYẾT,ĐINH THỊ NGUYỆT,ĐINH VIẾT VANG,ĐINH THỊ HOA,ĐINH THỊ HÒE VÀ ĐINH VIẾT KHANG.THÊM CON CHO ĐINH VIẾT THANH TÊN LÀ ĐINH THỊ XUÂN, ĐINH THỊ HUÊ,ĐINH THỊ THẮM,ĐINH VIẾT BẢNG, ĐINH VIẾT ĐẠI , ĐINH VIẾT ĐỒNG, ĐINH VIẾT TÂM.THÊM CON CHO ĐINH VIẾT TÂM  TÊN LÀ ĐINH VIẾT TIẾN VÀ ĐINH THỊ CHÂU ANH. THÊM CON CHO ĐINH VIẾT BẢNG TÊN LÀ ĐINH THỊ LỢI, ĐINH THỊ YẾN VÀ ĐINH THỊ PHƯƠNG. THÊM CON CHO ĐINH THỊ XUÂN TÊN LÀ NGUYỄN NGỌC BA, NGUYỄN NGỌC BÌNH VÀ NGUYỄN NGỌC HAI. THÊM CON CHO ĐINH THỊ HUÊ TÊN LÀ NGUYỄN THỊ NGÂN , NGUYỄN VĂN NGỰ VÀ NGUYỄN VĂN TUẤN. THÊM CON CHO ĐINH THỊ THẮM TÊN LÀ PHAN THỊ ANH , PHAN THỊ NGA, PHAN THỊ DUNG VÀ PHAN THỊ SƯƠNG. THÊM CON CHO ĐINH VIẾT ĐẠI TÊN LÀ ĐINH VIẾT TUẤN VÀ ĐINH VIẾT CƯỜNG.

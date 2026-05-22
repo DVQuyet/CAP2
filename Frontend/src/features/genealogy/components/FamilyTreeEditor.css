@@ -4,6 +4,7 @@
     flex-direction: column;
     gap: 12px;
     color: #1f2933;
+    font-family: Inter, Roboto, "Noto Sans", "Segoe UI", Arial, sans-serif;
     font-size: 1.08rem;
 }
 
@@ -260,31 +261,32 @@
 
 .fte-line {
     fill: none;
-    stroke-linecap: round;
-    stroke-linejoin: round;
+    stroke-linecap: butt;
+    stroke-linejoin: miter;
+    shape-rendering: crispEdges;
     vector-effect: non-scaling-stroke;
 }
 
 .fte-line.is-spouse {
     stroke: #7f1d12;
-    stroke-width: 4;
+    stroke-width: 3;
 }
 
 .fte-line.is-blood {
-    stroke: var(--line-color, #78350F);
-    stroke-width: 4.5;
+    stroke: var(--line-color, #0B4EA2);
+    stroke-width: 3;
 }
 
 .fte-personCard {
-    width: 180px;
-    height: 210px;
+    width: 260px;
+    height: 130px;
     position: absolute;
     z-index: 2;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 9px;
-    padding: 16px 12px;
+    gap: 5px;
+    padding: 12px 16px;
     border: 3px solid #a82718;
     border-radius: 8px;
     background: linear-gradient(#fffef0, #ffd966);
@@ -601,7 +603,7 @@
 .fte-modalOverlay {
     position: fixed;
     inset: 0;
-    z-index: 4200;
+    z-index: 7200;
     background: rgba(31, 41, 55, 0.58);
     display: grid;
     place-items: center;
@@ -1211,6 +1213,14 @@
     transition: opacity 0.14s ease, filter 0.14s ease;
 }
 
+.fte-lineControl.is-axis-x {
+    cursor: ew-resize;
+}
+
+.fte-lineControl.is-axis-xy {
+    cursor: move;
+}
+
 .fte-lines:hover .fte-lineControl,
 .fte-lineControl:hover,
 .fte-lineControl.is-dragging {
@@ -1246,21 +1256,60 @@
     cursor: ns-resize;
 }
 
+.fte-line.is-draggable.is-axis-x {
+    cursor: ew-resize;
+}
+
+.fte-line.is-draggable.is-axis-xy {
+    cursor: move;
+}
+
 .fte-line.is-draggable:hover,
 .fte-line.is-draggable.is-dragging {
     stroke-width: 7;
     filter: drop-shadow(0 2px 5px rgba(92, 45, 8, 0.3));
 }
 
+.fte-coupleUnit {
+    position: absolute;
+    z-index: 0;
+    border: 1px solid rgba(126, 54, 12, 0.24);
+    border-radius: 12px;
+    background: rgba(255, 249, 221, 0.34);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.38);
+    pointer-events: none;
+}
+
+.fte-coupleUnitBadge {
+    position: absolute;
+    left: 50%;
+    top: -11px;
+    width: 24px;
+    height: 24px;
+    display: grid;
+    place-items: center;
+    transform: translateX(-50%);
+    border: 1px solid rgba(126, 54, 12, 0.28);
+    border-radius: 999px;
+    background: rgba(255, 250, 231, 0.92);
+    color: #9f1239;
+    box-shadow: 0 4px 10px rgba(78, 45, 10, 0.12);
+}
+
+.fte-coupleUnitBadge .material-symbols-outlined {
+    font-size: 15px;
+    line-height: 1;
+}
+
 
 /* Card redesign: founder red, descendants yellow, resize handle. */
 
 .fte-personCard {
-    width: 170px;
-    height: 185px;
+    width: 260px;
+    height: 130px;
     justify-content: center;
-    gap: 5px;
-    padding: 14px 12px 16px;
+    gap: 4px;
+    padding: 10px 16px 12px;
     border: 2px solid #c98920;
     border-radius: 10px;
     background: linear-gradient(180deg, #fff2bd 0%, #ffd875 100%);
@@ -1468,31 +1517,36 @@
 
 .fte-personCard {
     box-sizing: border-box;
-    justify-content: flex-start;
-    gap: clamp(3px, 2.2%, 7px);
-    padding: 14px 10px 18px;
-    min-width: 118px;
-    min-height: 128px;
+    justify-content: center;
+    gap: 2px;
+    padding: 8px 16px 10px;
+    min-width: 220px;
+    min-height: 110px;
     overflow: visible;
 }
 
 .fte-ancestorIcon {
-    width: clamp(34px, 28%, 48px);
-    height: clamp(34px, 28%, 48px);
-    margin-bottom: 1px;
+    width: 30px;
+    height: 30px;
+    border-width: 2px;
+    margin-bottom: 0;
+}
+
+.fte-ancestorIcon .material-symbols-outlined {
+    font-size: 21px;
 }
 
 .fte-ancestorIcon.has-photo {
-    width: clamp(38px, 32%, 56px);
-    height: clamp(38px, 32%, 56px);
+    width: 36px;
+    height: 36px;
 }
 
 .fte-cardName {
     flex: 0 1 auto;
     min-height: 0;
     margin-top: 0;
-    font-size: clamp(0.58rem, 0.68vw, 0.82rem);
-    line-height: 1.14;
+    font-size: 18px;
+    line-height: 1.1;
     overflow: hidden;
     text-overflow: ellipsis;
     overflow-wrap: anywhere;
@@ -1503,8 +1557,9 @@
 .fte-cardGeneration {
     flex: 0 0 auto;
     margin-top: 0;
-    font-size: clamp(0.68rem, 0.72vw, 0.92rem);
-    line-height: 1.05;
+    font-size: 13px;
+    line-height: 1.08;
+    letter-spacing: 0;
 }
 
 .fte-cardMeta {
@@ -1512,9 +1567,9 @@
     width: 100%;
     margin-top: auto;
     padding: 0 2px;
-    font-size: clamp(0.52rem, 0.58vw, 0.74rem);
+    font-size: 14px;
     font-weight: 800;
-    line-height: 1.22;
+    line-height: 1.12;
     text-align: center;
     white-space: normal;
     overflow: visible;
@@ -2445,7 +2500,7 @@ body.fte-bodyFullscreen {
 .fte-centerNoticeOverlay {
     position: fixed;
     inset: 0;
-    z-index: 5600;
+    z-index: 7600;
     background: rgba(31, 41, 55, 0.36);
     display: grid;
     place-items: center;
@@ -3293,6 +3348,125 @@ body.fte-bodyFullscreen {
         max-height: calc(100dvh - 20px);
         border-radius: 16px;
         padding: 14px;
+    }
+
+    .fte-aiModal {
+        height: calc(100dvh - 20px);
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        overflow: hidden;
+    }
+
+    .fte-aiModal .fte-modalHeader {
+        flex: 0 0 auto;
+        align-items: center;
+        padding-bottom: 10px;
+    }
+
+    .fte-aiModal .fte-modalHeader h3 {
+        font-size: 1.05rem;
+        line-height: 1.2;
+    }
+
+    .fte-aiComposer {
+        flex: 0 0 auto;
+        margin-top: 0;
+        gap: 10px;
+    }
+
+    .fte-aiPromptField textarea {
+        min-height: 118px;
+        max-height: 28dvh;
+        font-size: 16px;
+    }
+
+    .fte-aiVoiceRow {
+        display: grid;
+        grid-template-columns: 1fr;
+        align-items: stretch;
+        gap: 8px;
+        padding: 8px;
+    }
+
+    .fte-aiVoiceControls {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 40px minmax(0, 1fr);
+        gap: 8px;
+    }
+
+    .fte-browserVoiceButton {
+        width: 40px;
+        height: 38px;
+        flex-basis: 40px;
+    }
+
+    .fte-aiVoiceControls .voice-recorder {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .fte-aiVoiceControls .voice-recorder-button {
+        width: 100%;
+        height: 38px;
+        border-radius: 12px;
+    }
+
+    .fte-aiVoiceControls .voice-recorder-status {
+        max-width: 100%;
+        white-space: normal;
+    }
+
+    .fte-aiActions {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+        font-size: 0.86rem;
+    }
+
+    .fte-aiActions .fte-primaryButton,
+    .fte-aiSaveBar .fte-primaryButton {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .fte-aiResult {
+        flex: 1 1 auto;
+        min-height: 0;
+        margin-top: 0;
+        overflow-y: auto;
+        padding-right: 2px;
+    }
+
+    .fte-aiDraftSection {
+        padding: 10px;
+    }
+
+    .fte-aiDraftList {
+        gap: 8px;
+    }
+
+    .fte-aiDraftItem {
+        padding: 10px;
+    }
+
+    .fte-aiDraftItemHead {
+        align-items: flex-start;
+    }
+
+    .fte-aiDraftItem input,
+    .fte-aiDraftItem select,
+    .fte-aiDraftItem textarea {
+        font-size: 16px;
+    }
+
+    .fte-aiSaveBar {
+        position: sticky;
+        bottom: 0;
+        display: grid;
+        grid-template-columns: 1fr;
+        padding: 10px 0 0;
     }
 
     .fte-formGrid,

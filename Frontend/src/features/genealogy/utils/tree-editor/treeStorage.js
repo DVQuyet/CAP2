@@ -54,6 +54,14 @@ export function saveCardSizes(clanId, sizes) {
   }
 }
 
+export function clearCardSizes(clanId) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(getCardSizeStorageKey(clanId));
+  } catch {
+  }
+}
+
 export function loadLineRoutes(clanId) {
   if (typeof window === "undefined") return {};
   try {
@@ -69,6 +77,14 @@ export function saveLineRoutes(clanId, routes) {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(getLineRouteStorageKey(clanId), JSON.stringify(routes || {}));
+  } catch {
+  }
+}
+
+export function clearLineRoutes(clanId) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(getLineRouteStorageKey(clanId));
   } catch {
   }
 }

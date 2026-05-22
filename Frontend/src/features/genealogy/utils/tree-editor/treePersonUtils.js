@@ -94,6 +94,8 @@ export function personToForm(person) {
     address: person?.address || "",
     phone: person?.phone || "",
     email: person?.email || "",
+    account_email: person?.account_email || "",
+    account_password: "",
     avatar_url: person?.avatar_url || "",
     bio: person?.bio || "",
     note: person?.note || "",
