@@ -1,5 +1,5 @@
 import { CANVAS_PADDING, CARD_WIDTH, FAMILY_GAP, LEVEL_HEIGHT, SIBLING_GAP, SPOUSE_GAP, X_GAP, Y_GAP } from "./treeConstants";
-import { asArray, birthTime, normalizePerson, personSort, siblingSort, snap, toInt } from "./treePersonUtils";
+import { asArray, birthTime, normalizePerson, personSort, snap, toInt } from "./treePersonUtils";
 
 export function findFounderIds(people, families, childRows) {
   const peopleIds = new Set(asArray(people).map((person) => Number(person.id)));
@@ -57,6 +57,32 @@ export function simpleGenerationLayout(sourcePeople) {
   });
 }
 
+function childPersonOf(item) {
+  return item?.person || item;
+}
+
+export function sortChildrenForFamily(children = [], options = {}) {
+  const familyByParentId = options.familyByParentId || new Map();
+  return asArray(children)
+    .slice()
+    .sort((a, b) => {
+      const personA = childPersonOf(a) || {};
+      const personB = childPersonOf(b) || {};
+      const idA = Number(personA.id || 0);
+      const idB = Number(personB.id || 0);
+      const branchDiff = (familyByParentId.has(idB) ? 1 : 0) - (familyByParentId.has(idA) ? 1 : 0);
+      if (branchDiff) return branchDiff;
+
+      const birthA = birthTime(personA);
+      const birthB = birthTime(personB);
+      if (birthA != null && birthB != null && birthA !== birthB) return birthA - birthB;
+      if (birthA != null && birthB == null) return -1;
+      if (birthA == null && birthB != null) return 1;
+
+      return idA - idB || personSort(personA, personB);
+    });
+}
+
 export function autoLayoutPeople(sourcePeople, families = [], childRows = []) {
   const people = asArray(sourcePeople).map(normalizePerson);
   if (!people.length) return [];
@@ -112,13 +138,12 @@ export function autoLayoutPeople(sourcePeople, families = [], childRows = []) {
 
     const parents = [peopleMap.get(Number(family.father_id)), peopleMap.get(Number(family.mother_id))]
       .filter(Boolean);
-    const children = asArray(childrenByFamily.get(familyId))
+    const children = sortChildrenForFamily(asArray(childrenByFamily.get(familyId))
       .map((row) => ({
         ...row,
         person: peopleMap.get(Number(row.person_id)),
       }))
-      .filter((row) => row.person)
-      .sort(siblingSort)
+      .filter((row) => row.person), { familyByParentId })
       .map((row) => row.person);
 
     const childUnits = children.map((child) => {

@@ -9,6 +9,7 @@ function personLabel(person) {
 }
 
 export default function TreeViewModeSelector({
+  variant = "",
   people = [],
   mode,
   rootPersonId,
@@ -31,11 +32,13 @@ export default function TreeViewModeSelector({
   }, [people, rootQuery]);
 
   return (
-    <div className="fte-viewMode">
+    <div className={`fte-viewMode ${variant ? `fte-viewMode--${variant}` : ""}`}>
+      {variant === "rootOnly" ? null : (
       <button type="button" className={mode === "full" ? "is-active" : ""} onClick={onFullMode}>
         <span className="material-symbols-outlined">account_tree</span>
         {t("tree.viewMode.full")}
       </button>
+      )}
       <div className="fte-rootPicker">
         <label>
           <span>{t("tree.viewMode.setRoot")}</span>
@@ -45,6 +48,16 @@ export default function TreeViewModeSelector({
             placeholder={t("tree.viewMode.rootPlaceholder")}
             onChange={(event) => setRootQuery(event.target.value)}
           />
+          {variant === "rootOnly" ? (
+            <button
+              type="button"
+              className={mode === "full" ? "is-active" : ""}
+              onClick={onFullMode}
+              title={t("tree.viewMode.full")}
+            >
+              <span className="material-symbols-outlined">account_tree</span>
+            </button>
+          ) : null}
         </label>
         <div className="fte-rootPickerResults">
           {rootResults.map((person) => (

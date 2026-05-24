@@ -7,6 +7,12 @@ export default defineConfig({
         react(),
         VitePWA({
             registerType: "autoUpdate",
+            workbox: {
+                cleanupOutdatedCaches: true,
+                clientsClaim: true,
+                skipWaiting: true,
+                navigateFallback: "/index.html",
+            },
             manifest: {
                 name: "CAP2 - Gia phả Việt",
                 short_name: "CAP2",
