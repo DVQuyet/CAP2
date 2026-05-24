@@ -261,9 +261,9 @@
 
 .fte-line {
     fill: none;
-    stroke-linecap: butt;
-    stroke-linejoin: miter;
-    shape-rendering: crispEdges;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    shape-rendering: geometricPrecision;
     vector-effect: non-scaling-stroke;
 }
 
@@ -273,11 +273,12 @@
 }
 
 .fte-line.is-blood {
-    stroke: var(--line-color, #0B4EA2);
-    stroke-width: 3;
+    stroke: var(--line-color, #6f927e);
+    stroke-width: 2.4;
 }
 
 .fte-personCard {
+    --fte-card-scale: 1;
     width: 260px;
     height: 130px;
     position: absolute;
@@ -1525,6 +1526,10 @@
     overflow: visible;
 }
 
+.fte-personCard.is-founder {
+    --fte-card-scale: 1;
+}
+
 .fte-ancestorIcon {
     width: 30px;
     height: 30px;
@@ -2183,6 +2188,7 @@
 
 .fte-toolbarGroup--actions {
     margin-left: auto;
+    flex-wrap: wrap;
 }
 
 .fte-toolbar button:disabled {
@@ -3666,6 +3672,38 @@ body.fte-bodyFullscreen {
         white-space: nowrap;
     }
 
+    .fte-mobileStyleControls {
+        display: grid;
+        gap: 10px;
+        margin-top: 10px;
+        padding: 10px;
+        border: 1px solid rgba(183, 106, 66, 0.22);
+        border-radius: 10px;
+        background: rgba(255, 250, 243, 0.78);
+    }
+
+    .fte-mobileStyleControls label {
+        display: grid;
+        grid-template-columns: 62px minmax(0, 1fr);
+        align-items: center;
+        gap: 10px;
+        color: #4d3520;
+        font-weight: 850;
+    }
+
+    .fte-mobileStyleControls input[type="color"] {
+        width: 52px;
+        height: 34px;
+        border: 1px solid #d6bf84;
+        border-radius: 8px;
+        background: #fff;
+    }
+
+    .fte-mobileStyleControls input[type="range"] {
+        width: 100%;
+        accent-color: #7c9b8a;
+    }
+
     .fte-mobileViewMode {
         display: grid;
     }
@@ -3699,5 +3737,1660 @@ body.fte-bodyFullscreen {
     .fte-workspace {
         height: 74dvh;
         min-height: 360px;
+    }
+}
+
+/* Premium genealogy canvas polish. Keep these overrides last so they win over older card themes. */
+.fte-viewport {
+    border-color: rgba(183, 106, 66, 0.36);
+    background: var(--fte-tree-bg, #f8f2e8);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), 0 22px 48px rgba(54, 43, 31, 0.12);
+}
+
+.fte-canvas {
+    background: transparent;
+}
+
+.fte-transformWrapper,
+.fte-transformContent,
+.fte-nodeLayer,
+.fte-personCard {
+    transform-style: preserve-3d;
+    backface-visibility: hidden;
+}
+
+.fte-lines {
+    shape-rendering: geometricPrecision;
+}
+
+.fte-line {
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    shape-rendering: geometricPrecision;
+    vector-effect: non-scaling-stroke;
+}
+
+.fte-line.is-spouse {
+    stroke: #8B7CB6;
+    stroke-width: 3;
+    opacity: 0.72;
+}
+
+.fte-line.is-blood {
+    stroke: var(--line-color, #6FAF8F);
+    stroke-width: 3;
+    opacity: 0.72;
+}
+
+.fte-line.is-mainBranch {
+    stroke-width: 4;
+    opacity: 0.9;
+}
+
+.fte-line.is-draggable {
+    stroke-width: 3 !important;
+}
+
+.fte-line.is-draggable.is-mainBranch {
+    stroke-width: 4 !important;
+}
+
+.fte-line.is-draggable:hover,
+.fte-line.is-draggable.is-dragging {
+    stroke-width: 5 !important;
+    filter: drop-shadow(0 2px 6px rgba(80, 61, 42, 0.22));
+}
+
+.fte-lineControl line {
+    stroke: rgba(91, 74, 55, 0.28) !important;
+}
+
+.fte-lineControl circle {
+    fill: #fffaf3;
+    stroke: #b76a42;
+}
+
+.fte-coupleUnit {
+    border-color: rgba(183, 106, 66, 0.22);
+    background: rgba(255, 255, 255, 0.24);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.52);
+}
+
+.fte-personCard {
+    --fte-card-scale: 1;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: 58px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto auto;
+    align-items: center;
+    column-gap: 16px;
+    row-gap: 4px;
+    width: 260px;
+    height: 120px;
+    min-width: 220px;
+    min-height: 105px;
+    padding: 16px 20px;
+    border: 2px solid #c97b4d;
+    border-radius: 16px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(255, 250, 241, 0.92) 100%);
+    color: #2f241b;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+    overflow: visible;
+    transition: all 0.2s ease;
+    transform: scale(var(--fte-card-scale));
+    -webkit-font-smoothing: antialiased;
+    text-rendering: geometricPrecision;
+}
+
+.fte-personCard:hover {
+    transform: translateY(-3px) scale(var(--fte-card-scale));
+    filter: none;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
+}
+
+.fte-personCard.is-founder {
+    --fte-card-scale: 1.15;
+    border-color: #a85f39;
+    background: linear-gradient(180deg, #fff7ea 0%, #ead6bd 100%);
+    color: #241a13;
+    box-shadow: 0 12px 32px rgba(99, 63, 38, 0.22), 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.fte-personCard.is-founder:hover {
+    transform: translateY(-3px) scale(var(--fte-card-scale));
+    box-shadow: 0 16px 38px rgba(99, 63, 38, 0.26), 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.fte-personCard.is-female,
+.fte-personCard.is-unknown,
+.fte-personCard.is-founder.is-female,
+.fte-personCard.is-founder.is-unknown {
+    border-color: #c97b4d;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(255, 250, 241, 0.92) 100%);
+}
+
+.fte-personCard.is-founder.is-female,
+.fte-personCard.is-founder.is-unknown {
+    border-color: #b76a42;
+}
+
+.fte-personCard.is-generation-early {
+    background: linear-gradient(180deg, #fffaf0 0%, #f4e7d5 100%);
+}
+
+.fte-personCard.is-generation-mid {
+    background: linear-gradient(180deg, #fffdfa 0%, #f8efe4 100%);
+}
+
+.fte-personCard.is-generation-late {
+    background: linear-gradient(180deg, #ffffff 0%, #fbf7f1 100%);
+}
+
+.fte-personCard.is-generation-root,
+.fte-personCard.is-founder.is-female,
+.fte-personCard.is-founder.is-unknown {
+    background: linear-gradient(180deg, #fff7ea 0%, #ead6bd 100%);
+}
+
+.fte-personCard.is-selected {
+    outline: 3px solid rgba(110, 143, 191, 0.28);
+    outline-offset: 5px;
+    box-shadow: 0 0 0 2px rgba(110, 143, 191, 0.52), 0 10px 30px rgba(49, 64, 83, 0.16);
+}
+
+.fte-personCard.is-online {
+    box-shadow: 0 0 0 3px rgba(111, 175, 143, 0.28), 0 8px 22px rgba(0, 0, 0, 0.09);
+}
+
+.fte-personCard.is-editing {
+    box-shadow: 0 0 0 3px rgba(139, 124, 182, 0.28), 0 8px 22px rgba(0, 0, 0, 0.09);
+}
+
+.fte-personCard.is-dragging {
+    transform: translateY(-1px) scale(1.04);
+    box-shadow: 0 14px 34px rgba(54, 43, 31, 0.2);
+}
+
+.fte-personCard.is-founder.is-dragging {
+    transform: translateY(-1px) scale(1.16);
+}
+
+.fte-ancestorIcon,
+.fte-ancestorIcon.has-photo {
+    grid-column: 1;
+    grid-row: 1 / 4;
+    align-self: center;
+    justify-self: center;
+    width: 50px;
+    height: 50px;
+    margin: 0;
+    border: 2px solid rgba(183, 106, 66, 0.55);
+    background: #fffaf3;
+    color: #9a5a39;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.fte-personCard.is-founder .fte-ancestorIcon {
+    width: 54px;
+    height: 54px;
+    border-color: #b76a42;
+}
+
+.fte-ancestorIcon .material-symbols-outlined {
+    font-size: 28px;
+}
+
+.fte-cardName {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: end;
+    width: 100%;
+    min-height: 0;
+    margin: 0;
+    color: inherit;
+    font-size: var(--fte-card-name-size, 25px);
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    line-height: 1.18;
+    text-align: center;
+    text-transform: none;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.fte-cardGeneration {
+    grid-column: 2;
+    grid-row: 2;
+    width: 100%;
+    margin: 0;
+    color: #8d5b3b;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    line-height: 1.18;
+    text-align: center;
+}
+
+.fte-cardMeta {
+    grid-column: 2;
+    grid-row: 3;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    color: #6f6257;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    line-height: 1.18;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.fte-personCard.is-founder .fte-cardGeneration,
+.fte-personCard.is-founder .fte-cardMeta {
+    color: #7b5338;
+}
+
+.fte-chiefBadge {
+    top: 8px;
+    right: 8px;
+    border-color: rgba(183, 106, 66, 0.35);
+    background: #b76a42;
+    color: #fffaf3;
+}
+
+.fte-collapseButton {
+    border-color: rgba(183, 106, 66, 0.5);
+    background: #fffaf3;
+    color: #9a5a39;
+}
+
+.fte-cardHoverActions {
+    background: rgba(255, 250, 243, 0.96);
+    border-color: rgba(183, 106, 66, 0.42);
+    box-shadow: 0 10px 24px rgba(54, 43, 31, 0.16);
+}
+
+.fte-cardHoverActions button {
+    border-color: rgba(183, 106, 66, 0.45);
+    background: #fff;
+    color: #7b5338;
+}
+
+/* Readable tree view and high-quality export controls. */
+.fte-displayToggle,
+.fte-segmented {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid rgba(183, 106, 66, 0.32);
+    border-radius: 8px;
+    background: #fffaf3;
+}
+
+.fte-displayToggle button,
+.fte-segmented button,
+.fte-pdfStub {
+    min-height: 34px;
+    padding: 0 10px;
+    border-radius: 6px;
+    font-size: 0.86rem;
+}
+
+.fte-displayToggle button.is-active,
+.fte-segmented button.is-active {
+    border-color: #b06a4f;
+    background: #7c9b8a;
+    color: #fff;
+}
+
+.fte-displayToggle span:last-child {
+    white-space: nowrap;
+}
+
+.fte-line.is-spouse {
+    stroke: #b06a4f;
+    stroke-width: 2.2;
+    opacity: 0.9;
+}
+
+.fte-line.is-blood {
+    stroke: var(--line-color, #7c9b8a);
+    stroke-width: 2.2;
+    opacity: 0.86;
+}
+
+.fte-line.is-mainBranch {
+    stroke-width: 2.8;
+    opacity: 0.96;
+}
+
+.fte-line.is-related {
+    opacity: 1;
+    filter: drop-shadow(0 2px 5px rgba(85, 61, 42, 0.18));
+}
+
+.fte-line.is-dimmed {
+    opacity: 0.18;
+}
+
+.fte-line.is-draggable {
+    stroke-width: 2.2 !important;
+}
+
+.fte-line.is-draggable.is-mainBranch {
+    stroke-width: 2.8 !important;
+}
+
+.fte-line.is-draggable:hover,
+.fte-line.is-draggable.is-dragging {
+    stroke-width: 4 !important;
+}
+
+.fte-styleControls {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: nowrap;
+}
+
+.fte-colorControl {
+    width: 38px;
+    min-height: 34px;
+    display: inline-grid;
+    place-items: center;
+    position: relative;
+    border: 1px solid rgba(183, 106, 66, 0.32);
+    border-radius: 8px;
+    background: #fffaf3;
+    color: #7b5338;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.fte-colorControl input[type="color"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.fte-fontControl {
+    min-height: 34px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0 9px;
+    border: 1px solid rgba(183, 106, 66, 0.32);
+    border-radius: 8px;
+    background: #fffaf3;
+    color: #7b5338;
+    font-size: 0.8rem;
+    font-weight: 800;
+}
+
+.fte-fontControl input[type="range"] {
+    width: 86px;
+    accent-color: #7c9b8a;
+}
+
+.fte-fontControl output {
+    min-width: 34px;
+    text-align: right;
+}
+
+.fte-line.is-draggable,
+.fte-lineControl {
+    pointer-events: auto;
+}
+
+.fte-line.is-draggable {
+    pointer-events: stroke;
+}
+
+.fte-line.is-draggable.is-axis-x,
+.fte-lineControl.is-axis-x {
+    cursor: ew-resize;
+}
+
+.fte-line.is-draggable.is-axis-y,
+.fte-lineControl.is-axis-y {
+    cursor: ns-resize;
+}
+
+.fte-line.is-draggable.is-axis-xy,
+.fte-lineControl.is-axis-xy {
+    cursor: move;
+}
+
+.fte-line.is-draggable:hover,
+.fte-line.is-draggable.is-dragging {
+    opacity: 1;
+}
+
+.fte-personCard {
+    width: 260px;
+    height: 118px;
+    min-width: 220px;
+    min-height: 100px;
+    max-width: 340px;
+    max-height: 140px;
+    grid-template-columns: 52px minmax(0, 1fr);
+    grid-template-rows: minmax(36px, 1fr) auto auto;
+    column-gap: 14px;
+    row-gap: 3px;
+    padding: 14px 18px;
+    border-radius: 8px;
+    overflow: visible;
+}
+
+.fte-personCard.is-overview {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(42px, 1fr) auto;
+    padding: 12px 14px;
+}
+
+.fte-personCard.is-overview .fte-cardName,
+.fte-personCard.is-overview .fte-cardGeneration {
+    grid-column: 1;
+}
+
+.fte-personCard.is-related {
+    outline: 3px solid rgba(124, 155, 138, 0.34);
+    outline-offset: 4px;
+}
+
+.fte-personCard.is-dimmed {
+    opacity: 0.28;
+    filter: saturate(0.55);
+}
+
+.fte-personCard.is-selected {
+    opacity: 1;
+    filter: none;
+    outline: 3px solid rgba(176, 106, 79, 0.44);
+    outline-offset: 5px;
+}
+
+.fte-ancestorIcon,
+.fte-ancestorIcon.has-photo {
+    width: 46px;
+    height: 46px;
+}
+
+.fte-cardName {
+    font-size: var(--fte-card-name-size, 15px);
+    font-weight: var(--fte-card-name-weight, 700);
+    line-height: 1.22;
+    letter-spacing: 0;
+    text-align: left;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    -webkit-line-clamp: 2;
+}
+
+.fte-personCard.is-overview .fte-cardName {
+    align-self: end;
+    text-align: center;
+}
+
+.fte-cardGeneration,
+.fte-cardMeta {
+    font-size: var(--fte-card-meta-size, 10px);
+    line-height: 1.18;
+    letter-spacing: 0;
+    text-align: left;
+}
+
+.fte-personCard.is-overview .fte-cardGeneration {
+    text-align: center;
+}
+
+.fte-cardMeta {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.fte-exportModal {
+    width: min(720px, 100%);
+}
+
+.fte-exportGrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 14px;
+}
+
+.fte-exportGrid section {
+    min-width: 0;
+    display: grid;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid #ead9a6;
+    border-radius: 8px;
+    background: #fffaf0;
+}
+
+.fte-exportGrid h4 {
+    margin: 0;
+    color: #311b08;
+    font-size: 0.96rem;
+}
+
+.fte-radioRow,
+.fte-checkRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #4d3520;
+    font-weight: 750;
+}
+
+.fte-radioRow input,
+.fte-checkRow input {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 auto;
+}
+
+.fte-exportField {
+    min-width: 0;
+    display: grid;
+    gap: 6px;
+    color: #4d3520;
+    font-weight: 750;
+}
+
+.fte-exportField input[type="color"] {
+    width: 54px;
+    height: 34px;
+    border: 1px solid #d6bf84;
+    border-radius: 6px;
+    background: #fff;
+}
+
+.fte-exportField input[type="range"] {
+    width: 100%;
+    accent-color: #7c9b8a;
+}
+
+.fte-pdfStub {
+    justify-self: start;
+    border: 1px dashed #cba756;
+    background: #fff;
+    color: #73512c;
+}
+
+.fte-coupleCard {
+    position: absolute;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 42px minmax(0, 1fr);
+    align-items: stretch;
+    width: 420px;
+    height: 135px;
+    border: 2px solid #b9825b;
+    border-radius: 10px;
+    background: #fffaf0;
+    color: #2f241b;
+    box-shadow: 0 8px 20px rgba(71, 50, 32, 0.12);
+    overflow: hidden;
+    user-select: none;
+    touch-action: none;
+}
+
+.fte-coupleCard[data-static="true"] {
+    cursor: pointer;
+    touch-action: auto;
+}
+
+.fte-coupleCard.is-selected,
+.fte-coupleCard.is-related {
+    outline: 3px solid rgba(176, 106, 79, 0.34);
+    outline-offset: 4px;
+}
+
+.fte-coupleCard.is-dimmed {
+    opacity: 0.28;
+    filter: saturate(0.55);
+}
+
+.fte-coupleCard.is-dragging {
+    box-shadow: 0 14px 34px rgba(54, 43, 31, 0.2);
+}
+
+.fte-coupleHalf {
+    min-width: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    padding: 16px 14px;
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 5px;
+    font: inherit;
+    cursor: pointer;
+}
+
+.fte-coupleHalf.is-left {
+    border-right: 1px solid rgba(185, 130, 91, 0.3);
+}
+
+.fte-coupleHalf.is-right {
+    border-left: 1px solid rgba(185, 130, 91, 0.3);
+}
+
+.fte-coupleHalf:hover,
+.fte-coupleHalf.is-selectedPerson {
+    background: rgba(124, 155, 138, 0.14);
+}
+
+.fte-coupleHalf.is-selectedPerson {
+    box-shadow: inset 0 0 0 2px rgba(124, 155, 138, 0.42);
+}
+
+.fte-line {
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    shape-rendering: geometricPrecision;
+}
+
+.fte-line.is-blood {
+    stroke: var(--line-color, #6f927e);
+    stroke-width: 2.4;
+    opacity: 0.9;
+}
+
+.fte-line.is-mainBranch {
+    stroke-width: 2.8;
+}
+
+.fte-coupleHalf strong {
+    max-width: 100%;
+    color: #2f241b;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: center;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.fte-coupleHalf span,
+.fte-coupleHalf small {
+    max-width: 100%;
+    color: #6f6257;
+    font-size: var(--fte-couple-meta-size, 11px);
+    font-weight: 700;
+    line-height: 1.18;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fte-coupleCenter {
+    width: 42px;
+    border: 0;
+    border-left: 1px solid rgba(185, 130, 91, 0.26);
+    border-right: 1px solid rgba(185, 130, 91, 0.26);
+    background: rgba(255, 245, 228, 0.9);
+    color: #b06a4f;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+}
+
+.fte-coupleCenter .material-symbols-outlined {
+    font-size: 24px;
+}
+
+.fte-coupleInspectorChildren {
+    display: grid;
+    gap: 8px;
+    margin: 14px 0;
+    padding: 12px;
+    border: 1px solid #ead9a6;
+    border-radius: 8px;
+    background: #fffaf0;
+}
+
+.fte-coupleInspectorChildren strong {
+    color: #311b08;
+}
+
+.fte-coupleInspectorChildren div {
+    display: grid;
+    gap: 6px;
+}
+
+.fte-coupleInspectorChildren button {
+    min-height: 36px;
+    border: 1px solid #d6bf84;
+    border-radius: 8px;
+    background: #fff;
+    color: #4d3520;
+    font-weight: 750;
+    text-align: left;
+    padding: 7px 10px;
+}
+
+.fte-coupleInspectorChildren p {
+    margin: 0;
+    color: #73512c;
+    font-weight: 700;
+}
+
+@media (max-width: 760px) {
+    .fte-displayToggle span:last-child {
+        display: none;
+    }
+
+    .fte-exportGrid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Unified genealogy node sizing: single and couple cards share the same outer box. */
+.fte-personCard,
+.fte-coupleCard {
+    width: var(--fte-card-width, 420px) !important;
+    height: var(--fte-card-height, 96px) !important;
+    min-width: var(--fte-card-width, 420px);
+    min-height: var(--fte-card-height, 96px);
+    max-width: var(--fte-card-width, 420px);
+    max-height: var(--fte-card-height, 96px);
+    border: 2px solid #b9825b;
+    border-radius: 10px;
+    background: #fffaf0;
+    color: #2f241b;
+    box-shadow: 0 8px 20px rgba(71, 50, 32, 0.12);
+    overflow: hidden;
+}
+
+.fte-personCard {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    align-items: center;
+    justify-items: center;
+    gap: 2px;
+    padding: 9px 16px;
+}
+
+.fte-personCard.is-vertical {
+    padding: 14px 16px;
+}
+
+.fte-personCard .fte-ancestorIcon,
+.fte-personCard .fte-cardGeneration {
+    display: none !important;
+}
+
+.fte-personCard .fte-cardName {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: end;
+    width: 100%;
+    margin: 0;
+    color: #2f241b;
+    font-size: var(--fte-card-name-size, 17px);
+    font-weight: 800;
+    line-height: 1.16;
+    text-align: center;
+    letter-spacing: 0;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.fte-personCard .fte-cardMeta {
+    grid-column: 1;
+    grid-row: 2;
+    width: 100%;
+    color: #6f6257;
+    font-size: var(--fte-card-meta-size, 12px);
+    font-weight: 500;
+    line-height: 1.12;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.fte-coupleCard {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: 1fr;
+    padding: 0;
+    touch-action: none;
+    cursor: grab;
+}
+
+.fte-coupleCard.is-vertical {
+    grid-template-columns: 1fr;
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+
+.fte-coupleCard[data-static="true"] {
+    cursor: pointer;
+}
+
+.fte-coupleCard.is-dragging {
+    cursor: grabbing;
+}
+
+.fte-coupleDivider {
+    position: absolute;
+    left: 50%;
+    top: 9px;
+    bottom: 9px;
+    width: 1px;
+    background: rgba(185, 130, 91, 0.32);
+    pointer-events: none;
+}
+
+.fte-coupleCenter {
+    display: none !important;
+}
+
+.fte-coupleHalf {
+    position: relative;
+    min-width: 0;
+    padding: 10px 14px;
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 3px;
+    cursor: inherit;
+}
+
+.fte-coupleHalf.is-left,
+.fte-coupleHalf.is-right {
+    border: 0;
+}
+
+.fte-coupleHalf.is-empty {
+    color: rgba(47, 36, 27, 0.42);
+}
+
+.fte-coupleHalf strong {
+    max-width: 100%;
+    color: inherit;
+    font-size: var(--fte-couple-name-size, 15px);
+    font-weight: 800;
+    line-height: 1.14;
+    text-align: center;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.fte-coupleHalf span,
+.fte-coupleHalf small {
+    max-width: 100%;
+    color: #6f6257;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.1;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.fte-coupleHalf:hover,
+.fte-coupleHalf.is-selectedPerson {
+    background: rgba(124, 155, 138, 0.14);
+}
+
+.fte-coupleHalf.is-selectedPerson {
+    box-shadow: inset 0 0 0 2px rgba(124, 155, 138, 0.42);
+}
+
+.fte-coupleHalfActions {
+    position: absolute;
+    top: 5px;
+    left: 7px;
+    z-index: 8;
+    display: inline-flex;
+    gap: 4px;
+    opacity: 0;
+    transform: translateY(-2px);
+    pointer-events: none;
+    transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.fte-coupleHalf:hover .fte-coupleHalfActions,
+.fte-coupleHalf:focus-within .fte-coupleHalfActions {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+.fte-coupleHalfActions button {
+    width: 26px;
+    height: 26px;
+    border: 1px solid rgba(183, 106, 66, 0.45);
+    border-radius: 999px;
+    background: rgba(255, 250, 243, 0.96);
+    color: #7b5338;
+    display: inline-grid;
+    place-items: center;
+    padding: 0;
+    cursor: pointer;
+    box-shadow: 0 6px 14px rgba(54, 43, 31, 0.14);
+}
+
+.fte-coupleHalfActions button:hover {
+    border-color: #8b1e13;
+    color: #8b1e13;
+    background: #fff1e8;
+}
+
+.fte-coupleHalfActions .material-symbols-outlined {
+    font-size: 17px;
+}
+
+.fte-directLineageMark,
+.fte-coupleHalf .fte-directLineageMark {
+    position: absolute;
+    top: 7px;
+    right: 9px;
+    z-index: 5;
+    display: inline-grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    max-width: 18px;
+    border-radius: 50%;
+    background: rgba(139, 30, 19, 0.08);
+    color: #8b1e13;
+    font-size: 15px;
+    font-weight: 900;
+    line-height: 1;
+    pointer-events: none;
+}
+
+.fte-coupleCard.is-vertical .fte-coupleDivider {
+    left: 12px;
+    right: 12px;
+    top: 50%;
+    bottom: auto;
+    width: auto;
+    height: 1px;
+}
+
+.fte-coupleHalf.is-right .fte-directLineageMark {
+    right: 9px;
+}
+
+.fte-coupleHalf.is-left .fte-directLineageMark {
+    right: 9px;
+}
+
+.fte-canvas.is-bulkMoveMode {
+    cursor: crosshair;
+}
+
+.fte-bulkSelectionRect {
+    position: absolute;
+    z-index: 7;
+    pointer-events: none;
+    border: 2px solid rgba(139, 30, 19, 0.78);
+    border-radius: 8px;
+    background: rgba(139, 30, 19, 0.1);
+    box-shadow: 0 0 0 1px rgba(255, 250, 240, 0.72), 0 10px 24px rgba(54, 43, 31, 0.14);
+}
+
+.fte-iconButton.is-active,
+.fte-toolbar button.is-active {
+    border-color: #8b1e13;
+    background: #fff1e8;
+    color: #8b1e13;
+}
+
+/* Compact tree toolbar and balanced card content. */
+.fte-toolbar--desktop {
+    align-items: stretch;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px;
+}
+
+.fte-toolbar--desktop > .fte-toolbarGroup,
+.fte-toolbar--desktop > .fte-viewMode,
+.fte-toolbar--desktop > .fte-searchPanel {
+    min-width: 0;
+}
+
+.fte-toolbar--desktop .fte-toolbarGroup--edit {
+    order: 1;
+}
+
+.fte-toolbar--desktop .fte-viewMode {
+    order: 2;
+    flex: 0 1 305px;
+}
+
+.fte-toolbar--desktop .fte-searchPanel {
+    order: 3;
+    flex: 1 1 360px;
+}
+
+.fte-toolbar--desktop .fte-toolbarGroup--actions {
+    order: 4;
+    flex: 1 1 430px;
+    margin-left: 0;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.fte-toolbar--desktop .fte-toolbarGroup--icons {
+    order: 5;
+    margin-left: auto;
+}
+
+.fte-toolbar--desktop .fte-viewMode,
+.fte-toolbar--desktop .fte-searchPanel,
+.fte-toolbar--desktop .fte-styleControls {
+    min-height: 58px;
+}
+
+.fte-toolbar--desktop .fte-viewMode {
+    padding: 8px;
+    border: 1px solid rgba(183, 106, 66, 0.28);
+    border-radius: 10px;
+    background: rgba(255, 250, 243, 0.78);
+}
+
+.fte-toolbar--desktop .fte-viewMode > button {
+    min-width: 150px;
+    white-space: nowrap;
+}
+
+.fte-toolbar--desktop .fte-rootPicker label {
+    gap: 4px;
+}
+
+.fte-toolbar--desktop .fte-rootPicker label > span {
+    font-size: 0.78rem;
+}
+
+.fte-toolbar--desktop .fte-rootPicker input {
+    min-height: 40px;
+}
+
+.fte-toolbar--desktop .fte-styleControls {
+    padding: 5px;
+    border: 1px solid rgba(183, 106, 66, 0.24);
+    border-radius: 10px;
+    background: rgba(255, 250, 243, 0.72);
+}
+
+.fte-personCard {
+    align-content: center;
+    justify-content: center;
+    grid-template-rows: auto auto;
+    gap: 7px;
+    padding: 12px 18px;
+}
+
+.fte-personCard .fte-cardName,
+.fte-personCard.is-overview .fte-cardName {
+    align-self: center;
+    justify-self: center;
+    font-size: var(--fte-card-name-size, 17px);
+    line-height: 1.12;
+    text-align: center;
+}
+
+.fte-personCard .fte-cardMeta {
+    align-self: center;
+    justify-self: center;
+    margin-top: 0;
+}
+
+.fte-coupleCard {
+    align-items: stretch;
+}
+
+.fte-coupleHalf {
+    align-content: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 12px 16px;
+}
+
+.fte-coupleCard.is-vertical .fte-coupleHalf {
+    padding: 13px 18px;
+}
+
+.fte-coupleHalf strong {
+    font-size: var(--fte-couple-name-size, 15px);
+    line-height: 1.12;
+}
+
+.fte-coupleHalf span,
+.fte-coupleHalf small {
+    font-size: var(--fte-couple-meta-size, 11px);
+    line-height: 1.12;
+}
+
+@media (max-width: 1180px) {
+    .fte-toolbar--desktop .fte-toolbarGroup--actions {
+        justify-content: flex-start;
+    }
+
+    .fte-toolbar--desktop .fte-toolbarGroup--icons {
+        margin-left: 0;
+    }
+}
+
+/* Modern genealogy toolbar layout. Keep this block last for the redesigned toolbar. */
+.fte-toolbar--redesigned {
+    --toolbar-bg: #f3eee4;
+    --toolbar-card: #fffdf9;
+    --toolbar-border: #d9b574;
+    --toolbar-highlight: #c9784a;
+    --toolbar-text: #2d2a26;
+    --toolbar-muted: #6f665c;
+    display: grid;
+    grid-template-columns: minmax(260px, auto) minmax(350px, 400px) minmax(430px, 1fr);
+    align-items: start;
+    gap: 24px;
+    padding: 16px;
+    border: 1px solid rgba(217, 181, 116, 0.9);
+    border-radius: 12px;
+    background: var(--toolbar-bg);
+    color: var(--toolbar-text);
+    box-shadow: 0 8px 20px rgba(45, 42, 38, 0.05);
+}
+
+.fte-toolbar--redesigned .fte-toolbarZone {
+    min-width: 0;
+}
+
+.fte-toolbar--redesigned .fte-toolbarZone--left {
+    display: grid;
+    grid-template-columns: repeat(3, 40px);
+    grid-auto-rows: 40px;
+    align-items: center;
+    gap: 8px;
+}
+
+.fte-toolbar--redesigned .fte-toolbarZone--center {
+    display: grid;
+    gap: 10px;
+}
+
+.fte-toolbar--redesigned .fte-toolbarZone--right {
+    display: grid;
+    grid-template-columns: max-content max-content;
+    grid-template-areas:
+        "mode zoom"
+        "layout layout"
+        "secondary secondary";
+    justify-content: end;
+    align-content: start;
+    align-items: center;
+    gap: 10px 12px;
+}
+
+.fte-toolButton,
+.fte-toolColor,
+.fte-toolbar--redesigned .fte-viewControlGroup button,
+.fte-toolbar--redesigned .fte-orientationToggle button {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    padding: 0;
+    border: 1px solid rgba(217, 181, 116, 0.92);
+    border-radius: 10px;
+    background: var(--toolbar-card);
+    color: var(--toolbar-text);
+    display: inline-grid;
+    place-items: center;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(45, 42, 38, 0.04);
+    transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
+}
+
+.fte-toolButton:hover:not(:disabled),
+.fte-toolColor:hover,
+.fte-toolbar--redesigned .fte-viewControlGroup button:hover:not(:disabled),
+.fte-toolbar--redesigned .fte-orientationToggle button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    border-color: var(--toolbar-highlight);
+    background: #fff8f1;
+    color: #7c351b;
+}
+
+.fte-toolbar--redesigned button:disabled {
+    opacity: 0.46;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.fte-toolColor {
+    position: relative;
+    overflow: hidden;
+}
+
+.fte-toolColor input[type="color"] {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.fte-toolTextSize {
+    grid-column: 1 / -1;
+    height: 42px;
+    min-width: 0;
+    padding: 0 10px;
+    border: 1px solid rgba(217, 181, 116, 0.92);
+    border-radius: 10px;
+    background: var(--toolbar-card);
+    color: var(--toolbar-text);
+    display: grid;
+    grid-template-columns: 24px minmax(92px, 1fr) 42px;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 3px 10px rgba(45, 42, 38, 0.04);
+}
+
+.fte-toolTextSize input[type="range"] {
+    width: 100%;
+    accent-color: var(--toolbar-highlight);
+}
+
+.fte-toolTextSize output {
+    color: #6b4a24;
+    font-size: 0.8rem;
+    font-weight: 900;
+    text-align: right;
+}
+
+.fte-toolbar--redesigned .material-symbols-outlined {
+    font-size: 21px;
+    line-height: 1;
+}
+
+.fte-searchPanel--toolbar,
+.fte-viewMode--rootOnly {
+    border: 0;
+    background: transparent;
+    padding: 0;
+}
+
+.fte-searchPanel--toolbar .fte-searchForm {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 58px;
+    align-items: end;
+    gap: 10px;
+}
+
+.fte-searchPanel--toolbar .fte-searchForm label,
+.fte-viewMode--rootOnly .fte-rootPicker label {
+    min-width: 0;
+    display: grid;
+    gap: 6px;
+    color: #6b4a24;
+    font-size: 0.84rem;
+    font-weight: 900;
+}
+
+.fte-searchPanel--toolbar .fte-searchForm input,
+.fte-viewMode--rootOnly .fte-rootPicker input {
+    width: 100%;
+    min-height: 52px;
+    border: 1px solid rgba(217, 181, 116, 0.95);
+    border-radius: 12px;
+    background: var(--toolbar-card);
+    color: var(--toolbar-text);
+    padding: 0 14px;
+    font: inherit;
+    font-size: 0.96rem;
+    font-weight: 760;
+    outline: none;
+    box-shadow: 0 5px 14px rgba(45, 42, 38, 0.055);
+    transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.fte-searchPanel--toolbar .fte-searchForm input:focus,
+.fte-viewMode--rootOnly .fte-rootPicker input:focus {
+    border-color: var(--toolbar-highlight);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(201, 120, 74, 0.14), 0 6px 16px rgba(45, 42, 38, 0.07);
+}
+
+.fte-searchPanel--toolbar .fte-searchForm button {
+    width: 58px;
+    height: 52px;
+    min-height: 52px;
+    border-radius: 12px;
+    border-color: var(--toolbar-highlight);
+    background: var(--toolbar-highlight);
+    color: #fff;
+}
+
+.fte-viewMode--rootOnly {
+    display: block;
+}
+
+.fte-viewMode--rootOnly .fte-rootPicker {
+    min-width: 0;
+    width: 100%;
+}
+
+.fte-viewMode--rootOnly .fte-rootPicker label {
+    grid-template-columns: minmax(0, 1fr) 52px;
+    align-items: end;
+}
+
+.fte-viewMode--rootOnly .fte-rootPicker label > span {
+    grid-column: 1 / -1;
+}
+
+.fte-viewMode--rootOnly .fte-rootPicker label > button {
+    width: 52px;
+    height: 52px;
+    min-height: 52px;
+    padding: 0;
+    border: 1px solid rgba(217, 181, 116, 0.95);
+    border-radius: 12px;
+    background: #fff5ef;
+    color: #9b1c10;
+    display: grid;
+    place-items: center;
+}
+
+.fte-viewMode--rootOnly .fte-viewModeRoot {
+    display: none;
+}
+
+.fte-toolbar--redesigned .fte-searchResults,
+.fte-toolbar--redesigned .fte-rootPickerResults {
+    border-color: rgba(217, 181, 116, 0.88);
+    border-radius: 12px;
+    box-shadow: 0 14px 32px rgba(45, 42, 38, 0.14);
+}
+
+.fte-viewControlGroup {
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.fte-viewControlGroup--mode {
+    grid-area: mode;
+}
+
+.fte-viewControlGroup--zoom {
+    grid-area: zoom;
+}
+
+.fte-viewControlGroup--layout {
+    grid-area: layout;
+}
+
+.fte-viewControlGroup--secondary {
+    grid-area: secondary;
+}
+
+.fte-toolbar--redesigned .fte-displayToggle,
+.fte-toolbar--redesigned .fte-orientationToggle,
+.fte-viewControlGroup--zoom {
+    display: inline-flex;
+    align-items: center;
+    gap: 0;
+    padding: 3px;
+    border: 1px solid rgba(217, 181, 116, 0.85);
+    border-radius: 12px;
+    background: rgba(255, 253, 249, 0.9);
+    box-shadow: 0 3px 10px rgba(45, 42, 38, 0.035);
+}
+
+.fte-toolbar--redesigned .fte-displayToggle button {
+    width: auto;
+    min-width: 86px;
+    height: 34px;
+    min-height: 34px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--toolbar-muted);
+    box-shadow: none;
+    padding: 0 12px;
+    font-size: 0.86rem;
+    font-weight: 900;
+}
+
+.fte-toolbar--redesigned .fte-displayToggle button.is-active,
+.fte-toolbar--redesigned .fte-orientationToggle button.is-active,
+.fte-toolbar--redesigned .fte-viewControlGroup button.is-active {
+    border-color: var(--toolbar-highlight);
+    background: #fff0e8;
+    color: #9b1c10;
+    box-shadow: inset 0 0 0 1px rgba(201, 120, 74, 0.28);
+}
+
+.fte-viewControlGroup--zoom button {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    min-height: 38px;
+    border-radius: 10px;
+    box-shadow: none;
+}
+
+.fte-viewControlGroup--zoom button:last-child {
+    width: 46px;
+    font-size: 0.78rem;
+    font-weight: 900;
+}
+
+.fte-toolbar--redesigned .fte-zoomValue {
+    width: 54px;
+    min-width: 54px;
+    height: 38px;
+    border: 0;
+    background: transparent;
+    color: var(--toolbar-text);
+    font-size: 0.88rem;
+    font-weight: 950;
+}
+
+.fte-viewControlGroup--layout,
+.fte-viewControlGroup--secondary {
+    justify-content: flex-end;
+}
+
+.fte-viewControlGroup--layout {
+    padding-top: 2px;
+}
+
+.fte-toolbar--redesigned .fte-orientationToggle button {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    box-shadow: none;
+}
+
+.fte-viewControlGroup--secondary {
+    padding-top: 8px;
+    border-top: 1px solid rgba(217, 181, 116, 0.46);
+    opacity: 0.82;
+}
+
+.fte-viewControlGroup--secondary button {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    min-height: 36px;
+    border-radius: 9px;
+    box-shadow: none;
+}
+
+.fte-toolbar--redesigned .fte-readOnlyBadge {
+    min-height: 36px;
+    border-radius: 10px;
+    background: #fff7e9;
+    font-size: 0.78rem;
+}
+
+@media (max-width: 1280px) {
+    .fte-toolbar--redesigned {
+        grid-template-columns: minmax(250px, auto) minmax(340px, 390px);
+    }
+
+    .fte-toolbar--redesigned .fte-toolbarZone--right {
+        grid-column: 1 / -1;
+        justify-content: start;
+        grid-template-columns: max-content max-content max-content;
+        grid-template-areas:
+            "mode zoom layout"
+            "secondary secondary secondary";
+    }
+}
+
+@media (max-width: 980px) {
+    .fte-toolbar--redesigned {
+        grid-template-columns: 1fr;
+    }
+
+    .fte-toolbar--redesigned .fte-toolbarZone--left {
+        grid-template-columns: repeat(3, 40px) minmax(160px, 1fr);
+    }
+
+    .fte-toolTextSize {
+        grid-column: auto;
+    }
+
+    .fte-toolbar--redesigned .fte-toolbarZone--right {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "zoom"
+            "mode"
+            "layout";
+    }
+
+    .fte-viewControlGroup--secondary {
+        display: none;
+    }
+}
+
+@media (max-width: 760px) {
+    .fte-toolbar--redesigned {
+        display: none !important;
+    }
+}
+
+/* Toolbar repair: override older desktop ordering and prevent right-side overflow. */
+.fte-toolbar--redesigned {
+    grid-template-columns: minmax(220px, 252px) minmax(360px, 1fr) minmax(286px, 332px);
+    gap: 18px;
+    overflow: hidden;
+}
+
+.fte-toolbar--redesigned .fte-toolbarZone--left {
+    width: 100%;
+    grid-template-columns: repeat(3, 40px);
+    align-content: start;
+}
+
+.fte-toolbar--redesigned .fte-searchPanel--toolbar {
+    order: 1;
+}
+
+.fte-toolbar--redesigned .fte-viewMode--rootOnly {
+    order: 2;
+}
+
+.fte-toolbar--redesigned .fte-toolbarZone--center {
+    grid-template-rows: auto auto;
+    align-content: start;
+}
+
+.fte-toolbar--redesigned .fte-toolbarZone--right {
+    width: 100%;
+    grid-template-columns: 1fr;
+    grid-template-areas:
+        "mode"
+        "zoom"
+        "layout"
+        "secondary";
+    justify-content: stretch;
+    justify-items: end;
+    gap: 8px;
+}
+
+.fte-toolbar--redesigned .fte-displayToggle button {
+    min-width: 78px;
+    padding: 0 10px;
+}
+
+.fte-toolbar--redesigned .fte-viewControlGroup--zoom {
+    justify-self: end;
+}
+
+.fte-toolbar--redesigned .fte-zoomValue {
+    width: 50px;
+    min-width: 50px;
+}
+
+.fte-toolbar--redesigned .fte-viewControlGroup--layout,
+.fte-toolbar--redesigned .fte-viewControlGroup--secondary {
+    max-width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+.fte-toolbar--redesigned .fte-viewControlGroup--secondary {
+    width: 100%;
+}
+
+@media (max-width: 1180px) {
+    .fte-toolbar--redesigned {
+        grid-template-columns: minmax(220px, 252px) minmax(360px, 1fr);
+    }
+
+    .fte-toolbar--redesigned .fte-toolbarZone--right {
+        grid-column: 1 / -1;
+        grid-template-columns: max-content max-content minmax(0, 1fr);
+        grid-template-areas:
+            "mode zoom layout"
+            "secondary secondary secondary";
+        justify-items: start;
+        align-items: start;
+    }
+
+    .fte-toolbar--redesigned .fte-viewControlGroup--secondary {
+        justify-content: flex-start;
     }
 }

@@ -1,9 +1,22 @@
-import { BLOOD_LINE_COLORS, SOURCE_BRANCH_STEP } from "./treeConstants";
+import { CHILD_LINE_COLOR, LINE_COLOR, SOURCE_BRANCH_STEP, SPOUSE_LINE_COLOR } from "./treeConstants";
 import { asArray, clamp, personSort, siblingSort, snap, toInt } from "./treePersonUtils";
 import { getCardSize } from "./treeStorage";
 
+function resolveCardSize(cardSizes = {}, personId) {
+  const raw = cardSizes?.[Number(personId)];
+  if (cardSizes?.__raw && raw && typeof raw === "object") {
+    const width = Number(raw.width);
+    const height = Number(raw.height);
+    return {
+      width: Number.isFinite(width) && width > 0 ? width : getCardSize({}, personId).width,
+      height: Number.isFinite(height) && height > 0 ? height : getCardSize({}, personId).height,
+    };
+  }
+  return getCardSize(cardSizes, personId);
+}
+
 export function centerOf(person, cardSizes = {}) {
-  const size = getCardSize(cardSizes, person?.id);
+  const size = resolveCardSize(cardSizes, person?.id);
   return {
     x: toInt(person.tree_x, 0) + size.width / 2,
     y: toInt(person.tree_y, 0) + size.height / 2,
@@ -11,17 +24,17 @@ export function centerOf(person, cardSizes = {}) {
 }
 
 export function bottomOf(person, cardSizes = {}) {
-  const size = getCardSize(cardSizes, person?.id);
+  const size = resolveCardSize(cardSizes, person?.id);
   return toInt(person.tree_y, 0) + size.height;
 }
 
 export function rightOf(person, cardSizes = {}) {
-  const size = getCardSize(cardSizes, person?.id);
+  const size = resolveCardSize(cardSizes, person?.id);
   return toInt(person.tree_x, 0) + size.width;
 }
 
 function rectOf(person, cardSizes = {}) {
-  const size = getCardSize(cardSizes, person?.id);
+  const size = resolveCardSize(cardSizes, person?.id);
   const left = toInt(person?.tree_x, 0);
   const top = toInt(person?.tree_y, 0);
   return {
@@ -64,6 +77,57 @@ const ROUTE_VERTICAL_GAP = 38;
 const ROUTE_CHILD_CLEARANCE = 32;
 const ROUTE_BUS_PULLBACK = 72;
 const ROUTE_BRANCH_PADDING = 120;
+
+function roundedElbowPath(points = [], radius = 14) {
+  const clean = points
+    .map((point) => ({ x: Math.round(Number(point?.x)), y: Math.round(Number(point?.y)) }))
+    .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
+  if (!clean.length) return "";
+  if (clean.length === 1) return `M ${clean[0].x} ${clean[0].y}`;
+
+  const parts = [`M ${clean[0].x} ${clean[0].y}`];
+  for (let index = 1; index < clean.length; index += 1) {
+    const current = clean[index];
+    const next = clean[index + 1];
+    const prev = clean[index - 1];
+    if (!next || radius <= 0) {
+      parts.push(`L ${current.x} ${current.y}`);
+      continue;
+    }
+
+    const incomingX = current.x - prev.x;
+    const incomingY = current.y - prev.y;
+    const outgoingX = next.x - current.x;
+    const outgoingY = next.y - current.y;
+    const isElbow = incomingX !== 0 && outgoingY !== 0 || incomingY !== 0 && outgoingX !== 0;
+    if (!isElbow) {
+      parts.push(`L ${current.x} ${current.y}`);
+      continue;
+    }
+
+    const beforeDistance = Math.hypot(incomingX, incomingY);
+    const afterDistance = Math.hypot(outgoingX, outgoingY);
+    const r = Math.min(radius, beforeDistance / 2, afterDistance / 2);
+    const before = {
+      x: current.x - Math.sign(incomingX) * r,
+      y: current.y - Math.sign(incomingY) * r,
+    };
+    const after = {
+      x: current.x + Math.sign(outgoingX) * r,
+      y: current.y + Math.sign(outgoingY) * r,
+    };
+
+    parts.push(`L ${Math.round(before.x)} ${Math.round(before.y)}`);
+    parts.push(`Q ${current.x} ${current.y} ${Math.round(after.x)} ${Math.round(after.y)}`);
+  }
+  return parts.join(" ");
+}
+
+function familyPersonIds(father, mother, children = []) {
+  return [father?.id, mother?.id, ...children.map((child) => child?.id)]
+    .map(Number)
+    .filter((id) => Number.isFinite(id) && id > 0);
+}
 
 function spreadOf(values = []) {
   const numbers = values.filter(Number.isFinite);
@@ -151,7 +215,6 @@ export function buildTreeLines(people, families, childRows, lineRoutes = {}, car
   });
 
   const branchTierByFamily = new Map();
-  const colorIndexByFamily = new Map();
   const familyGroupsByGeneration = new Map();
   branchFamilyKeys.forEach((value, key) => {
     if (!familyGroupsByGeneration.has(value.generation)) familyGroupsByGeneration.set(value.generation, []);
@@ -163,7 +226,6 @@ export function buildTreeLines(people, families, childRows, lineRoutes = {}, car
       .sort((a, b) => a.minX - b.minX || String(a.key).localeCompare(String(b.key)))
       .forEach((group, index) => {
         branchTierByFamily.set(group.key, index);
-        colorIndexByFamily.set(group.key, index);
       });
   });
 
@@ -216,11 +278,18 @@ export function buildTreeLines(people, families, childRows, lineRoutes = {}, car
         routeKey: "spouseY",
         type: "spouse",
         dragAxis: "x",
+        color: SPOUSE_LINE_COLOR,
+        relatedPersonIds: [father.id, mother.id].map(Number).filter(Number.isFinite),
         x: spouseMidX,
         y: coupleJoinPoint.y,
         minX: Math.min(startX, endX),
         maxX: Math.max(startX, endX),
-        d: `M ${startX} ${spouseLeftY} H ${spouseMidX} V ${spouseRightY} H ${endX}`,
+        d: roundedElbowPath([
+          { x: startX, y: spouseLeftY },
+          { x: spouseMidX, y: spouseLeftY },
+          { x: spouseMidX, y: spouseRightY },
+          { x: endX, y: spouseRightY },
+        ]),
       });
       lines.push({
         id: `family-${familyId}-spouse-left-control`,
@@ -289,7 +358,7 @@ export function buildTreeLines(people, families, childRows, lineRoutes = {}, car
     const parentX = Math.round(parentAnchor.x);
     const parentBottomY = Math.round(parentAnchor.y);
     const childCenters = children.map((child) => {
-      const size = getCardSize(cardSizes, child.id);
+      const size = resolveCardSize(cardSizes, child.id);
       const leftX = toInt(child.tree_x, 0);
       return {
         id: Number(child.id),
@@ -305,9 +374,9 @@ export function buildTreeLines(people, families, childRows, lineRoutes = {}, car
     const firstChildY = Math.min(...childCenters.map((item) => item.y));
     const familyKey = `${toInt(lineParent.generation, 1)}:${Number(family.id)}`;
     const sourceTier = branchTierByFamily.get(familyKey) || 0;
-    const colorIndex = colorIndexByFamily.get(familyKey) || 0;
-    const color = BLOOD_LINE_COLORS[colorIndex % BLOOD_LINE_COLORS.length];
+    const color = CHILD_LINE_COLOR || LINE_COLOR;
     const lineId = `family-${familyId}`;
+    const relatedPersonIds = familyPersonIds(father, mother, children);
     lines.push({
       id: `${lineId}-parent-anchor-control`,
       familyId,
@@ -363,19 +432,11 @@ export function buildTreeLines(people, families, childRows, lineRoutes = {}, car
       const axisMinY = Math.min(parentBranchY, ...childBranchRoutes.map((child) => child.branchY));
       const axisMaxY = Math.max(parentBranchY, ...childBranchRoutes.map((child) => child.branchY));
       const controlY = Math.round((axisMinY + axisMaxY) / 2);
-      console.log("family route", {
-        familyId,
-        axis: routeAxis,
-        xSpread,
-        ySpread,
-        childCount: children.length,
-        baseX,
-        baseY: null,
-      });
       const bloodDragMeta = {
         familyId,
         routeKey: "baseX",
         dragAxis: "x",
+        branchLevel: sourceTier,
         x: baseX,
         y: controlY,
         minX: minBaseX,
@@ -387,13 +448,15 @@ export function buildTreeLines(people, families, childRows, lineRoutes = {}, car
         ...bloodDragMeta,
         type: "blood",
         color,
-        d: `M ${baseX} ${axisMinY} V ${axisMaxY}`,
+        relatedPersonIds,
+        d: roundedElbowPath([{ x: baseX, y: axisMinY }, { x: baseX, y: axisMaxY }]),
       });
 
       const parentBranchMeta = {
         familyId,
         routeKey: "parentBranchY",
         dragAxis: "y",
+        branchLevel: sourceTier,
         x: Math.round((parentX + baseX) / 2),
         y: parentBranchY,
         minY: minParentBranchY,
@@ -405,7 +468,8 @@ export function buildTreeLines(people, families, childRows, lineRoutes = {}, car
         ...parentBranchMeta,
         type: "blood",
         color,
-        d: `M ${parentX} ${parentBottomY} V ${parentBranchY} H ${baseX}`,
+        relatedPersonIds,
+        d: roundedElbowPath([{ x: parentX, y: parentBottomY }, { x: parentX, y: parentBranchY }, { x: baseX, y: parentBranchY }]),
       });
       lines.push({
         id: `${lineId}-parent-branch-control`,
@@ -423,6 +487,7 @@ export function buildTreeLines(people, families, childRows, lineRoutes = {}, car
             familyId,
             routeKey: child.routeKey,
             dragAxis: "y",
+            branchLevel: sourceTier,
             x: childControlX,
             y: child.branchY,
             minY: child.minY,
@@ -433,7 +498,8 @@ export function buildTreeLines(people, families, childRows, lineRoutes = {}, car
             ...childDragMeta,
             type: "blood",
             color,
-            d: `M ${baseX} ${child.branchY} H ${child.childAnchorX} V ${child.sideY}`,
+            relatedPersonIds: [father?.id, mother?.id, child.id].map(Number).filter(Number.isFinite),
+            d: roundedElbowPath([{ x: baseX, y: child.branchY }, { x: child.childAnchorX, y: child.branchY }, { x: child.childAnchorX, y: child.sideY }]),
           });
           lines.push({
             id: `${lineId}-child-control-${child.id}`,
@@ -481,37 +547,43 @@ export function buildTreeLines(people, families, childRows, lineRoutes = {}, car
     const routedBusMaxX = Math.max(parentX, ...childBranchRoutes.map((child) => child.branchX));
     const minParentBranchX = Math.min(parentX, routedBusMinX) - ROUTE_BRANCH_PADDING;
     const maxParentBranchX = Math.max(parentX, routedBusMaxX) + ROUTE_BRANCH_PADDING;
-    const parentBranchX = snap(clamp(routeNumber(route, "parentBranchX") ?? parentX, minParentBranchX, maxParentBranchX));
-    const finalBusMinX = Math.min(routedBusMinX, parentBranchX);
-    const finalBusMaxX = Math.max(routedBusMaxX, parentBranchX);
-    console.log("family route", {
-      familyId,
-      axis: routeAxis,
-      xSpread,
-      ySpread,
-      childCount: children.length,
-      baseX: null,
-      baseY,
-    });
-
-    const bloodDragMeta = { familyId, routeKey: "baseY", dragAxis: "y", x: (finalBusMinX + finalBusMaxX) / 2, y: baseY, minY: minBranchY, maxY: maxBranchY };
+    const trunkX = snap(clamp(routeNumber(route, "trunkX", "parentBranchX") ?? parentX, minParentBranchX, maxParentBranchX));
+    const finalBusMinX = Math.min(routedBusMinX, trunkX);
+    const finalBusMaxX = Math.max(routedBusMaxX, trunkX);
+    const bloodDragMeta = { familyId, routeKey: "baseY", dragAxis: "y", branchLevel: sourceTier, x: (finalBusMinX + finalBusMaxX) / 2, y: baseY, minY: minBranchY, maxY: maxBranchY };
     const parentBranchMeta = {
       familyId,
-      routeKey: "parentBranchX",
+      routeKey: "trunkX",
       dragAxis: "x",
-      x: parentBranchX,
+      branchLevel: sourceTier,
+      x: trunkX,
       y: Math.round((parentBottomY + baseY) / 2),
       minX: minParentBranchX,
       maxX: maxParentBranchX,
     };
-    lines.push({ id: `${lineId}-parent`, ...parentBranchMeta, type: "blood", color, d: `M ${parentX} ${parentBottomY} H ${parentBranchX} V ${baseY}` });
-    lines.push({ id: `${lineId}-parent-branch-control`, ...parentBranchMeta, type: "route-control", color });
-    lines.push({ id: `${lineId}-bus`, ...bloodDragMeta, type: "blood", color, d: `M ${finalBusMinX} ${baseY} H ${finalBusMaxX}` });
+    lines.push({
+      id: `${lineId}-parent`,
+      ...parentBranchMeta,
+      type: "blood",
+      color,
+      relatedPersonIds,
+      d: roundedElbowPath([{ x: parentX, y: parentBottomY }, { x: trunkX, y: parentBottomY }, { x: trunkX, y: baseY }]),
+    });
+    lines.push({ id: `${lineId}-trunk-control`, ...parentBranchMeta, type: "route-control", color });
+    lines.push({
+      id: `${lineId}-bus`,
+      ...bloodDragMeta,
+      type: "blood",
+      color,
+      relatedPersonIds,
+      d: roundedElbowPath([{ x: finalBusMinX, y: baseY }, { x: finalBusMaxX, y: baseY }]),
+    });
     childBranchRoutes.forEach((child) => {
       const childDragMeta = {
         familyId,
         routeKey: child.routeKey,
         dragAxis: "x",
+        branchLevel: sourceTier,
         x: child.branchX,
         y: Math.round((baseY + child.y) / 2),
         minX: child.minX,
@@ -522,7 +594,8 @@ export function buildTreeLines(people, families, childRows, lineRoutes = {}, car
         ...childDragMeta,
         type: "blood",
         color,
-        d: `M ${child.branchX} ${baseY} V ${child.y} H ${child.x}`,
+        relatedPersonIds: [father?.id, mother?.id, child.id].map(Number).filter(Number.isFinite),
+        d: roundedElbowPath([{ x: child.branchX, y: baseY }, { x: child.branchX, y: child.y }, { x: child.x, y: child.y }]),
       });
       lines.push({
         id: `${lineId}-child-control-${child.id}`,

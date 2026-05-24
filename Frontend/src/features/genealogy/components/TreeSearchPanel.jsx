@@ -7,6 +7,7 @@ function personName(person, fallback) {
 }
 
 export default function TreeSearchPanel({
+  variant = "",
   query,
   onQueryChange,
   onSubmit,
@@ -16,12 +17,14 @@ export default function TreeSearchPanel({
   onResultClick,
   onFindMe,
   findMeDisabled = false,
+  showFindMe = true,
+  showClear = true,
 }) {
   const { t } = useLanguage();
   const hasSubmitted = String(submittedQuery || "").trim().length > 0;
 
   return (
-    <div className="fte-searchPanel">
+    <div className={`fte-searchPanel ${variant ? `fte-searchPanel--${variant}` : ""}`}>
       <form
         className="fte-searchForm"
         onSubmit={(event) => {
@@ -41,18 +44,22 @@ export default function TreeSearchPanel({
         <button type="submit" className="fte-iconButton" title={t("tree.sidebar.search")}>
           <span className="material-symbols-outlined">search</span>
         </button>
-        <button
-          type="button"
-          className="fte-iconButton"
-          onClick={onFindMe}
-          disabled={findMeDisabled}
-          title={t("tree.sidebar.findMe")}
-        >
-          <span className="material-symbols-outlined">my_location</span>
-        </button>
-        <button type="button" className="fte-iconButton" onClick={onClear} title={t("common.close")}>
-          <span className="material-symbols-outlined">close</span>
-        </button>
+        {showFindMe ? (
+          <button
+            type="button"
+            className="fte-iconButton"
+            onClick={onFindMe}
+            disabled={findMeDisabled}
+            title={t("tree.sidebar.findMe")}
+          >
+            <span className="material-symbols-outlined">my_location</span>
+          </button>
+        ) : null}
+        {showClear ? (
+          <button type="button" className="fte-iconButton" onClick={onClear} title={t("common.close")}>
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        ) : null}
       </form>
 
       {hasSubmitted ? (

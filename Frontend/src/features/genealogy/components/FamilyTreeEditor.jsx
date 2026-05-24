@@ -7,22 +7,25 @@ import { onSocketEvent } from "../../../services/socket";
 import { vietnamDateToIso } from "../../../shared/utils/dateFormat";
 import TreeSearchPanel from "./TreeSearchPanel";
 import TreeViewModeSelector from "./TreeViewModeSelector";
+import CoupleCard from "./CoupleCard";
 import TreeNodeCard from "./TreeNodeCard";
 import { useLanguage } from "../../../i18n/LanguageContext";
 import { useTreeSearch } from "../hooks/useTreeSearch";
 import { useTreeViewMode } from "../hooks/useTreeViewMode";
 import { useTreeRealtime } from "../hooks/useTreeRealtime";
-import { getHiddenDescendantIds } from "../utils/treeFilter";
+import { buildFamilyIndexes, getAncestorIds, getDescendantIds, getHiddenDescendantIds } from "../utils/treeFilter";
 import VoiceRecorder from "../../voice/components/VoiceRecorder";
 import { validateTreeData } from "../utils/treeValidation";
-import { CANVAS_PADDING, CARD_WIDTH } from "../utils/tree-editor/treeConstants";
+import { CANVAS_PADDING, CARD_HEIGHT, CARD_WIDTH } from "../utils/tree-editor/treeConstants";
 import { asArray, extractCreatedPersonId, formatDisplayDate, fullName, normalizePerson, readCurrentAccount, snap, snapLine, clamp, toInt } from "../utils/tree-editor/treePersonUtils";
 import { clearCardSizes, clearLineRoutes, getCardSize, loadCardSizes, loadLineRoutes, normalizeCardSize, normalizeLayoutObject, normalizeLayoutSettings, saveCardSizes, saveLineRoutes } from "../utils/tree-editor/treeStorage";
 import { dedupePeopleByAccount, remapChildrenByPeople, remapFamiliesByPeople } from "../utils/tree-editor/treeNormalize";
 import { autoLayoutPeople, findFounderIds, generationY, mergeManualAndAutoLayout } from "../utils/tree-editor/treeLayout";
-import { buildTreeLines } from "../utils/tree-editor/treeLines";
 import { blankCreateForm, buildChildRelationPayload, findParentFamilyForChild, findSpouse, findSpouseFamily, getChildrenForFamily, getFamiliesForPerson, relationCandidates, relationLinkedIds } from "../utils/tree-editor/treeRelations";
-import { exportFileName, renderFamilyTreePngBlob, saveCanvasImage } from "../utils/tree-editor/treeExport";
+import { downloadBlob, exportFileName, exportPreparedTree, prepareTreeExportPayload } from "../utils/tree-editor/treeExport";
+import { DEFAULT_TREE_EXPORT_OPTIONS, TREE_EXPORT_FORMAT, TREE_EXPORT_MODE } from "../utils/tree-editor/treeExportConfig";
+import { TREE_CARD_ORIENTATION, TREE_DISPLAY_MODE } from "../utils/tree-editor/treeDisplayConfig";
+import { DISPLAY_NODE_TYPE, buildDisplayTree, buildDisplayTreeLines } from "../utils/tree-editor/treeDisplayNodes";
 import { CenterNoticeDialog, CreatePersonDialog, PersonInspector, QuickCreateRelationDialog, RelationSelectDialog, ArchivedMembersDialog } from "./FamilyTreeEditorParts/index.js";
 import "./FamilyTreeEditor.css";
 
@@ -90,11 +93,18 @@ const AI_RELATION_TYPE_OPTIONS = [
 ];
 
 const TREE_TITLE_STORAGE_PREFIX = "family-tree-title-label:";
+const DISPLAY_NODE_POSITION_STORAGE_PREFIX = "family-tree-display-node-positions:";
+const TREE_STYLE_STORAGE_PREFIX = "family-tree-style:";
 const DEFAULT_TREE_TITLE_LABEL = {
   x: 60,
   y: 42,
   color: "#7d1f13",
   fontSize: 42,
+};
+const DEFAULT_TREE_STYLE = {
+  cardOrientation: TREE_CARD_ORIENTATION.HORIZONTAL,
+  backgroundColor: "#f8f2e8",
+  fontSize: 17,
 };
 
 const TREE_MOBILE_QUERY = "(max-width: 760px)";
@@ -110,6 +120,24 @@ const TREE_TITLE_SAFE_BOUNDS = {
 };
 
 const getTreeTitleStorageKey = (clanId) => `${TREE_TITLE_STORAGE_PREFIX}${clanId || "default"}`;
+const getDisplayNodePositionStorageKey = (clanId) => `${DISPLAY_NODE_POSITION_STORAGE_PREFIX}${clanId || "default"}`;
+const getTreeStyleStorageKey = (clanId) => `${TREE_STYLE_STORAGE_PREFIX}${clanId || "default"}`;
+
+const normalizeHexColor = (value, fallback) => (
+  /^#[0-9a-f]{6}$/i.test(String(value || "")) ? String(value) : fallback
+);
+
+const normalizeTreeStyle = (value) => {
+  const source = value && typeof value === "object" ? value : {};
+  const fontSize = Number(source.fontSize ?? source.font_size);
+  return {
+    cardOrientation: source.cardOrientation === TREE_CARD_ORIENTATION.VERTICAL
+      ? TREE_CARD_ORIENTATION.VERTICAL
+      : TREE_CARD_ORIENTATION.HORIZONTAL,
+    backgroundColor: normalizeHexColor(source.backgroundColor ?? source.background_color, DEFAULT_TREE_STYLE.backgroundColor),
+    fontSize: Number.isFinite(fontSize) ? clamp(fontSize, 12, 28) : DEFAULT_TREE_STYLE.fontSize,
+  };
+};
 
 const normalizeTreeTitleLabel = (value) => {
   const source = value && typeof value === "object" ? value : {};
@@ -145,6 +173,45 @@ const saveTreeTitleLabel = (clanId, value) => {
     window.localStorage.setItem(getTreeTitleStorageKey(clanId), JSON.stringify(normalizeTreeTitleLabel(value)));
   } catch (error) {
     console.warn("Cannot save tree title label", error);
+  }
+};
+
+const loadDisplayNodePositions = (clanId) => {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(getDisplayNodePositionStorageKey(clanId));
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+};
+
+const saveDisplayNodePositions = (clanId, value) => {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(getDisplayNodePositionStorageKey(clanId), JSON.stringify(value || {}));
+  } catch {
+  }
+};
+
+const loadTreeStyle = (clanId) => {
+  if (typeof window === "undefined") return normalizeTreeStyle(null);
+  try {
+    const raw = window.localStorage.getItem(getTreeStyleStorageKey(clanId));
+    return normalizeTreeStyle(raw ? JSON.parse(raw) : null);
+  } catch (error) {
+    console.warn("Cannot read saved tree style", error);
+    return normalizeTreeStyle(null);
+  }
+};
+
+const saveTreeStyle = (clanId, value) => {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(getTreeStyleStorageKey(clanId), JSON.stringify(normalizeTreeStyle(value)));
+  } catch (error) {
+    console.warn("Cannot save tree style", error);
   }
 };
 
@@ -399,17 +466,30 @@ export default function FamilyTreeEditor({
   const viewportRef = useRef(null);
   const transformApiRef = useRef(null);
   const genealogyRecognitionRef = useRef(null);
+  const lastAutoFitKeyRef = useRef("");
   const scaleRef = useRef(0.85);
   const defaultTreeTitleText = String(clan?.clan_name || t("tree.card.fallbackName")).toUpperCase();
   const [currentScale, setCurrentScale] = useState(0.85);
+  const [transformReady, setTransformReady] = useState(0);
   const lastDragRef = useRef(null);
   const dragGroupRef = useRef(null);
+  const bulkSelectRef = useRef(null);
   const lineDragRef = useRef(null);
   const titleDragRef = useRef(null);
   const [treeTitleLabel, setTreeTitleLabel] = useState(() => loadTreeTitleLabel(clan?.id));
+  const [displayNodePositions, setDisplayNodePositions] = useState(() => loadDisplayNodePositions(clan?.id));
   const [draggingTitleLabel, setDraggingTitleLabel] = useState(false);
   const [people, setPeople] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
+  const [selectedType, setSelectedType] = useState("person");
+  const [selectedCoupleId, setSelectedCoupleId] = useState(null);
+  const [treeDisplayMode, setTreeDisplayMode] = useState(TREE_DISPLAY_MODE.DETAIL);
+  const [treeStyle, setTreeStyle] = useState(() => loadTreeStyle(clan?.id));
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [exportOptions, setExportOptions] = useState(DEFAULT_TREE_EXPORT_OPTIONS);
+  const [bulkMoveMode, setBulkMoveMode] = useState(false);
+  const [bulkSelectionRect, setBulkSelectionRect] = useState(null);
+  const [selectedDisplayNodeIds, setSelectedDisplayNodeIds] = useState(() => new Set());
   const [draggingId, setDraggingId] = useState(null);
   const [draggingLineId, setDraggingLineId] = useState(null);
   const [lineRoutes, setLineRoutes] = useState(() => ({ ...loadLineRoutes(clan?.id), ...normalizeLayoutSettings(layoutSettings).line_routes }));
@@ -419,6 +499,7 @@ export default function FamilyTreeEditor({
   const [billingWarning, setBillingWarning] = useState(null);
   const [saving, setSaving] = useState(false);
   const [dialog, setDialog] = useState(null);
+  const [treeFullscreen, setTreeFullscreen] = useState(false);
   const [relationDialog, setRelationDialog] = useState(null);
   const [quickCreateDialog, setQuickCreateDialog] = useState(null);
   const [treeRelationPicker, setTreeRelationPicker] = useState(null);
@@ -637,11 +718,17 @@ export default function FamilyTreeEditor({
 
   useEffect(() => {
     setTreeTitleLabel(loadTreeTitleLabel(clan?.id));
+    setDisplayNodePositions(loadDisplayNodePositions(clan?.id));
+    setTreeStyle(loadTreeStyle(clan?.id));
   }, [clan?.id]);
 
   useEffect(() => {
     saveTreeTitleLabel(clan?.id, treeTitleLabel);
   }, [clan?.id, treeTitleLabel]);
+
+  useEffect(() => {
+    saveTreeStyle(clan?.id, treeStyle);
+  }, [clan?.id, treeStyle]);
 
   useEffect(() => {
     if (!enableRealtime) return undefined;
@@ -720,6 +807,7 @@ export default function FamilyTreeEditor({
     const nextPeople = mergeManualAndAutoLayout(canonicalTree.people, canonicalTree.families, canonicalTree.childRows);
     setPeople(nextPeople);
     setSelectedId((current) => (current && nextPeople.some((person) => person.id === current) ? current : null));
+    setSelectedCoupleId(null);
   }, [canonicalTree]);
 
   const selectedPerson = useMemo(
@@ -803,6 +891,37 @@ const quickCreateSourcePerson = useMemo(
     () => new Map(renderPeople.map((person) => [Number(person.id), person])),
     [renderPeople],
   );
+  const displayTree = useMemo(
+    () => buildDisplayTree(renderPeople, visibleFamilies, visibleChildRows, {
+      nodePositions: displayNodePositions,
+      cardOrientation: treeStyle.cardOrientation,
+    }),
+    [displayNodePositions, renderPeople, treeStyle.cardOrientation, visibleFamilies, visibleChildRows],
+  );
+  const displayNodes = displayTree.nodes;
+  const displayNodeByPersonId = displayTree.nodeByPersonId;
+  const selectedCoupleNode = useMemo(
+    () => displayNodes.find((node) => node.id === selectedCoupleId) || null,
+    [displayNodes, selectedCoupleId],
+  );
+  const selectedRelatedIds = useMemo(() => {
+    const id = Number(selectedId);
+    if (selectedType === "couple" && selectedCoupleNode) {
+      const ids = new Set(selectedCoupleNode.personIds.map(Number));
+      selectedCoupleNode.children.forEach((child) => ids.add(Number(child.id)));
+      return ids;
+    }
+    if (!Number.isFinite(id) || id <= 0) return new Set();
+    const indexes = buildFamilyIndexes(people, canonicalTree.families, canonicalTree.childRows);
+    const ids = new Set([id]);
+    getAncestorIds(id, indexes).forEach((ancestorId) => ids.add(Number(ancestorId)));
+    getDescendantIds(id, indexes).forEach((descendantId) => ids.add(Number(descendantId)));
+    Array.from(ids).forEach((personId) => {
+      const spouses = indexes.spousesByPersonId.get(Number(personId)) || new Set();
+      spouses.forEach((spouseId) => ids.add(Number(spouseId)));
+    });
+    return ids;
+  }, [canonicalTree.childRows, canonicalTree.families, people, selectedCoupleNode, selectedId, selectedType]);
   const childCountByParentId = useMemo(() => {
     const counts = new Map();
     asArray(canonicalTree.childRows).forEach((row) => {
@@ -814,40 +933,47 @@ const quickCreateSourcePerson = useMemo(
     });
     return counts;
   }, [canonicalTree.childRows, canonicalTree.families]);
-  const lines = useMemo(
-    () => buildTreeLines(renderPeople, visibleFamilies, visibleChildRows, lineRoutes, cardSizes),
-    [renderPeople, visibleFamilies, visibleChildRows, lineRoutes, cardSizes],
-  );
-  const coupleUnits = useMemo(() => (
-    asArray(visibleFamilies)
-      .map((family) => {
-        const father = renderPersonById.get(Number(family.father_id));
-        const mother = renderPersonById.get(Number(family.mother_id));
-        if (!father || !mother) return null;
+  const directLineagePersonIds = useMemo(() => {
+    const peopleById = new Map(people.map((person) => [Number(person.id), person]));
+    const familyById = new Map(asArray(canonicalTree.families).map((family) => [Number(family.id), family]));
+    const result = new Set();
 
-        const fatherSize = getCardSize(cardSizes, father.id);
-        const motherSize = getCardSize(cardSizes, mother.id);
-        const left = Math.min(toInt(father.tree_x, 0), toInt(mother.tree_x, 0));
-        const top = Math.min(toInt(father.tree_y, 0), toInt(mother.tree_y, 0));
-        const right = Math.max(
-          toInt(father.tree_x, 0) + fatherSize.width,
-          toInt(mother.tree_x, 0) + motherSize.width,
-        );
-        const bottom = Math.max(
-          toInt(father.tree_y, 0) + fatherSize.height,
-          toInt(mother.tree_y, 0) + motherSize.height,
-        );
-        const padding = 8;
-        return {
-          id: Number(family.id),
-          left: left - padding,
-          top: top - padding,
-          width: right - left + padding * 2,
-          height: bottom - top + padding * 2,
-        };
-      })
-      .filter(Boolean)
-  ), [cardSizes, renderPersonById, visibleFamilies]);
+    asArray(canonicalTree.childRows).forEach((row) => {
+      const child = peopleById.get(Number(row.person_id));
+      const family = familyById.get(Number(row.family_id));
+      if (!child || !family) return;
+
+      const childGeneration = toInt(child.generation, 1);
+      const hasUpperParent = [family.father_id, family.mother_id].some((parentId) => {
+        const parent = peopleById.get(Number(parentId));
+        return parent && toInt(parent.generation, 1) < childGeneration;
+      });
+      if (hasUpperParent) result.add(Number(child.id));
+    });
+
+    return result;
+  }, [canonicalTree.childRows, canonicalTree.families, people]);
+  const lineageControlsByPersonId = useMemo(() => {
+    const indexes = buildFamilyIndexes(people, canonicalTree.families, canonicalTree.childRows);
+    const map = new Map();
+    people.forEach((person) => {
+      const id = Number(person.id);
+      if (!Number.isFinite(id)) return;
+      const ancestorIds = Array.from(getAncestorIds(id, indexes)).map(Number).filter(Number.isFinite);
+      const descendantIds = Array.from(getDescendantIds(id, indexes)).map(Number).filter(Number.isFinite);
+      map.set(id, {
+        ancestorIds,
+        descendantIds,
+        hasAncestors: ancestorIds.length > 0,
+        hasDescendants: descendantIds.length > 0,
+      });
+    });
+    return map;
+  }, [canonicalTree.childRows, canonicalTree.families, people]);
+  const lines = useMemo(
+    () => buildDisplayTreeLines(displayTree, visibleFamilies, visibleChildRows, lineRoutes),
+    [displayTree, visibleFamilies, visibleChildRows, lineRoutes],
+  );
 
   const persistFullLayout = useCallback(async (nextPeople = people, nextLineRoutes = lineRoutes, nextCardSizes = cardSizes) => {
     if (!canEditAll) return false;
@@ -886,17 +1012,121 @@ const quickCreateSourcePerson = useMemo(
   }, [canEditAll, canonicalTree, persistFullLayout, cardSizes, clan?.id, onReload, t]);
 
   const canvasSize = useMemo(() => {
-    const maxX = Math.max(2400, ...renderPeople.map((person) => toInt(person.tree_x, 0) + getCardSize(cardSizes, person.id).width + CANVAS_PADDING));
-    const maxY = Math.max(1400, ...renderPeople.map((person) => toInt(person.tree_y, 0) + getCardSize(cardSizes, person.id).height + CANVAS_PADDING));
+    const lineNumbers = lines.flatMap((line) => String(line.d || "").match(/-?\d+(?:\.\d+)?/g)?.map(Number) || []);
+    const lineXs = lineNumbers.filter((_, index) => index % 2 === 0);
+    const lineYs = lineNumbers.filter((_, index) => index % 2 === 1);
+    const maxX = Math.max(2400, ...displayNodes.map((node) => toInt(node.x, 0) + node.width + CANVAS_PADDING), ...lineXs.map((x) => x + CANVAS_PADDING));
+    const maxY = Math.max(1400, ...displayNodes.map((node) => toInt(node.y, 0) + node.height + CANVAS_PADDING), ...lineYs.map((y) => y + CANVAS_PADDING));
     return { width: maxX, height: maxY };
-  }, [renderPeople, cardSizes]);
+  }, [displayNodes, lines]);
+
+  const canvasPointFromEvent = useCallback((event) => {
+    const rect = treeRef.current?.getBoundingClientRect();
+    const scale = scaleRef.current || 1;
+    if (!rect) return { x: 0, y: 0 };
+    return {
+      x: (event.clientX - rect.left) / scale,
+      y: (event.clientY - rect.top) / scale,
+    };
+  }, []);
+
+  const normalizeSelectionRect = useCallback((start, end) => {
+    const left = Math.min(start.x, end.x);
+    const top = Math.min(start.y, end.y);
+    const right = Math.max(start.x, end.x);
+    const bottom = Math.max(start.y, end.y);
+    return {
+      x: left,
+      y: top,
+      width: right - left,
+      height: bottom - top,
+    };
+  }, []);
+
+  const nodeIntersectsRect = useCallback((node, rect) => {
+    if (!node || !rect) return false;
+    const nodeLeft = toInt(node.x, 0);
+    const nodeTop = toInt(node.y, 0);
+    const nodeRight = nodeLeft + Number(node.width || 0);
+    const nodeBottom = nodeTop + Number(node.height || 0);
+    const rectRight = rect.x + rect.width;
+    const rectBottom = rect.y + rect.height;
+    return nodeLeft <= rectRight && nodeRight >= rect.x && nodeTop <= rectBottom && nodeBottom >= rect.y;
+  }, []);
+
+  const toggleBulkMoveMode = useCallback(() => {
+    if (!canEditAll) return;
+    setBulkMoveMode((current) => {
+      const next = !current;
+      setBulkSelectionRect(null);
+      if (!next) setSelectedDisplayNodeIds(new Set());
+      return next;
+    });
+  }, [canEditAll]);
+
+  const beginBulkSelection = useCallback((event) => {
+    if (!bulkMoveMode || !canEditAll || (event.button != null && event.button !== 0)) return;
+    if (event.target?.closest?.(".fte-personCard, .fte-coupleCard, .fte-lineControl, .fte-canvasTitle, button, input, textarea, select")) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    const start = canvasPointFromEvent(event);
+    bulkSelectRef.current = { start };
+    setBulkSelectionRect({ x: start.x, y: start.y, width: 0, height: 0 });
+
+    const handleMove = (moveEvent) => {
+      moveEvent.preventDefault();
+      const current = canvasPointFromEvent(moveEvent);
+      const rect = normalizeSelectionRect(start, current);
+      bulkSelectRef.current = { start, current };
+      setBulkSelectionRect(rect);
+    };
+
+    const handleUp = (upEvent) => {
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", handleUp);
+      const end = canvasPointFromEvent(upEvent);
+      const rect = normalizeSelectionRect(start, end);
+      bulkSelectRef.current = null;
+      setBulkSelectionRect(null);
+
+      if (rect.width < 8 && rect.height < 8) {
+        setSelectedDisplayNodeIds(new Set());
+        return;
+      }
+
+      const selectedNodes = displayNodes.filter((node) =>
+        nodeIntersectsRect(node, rect) && asArray(node.personIds).some((personId) => canEditPerson(personId)),
+      );
+      setSelectedDisplayNodeIds(new Set(selectedNodes.map((node) => node.id)));
+      setStatus(selectedNodes.length ? `Da chon ${selectedNodes.length} card. Keo mot card trong vung de di chuyen ca mang.` : "Khong co card nao trong vung chon.");
+    };
+
+    window.addEventListener("pointermove", handleMove, { passive: false });
+    window.addEventListener("pointerup", handleUp);
+  }, [bulkMoveMode, canEditAll, canEditPerson, canvasPointFromEvent, displayNodes, nodeIntersectsRect, normalizeSelectionRect]);
+
+  const autoFitSignature = useMemo(() => (
+    [
+      clan?.id || "default",
+      treeViewMode.mode,
+      treeViewMode.rootPersonId || "all",
+      treeStyle.cardOrientation,
+      isTreeMobile ? "mobile" : "desktop",
+      treeFullscreen ? "fullscreen" : "inline",
+      displayNodes.map((node) => node.id).sort().join(","),
+    ].join(":")
+  ), [clan?.id, displayNodes, isTreeMobile, treeFullscreen, treeStyle.cardOrientation, treeViewMode.mode, treeViewMode.rootPersonId]);
 
   const focusPerson = useCallback((personId, options = {}) => {
     const id = Number(personId);
     if (!Number.isFinite(id) || id <= 0) return false;
     const target = renderPersonById.get(id) || people.find((person) => Number(person.id) === id);
+    const targetNode = displayNodeByPersonId.get(id);
     if (!target) return false;
     treeViewMode.expandPathToPerson(id);
+    setSelectedType("person");
+    setSelectedCoupleId(null);
     setSelectedId(id);
     if (options.search) treeSearch.markResult(id);
     if (options.self) setSelfPersonId(id);
@@ -904,12 +1134,11 @@ const quickCreateSourcePerson = useMemo(
     window.setTimeout(() => {
       const api = transformApiRef.current;
       const viewport = viewportRef.current;
-      const size = getCardSize(cardSizes, id);
       if (api?.setTransform && viewport) {
         const rect = viewport.getBoundingClientRect();
         const nextScale = options.scale || 1.25;
-        const targetCenterX = toInt(target.tree_x, 0) + size.width / 2;
-        const targetCenterY = toInt(target.tree_y, 0) + size.height / 2;
+        const targetCenterX = targetNode ? targetNode.x + targetNode.width / 2 : toInt(target.tree_x, 0) + CARD_WIDTH / 2;
+        const targetCenterY = targetNode ? targetNode.y + targetNode.height / 2 : toInt(target.tree_y, 0) + CARD_HEIGHT / 2;
         const nextX = rect.width / 2 - targetCenterX * nextScale;
         const nextY = rect.height / 2 - targetCenterY * nextScale;
         api.setTransform(nextX, nextY, nextScale, 320);
@@ -922,7 +1151,7 @@ const quickCreateSourcePerson = useMemo(
       }
     }, 120);
     return true;
-  }, [cardSizes, people, renderPersonById, treeSearch, treeViewMode]);
+  }, [displayNodeByPersonId, people, renderPersonById, treeSearch, treeViewMode]);
 
   const handleFindMe = useCallback(() => {
     const accountId = Number(currentAccount?.account_id || currentAccount?.accountId || currentAccount?.id);
@@ -1409,9 +1638,236 @@ const quickCreateSourcePerson = useMemo(
     window.addEventListener("pointerup", handleUp);
   }, [canonicalTree.childRows, canonicalTree.families, enqueueLayoutChanges, people, treeViewMode.collapsedIds]);
 
+  const beginDisplayNodeDrag = useCallback((event, node, options = {}) => {
+    if (!node || (event.button != null && event.button !== 0)) return;
+    const movableIds = asArray(node.personIds).filter((personId) => canEditPerson(personId));
+    event.preventDefault();
+    event.stopPropagation();
+
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const originX = toInt(node.x, 0);
+    const originY = toInt(node.y, 0);
+    let hasDragged = false;
+    lastDragRef.current = { tree_x: originX, tree_y: originY };
+    const selectedGroupNodes = bulkMoveMode && selectedDisplayNodeIds.has(node.id) && selectedDisplayNodeIds.size > 1
+      ? displayNodes.filter((item) => selectedDisplayNodeIds.has(item.id) && asArray(item.personIds).some((personId) => canEditPerson(personId)))
+      : [];
+
+    if (selectedGroupNodes.length > 1) {
+      let nextSavedPositions = displayNodePositions;
+      const originNodes = new Map(selectedGroupNodes.map((item) => [item.id, {
+        type: item.type,
+        x: toInt(item.x, 0),
+        y: toInt(item.y, 0),
+      }]));
+      const movedPersonIds = new Set(
+        selectedGroupNodes
+          .filter((item) => item.type !== DISPLAY_NODE_TYPE.COUPLE)
+          .flatMap((item) => asArray(item.personIds).map(Number))
+          .filter(Number.isFinite),
+      );
+      const originPeople = new Map(
+        people
+          .filter((item) => movedPersonIds.has(Number(item.id)))
+          .map((item) => [Number(item.id), {
+            tree_x: toInt(item.tree_x, 0),
+            tree_y: toInt(item.tree_y, 0),
+          }]),
+      );
+
+      const handleMove = (moveEvent) => {
+        moveEvent.preventDefault();
+        const scale = scaleRef.current || 1;
+        const movedDistance = Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY);
+        if (!hasDragged && movedDistance < 4) return;
+        if (!hasDragged) {
+          hasDragged = true;
+          setDraggingId(node.id);
+        }
+        const nextPosition = {
+          x: snap(originX + (moveEvent.clientX - startX) / scale),
+          y: snap(originY + (moveEvent.clientY - startY) / scale),
+        };
+        const deltaX = nextPosition.x - originX;
+        const deltaY = nextPosition.y - originY;
+        lastDragRef.current = { tree_x: nextPosition.x, tree_y: nextPosition.y };
+
+        setDisplayNodePositions((current) => {
+          const next = { ...current };
+          originNodes.forEach((origin, nodeId) => {
+            if (origin.type !== DISPLAY_NODE_TYPE.COUPLE) return;
+            next[nodeId] = {
+              x: snap(origin.x + deltaX),
+              y: snap(origin.y + deltaY),
+            };
+          });
+          nextSavedPositions = next;
+          return next;
+        });
+
+        setPeople((current) => current.map((item) => {
+          const origin = originPeople.get(Number(item.id));
+          if (!origin) return item;
+          return {
+            ...item,
+            tree_x: snap(origin.tree_x + deltaX),
+            tree_y: snap(origin.tree_y + deltaY),
+          };
+        }));
+      };
+
+      const handleUp = () => {
+        window.removeEventListener("pointermove", handleMove);
+        window.removeEventListener("pointerup", handleUp);
+        setDraggingId(null);
+        if (!hasDragged) {
+          options.onClick?.();
+          return;
+        }
+        const finalPosition = lastDragRef.current;
+        if (!finalPosition) return;
+        if (finalPosition.tree_x !== originX || finalPosition.tree_y !== originY) {
+          if (Array.from(originNodes.values()).some((origin) => origin.type === DISPLAY_NODE_TYPE.COUPLE)) {
+            saveDisplayNodePositions(clan?.id, nextSavedPositions);
+          }
+          const deltaX = finalPosition.tree_x - originX;
+          const deltaY = finalPosition.tree_y - originY;
+          const nodes = Array.from(originPeople.entries()).map(([personId, origin]) => ({
+            person_id: personId,
+            tree_x: snap(origin.tree_x + deltaX),
+            tree_y: snap(origin.tree_y + deltaY),
+          }));
+          if (nodes.length) enqueueLayoutChanges({ nodes });
+        }
+      };
+
+      window.addEventListener("pointermove", handleMove, { passive: false });
+      window.addEventListener("pointerup", handleUp);
+      return;
+    }
+
+    if (node.type === DISPLAY_NODE_TYPE.COUPLE) {
+      let nextSavedPositions = displayNodePositions;
+
+      const handleMove = (moveEvent) => {
+        moveEvent.preventDefault();
+        const scale = scaleRef.current || 1;
+        const movedDistance = Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY);
+        if (!hasDragged && movedDistance < 4) return;
+        if (!hasDragged) {
+          hasDragged = true;
+          setDraggingId(node.id);
+        }
+        if (!movableIds.length) return;
+        const nextPosition = {
+          x: snap(originX + (moveEvent.clientX - startX) / scale),
+          y: snap(originY + (moveEvent.clientY - startY) / scale),
+        };
+        lastDragRef.current = { tree_x: nextPosition.x, tree_y: nextPosition.y };
+        setDisplayNodePositions((current) => {
+          nextSavedPositions = {
+            ...current,
+            [node.id]: nextPosition,
+          };
+          return nextSavedPositions;
+        });
+      };
+
+      const handleUp = () => {
+        window.removeEventListener("pointermove", handleMove);
+        window.removeEventListener("pointerup", handleUp);
+        setDraggingId(null);
+        if (!hasDragged) {
+          options.onClick?.();
+          return;
+        }
+        const finalPosition = lastDragRef.current;
+        if (!finalPosition) return;
+        if (finalPosition.tree_x !== originX || finalPosition.tree_y !== originY) {
+          saveDisplayNodePositions(clan?.id, nextSavedPositions);
+        }
+      };
+
+      window.addEventListener("pointermove", handleMove, { passive: false });
+      window.addEventListener("pointerup", handleUp);
+      return;
+    }
+
+    const movedIds = new Set(movableIds.map(Number));
+    const originPositions = new Map(
+      people
+        .filter((item) => movedIds.has(Number(item.id)))
+        .map((item) => [Number(item.id), {
+          tree_x: toInt(item.tree_x, 0),
+          tree_y: toInt(item.tree_y, 0),
+        }]),
+    );
+    dragGroupRef.current = { movedIds, originPositions };
+
+    const handleMove = (moveEvent) => {
+      moveEvent.preventDefault();
+      const scale = scaleRef.current || 1;
+      const movedDistance = Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY);
+      if (!hasDragged && movedDistance < 4) return;
+      if (!hasDragged) {
+        hasDragged = true;
+        setDraggingId(node.id);
+      }
+      if (!movableIds.length) return;
+      const nextPosition = {
+        tree_x: snap(originX + (moveEvent.clientX - startX) / scale),
+        tree_y: snap(originY + (moveEvent.clientY - startY) / scale),
+      };
+      const deltaX = nextPosition.tree_x - originX;
+      const deltaY = nextPosition.tree_y - originY;
+      lastDragRef.current = nextPosition;
+      const dragGroup = dragGroupRef.current;
+      setPeople((current) => current.map((item) => {
+        const origin = dragGroup?.originPositions.get(Number(item.id));
+        if (!origin) return item;
+        return {
+          ...item,
+          tree_x: snap(origin.tree_x + deltaX),
+          tree_y: snap(origin.tree_y + deltaY),
+        };
+      }));
+    };
+
+    const handleUp = () => {
+      window.removeEventListener("pointermove", handleMove);
+      window.removeEventListener("pointerup", handleUp);
+      setDraggingId(null);
+      if (!hasDragged) {
+        options.onClick?.();
+        dragGroupRef.current = null;
+        return;
+      }
+      const finalPosition = lastDragRef.current;
+      const dragGroup = dragGroupRef.current;
+      dragGroupRef.current = null;
+      if (!finalPosition) return;
+      if (finalPosition.tree_x !== originX || finalPosition.tree_y !== originY) {
+        const deltaX = finalPosition.tree_x - originX;
+        const deltaY = finalPosition.tree_y - originY;
+        const nodes = Array.from(dragGroup?.originPositions.entries() || []).map(([personId, origin]) => ({
+          person_id: personId,
+          tree_x: snap(origin.tree_x + deltaX),
+          tree_y: snap(origin.tree_y + deltaY),
+        }));
+        enqueueLayoutChanges({ nodes });
+      }
+    };
+
+    window.addEventListener("pointermove", handleMove, { passive: false });
+    window.addEventListener("pointerup", handleUp);
+  }, [bulkMoveMode, canEditPerson, clan?.id, displayNodePositions, displayNodes, enqueueLayoutChanges, people, selectedDisplayNodeIds]);
+
   const openPersonEditor = useCallback((person) => {
     if (!person) return;
     if (canEditPerson(person.id)) treeRealtime.startEditing(person.id);
+    setSelectedType("person");
+    setSelectedCoupleId(null);
     setSelectedId(person.id);
   }, [canEditPerson, treeRealtime]);
 
@@ -1524,16 +1980,71 @@ const quickCreateSourcePerson = useMemo(
       if (!canEditPerson(person.id)) {
         event.preventDefault();
         event.stopPropagation();
+        setSelectedType("person");
+        setSelectedCoupleId(null);
         setSelectedId(person.id);
         if (resolvedPermission.editScope === "limited") {
           setStatus(t("tree.toolbar.limitedEdit"));
         }
         return;
       }
+      if (bulkMoveMode) {
+        const displayNode = displayNodeByPersonId.get(Number(person.id));
+        if (displayNode) {
+          beginDisplayNodeDrag(event, displayNode, {
+            onClick: () => {
+              setSelectedDisplayNodeIds(new Set([displayNode.id]));
+              setSelectedType("person");
+              setSelectedCoupleId(null);
+              setSelectedId(person.id);
+            },
+          });
+          return;
+        }
+      }
       beginDrag(event, person);
     },
-    [beginDrag, canEditPerson, resolvedPermission.editScope, submitTreeRelationPick, treeRelationPicker],
+    [beginDisplayNodeDrag, beginDrag, bulkMoveMode, canEditPerson, displayNodeByPersonId, resolvedPermission.editScope, submitTreeRelationPick, treeRelationPicker],
   );
+
+  const handleCouplePointerDown = useCallback((event, node) => {
+    if (!node) return;
+    const personId = Number(event.target?.closest?.("[data-person-id]")?.dataset?.personId);
+    const clickedPerson = Number.isFinite(personId)
+      ? people.find((person) => Number(person.id) === personId)
+      : null;
+    if (bulkMoveMode) {
+      beginDisplayNodeDrag(event, node, {
+        onClick: () => {
+          setSelectedDisplayNodeIds(new Set([node.id]));
+          setSelectedType("couple");
+          setSelectedId(null);
+          setSelectedCoupleId(node.id);
+        },
+      });
+      return;
+    }
+    beginDisplayNodeDrag(event, node, {
+      onClick: () => {
+        if (treeRelationPicker && clickedPerson) {
+          submitTreeRelationPick(clickedPerson);
+          return;
+        }
+        if (clickedPerson) {
+          setSelectedType("person");
+          setSelectedCoupleId(null);
+          setSelectedId(clickedPerson.id);
+          if (resolvedPermission.editScope === "limited" && !canEditPerson(clickedPerson.id)) {
+            setStatus(t("tree.toolbar.limitedEdit"));
+          }
+          return;
+        }
+        setSelectedType("couple");
+        setSelectedId(null);
+        setSelectedCoupleId(node.id);
+      },
+    });
+  }, [beginDisplayNodeDrag, bulkMoveMode, canEditPerson, people, resolvedPermission.editScope, setStatus, submitTreeRelationPick, t, treeRelationPicker]);
 
   const beginLineDrag = useCallback((event, controlLine) => {
     if (!canEditAll || (event.button != null && event.button !== 0)) return;
@@ -1668,16 +2179,48 @@ const quickCreateSourcePerson = useMemo(
     }
   }, [canEditAll, canonicalTree.childRows, canonicalTree.families, canonicalTree.people, clan?.id, onReload, persistFullLayout, t]);
 
-  const handleExport = async () => {
+  const openExportDialog = useCallback(() => {
+    setMobileTreePanel(null);
+    setExportDialogOpen(true);
+    setStatus("");
+  }, []);
+
+  const updateExportOptions = useCallback((patch) => {
+    setExportOptions((current) => ({ ...current, ...patch }));
+  }, []);
+
+  const updateTreeStyle = useCallback((patch) => {
+    setTreeStyle((current) => normalizeTreeStyle({ ...current, ...patch }));
+  }, []);
+
+  const handleExport = async (nextOptions = exportOptions) => {
     setSaving(true);
     setStatus("");
-    const exportPeople = renderPeople.length ? renderPeople : people;
     try {
-      const blob = await renderFamilyTreePngBlob({ people: exportPeople, lines, cardSizes, families: visibleFamilies, clan, t });
-      const result = await saveCanvasImage(blob, exportFileName(clan?.clan_name));
-      if (result !== "cancelled") setStatus(t("tree.messages.exportSuccess"));
+      const normalizedOptions = { ...exportOptions, ...nextOptions };
+      const payload = prepareTreeExportPayload({
+        people: renderPeople,
+        families: visibleFamilies,
+        childRows: visibleChildRows,
+        nodePositions: displayNodePositions,
+        options: {
+          ...normalizedOptions,
+          lineRoutes,
+          directLineagePersonIds: Array.from(directLineagePersonIds),
+          displayNodes,
+          displayLines: lines,
+          treeStyle,
+        },
+        clan,
+        t,
+      });
+      const blob = await exportPreparedTree({ ...payload, clan, t });
+      const extension = normalizedOptions.format === TREE_EXPORT_FORMAT.SVG ? "svg" : normalizedOptions.format === TREE_EXPORT_FORMAT.PDF ? "pdf" : "png";
+      downloadBlob(blob, exportFileName(clan?.clan_name, extension));
+      setStatus(normalizedOptions.format === TREE_EXPORT_FORMAT.SVG ? "Da xuat SVG." : t("tree.messages.exportSuccess"));
+      setExportDialogOpen(false);
     } catch (error) {
-      console.error("Export PNG failed:", error);
+      console.error("Export tree failed:", error);
       setStatus(`${t("tree.messages.exportError")}${error?.message ? `: ${error.message}` : "."}`);
     } finally {
       setSaving(false);
@@ -2204,7 +2747,41 @@ const submitCreateDialog = async () => {
           : t("tree.inspector.readOnlyNote")
     : "";
 
-  const [treeFullscreen, setTreeFullscreen] = useState(false);
+  const fitTreeToScreen = useCallback((duration = 320) => {
+    const api = transformApiRef.current;
+    const viewport = viewportRef.current;
+    if (!api?.setTransform || !viewport || !displayNodes.length) return false;
+    const rect = viewport.getBoundingClientRect();
+    if (!rect.width || !rect.height) return false;
+
+    const bounds = displayNodes.reduce((acc, node) => {
+      const left = toInt(node.x, 0);
+      const top = toInt(node.y, 0);
+      return {
+        left: Math.min(acc.left, left),
+        top: Math.min(acc.top, top),
+        right: Math.max(acc.right, left + node.width),
+        bottom: Math.max(acc.bottom, top + node.height),
+      };
+    }, { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity });
+
+    const treeWidth = Math.max(1, bounds.right - bounds.left);
+    const treeHeight = Math.max(1, bounds.bottom - bounds.top);
+    const padding = isTreeMobile ? 42 : 92;
+    const usableWidth = Math.max(1, rect.width - padding * 2);
+    const usableHeight = Math.max(1, rect.height - padding * 2);
+    const minFitScale = isTreeMobile ? 0.24 : 0.32;
+    const nextScale = clamp(Math.min(usableWidth / treeWidth, usableHeight / treeHeight), minFitScale, 1.05);
+    const treeCenterX = bounds.left + treeWidth / 2;
+    const treeCenterY = bounds.top + treeHeight / 2;
+    const nextX = rect.width / 2 - treeCenterX * nextScale;
+    const nextY = rect.height / 2 - treeCenterY * nextScale;
+
+    scaleRef.current = nextScale;
+    setCurrentScale(nextScale);
+    api.setTransform(nextX, nextY, nextScale, duration);
+    return true;
+  }, [displayNodes, isTreeMobile]);
 
   useEffect(() => {
     document.body.classList.toggle("fte-bodyFullscreen", treeFullscreen);
@@ -2224,6 +2801,17 @@ const submitCreateDialog = async () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [treeFullscreen]);
+
+  useEffect(() => {
+    if (loading || !displayNodes.length || draggingId !== null || draggingLineId !== null || draggingTitleLabel) return undefined;
+    if (lastAutoFitKeyRef.current === autoFitSignature) return undefined;
+
+    const timer = window.setTimeout(() => {
+      if (fitTreeToScreen(360)) lastAutoFitKeyRef.current = autoFitSignature;
+    }, 90);
+
+    return () => window.clearTimeout(timer);
+  }, [autoFitSignature, displayNodes.length, draggingId, draggingLineId, draggingTitleLabel, fitTreeToScreen, loading, transformReady]);
 
   const updateTreeTitleLabel = useCallback((patch) => {
     setTreeTitleLabel((current) => normalizeTreeTitleLabel({ ...current, ...patch }));
@@ -2284,7 +2872,7 @@ const submitCreateDialog = async () => {
         maxScale={2.6}
         centerOnInit={true}
         limitToBounds={false}
-        panning={{ disabled: draggingId !== null || draggingLineId !== null || draggingTitleLabel, velocityDisabled: false }}
+        panning={{ disabled: bulkMoveMode || draggingId !== null || draggingLineId !== null || draggingTitleLabel, velocityDisabled: false }}
         doubleClick={{ disabled: true }}
 
         pinch={{ step: 5 }}
@@ -2295,6 +2883,7 @@ const submitCreateDialog = async () => {
           const scale = ref?.state?.scale || 0.85;
           scaleRef.current = scale;
           setCurrentScale(scale);
+          setTransformReady((value) => value + 1);
         }}
         onZoom={(ref) => {
           const scale = ref?.state?.scale || 0.85;
@@ -2309,149 +2898,162 @@ const submitCreateDialog = async () => {
       >
         {({ zoomIn, zoomOut, resetTransform, centerView }) => (
           <>
-            <div className="fte-toolbar fte-toolbar--desktop">
-              <div className="fte-toolbarGroup fte-toolbarGroup--edit">
+            <div className="fte-toolbar fte-toolbar--desktop fte-toolbar--redesigned">
+              <section className="fte-toolbarZone fte-toolbarZone--left" aria-label="Tree tools">
                 <button
                   type="button"
                   onClick={() => openCreateDialog("person")}
                   disabled={!canEditAll || loading || saving}
                   title={canEditAll ? t("tree.toolbar.addPerson") : t("tree.toolbar.addPersonAdminOnly")}
-                  className="fte-iconButton"
+                  className="fte-toolButton"
                 >
                   <span className="material-symbols-outlined">person_add</span>
                 </button>
-                {canEditAll && (
-                  <button
-                    type="button"
-                    onClick={() => setArchiveDialogOpen(true)}
-                    disabled={loading || saving}
-                    title="Kho lưu trữ thành viên"
-                    className="fte-iconButton"
-                  >
-                    <span className="material-symbols-outlined">inventory_2</span>
-                  </button>
-                )}
-                {canEditAll && (
-                  <button
-                    type="button"
-                    onClick={openGenealogyAiDialog}
-                    disabled={loading || saving}
-                    title={t("tree.genealogyAi.open")}
-                    className="fte-iconButton fte-aiButton"
-                  >
-                    <span className="material-symbols-outlined">auto_awesome</span>
-                  </button>
-                )}
-                {canEditAll && (
-                  <button
-                    type="button"
-                    onClick={resetTreeTitleLabel}
-                    disabled={loading || saving}
-                    title="Khôi phục tiêu đề gia phả về vị trí mặc định"
-                    className="fte-iconButton"
-                  >
-                    <span className="material-symbols-outlined">title</span>
-                  </button>
-                )}
-              </div>
-              {canEditLimited ? (
-                <div className="fte-toolbarGroup fte-toolbarGroup--notice">
-                  <span className="fte-readOnlyBadge">{t("tree.toolbar.limitedEdit")}</span>
-                </div>
-              ) : null}
-              <TreeViewModeSelector
-                people={people}
-                mode={treeViewMode.mode}
-                rootPersonId={treeViewMode.rootPersonId}
-                onFullMode={treeViewMode.setFullMode}
-                onRootMode={(personId) => {
-                  treeViewMode.setRootMode(personId);
-                  focusPerson(personId);
-                }}
-              />
-              <TreeSearchPanel
-                query={treeSearch.query}
-                onQueryChange={treeSearch.setQuery}
-                onSubmit={treeSearch.submitSearch}
-                onClear={treeSearch.clearSearch}
-                submittedQuery={treeSearch.submittedQuery}
-                results={treeSearch.results}
-                onFindMe={handleFindMe}
-                onResultClick={(person) => {
-                  if (!visiblePeople.some((item) => Number(item.id) === Number(person.id))) {
-                    treeViewMode.setFullMode();
-                  }
-                  focusPerson(person.id, { search: true });
-                }}
-              />
-              <div className="fte-toolbarGroup fte-toolbarGroup--actions">
-                <button
-                  type="button"
-                  onClick={applyAutoLayoutAndSave}
-                  disabled={!canEditAll || loading || saving}
-                  title={canEditAll ? t("tree.toolbar.autoLayout") : t("tree.toolbar.autoLayoutViewerHint")}
-                  className="fte-iconButton"
-                >
-                  <span className="material-symbols-outlined">auto_fix_high</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={resetLineRoutes}
-                  disabled={!canEditAll || loading || saving}
-                  title="Reset line routes"
-                  className="fte-iconButton"
-                >
-                  <span className="material-symbols-outlined">alt_route</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleExport}
-                  disabled={loading || saving}
-                  title={t("tree.toolbar.exportPng")}
-                  className="fte-iconButton"
-                >
+                <button type="button" onClick={openExportDialog} disabled={loading || saving} title={t("tree.toolbar.exportPng")} className="fte-toolButton">
                   <span className="material-symbols-outlined">download</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={handleValidateTree}
-                  disabled={loading || saving}
-                  title={t("tree.toolbar.validate")}
-                  className="fte-iconButton"
-                >
-                  <span className="material-symbols-outlined">rule</span>
-                </button>
-              </div>
-              <div className="fte-toolbarGroup fte-toolbarGroup--icons">
-                <button type="button" onClick={() => zoomIn(0.16, 180)} title={t("tree.toolbar.zoomIn")}>
-                  <span className="material-symbols-outlined">zoom_in</span>
-                </button>
-                <span className="fte-zoomValue">{Math.round(currentScale * 100)}%</span>
-                <button type="button" onClick={() => zoomOut(0.16, 180)} title={t("tree.toolbar.zoomOut")}>
-                  <span className="material-symbols-outlined">zoom_out</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const nextFullscreen = !treeFullscreen;
-                    setTreeFullscreen(nextFullscreen);
-                    if (nextFullscreen) {
-                      window.setTimeout(() => {
-                        if (centerView) {
-                          centerView(0.95, 260);
-                        } else {
-                          resetTransform(260);
-                        }
-                      }, 80);
+                <label className="fte-toolButton fte-toolColor" title="Mau nen cay gia pha">
+                  <span className="material-symbols-outlined">palette</span>
+                  <input
+                    type="color"
+                    value={treeStyle.backgroundColor}
+                    onChange={(event) => updateTreeStyle({ backgroundColor: event.target.value })}
+                    aria-label="Mau nen cay gia pha"
+                  />
+                </label>
+                <label className="fte-toolTextSize" title={`Co chu card: ${treeStyle.fontSize}px`}>
+                  <span className="material-symbols-outlined">format_size</span>
+                  <input
+                    type="range"
+                    min="12"
+                    max="28"
+                    value={treeStyle.fontSize}
+                    onChange={(event) => updateTreeStyle({ fontSize: Number(event.target.value) })}
+                    aria-label="Kich thuoc chu tren card"
+                  />
+                  <output>{treeStyle.fontSize}px</output>
+                </label>
+              </section>
+
+              <section className="fte-toolbarZone fte-toolbarZone--center" aria-label="Search and root person">
+                <TreeSearchPanel
+                  variant="toolbar"
+                  query={treeSearch.query}
+                  onQueryChange={treeSearch.setQuery}
+                  onSubmit={treeSearch.submitSearch}
+                  onClear={treeSearch.clearSearch}
+                  submittedQuery={treeSearch.submittedQuery}
+                  results={treeSearch.results}
+                  onFindMe={handleFindMe}
+                  showFindMe={false}
+                  showClear={false}
+                  onResultClick={(person) => {
+                    if (!visiblePeople.some((item) => Number(item.id) === Number(person.id))) {
+                      treeViewMode.setFullMode();
                     }
+                    focusPerson(person.id, { search: true });
                   }}
-                  title={treeFullscreen ? t("tree.toolbar.exitFullscreen") : t("tree.toolbar.fullscreen")}
-                  className={treeFullscreen ? "is-active" : ""}
-                >
-                  <span className="material-symbols-outlined">{treeFullscreen ? "close_fullscreen" : "open_in_full"}</span>
-                </button>
-              </div>
+                />
+                <TreeViewModeSelector
+                  variant="rootOnly"
+                  people={people}
+                  mode={treeViewMode.mode}
+                  rootPersonId={treeViewMode.rootPersonId}
+                  onFullMode={treeViewMode.setFullMode}
+                  onRootMode={(personId) => {
+                    treeViewMode.setRootMode(personId);
+                    focusPerson(personId);
+                  }}
+                />
+              </section>
+
+              <section className="fte-toolbarZone fte-toolbarZone--right" aria-label="View controls">
+                <div className="fte-viewControlGroup fte-viewControlGroup--mode">
+                  <div className="fte-displayToggle" role="group" aria-label="Tree display mode">
+                    <button type="button" className={treeDisplayMode === TREE_DISPLAY_MODE.OVERVIEW ? "is-active" : ""} onClick={() => setTreeDisplayMode(TREE_DISPLAY_MODE.OVERVIEW)}>
+                      <span>Tong quan</span>
+                    </button>
+                    <button type="button" className={treeDisplayMode === TREE_DISPLAY_MODE.DETAIL ? "is-active" : ""} onClick={() => setTreeDisplayMode(TREE_DISPLAY_MODE.DETAIL)}>
+                      <span>Chi tiet</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="fte-viewControlGroup fte-viewControlGroup--zoom" aria-label="Zoom controls">
+                  <button type="button" onClick={() => zoomOut(0.16, 180)} title={t("tree.toolbar.zoomOut")}>
+                    <span className="material-symbols-outlined">remove</span>
+                  </button>
+                  <span className="fte-zoomValue">{Math.round(currentScale * 100)}%</span>
+                  <button type="button" onClick={() => zoomIn(0.16, 180)} title={t("tree.toolbar.zoomIn")}>
+                    <span className="material-symbols-outlined">add</span>
+                  </button>
+                  <button type="button" onClick={() => fitTreeToScreen(260)} title="Fit to screen">
+                    <span>Fit</span>
+                  </button>
+                </div>
+
+                <div className="fte-viewControlGroup fte-viewControlGroup--layout" aria-label="Layout controls">
+                  <button type="button" onClick={applyAutoLayoutAndSave} disabled={!canEditAll || loading || saving} title={canEditAll ? t("tree.toolbar.autoLayout") : t("tree.toolbar.autoLayoutViewerHint")}>
+                    <span className="material-symbols-outlined">auto_fix_high</span>
+                  </button>
+                  <div className="fte-orientationToggle" role="group" aria-label="Huong card">
+                    <button type="button" className={treeStyle.cardOrientation === TREE_CARD_ORIENTATION.HORIZONTAL ? "is-active" : ""} onClick={() => updateTreeStyle({ cardOrientation: TREE_CARD_ORIENTATION.HORIZONTAL })} title="Card nam ngang">
+                      <span className="material-symbols-outlined">view_agenda</span>
+                    </button>
+                    <button type="button" className={treeStyle.cardOrientation === TREE_CARD_ORIENTATION.VERTICAL ? "is-active" : ""} onClick={() => updateTreeStyle({ cardOrientation: TREE_CARD_ORIENTATION.VERTICAL })} title="Card nam doc">
+                      <span className="material-symbols-outlined">view_stream</span>
+                    </button>
+                  </div>
+                  <button type="button" onClick={resetLineRoutes} disabled={!canEditAll || loading || saving} title="Reset line routes">
+                    <span className="material-symbols-outlined">alt_route</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const nextFullscreen = !treeFullscreen;
+                      setTreeFullscreen(nextFullscreen);
+                      if (nextFullscreen) {
+                        window.setTimeout(() => {
+                          if (centerView) {
+                            centerView(0.95, 260);
+                          } else {
+                            resetTransform(260);
+                          }
+                        }, 80);
+                      }
+                    }}
+                    title={treeFullscreen ? t("tree.toolbar.exitFullscreen") : t("tree.toolbar.fullscreen")}
+                    className={treeFullscreen ? "is-active" : ""}
+                  >
+                    <span className="material-symbols-outlined">{treeFullscreen ? "close_fullscreen" : "open_in_full"}</span>
+                  </button>
+                </div>
+
+                <div className="fte-viewControlGroup fte-viewControlGroup--secondary" aria-label="Secondary tools">
+                  {canEditAll ? (
+                    <>
+                      <button type="button" onClick={() => setArchiveDialogOpen(true)} disabled={loading || saving} title="Kho luu tru thanh vien">
+                        <span className="material-symbols-outlined">inventory_2</span>
+                      </button>
+                      <button type="button" onClick={openGenealogyAiDialog} disabled={loading || saving} title={t("tree.genealogyAi.open")}>
+                        <span className="material-symbols-outlined">auto_awesome</span>
+                      </button>
+                      <button type="button" onClick={resetTreeTitleLabel} disabled={loading || saving} title="Khoi phuc tieu de gia pha">
+                        <span className="material-symbols-outlined">title</span>
+                      </button>
+                      <button type="button" onClick={toggleBulkMoveMode} disabled={loading || saving} title="Quet vung de chon nhieu card" className={bulkMoveMode ? "is-active" : ""}>
+                        <span className="material-symbols-outlined">select_all</span>
+                      </button>
+                    </>
+                  ) : null}
+                  <button type="button" onClick={handleValidateTree} disabled={loading || saving} title={t("tree.toolbar.validate")}>
+                    <span className="material-symbols-outlined">rule</span>
+                  </button>
+                  {canEditLimited ? <span className="fte-readOnlyBadge">{t("tree.toolbar.limitedEdit")}</span> : null}
+                </div>
+              </section>
             </div>
+            
 
             {isTreeMobile ? (
               <>
@@ -2562,15 +3164,43 @@ const submitCreateDialog = async () => {
                             <span className="material-symbols-outlined">auto_fix_high</span>
                             <span>{t("tree.toolbar.autoLayout")}</span>
                           </button>
-                          <button type="button" onClick={resetLineRoutes} disabled={loading || saving}>
-                            <span className="material-symbols-outlined">alt_route</span>
-                            <span>Reset line</span>
-                          </button>
+                      <button type="button" onClick={toggleBulkMoveMode} disabled={loading || saving}>
+                        <span className="material-symbols-outlined">select_all</span>
+                        <span>{bulkMoveMode ? "Tat chon vung" : "Chon vung"}</span>
+                      </button>
+                      <button type="button" onClick={resetLineRoutes} disabled={loading || saving}>
+                        <span className="material-symbols-outlined">alt_route</span>
+                        <span>Reset line</span>
+                      </button>
                         </>
                       ) : null}
-                      <button type="button" onClick={handleExport} disabled={loading || saving}>
+                      <button type="button" onClick={openExportDialog} disabled={loading || saving}>
                         <span className="material-symbols-outlined">download</span>
                         <span>{t("tree.toolbar.exportPng")}</span>
+                      </button>
+                      <button type="button" onClick={() => fitTreeToScreen(260)} disabled={loading || saving}>
+                        <span className="material-symbols-outlined">fit_screen</span>
+                        <span>Fit</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTreeDisplayMode((mode) => (mode === TREE_DISPLAY_MODE.OVERVIEW ? TREE_DISPLAY_MODE.DETAIL : TREE_DISPLAY_MODE.OVERVIEW))}
+                        disabled={loading || saving}
+                      >
+                        <span className="material-symbols-outlined">{treeDisplayMode === TREE_DISPLAY_MODE.OVERVIEW ? "badge" : "view_comfy"}</span>
+                        <span>{treeDisplayMode === TREE_DISPLAY_MODE.OVERVIEW ? "Chi tiet" : "Tong quan"}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => updateTreeStyle({
+                          cardOrientation: treeStyle.cardOrientation === TREE_CARD_ORIENTATION.HORIZONTAL
+                            ? TREE_CARD_ORIENTATION.VERTICAL
+                            : TREE_CARD_ORIENTATION.HORIZONTAL,
+                        })}
+                        disabled={loading || saving}
+                      >
+                        <span className="material-symbols-outlined">{treeStyle.cardOrientation === TREE_CARD_ORIENTATION.HORIZONTAL ? "view_stream" : "view_agenda"}</span>
+                        <span>{treeStyle.cardOrientation === TREE_CARD_ORIENTATION.HORIZONTAL ? "Card doc" : "Card ngang"}</span>
                       </button>
                       <button type="button" onClick={handleValidateTree} disabled={loading || saving}>
                         <span className="material-symbols-outlined">rule</span>
@@ -2590,6 +3220,26 @@ const submitCreateDialog = async () => {
                         <span className="material-symbols-outlined">{treeFullscreen ? "close_fullscreen" : "open_in_full"}</span>
                         <span>{treeFullscreen ? t("tree.toolbar.exitFullscreen") : t("tree.toolbar.fullscreen")}</span>
                       </button>
+                    </div>
+                    <div className="fte-mobileStyleControls" aria-label="Tuy chinh cay gia pha">
+                      <label>
+                        <span>Nen</span>
+                        <input
+                          type="color"
+                          value={treeStyle.backgroundColor}
+                          onChange={(event) => updateTreeStyle({ backgroundColor: event.target.value })}
+                        />
+                      </label>
+                      <label>
+                        <span>Chu {treeStyle.fontSize}px</span>
+                        <input
+                          type="range"
+                          min="12"
+                          max="28"
+                          value={treeStyle.fontSize}
+                          onChange={(event) => updateTreeStyle({ fontSize: Number(event.target.value) })}
+                        />
+                      </label>
                     </div>
                     <div className="fte-mobileViewMode">
                       <TreeViewModeSelector
@@ -2666,7 +3316,7 @@ const submitCreateDialog = async () => {
             ) : null}
 
             <div className="fte-workspace">
-              <div className="fte-viewport" ref={viewportRef}>
+              <div className="fte-viewport" ref={viewportRef} style={{ "--fte-tree-bg": treeStyle.backgroundColor }}>
                 {loading ? (
                   <div className="fte-loading">{t("tree.messages.loading")}</div>
                 ) : (
@@ -2674,9 +3324,21 @@ const submitCreateDialog = async () => {
                     <div
                       id="family-tree"
                       ref={treeRef}
-                      className={`fte-canvas ${treeRelationPicker ? "is-relation-picking" : ""}`}
-                      style={{ width: canvasSize.width, height: canvasSize.height }}
+                      className={`fte-canvas ${treeRelationPicker ? "is-relation-picking" : ""} ${bulkMoveMode ? "is-bulkMoveMode" : ""}`}
+                      style={{ width: canvasSize.width, height: canvasSize.height, backgroundColor: treeStyle.backgroundColor }}
+                      onPointerDown={beginBulkSelection}
                     >
+                      {bulkSelectionRect ? (
+                        <div
+                          className="fte-bulkSelectionRect"
+                          style={{
+                            left: bulkSelectionRect.x,
+                            top: bulkSelectionRect.y,
+                            width: bulkSelectionRect.width,
+                            height: bulkSelectionRect.height,
+                          }}
+                        />
+                      ) : null}
                       <div
                         className={`fte-canvasTitle ${canEditAll ? "is-editable" : ""} ${draggingTitleLabel ? "is-dragging" : ""}`}
                         style={{
@@ -2718,13 +3380,18 @@ const submitCreateDialog = async () => {
                       </div>
                       <svg className="fte-lines" width={canvasSize.width} height={canvasSize.height} aria-hidden={false}>
                         {lines.filter((line) => line.type !== "route-control").map((line, index) => (
+                          (() => {
+                            const lineRelated = !selectedRelatedIds.size || asArray(line.relatedPersonIds).some((id) => selectedRelatedIds.has(Number(id)));
+                            return (
                           <path
                             key={line.id || `${line.type}-${index}`}
-                            className={`fte-line is-${line.type} ${line.dragAxis ? `is-axis-${line.dragAxis}` : ""} ${canEditAll && line.dragAxis ? "is-draggable" : ""} ${draggingLineId === `${Number(line.familyId)}:${line.routeKey || "baseY"}` ? "is-dragging" : ""}`}
+                            className={`fte-line is-${line.type} ${line.branchLevel === 0 && line.type === "blood" ? "is-mainBranch" : ""} ${selectedRelatedIds.size ? (lineRelated ? "is-related" : "is-dimmed") : ""} ${line.dragAxis ? `is-axis-${line.dragAxis}` : ""} ${canEditAll && line.dragAxis ? "is-draggable" : ""} ${draggingLineId === `${Number(line.familyId)}:${line.routeKey || "baseY"}` ? "is-dragging" : ""}`}
                             d={line.d}
                             style={line.color ? { "--line-color": line.color } : undefined}
                             onPointerDown={canEditAll && line.dragAxis ? (event) => beginLineDrag(event, line) : undefined}
                           />
+                            );
+                          })()
                         ))}
                         {canEditAll ? lines.filter((line) => line.type === "route-control").map((line) => (
                           <g
@@ -2748,52 +3415,76 @@ const submitCreateDialog = async () => {
                           </g>
                         )) : null}
                       </svg>
-                      {coupleUnits.map((unit) => (
-                        <div
-                          key={`couple-unit-${unit.id}`}
-                          className="fte-coupleUnit"
-                          style={{
-                            left: unit.left,
-                            top: unit.top,
-                            width: unit.width,
-                            height: unit.height,
-                          }}
-                          aria-hidden="true"
-                        >
-                          <span className="fte-coupleUnitBadge">
-                            <span className="material-symbols-outlined">favorite</span>
-                          </span>
-                        </div>
-                      ))}
-                      {visiblePeople.map((person) => {
-                        const renderPerson = renderPersonById.get(Number(person.id)) || person;
+                      {displayNodes.map((node) => {
+                        const related = asArray(node.personIds).some((personId) => selectedRelatedIds.has(Number(personId)));
+                        const dimmed = selectedRelatedIds.size > 0 && !related;
+                        if (node.type === DISPLAY_NODE_TYPE.COUPLE) {
+                          return (
+                            <CoupleCard
+                              key={node.id}
+                              node={node}
+                              selectedPersonId={selectedType === "person" ? selectedId : null}
+                              selectedCouple={(selectedType === "couple" && selectedCoupleId === node.id) || selectedDisplayNodeIds.has(node.id)}
+                              related={related}
+                              dimmed={dimmed}
+                              dragging={draggingId === node.id}
+                              canDrag={node.personIds.some((personId) => canEditPerson(personId))}
+                              directLineagePersonIds={directLineagePersonIds}
+                              lineageControlsByPersonId={lineageControlsByPersonId}
+                              collapsedIds={treeViewMode.collapsedIds}
+                              hiddenAncestorIds={treeViewMode.hiddenAncestorIds}
+                              cardOrientation={treeStyle.cardOrientation}
+                              fontSize={treeStyle.fontSize}
+                              onToggleDescendants={treeViewMode.toggleDescendantBranch}
+                              onToggleAncestors={treeViewMode.toggleAncestorBranch}
+                              onPointerDown={handleCouplePointerDown}
+                            />
+                          );
+                        }
+
+                        const person = node.person;
+                        const renderPerson = {
+                          ...person,
+                          tree_x: node.x,
+                          tree_y: node.y,
+                        };
                         return (
-                        <TreeNodeCard
-                        key={person.id}
-                        person={renderPerson}
-                        selected={selectedId === person.id}
-                        dragging={draggingId === person.id}
-                        canDrag={canEditPerson(person.id)}
-                        canEdit={canEditPerson(person.id)}
-                        canDelete={canEditAll && canEditPerson(person.id)}
-                        founder={founderIds.has(Number(person.id))}
-                        size={getCardSize(cardSizes, person.id)}
-                        hasChildren={(childCountByParentId.get(Number(person.id)) || 0) > 0}
-                        collapsed={treeViewMode.collapsedIds.has(Number(person.id))}
-                        highlightOptions={{
-                          onlinePersonIds: treeRealtime.onlinePersonIds,
-                          editingPersonIds: treeRealtime.editingPersonIds,
-                          searchPersonId: treeSearch.highlightedPersonId,
-                          selfPersonId,
-                          validationErrors,
-                        }}
-                        onPointerDown={(event) => handleCardPointerDown(event, person)}
-                        onResizePointerDown={(event) => beginCardResize(event, person)}
-                        onEdit={() => openPersonEditor(person)}
-                        onDelete={() => handleDeletePersonByCard(person)}
-                        onQuickCreate={() => openQuickCreateDialog(person)}
-                        onToggleCollapse={treeViewMode.toggleCollapse}
-                      />
+                          <TreeNodeCard
+                            key={node.id}
+                            person={renderPerson}
+                            selected={(selectedType === "person" && selectedId === person.id) || selectedDisplayNodeIds.has(node.id)}
+                            dragging={draggingId === person.id}
+                            canDrag={canEditPerson(person.id)}
+                            canEdit={canEditPerson(person.id)}
+                            canDelete={canEditAll && canEditPerson(person.id)}
+                            founder={founderIds.has(Number(person.id))}
+                            directLineage={directLineagePersonIds.has(Number(person.id))}
+                            size={{ width: node.width, height: node.height }}
+                            displayMode={treeDisplayMode}
+                            cardOrientation={treeStyle.cardOrientation}
+                            fontSize={treeStyle.fontSize}
+                            related={related}
+                            dimmed={dimmed}
+                            hasChildren={(childCountByParentId.get(Number(person.id)) || 0) > 0}
+                            hasAncestors={lineageControlsByPersonId.get(Number(person.id))?.hasAncestors}
+                            collapsed={treeViewMode.collapsedIds.has(Number(person.id))}
+                            ancestorsCollapsed={lineageControlsByPersonId.get(Number(person.id))?.ancestorIds?.some((id) => treeViewMode.hiddenAncestorIds.has(Number(id)))}
+                            highlightOptions={{
+                              onlinePersonIds: treeRealtime.onlinePersonIds,
+                              editingPersonIds: treeRealtime.editingPersonIds,
+                              searchPersonId: treeSearch.highlightedPersonId,
+                              selfPersonId,
+                              validationErrors,
+                            }}
+                            onPointerDown={(event) => handleCardPointerDown(event, person)}
+                            onResizePointerDown={(event) => beginCardResize(event, person)}
+                            onEdit={() => openPersonEditor(person)}
+                            onDelete={() => handleDeletePersonByCard(person)}
+                            onQuickCreate={() => openQuickCreateDialog(person)}
+                            onToggleCollapse={treeViewMode.toggleCollapse}
+                            onToggleDescendants={treeViewMode.toggleDescendantBranch}
+                            onToggleAncestors={treeViewMode.toggleAncestorBranch}
+                          />
                         );
                       })}
                     </div>
@@ -2804,6 +3495,231 @@ const submitCreateDialog = async () => {
           </>
         )}
       </TransformWrapper>
+
+      {exportDialogOpen && (
+        <div className="fte-modalOverlay" role="presentation" onMouseDown={() => !saving && setExportDialogOpen(false)}>
+          <div className="fte-modal fte-exportModal" role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="fte-modalHeader">
+              <div>
+                <span>Export</span>
+                <h3>Xuat anh cay gia pha</h3>
+              </div>
+              <button
+                type="button"
+                className="fte-iconButton"
+                onClick={() => setExportDialogOpen(false)}
+                disabled={saving}
+                title={t("common.close")}
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <div className="fte-exportGrid">
+              <section>
+                <h4>Kieu xuat</h4>
+                {[
+                  { value: TREE_EXPORT_MODE.OVERVIEW, label: "Tong quan" },
+                  { value: TREE_EXPORT_MODE.DETAIL, label: "Chi tiet" },
+                ].map((item) => (
+                  <label key={item.value} className="fte-radioRow">
+                    <input
+                      type="radio"
+                      name="exportMode"
+                      value={item.value}
+                      checked={(exportOptions.mode || TREE_EXPORT_MODE.DETAIL) === item.value}
+                      disabled={saving}
+                      onChange={() => updateExportOptions({ mode: item.value })}
+                    />
+                    <span>{item.label}</span>
+                  </label>
+                ))}
+              </section>
+
+              <section>
+                <h4>Dinh dang</h4>
+                <div className="fte-segmented">
+                  {[TREE_EXPORT_FORMAT.PNG, TREE_EXPORT_FORMAT.SVG].map((format) => (
+                    <button
+                      key={format}
+                      type="button"
+                      className={exportOptions.format === format ? "is-active" : ""}
+                      onClick={() => updateExportOptions({ format })}
+                      disabled={saving}
+                    >
+                      {format.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  className="fte-pdfStub"
+                  disabled
+                  title="PDF export chua duoc cai dat day du"
+                >
+                  PDF soon
+                </button>
+              </section>
+
+              <section>
+                <h4>Chat luong</h4>
+                <div className="fte-segmented">
+                  {[1, 2, 3, 4].map((quality) => (
+                    <button
+                      key={quality}
+                      type="button"
+                      className={Number(exportOptions.quality) === quality ? "is-active" : ""}
+                      onClick={() => updateExportOptions({ quality })}
+                      disabled={saving || exportOptions.format === TREE_EXPORT_FORMAT.SVG}
+                    >
+                      {quality}x
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              <section>
+                <h4>Tuy chon</h4>
+                <label className="fte-checkRow">
+                  <input
+                    type="checkbox"
+                    checked={exportOptions.includeBackground}
+                    onChange={(event) => updateExportOptions({ includeBackground: event.target.checked })}
+                    disabled={saving}
+                  />
+                  <span>Co nen sang</span>
+                </label>
+                <label className="fte-checkRow">
+                  <input
+                    type="checkbox"
+                    checked={exportOptions.includeTitle}
+                    onChange={(event) => updateExportOptions({ includeTitle: event.target.checked })}
+                    disabled={saving}
+                  />
+                  <span>Co tieu de gia pha</span>
+                </label>
+              </section>
+
+              <section>
+                <h4>Giao dien cay</h4>
+                <div className="fte-segmented">
+                  <button
+                    type="button"
+                    className={treeStyle.cardOrientation === TREE_CARD_ORIENTATION.HORIZONTAL ? "is-active" : ""}
+                    onClick={() => updateTreeStyle({ cardOrientation: TREE_CARD_ORIENTATION.HORIZONTAL })}
+                    disabled={saving}
+                  >
+                    Ngang
+                  </button>
+                  <button
+                    type="button"
+                    className={treeStyle.cardOrientation === TREE_CARD_ORIENTATION.VERTICAL ? "is-active" : ""}
+                    onClick={() => updateTreeStyle({ cardOrientation: TREE_CARD_ORIENTATION.VERTICAL })}
+                    disabled={saving}
+                  >
+                    Doc
+                  </button>
+                </div>
+                <label className="fte-exportField">
+                  <span>Mau nen</span>
+                  <input
+                    type="color"
+                    value={treeStyle.backgroundColor}
+                    onChange={(event) => updateTreeStyle({ backgroundColor: event.target.value })}
+                    disabled={saving}
+                  />
+                </label>
+                <label className="fte-exportField">
+                  <span>Co chu {treeStyle.fontSize}px</span>
+                  <input
+                    type="range"
+                    min="12"
+                    max="28"
+                    value={treeStyle.fontSize}
+                    onChange={(event) => updateTreeStyle({ fontSize: Number(event.target.value) })}
+                    disabled={saving}
+                  />
+                </label>
+              </section>
+            </div>
+
+            <div className="fte-modalFooter">
+              <button type="button" className="fte-ghostButton" onClick={() => setExportDialogOpen(false)} disabled={saving}>
+                {t("common.cancel")}
+              </button>
+              <button type="button" className="fte-primaryButton" onClick={() => handleExport(exportOptions)} disabled={saving}>
+                <span className="material-symbols-outlined">{saving ? "progress_activity" : "download"}</span>
+                {saving ? "Dang xuat..." : "Xuat"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedType === "couple" && selectedCoupleNode ? (
+        <div className="fte-inspectorOverlay" role="presentation" onMouseDown={() => setSelectedCoupleId(null)}>
+          <aside className="fte-inspector fte-coupleInspector" role="dialog" aria-modal="false" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="fte-inspectorHeader">
+              <div>
+                <span>Cap doi</span>
+                <h3>{fullName(selectedCoupleNode.husband, t("tree.card.fallbackName"))}</h3>
+                <p>{fullName(selectedCoupleNode.wife, t("tree.card.fallbackName"))}</p>
+              </div>
+              <button
+                type="button"
+                className="fte-iconButton"
+                onClick={() => setSelectedCoupleId(null)}
+                title={t("common.close")}
+              >
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+            <div className="fte-coupleInspectorChildren">
+              <strong>Con</strong>
+              {selectedCoupleNode.children.length ? (
+                <div>
+                  {selectedCoupleNode.children.map((child) => (
+                    <button key={child.id} type="button" onClick={() => focusPerson(child.id, { scale: 1.1 })}>
+                      {fullName(child, t("tree.card.fallbackName"))}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p>Chua co du lieu con.</p>
+              )}
+            </div>
+            <div className="fte-inspectorActions">
+              <button type="button" onClick={() => openPersonEditor(selectedCoupleNode.husband)}>
+                <span className="material-symbols-outlined">man</span>
+                Sua thong tin chong
+              </button>
+              <button type="button" onClick={() => openPersonEditor(selectedCoupleNode.wife)}>
+                <span className="material-symbols-outlined">woman</span>
+                Sua thong tin vo
+              </button>
+              <button
+                type="button"
+                disabled={!canEditAll}
+                onClick={() => {
+                  setDialog({
+                    relation: "child",
+                    sourcePersonId: selectedCoupleNode.husband.id,
+                    form: blankCreateForm("child", selectedCoupleNode.husband, selectedCoupleNode.wife),
+                  });
+                  setSelectedCoupleId(null);
+                }}
+              >
+                <span className="material-symbols-outlined">person_add</span>
+                Them con
+              </button>
+              <button type="button" disabled title="Chua co truong thong tin hon nhan trong schema hien tai">
+                <span className="material-symbols-outlined">favorite</span>
+                Hon nhan
+              </button>
+            </div>
+          </aside>
+        </div>
+      ) : null}
 
       {genealogyAiOpen && (
         <div className="fte-modalOverlay" role="presentation" onMouseDown={() => !genealogyAiLoading && !genealogyAiSaving && setGenealogyAiOpen(false)}>
