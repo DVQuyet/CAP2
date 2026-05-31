@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 
 export default function SiteFooter() {
   const { t } = useTranslation();
@@ -10,10 +11,10 @@ export default function SiteFooter() {
           <p>{t("layout.footer.tagline")}</p>
         </div>
         <nav>
-          <a href="#">{t("layout.footer.contact")}</a>
-          <a href="#">{t("layout.footer.privacy")}</a>
-          <a href="#">{t("layout.footer.terms")}</a>
-          <a href="#">{t("layout.footer.faq")}</a>
+          <a href="mailto:dinhvietquyet984@gmail.com">{t("layout.footer.contact")}</a>
+          <Link to="/privacy-policy">{t("layout.footer.privacy")}</Link>
+          <Link to="/terms">{t("layout.footer.terms")}</Link>
+          <Link to="/delete-data">Xóa dữ liệu</Link>
         </nav>
       </div>
     </footer>

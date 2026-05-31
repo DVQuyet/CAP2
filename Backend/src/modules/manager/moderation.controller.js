@@ -57,7 +57,7 @@ const getPendingUsers = async(req, res) => {
         let sql = `
             SELECT a.id as account_id, a.role_id, a.status, p.first_name, p.surname, a.email, p.birth_date, p.clan_id 
             FROM accounts a
-            JOIN people p ON a.person_id = p.id
+            LEFT JOIN people p ON a.person_id = p.id
             WHERE a.status = 'pending'`;
 
         const params = [];
@@ -92,7 +92,7 @@ const approveUser = async(req, res) => {
                 a.person_id,
                 p.clan_id
             FROM accounts a
-            JOIN people p ON a.person_id = p.id
+            LEFT JOIN people p ON a.person_id = p.id
             WHERE a.id = ?
             LIMIT 1
             `, [accountId]

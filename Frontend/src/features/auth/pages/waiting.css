@@ -9,9 +9,16 @@
 .waiting-card {
     background: white;
     display: inline-block;
+    max-width: 520px;
     padding: 40px;
     border-radius: 10px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.waiting-card p {
+    margin: 12px 0 22px;
+    color: #4b5563;
+    line-height: 1.6;
 }
 
 .waiting-icon {

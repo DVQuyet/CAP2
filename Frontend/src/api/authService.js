@@ -52,6 +52,20 @@ export const loginAPI = async (data) => {
     }
 };
 
+export const fetchMeAPI = async (token) => {
+    const res = await fetch(buildApiUrl(`${BASE_URL}/me`), {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    const result = await res.json().catch(() => ({}));
+    if (!res.ok) {
+        throw new Error(result.message || "Khong lay duoc thong tin tai khoan.");
+    }
+    return result;
+};
+
 /**
  * ĐĂNG KÝ
  */

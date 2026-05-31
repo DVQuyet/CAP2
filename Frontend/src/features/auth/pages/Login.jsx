@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import "./login.css";
 import { loginAPI } from "../../../api/authService";
+import { buildApiUrl } from "../../../services/api";
 import { persistAuthSession } from "../../../shared/utils/auth";
 
 const initialLoginForm = {
@@ -110,36 +111,55 @@ export default function Login({ isOpen, onClose, onLoginSuccess, onOpenRegister 
     }
   };
 
+  const handleSocialLogin = (provider) => {
+    window.location.href = buildApiUrl(`/api/auth/${provider}`);
+  };
+
   const loginFields = (
-    <form onSubmit={handleLoginSubmit} className={isModal ? "auth-login-form" : undefined}>
-      <div className="input-field">
-        <input
-          name="email"
-          type="email"
-          placeholder={t("auth.login.emailPlaceholder")}
-          value={loginForm.email}
-          required
-          autoComplete="username"
-          onChange={handleLoginChange}
-        />
-      </div>
+    <div className={isModal ? "auth-login-stack" : "login-stack"}>
+      <form onSubmit={handleLoginSubmit} className={isModal ? "auth-login-form" : undefined}>
+        <div className="input-field">
+          <input
+            name="email"
+            type="email"
+            placeholder={t("auth.login.emailPlaceholder")}
+            value={loginForm.email}
+            required
+            autoComplete="username"
+            onChange={handleLoginChange}
+          />
+        </div>
 
-      <div className="input-field">
-        <input
-          name="password"
-          type="password"
-          placeholder={t("auth.login.passwordPlaceholder")}
-          value={loginForm.password}
-          required
-          autoComplete="current-password"
-          onChange={handleLoginChange}
-        />
-      </div>
+        <div className="input-field">
+          <input
+            name="password"
+            type="password"
+            placeholder={t("auth.login.passwordPlaceholder")}
+            value={loginForm.password}
+            required
+            autoComplete="current-password"
+            onChange={handleLoginChange}
+          />
+        </div>
 
-      <button type="submit" className="btn-login" disabled={isSubmitting}>
-        {isSubmitting ? t("auth.login.submitting") : t("auth.login.submit")}
-      </button>
-    </form>
+        <button type="submit" className="btn-login" disabled={isSubmitting}>
+          {isSubmitting ? t("auth.login.submitting") : t("auth.login.submit")}
+        </button>
+      </form>
+
+      <div className="auth-divider"><span>Hoặc</span></div>
+
+      <div className="social-login-actions">
+        <button type="button" className="social-login-btn social-login-btn--google" onClick={() => handleSocialLogin("google")}>
+          <span className="social-login-icon">G</span>
+          Đăng nhập với Google
+        </button>
+        <button type="button" className="social-login-btn social-login-btn--facebook" onClick={() => handleSocialLogin("facebook")}>
+          <span className="social-login-icon">f</span>
+          Đăng nhập với Facebook
+        </button>
+      </div>
+    </div>
   );
 
   if (!isModal) {

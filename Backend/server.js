@@ -8,6 +8,7 @@ const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
+const passport = require('passport');
 const db = require('./src/config/db');
 
 const app = express();
@@ -41,6 +42,7 @@ app.use(cors({
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(passport.initialize());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // 2. Khởi tạo HTTP server + Socket.IO

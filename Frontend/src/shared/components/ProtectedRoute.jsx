@@ -9,6 +9,10 @@ export default function ProtectedRoute({ allowedRoles }) {
   }
 
   const user = getCurrentUser();
+  if (user?.auth_status === "pending" || user?.status === "pending") {
+    return <Navigate to="/waiting" replace />;
+  }
+
   if (allowedRoles && !allowedRoles.includes(user?.role_name)) {
     return <Navigate to="/" replace />;
   }

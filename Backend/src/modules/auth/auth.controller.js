@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { getRoleName } = require('../../config/roles');
 const { ensureProfileCompletedColumn } = require('../../shared/utils/profileCompletion');
+const { getAuthenticatedUser } = require('./socialAuth.service');
 
 const GENERIC_FORGOT_MSG = 'Nếu email đã đăng ký, bạn sẽ nhận mã xác nhận trong vài phút.';
 
@@ -230,6 +231,39 @@ exports.login = async (req, res) => {
     } catch (error) {
         console.error("❌ Lỗi Đăng nhập:", error);
         res.status(500).json({ success: false, message: "Lỗi kết nối server" });
+    }
+};
+
+exports.me = async (req, res) => {
+    const authHeader = req.headers['authorization'] || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+
+    if (!token) {
+        return res.status(401).json({
+            success: false,
+            message: 'Chua dang nhap.',
+        });
+    }
+
+    try {
+        const secret = process.env.JWT_SECRET || 'GiaPhaViet_Secret_Key_2024_Backup';
+        const decoded = jwt.verify(token, secret);
+        const accountId = Number(decoded.id || decoded.account_id || decoded.userId);
+        if (!Number.isFinite(accountId) || accountId <= 0) {
+            return res.status(401).json({ success: false, message: 'Token khong hop le.' });
+        }
+
+        const user = await getAuthenticatedUser(accountId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'Khong tim thay tai khoan.' });
+        }
+
+        return res.json({ success: true, user });
+    } catch (error) {
+        return res.status(403).json({
+            success: false,
+            message: 'Token khong hop le hoac da het han.',
+        });
     }
 };
 

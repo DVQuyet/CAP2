@@ -14,8 +14,10 @@ const FeatureDetailPage = lazy(() => import("../features/public/pages/FeatureDet
 const BenefitsDetailPage = lazy(() => import("../features/public/pages/BenefitsDetailPage"));
 const NewsDetailPage = lazy(() => import("../features/public/pages/NewsDetailPage"));
 const GuideDetailPage = lazy(() => import("../features/public/pages/GuideDetailPage"));
+const LegalPage = lazy(() => import("../features/public/pages/LegalPage"));
 const ClanRegister = lazy(() => import("../features/clan/pages/ClanRegister"));
 const ForgotPassword = lazy(() => import("../features/auth/pages/ForgotPassword"));
+const AuthCallback = lazy(() => import("../features/auth/pages/AuthCallback"));
 const Waiting = lazy(() => import("../features/auth/pages/Waiting"));
 const InviteAccept = lazy(() => import("../features/auth/pages/InviteAccept"));
 const CompleteProfile = lazy(() => import("../features/auth/pages/CompleteProfile"));
@@ -53,6 +55,7 @@ export default function AppRoutes() {
         <Route path="/register" element={<Register />} />
         <Route path="/clan-register" element={<ClanRegister />} />
         <Route path="/forgot" element={<ForgotPassword />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/forgot-password" element={<Navigate to="/forgot" replace />} />
         <Route path="/waiting" element={<Waiting />} />
         <Route path="/invite/accept" element={<InviteAccept />} />
@@ -68,6 +71,9 @@ export default function AppRoutes() {
           <Route path="/loi-ich" element={<BenefitsDetailPage />} />
           <Route path="/tin-tuc" element={<NewsDetailPage />} />
           <Route path="/huong-dan" element={<GuideDetailPage />} />
+          <Route path="/privacy-policy" element={<LegalPage type="privacy" />} />
+          <Route path="/terms" element={<LegalPage type="terms" />} />
+          <Route path="/delete-data" element={<LegalPage type="deleteData" />} />
         </Route>
 
         {/* Protected Member Portal Routes */}
