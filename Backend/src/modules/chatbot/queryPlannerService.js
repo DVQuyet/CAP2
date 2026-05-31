@@ -3,6 +3,24 @@ const { planChatbotQuery } = require('./chatbotAI');
 const { validatePlannerOutput } = require('./plannerValidatorService');
 const db = require('../../config/db');
 
+const DETERMINISTIC_RULE_INTENTS = new Set([
+    'compare_relationship',
+    'find_by_kinship',
+    'find_generation',
+    'find_parents',
+    'find_relationship',
+    'find_spouse',
+    'clan_history',
+    'events_upcoming',
+    'general_chat',
+    'list_children',
+    'memories_stories',
+    'person_exists',
+    'person_info',
+    'self_identity',
+    'stats_count',
+]);
+
 function plannerMetadata(source, accepted, extra = {}) {
     return {
         source,
@@ -45,7 +63,11 @@ async function planQuery({
     forceAI = false,
 } = {}) {
     const rulePlan = intentParser.parse(message);
-    if (!forceAI && rulePlan.intent && rulePlan.intent !== 'unknown') {
+    if (
+        rulePlan.intent
+        && rulePlan.intent !== 'unknown'
+        && (!forceAI || DETERMINISTIC_RULE_INTENTS.has(rulePlan.intent))
+    ) {
         return {
             plan: rulePlan,
             planner: plannerMetadata('rule_parser', true),

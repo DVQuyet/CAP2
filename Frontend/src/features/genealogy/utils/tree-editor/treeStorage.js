@@ -17,6 +17,7 @@ export function normalizeLayoutSettings(settings) {
   return {
     line_routes: normalizeLayoutObject(settings?.line_routes || settings?.lineRoutes),
     card_sizes: normalizeLayoutObject(settings?.card_sizes || settings?.cardSizes),
+    tree_style: normalizeLayoutObject(settings?.tree_style || settings?.treeStyle),
   };
 }
 

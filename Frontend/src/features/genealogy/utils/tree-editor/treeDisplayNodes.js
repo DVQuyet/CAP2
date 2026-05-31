@@ -129,7 +129,7 @@ export function displayNodeIdForCouple(fatherId, motherId, familyId) {
 export function buildDisplayTree(people = [], families = [], childRows = [], options = {}) {
   const exportMode = Boolean(options.exportMode);
   const cardOrientation = normalizeCardOrientation(options.cardOrientation);
-  const nodePositions = options.nodePositions || {};
+  const nodePositions = options.allowNodePositions === true ? (options.nodePositions || {}) : {};
   const childMetaByPersonId = new Map();
   asArray(childRows)
     .slice()

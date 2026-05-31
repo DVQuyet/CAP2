@@ -582,6 +582,7 @@ export const saveTreeLayoutAPI = (people = [], clanId, options = {}) =>
         client_layout_id: options.clientLayoutId || options.client_layout_id,
         line_routes: options.lineRoutes || options.line_routes,
         card_sizes: options.cardSizes || options.card_sizes,
+        tree_style: options.treeStyle || options.tree_style,
       }),
     },
     "Không thể lưu bố cục cây"

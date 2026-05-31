@@ -223,12 +223,11 @@ function isCommonChatShortcut(message) {
 
 function buildSuggestedQuestions(userProfile = {}, clanInfo = {}) {
     const displayName = String(userProfile.display_name || '').trim();
-    const clanName = String(clanInfo.clan_name || '').trim();
     return [
-        displayName ? `${displayName} là đời thứ mấy trong gia phả?` : 'Tôi là đời thứ mấy trong gia phả?',
-        'Ai là cha mẹ của tôi?',
-        clanName ? `Lịch sử dòng họ ${clanName} có gì?` : 'Lịch sử dòng họ có gì?',
-        'Gia phả hiện có bao nhiêu thành viên?',
+        'Gia phả có bao nhiêu người?',
+        'Dòng họ này có mấy đời?',
+        'Giới thiệu về dòng họ',
+        displayName ? `Trong gia phả có ${displayName} không?` : 'Trong gia phả có [Tên người] không?',
     ];
 }
 
@@ -328,6 +327,15 @@ async function resolveNamedPerson(res, clanId, intent, names) {
 }
 
 async function handleFindRelationship({ res, clanId, currentMemberId, parsed }) {
+    if (!currentMemberId) {
+        return {
+            success: true,
+            intent: parsed.intent,
+            answer: needsCurrentPersonAnswer(),
+            confidence: 0.2,
+            needsPersonSelection: true,
+        };
+    }
     let target = null;
     if (parsed.entities.source === 'selected_person' && parsed.entities.targetPersonId) {
         target = await relationshipEngine.getPerson(parsed.entities.targetPersonId, { clanId });
@@ -441,6 +449,15 @@ async function handleFindSpouse({ res, clanId, parsed }) {
 }
 
 async function handleFindParents({ res, clanId, currentMemberId, parsed }) {
+    if (isSelfReferenceName(parsed.entities.targetName) && !currentMemberId) {
+        return {
+            success: true,
+            intent: parsed.intent,
+            answer: needsCurrentPersonAnswer(),
+            confidence: 0.2,
+            needsPersonSelection: true,
+        };
+    }
     const target = isSelfReferenceName(parsed.entities.targetName)
         ? await relationshipEngine.getPerson(currentMemberId, { clanId })
         : await resolveNamedPerson(res, clanId, parsed.intent, parsed.entities.targetName);
@@ -474,6 +491,15 @@ async function handleFindParents({ res, clanId, currentMemberId, parsed }) {
 }
 
 async function handleFindByKinship({ clanId, currentMemberId, parsed }) {
+    if (!currentMemberId) {
+        return {
+            success: true,
+            intent: parsed.intent,
+            answer: needsCurrentPersonAnswer(),
+            confidence: 0.2,
+            needsPersonSelection: true,
+        };
+    }
     const people = await relationshipEngine.findPeopleByKinship(currentMemberId, parsed.entities.kinshipTerm, { clanId });
     return {
         success: true,
@@ -497,6 +523,15 @@ async function handleFindByKinship({ clanId, currentMemberId, parsed }) {
 async function handleFindGeneration({ res, clanId, currentMemberId, parsed }) {
     let person;
     if (parsed.entities.source === 'current_member') {
+        if (!currentMemberId) {
+            return {
+                success: true,
+                intent: parsed.intent,
+                answer: needsCurrentPersonAnswer(),
+                confidence: 0.2,
+                needsPersonSelection: true,
+            };
+        }
         person = await relationshipEngine.getPerson(currentMemberId, { clanId });
     } else {
         person = await resolveNamedPerson(res, clanId, parsed.intent, parsed.entities.targetName);
@@ -760,6 +795,44 @@ function formatDateOnly(value) {
     return String(value).slice(0, 10);
 }
 
+function formatPersonSummary(person = {}) {
+    const details = [
+        person.generation ? `đời thứ ${person.generation}` : null,
+        person.branch ? `chi/nhánh ${person.branch}` : null,
+        person.birth_date ? `sinh năm ${String(person.birth_date).slice(0, 4)}` : null,
+        person.death_date ? `mất năm ${String(person.death_date).slice(0, 4)}` : null,
+        person.role_name ? `vai trò ${person.role_name}` : null,
+    ].filter(Boolean);
+    return details.length ? ` Người này thuộc ${details.join(', ')}.` : '';
+}
+
+function displayQueryName(value) {
+    return String(value || '')
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((token) => token.charAt(0).toUpperCase() + token.slice(1))
+        .join(' ');
+}
+
+async function loadClanPeopleForSearch(clanId) {
+    return queryOptional(
+        `SELECT p.id, p.clan_id, p.display_name, p.first_name, p.middle_name, p.surname,
+                p.gender, p.generation, p.branch, p.birth_date, p.death_date,
+                r.name AS role_name
+         FROM people p
+         LEFT JOIN accounts a ON a.person_id = p.id
+         LEFT JOIN roles r ON r.id = a.role_id
+         WHERE p.clan_id = ?
+         ORDER BY p.generation ASC, p.id ASC
+         LIMIT 1000`,
+        [clanId]
+    );
+}
+
+function needsCurrentPersonAnswer() {
+    return 'Bạn muốn hỏi theo người nào trong gia phả? Vui lòng chọn hoặc nhập tên của bạn trong cây.';
+}
+
 async function explainResolvedIntent({ intent, message, resolvedData, context }) {
     const result = await chatbotAI.explainRelationship({
         intent,
@@ -828,20 +901,61 @@ async function handlePersonInfoIntent({ clanId, currentMemberId, message, parsed
     };
 }
 
-async function handleClanHistoryIntent({ message, parsed, context, planner }) {
-    const resolvedData = { type: 'clan_info', data: context.clanInfo || {} };
-    const ai = await explainResolvedIntent({ intent: parsed.intent, message, resolvedData, context });
-    const clanName = context.clanInfo?.clan_name || 'dÃ²ng há»';
-    const history = context.clanInfo?.history || 'Hiá»‡n chÆ°a cÃ³ thÃ´ng tin lá»‹ch sá»­ dÃ²ng há» Ä‘Æ°á»£c ghi nháº­n.';
+async function handlePersonExistsIntent({ clanId, parsed, planner }) {
+    const rawName = parsed?.entities?.rawName || firstEntity(parsed);
+    const queryName = Array.isArray(rawName) ? rawName[0] : rawName;
+    const people = await loadClanPeopleForSearch(clanId);
+    const matches = memberSearch.findPersonByName(queryName, people);
+    const best = matches[0] || null;
+
+    if (!best) {
+        return {
+            success: true,
+            intent: parsed.intent,
+            answer: `Không tìm thấy người tên ${displayQueryName(queryName)} trong gia phả hiện tại.`,
+            confidence: 0.45,
+            source: 'database',
+            planner,
+            people: [],
+        };
+    }
+
+    const name = relationshipEngine.personName(best);
     return {
         success: true,
         intent: parsed.intent,
-        answer: ai.explanation || `${clanName}: ${history}`,
-        confidence: context.clanInfo?.history ? (parsed.confidence || 0.8) : 0.45,
+        answer: `Có. ${name} có trong gia phả.${formatPersonSummary(best)}`,
+        confidence: Math.min(0.95, Number(best.score || parsed.confidence || 0.8)),
         source: 'database',
         planner,
-        resolvedData,
-        ai: { plannerUsed: planner?.source === 'llm_planner' && planner.accepted, explanationUsed: ai.aiUsed },
+        person: {
+            id: best.id,
+            name,
+            generation: best.generation || null,
+            branch: best.branch || null,
+        },
+        people: matches.slice(0, 5).map((person) => ({
+            id: person.id,
+            name: relationshipEngine.personName(person),
+            generation: person.generation || null,
+            branch: person.branch || null,
+            confidence: person.score || null,
+        })),
+    };
+}
+
+async function handleClanHistoryIntent({ message, parsed, context, planner }) {
+    const clanName = context.clanInfo?.clan_name || 'dÃ²ng há»';
+    const history = String(context.clanInfo?.history || '').trim();
+    return {
+        success: true,
+        intent: parsed.intent,
+        answer: history ? `${clanName}: ${history}` : 'Hiện chưa có thông tin lịch sử dòng họ trong gia phả này.',
+        confidence: history ? (parsed.confidence || 0.8) : 0.45,
+        source: 'database',
+        planner,
+        resolvedData: { type: 'clan_info', data: context.clanInfo || {} },
+        ai: { plannerUsed: planner?.source === 'llm_planner' && planner.accepted, explanationUsed: false },
     };
 }
 
@@ -876,17 +990,44 @@ async function handleStatsIntent({ clanId, message, parsed, context, planner }) 
         [clanId]
     );
     const resolvedData = { type: 'statistics', data: stats };
-    const ai = await explainResolvedIntent({ intent: parsed.intent, message, resolvedData, context });
     const total = stats.reduce((sum, row) => sum + Number(row.count || 0), 0);
+    const metric = parsed?.entities?.metric || 'member_count';
+    const requestedGeneration = Number(parsed?.entities?.generation);
+    const generationRow = Number.isFinite(requestedGeneration) && requestedGeneration > 0
+        ? stats.find((row) => Number(row.generation) === requestedGeneration)
+        : null;
+    let answer = Number.isFinite(requestedGeneration) && requestedGeneration > 0
+        ? `Đời thứ ${requestedGeneration} hiện có ${Number(generationRow?.count || 0)} thành viên trong gia phả.`
+        : `Gia phả hiện có ${total} thành viên trong các đời đã ghi nhận.`;
+
+    if (metric === 'generation_count' && !(Number.isFinite(requestedGeneration) && requestedGeneration > 0)) {
+        const generationCount = stats.filter((row) => row.generation !== null && row.generation !== undefined).length;
+        answer = generationCount
+            ? `Gia phả hiện có ${generationCount} đời đã ghi nhận.`
+            : 'Gia phả hiện chưa có dữ liệu đời/thế hệ.';
+    } else if (metric === 'branch_count') {
+        const [branchRow] = await queryOptional(
+            `SELECT COUNT(DISTINCT NULLIF(TRIM(branch), '')) AS count
+             FROM people
+             WHERE clan_id = ?`,
+            [clanId]
+        );
+        const branchCount = Number(branchRow?.count || 0);
+        answer = branchCount
+            ? `Gia phả hiện có ${branchCount} chi/nhánh đã ghi nhận.`
+            : 'Gia phả hiện chưa có dữ liệu chi/nhánh.';
+        resolvedData.branches = branchCount;
+    }
+
     return {
         success: true,
         intent: parsed.intent,
-        answer: ai.explanation || `Gia pháº£ hiá»‡n cÃ³ ${total} thÃ nh viÃªn trong cÃ¡c Ä‘á»i Ä‘Ã£ ghi nháº­n.`,
+        answer,
         confidence: stats.length ? (parsed.confidence || 0.8) : 0.4,
         source: 'database',
         planner,
         resolvedData,
-        ai: { plannerUsed: planner?.source === 'llm_planner' && planner.accepted, explanationUsed: ai.aiUsed },
+        ai: { plannerUsed: planner?.source === 'llm_planner' && planner.accepted, explanationUsed: false },
     };
 }
 
@@ -1110,8 +1251,8 @@ exports.ask = async (req, res) => {
                 message: 'Câu hỏi có nội dung yêu cầu bỏ qua dữ liệu hoặc hướng dẫn hệ thống nên đã bị từ chối.',
             });
         }
-        if (!clanId || !currentMemberId) {
-            return res.status(400).json({ success: false, message: 'clanId và currentMemberId là bắt buộc' });
+        if (!clanId) {
+            return res.status(400).json({ success: false, message: 'clanId là bắt buộc' });
         }
         if (!(await canAccessClan(req, clanId, currentMemberId))) {
             return res.status(403).json({ success: false, message: 'Bạn không có quyền truy cập dòng họ này' });
@@ -1258,6 +1399,8 @@ exports.ask = async (req, res) => {
             });
         } else if (parsed.intent === 'person_info') {
             responsePayload = await handlePersonInfoIntent({ clanId, currentMemberId, message, parsed, context: chatbotContext, planner });
+        } else if (parsed.intent === 'person_exists') {
+            responsePayload = await handlePersonExistsIntent({ clanId, parsed, planner });
         } else if (parsed.intent === 'clan_history') {
             responsePayload = await handleClanHistoryIntent({ message, parsed, context: chatbotContext, planner });
         } else if (parsed.intent === 'memories_stories') {

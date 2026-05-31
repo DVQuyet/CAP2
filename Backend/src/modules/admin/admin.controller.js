@@ -433,12 +433,13 @@ exports.updateClan = async (req, res) => {
       return res.status(400).json({ success: false, message: "Tên dòng họ không được để trống" });
     }
 
-    const [rows] = await db.query("SELECT id FROM clans WHERE id = ? LIMIT 1", [clanId]);
+    const [rows] = await db.query("SELECT id, clan_name FROM clans WHERE id = ? LIMIT 1", [clanId]);
     if (!rows.length) {
       return res.status(404).json({ success: false, message: "Không tìm thấy dòng họ" });
     }
 
-    const [dups] = await db.query(
+    const currentClanName = String(rows[0].clan_name || "").trim();
+    const [dups] = currentClanName.localeCompare(clanName, "vi", { sensitivity: "accent" }) === 0 ? [[]] : await db.query(
       "SELECT id FROM clans WHERE LOWER(clan_name) = LOWER(?) AND id <> ? LIMIT 1",
       [clanName, clanId]
     );

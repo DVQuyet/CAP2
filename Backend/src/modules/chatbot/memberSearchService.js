@@ -7,6 +7,8 @@ function normalizeText(value) {
     return String(value || '')
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
+        .replace(/\u0111/g, 'd')
+        .replace(/\u0110/g, 'D')
         .replace(/đ/g, 'd')
         .replace(/Đ/g, 'D')
         .toLowerCase()
@@ -106,6 +108,40 @@ function mergeCandidate(map, row) {
     return existing;
 }
 
+function findPersonByName(query, persons = []) {
+    const normalizedQuery = normalizeText(query);
+    if (!normalizedQuery || !Array.isArray(persons)) return [];
+
+    const rows = persons
+        .map((person) => {
+            const displayName = personName(person);
+            const normalizedName = normalizeText(displayName);
+            const fullName = normalizeText([person.surname, person.middle_name, person.first_name].filter(Boolean).join(' '));
+            const haystack = [normalizedName, fullName].filter(Boolean).join(' ');
+            const tokens = normalizedQuery.split(' ').filter((token) => token.length > 1);
+            const tokenMatches = tokens.filter((token) => haystack.includes(token)).length;
+            let score = 0;
+            if (normalizedName === normalizedQuery || fullName === normalizedQuery) score = 1;
+            else if (normalizedName.includes(normalizedQuery) || fullName.includes(normalizedQuery)) score = 0.9;
+            else if (normalizedQuery.includes(normalizedName) && normalizedName) score = 0.86;
+            else if (tokens.length && tokenMatches === tokens.length) score = 0.78;
+            else if (tokens.length >= 2 && tokenMatches >= Math.ceil(tokens.length * 0.7)) score = 0.62;
+            return {
+                ...person,
+                name: displayName,
+                score,
+            };
+        })
+        .filter((person) => person.score > 0)
+        .sort((a, b) => b.score - a.score || Number(a.id || 0) - Number(b.id || 0));
+
+    const exact = rows.filter((row) => row.score >= 1);
+    if (exact.length) return exact;
+    const contains = rows.filter((row) => row.score >= 0.86);
+    if (contains.length) return contains;
+    return rows;
+}
+
 async function searchPeopleByName({ clanId, name, limit = 10 }) {
     const cleanedName = cleanHumanName(name);
     const normalizedName = normalizeText(cleanedName || name);
@@ -118,7 +154,7 @@ async function searchPeopleByName({ clanId, name, limit = 10 }) {
     const [peopleRows] = await db.query(
         `
         SELECT p.id, p.clan_id, p.display_name, p.first_name, p.middle_name, p.surname,
-               p.gender, p.birth_date, p.death_date, p.generation
+               p.gender, p.birth_date, p.death_date, p.generation, p.branch
         FROM people p
         WHERE p.clan_id = ?
           AND (
@@ -139,7 +175,7 @@ async function searchPeopleByName({ clanId, name, limit = 10 }) {
         const [fallbackRows] = await db.query(
             `
             SELECT p.id, p.clan_id, p.display_name, p.first_name, p.middle_name, p.surname,
-                   p.gender, p.birth_date, p.death_date, p.generation
+                   p.gender, p.birth_date, p.death_date, p.generation, p.branch
             FROM people p
             WHERE p.clan_id = ?
             ORDER BY p.generation ASC, p.id ASC
@@ -161,7 +197,7 @@ async function searchPeopleByName({ clanId, name, limit = 10 }) {
             const [aliasRows] = await db.query(
                 `
                 SELECT p.id, p.clan_id, p.display_name, p.first_name, p.middle_name, p.surname,
-                       p.gender, p.birth_date, p.death_date, p.generation,
+                       p.gender, p.birth_date, p.death_date, p.generation, p.branch,
                        pa.alias
                 FROM person_aliases pa
                 INNER JOIN people p ON p.id = pa.person_id
@@ -220,6 +256,7 @@ async function resolvePerson({ clanId, names, limit = 5 }) {
 module.exports = {
     normalizeText,
     cleanHumanName,
+    findPersonByName,
     searchPeopleByName,
     resolvePerson,
     tableExists,

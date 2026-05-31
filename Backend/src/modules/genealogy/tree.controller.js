@@ -43,7 +43,7 @@ const {
     resolveManagedClanId,
 } = require('../manager/managerClan.service');
 
-const { ensureTreeLayoutSettingsTable } = require('../../shared/utils/treeLayoutSettings');
+const { ensureClanTreeStyleColumn, ensureTreeLayoutSettingsTable } = require('../../shared/utils/treeLayoutSettings');
 const { emitTreeUpdated } = require('../../socket/treeRealtime');
 
 const relationHttpStatus = (result) => result?.requiresConfirmation ? 409 : 400;
@@ -959,10 +959,12 @@ const saveTreeLayout = async (req, res) => {
         const clanId = await resolveManagedClanId(req, req.body || {});
         const lineRoutes = req.body?.line_routes ?? req.body?.lineRoutes;
         const cardSizes = req.body?.card_sizes ?? req.body?.cardSizes;
+        const treeStyle = req.body?.tree_style ?? req.body?.treeStyle;
         const hasLineRoutes = lineRoutes && typeof lineRoutes === 'object' && !Array.isArray(lineRoutes);
         const hasCardSizes = cardSizes && typeof cardSizes === 'object' && !Array.isArray(cardSizes);
+        const hasTreeStyle = treeStyle && typeof treeStyle === 'object' && !Array.isArray(treeStyle);
 
-        if (!people.length && !(hasLineRoutes || hasCardSizes)) return res.json({ success: true, updated: 0 });
+        if (!people.length && !(hasLineRoutes || hasCardSizes || hasTreeStyle)) return res.json({ success: true, updated: 0 });
 
         let updated = 0;
         for (const item of people) {
@@ -979,12 +981,13 @@ const saveTreeLayout = async (req, res) => {
             updated += 1;
         }
 
-        if (clanId != null && (hasLineRoutes || hasCardSizes)) {
+        if (clanId != null && (hasLineRoutes || hasCardSizes || hasTreeStyle)) {
             await saveTreeLayoutSettings(
                 clanId,
                 {
                     ...(hasLineRoutes ? { line_routes: lineRoutes } : {}),
                     ...(hasCardSizes ? { card_sizes: cardSizes } : {}),
+                    ...(hasTreeStyle ? { tree_style: treeStyle } : {}),
                 },
                 req.user?.id
             );
@@ -993,7 +996,7 @@ const saveTreeLayout = async (req, res) => {
         emitTreeUpdated(req, clanId, {
     action: 'tree_layout_updated',
     updated,
-    layout_saved: Boolean(clanId != null && (hasLineRoutes || hasCardSizes)),
+    layout_saved: Boolean(clanId != null && (hasLineRoutes || hasCardSizes || hasTreeStyle)),
     client_layout_id: req.body?.client_layout_id || req.body?.clientLayoutId || null,
     layout: {
         nodes: people.map((item) => ({
@@ -1005,10 +1008,11 @@ const saveTreeLayout = async (req, res) => {
         card_sizes_full: hasCardSizes,
         ...(hasLineRoutes ? { line_routes: lineRoutes || {} } : {}),
         ...(hasCardSizes ? { card_sizes: cardSizes || {} } : {}),
+        ...(hasTreeStyle ? { tree_style: treeStyle || {} } : {}),
     },
 });
 
-res.json({ success: true, updated, layout_saved: Boolean(clanId != null && (hasLineRoutes || hasCardSizes)) });
+res.json({ success: true, updated, layout_saved: Boolean(clanId != null && (hasLineRoutes || hasCardSizes || hasTreeStyle)) });
     } catch (error) {
         console.error('saveTreeLayout error:', error);
         res.status(500).json({ success: false, message: 'Loi luu bo cuc cay' });
@@ -1062,18 +1066,20 @@ const saveTreeLayoutBatch = async (req, res) => {
     try {
         await ensurePeopleTreeLayoutColumns();
         await ensureTreeLayoutSettingsTable();
+        await ensureClanTreeStyleColumn();
 
         const body = req.body || {};
         const nodeChanges = normalizeBatchNodeChanges(body);
         const lineRoutesPatch = normalizeLayoutPatchObject(body.line_routes ?? body.lineRoutes);
         const cardSizesPatch = normalizeLayoutPatchObject(body.card_sizes ?? body.cardSizes);
+        const treeStyle = normalizeLayoutPatchObject(body.tree_style ?? body.treeStyle);
         const affectedPersonIds = [
             ...nodeChanges.map((item) => item.person_id),
             ...Object.keys(cardSizesPatch).map(Number).filter((id) => Number.isFinite(id) && id > 0),
         ];
 
-        if (!nodeChanges.length && !Object.keys(lineRoutesPatch).length && !Object.keys(cardSizesPatch).length) {
-            return res.json({ success: true, updated: 0, layout: { nodes: [], line_routes: {}, card_sizes: {} } });
+        if (!nodeChanges.length && !Object.keys(lineRoutesPatch).length && !Object.keys(cardSizesPatch).length && !Object.keys(treeStyle).length) {
+            return res.json({ success: true, updated: 0, layout: { nodes: [], line_routes: {}, card_sizes: {}, tree_style: {} } });
         }
 
         const permission = await assertTreeMutationPermission(req, {
@@ -1147,6 +1153,13 @@ const saveTreeLayoutBatch = async (req, res) => {
             );
         }
 
+        if (Object.keys(treeStyle).length) {
+            await connection.query(
+                'UPDATE clans SET tree_style = ? WHERE id = ?',
+                [JSON.stringify(treeStyle || {}), clanId]
+            );
+        }
+
         await connection.commit();
         connection.release();
         connection = null;
@@ -1155,6 +1168,7 @@ const saveTreeLayoutBatch = async (req, res) => {
             nodes: nodeChanges,
             line_routes: lineRoutesPatch,
             card_sizes: cardSizesPatch,
+            tree_style: treeStyle,
         };
         emitTreeUpdated(req, clanId, {
             action: 'tree_layout_updated',

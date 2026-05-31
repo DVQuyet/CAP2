@@ -6,6 +6,7 @@ const VALID_INTENTS = new Set([
     'find_spouse',
     'self_identity',
     'family_analytics',
+    'person_exists',
     'person_info',
     'clan_history',
     'memories_stories',

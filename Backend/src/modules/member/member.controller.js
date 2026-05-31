@@ -490,12 +490,13 @@ const buildFamilyTree = (peopleRows, familyRows, childRows) => {
 exports.loadClanTreeForAdmin = async (clanId) => {
   const cid = Number(clanId);
   if (!Number.isFinite(cid)) return { error: "bad_id" };
+  const layoutSettings = await getTreeLayoutSettings(cid);
   const [crows] = await db.query(
-    "SELECT id, clan_name, history FROM clans WHERE id = ? LIMIT 1",
+    "SELECT id, clan_name, history, tree_style FROM clans WHERE id = ? LIMIT 1",
     [cid]
   );
   if (!crows.length) return { error: "not_found" };
-  const clan = crows[0];
+  const clan = { ...crows[0], tree_style: layoutSettings.tree_style || {} };
   await ensureFamilyRelationshipColumns();
   await ensureArchivedMembersTable();
 
@@ -539,7 +540,6 @@ exports.loadClanTreeForAdmin = async (clanId) => {
   );
 
   const visibleTree = filterTreeRelationsForVisiblePeople(familyRows, childRows, peopleRows);
-  const layoutSettings = await getTreeLayoutSettings(cid);
   const familyTree = buildFamilyTree(peopleRows, visibleTree.familyRows, visibleTree.childRows);
   return { 
     clan, 
@@ -752,6 +752,7 @@ exports.getDashboard = async (req, res) => {
         clan_name: context.clan_name,
         history: context.clan_history,
         hall_address: context.clan_hall_address,
+        tree_style: layoutSettings.tree_style || {},
       },
       treeMembers,
       families,

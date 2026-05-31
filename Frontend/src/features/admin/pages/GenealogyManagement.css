@@ -152,7 +152,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    z-index: 9000;
 }
 
 .member-modal-content {
@@ -394,7 +394,7 @@
 .clan-modal-backdrop {
     position: fixed;
     inset: 0;
-    z-index: 1100;
+    z-index: 9000;
     background: rgba(0, 0, 0, 0.45);
     backdrop-filter: blur(6px);
     display: flex;

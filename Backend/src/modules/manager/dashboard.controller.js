@@ -54,12 +54,13 @@ const updateClanInfo = async(req, res) => {
             return res.status(400).json({ success: false, message: 'Tên dòng họ không được để trống' });
         }
 
-        const [exists] = await db.query('SELECT id FROM clans WHERE id = ? LIMIT 1', [clanId]);
+        const [exists] = await db.query('SELECT id, clan_name FROM clans WHERE id = ? LIMIT 1', [clanId]);
         if (!exists.length) {
             return res.status(404).json({ success: false, message: 'Dòng họ không tồn tại' });
         }
 
-        const [duplicate] = await db.query(
+        const currentClanName = String(exists[0].clan_name || '').trim();
+        const [duplicate] = currentClanName.localeCompare(clanName, 'vi', { sensitivity: 'accent' }) === 0 ? [[]] : await db.query(
             'SELECT id FROM clans WHERE LOWER(clan_name) = LOWER(?) AND id <> ? LIMIT 1', [clanName, clanId]
         );
         if (duplicate.length) {
@@ -91,8 +92,9 @@ const getFamilyTree = async(req, res) => {
             return res.status(404).json({ success: false, message: 'Không xác định được dòng họ cần quản lý' });
         }
 
+        const layoutSettings = await getTreeLayoutSettings(clanId);
         const [clanRows] = await db.query(
-            'SELECT id, clan_name, history, hall_address, created_at FROM clans WHERE id = ? LIMIT 1', [clanId]
+            'SELECT id, clan_name, history, hall_address, tree_style, created_at FROM clans WHERE id = ? LIMIT 1', [clanId]
         );
         if (!clanRows.length) {
             return res.status(404).json({ success: false, message: 'Dòng họ không tồn tại' });
@@ -158,11 +160,14 @@ const getFamilyTree = async(req, res) => {
             `, [clanId]
         );
         const visibleTree = filterTreeRelationsForVisiblePeople(familyRows, childRows, peopleRows);
-        const layoutSettings = await getTreeLayoutSettings(clanId);
+        const clan = {
+            ...clanRows[0],
+            tree_style: layoutSettings.tree_style || {},
+        };
 
         return res.json({
             success: true,
-            clan: clanRows[0],
+            clan,
             treeMembers: peopleRows.map((p) => ({
                 ...p,
                 birth_date: fmtSqlDate(p.birth_date),

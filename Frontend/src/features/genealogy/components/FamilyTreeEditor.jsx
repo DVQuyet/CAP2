@@ -95,6 +95,7 @@ const AI_RELATION_TYPE_OPTIONS = [
 const TREE_TITLE_STORAGE_PREFIX = "family-tree-title-label:";
 const DISPLAY_NODE_POSITION_STORAGE_PREFIX = "family-tree-display-node-positions:";
 const TREE_STYLE_STORAGE_PREFIX = "family-tree-style:";
+const USE_LOCAL_DRAFT_LAYOUT = false;
 const DEFAULT_TREE_TITLE_LABEL = {
   x: 60,
   y: 42,
@@ -110,8 +111,7 @@ const DEFAULT_TREE_STYLE = {
 const TREE_MOBILE_QUERY = "(max-width: 760px)";
 
 // Giữ tiêu đề luôn nằm trong vùng an toàn của canvas.
-// Nếu người dùng kéo lệch quá xa hoặc localStorage đang lưu tọa độ cũ ngoài màn hình,
-// normalizeTreeTitleLabel sẽ tự đưa về vùng nhìn thấy được.
+// Local layout draft is disabled by default; database layout is the canonical source.
 const TREE_TITLE_SAFE_BOUNDS = {
   minX: 16,
   minY: 16,
@@ -136,6 +136,7 @@ const normalizeTreeStyle = (value) => {
       : TREE_CARD_ORIENTATION.HORIZONTAL,
     backgroundColor: normalizeHexColor(source.backgroundColor ?? source.background_color, DEFAULT_TREE_STYLE.backgroundColor),
     fontSize: Number.isFinite(fontSize) ? clamp(fontSize, 12, 28) : DEFAULT_TREE_STYLE.fontSize,
+    titleLabel: normalizeTreeTitleLabel(source.titleLabel || source.title_label),
   };
 };
 
@@ -157,6 +158,7 @@ const normalizeTreeTitleLabel = (value) => {
 };
 
 const loadTreeTitleLabel = (clanId) => {
+  if (!USE_LOCAL_DRAFT_LAYOUT) return normalizeTreeTitleLabel(null);
   if (typeof window === "undefined") return normalizeTreeTitleLabel(null);
   try {
     const raw = window.localStorage.getItem(getTreeTitleStorageKey(clanId));
@@ -168,6 +170,7 @@ const loadTreeTitleLabel = (clanId) => {
 };
 
 const saveTreeTitleLabel = (clanId, value) => {
+  if (!USE_LOCAL_DRAFT_LAYOUT) return;
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(getTreeTitleStorageKey(clanId), JSON.stringify(normalizeTreeTitleLabel(value)));
@@ -177,6 +180,7 @@ const saveTreeTitleLabel = (clanId, value) => {
 };
 
 const loadDisplayNodePositions = (clanId) => {
+  if (!USE_LOCAL_DRAFT_LAYOUT) return {};
   if (typeof window === "undefined") return {};
   try {
     const raw = window.localStorage.getItem(getDisplayNodePositionStorageKey(clanId));
@@ -188,6 +192,7 @@ const loadDisplayNodePositions = (clanId) => {
 };
 
 const saveDisplayNodePositions = (clanId, value) => {
+  if (!USE_LOCAL_DRAFT_LAYOUT) return;
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(getDisplayNodePositionStorageKey(clanId), JSON.stringify(value || {}));
@@ -196,6 +201,7 @@ const saveDisplayNodePositions = (clanId, value) => {
 };
 
 const loadTreeStyle = (clanId) => {
+  if (!USE_LOCAL_DRAFT_LAYOUT) return normalizeTreeStyle(null);
   if (typeof window === "undefined") return normalizeTreeStyle(null);
   try {
     const raw = window.localStorage.getItem(getTreeStyleStorageKey(clanId));
@@ -207,6 +213,7 @@ const loadTreeStyle = (clanId) => {
 };
 
 const saveTreeStyle = (clanId, value) => {
+  if (!USE_LOCAL_DRAFT_LAYOUT) return;
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(getTreeStyleStorageKey(clanId), JSON.stringify(normalizeTreeStyle(value)));
@@ -469,6 +476,10 @@ export default function FamilyTreeEditor({
   const lastAutoFitKeyRef = useRef("");
   const scaleRef = useRef(0.85);
   const defaultTreeTitleText = String(clan?.clan_name || t("tree.card.fallbackName")).toUpperCase();
+  const databaseTreeStyle = useMemo(
+    () => normalizeTreeStyle(layoutSettings?.tree_style || clan?.tree_style || null),
+    [clan?.tree_style, layoutSettings?.tree_style],
+  );
   const [currentScale, setCurrentScale] = useState(0.85);
   const [transformReady, setTransformReady] = useState(0);
   const lastDragRef = useRef(null);
@@ -476,8 +487,8 @@ export default function FamilyTreeEditor({
   const bulkSelectRef = useRef(null);
   const lineDragRef = useRef(null);
   const titleDragRef = useRef(null);
-  const [treeTitleLabel, setTreeTitleLabel] = useState(() => loadTreeTitleLabel(clan?.id));
-  const [displayNodePositions, setDisplayNodePositions] = useState(() => loadDisplayNodePositions(clan?.id));
+  const [treeTitleLabel, setTreeTitleLabel] = useState(() => normalizeTreeTitleLabel(null));
+  const [displayNodePositions, setDisplayNodePositions] = useState(() => (USE_LOCAL_DRAFT_LAYOUT ? loadDisplayNodePositions(clan?.id) : {}));
   const [draggingTitleLabel, setDraggingTitleLabel] = useState(false);
   const [people, setPeople] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
@@ -485,7 +496,7 @@ export default function FamilyTreeEditor({
   const [selectedCoupleId, setSelectedCoupleId] = useState(null);
   const [couplePersonAction, setCouplePersonAction] = useState(null);
   const [treeDisplayMode, setTreeDisplayMode] = useState(TREE_DISPLAY_MODE.DETAIL);
-  const [treeStyle, setTreeStyle] = useState(() => loadTreeStyle(clan?.id));
+  const [treeStyle, setTreeStyle] = useState(() => databaseTreeStyle);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exportOptions, setExportOptions] = useState(DEFAULT_TREE_EXPORT_OPTIONS);
   const [bulkMoveMode, setBulkMoveMode] = useState(false);
@@ -493,8 +504,14 @@ export default function FamilyTreeEditor({
   const [selectedDisplayNodeIds, setSelectedDisplayNodeIds] = useState(() => new Set());
   const [draggingId, setDraggingId] = useState(null);
   const [draggingLineId, setDraggingLineId] = useState(null);
-  const [lineRoutes, setLineRoutes] = useState(() => ({ ...loadLineRoutes(clan?.id), ...normalizeLayoutSettings(layoutSettings).line_routes }));
-  const [cardSizes, setCardSizes] = useState(() => ({ ...loadCardSizes(clan?.id), ...normalizeLayoutSettings(layoutSettings).card_sizes }));
+  const [lineRoutes, setLineRoutes] = useState(() => ({
+    ...(USE_LOCAL_DRAFT_LAYOUT ? loadLineRoutes(clan?.id) : {}),
+    ...normalizeLayoutSettings(layoutSettings).line_routes,
+  }));
+  const [cardSizes, setCardSizes] = useState(() => ({
+    ...(USE_LOCAL_DRAFT_LAYOUT ? loadCardSizes(clan?.id) : {}),
+    ...normalizeLayoutSettings(layoutSettings).card_sizes,
+  }));
   const [status, setStatus] = useState("");
   const [constraintNotice, setConstraintNotice] = useState("");
   const [billingWarning, setBillingWarning] = useState(null);
@@ -695,7 +712,7 @@ export default function FamilyTreeEditor({
             next[familyId] = { ...(next[familyId] || {}), ...routes };
           });
         }
-        saveLineRoutes(clan?.id, next);
+        if (USE_LOCAL_DRAFT_LAYOUT) saveLineRoutes(clan?.id, next);
         return next;
       });
     }
@@ -707,23 +724,36 @@ export default function FamilyTreeEditor({
         Object.entries(nextCardSizesPatch).forEach(([personId, size]) => {
           next[personId] = normalizeCardSize(size);
         });
-        saveCardSizes(clan?.id, next);
+        if (USE_LOCAL_DRAFT_LAYOUT) saveCardSizes(clan?.id, next);
         return next;
       });
+    }
+
+    const nextTreeStyle = layout.tree_style || layout.treeStyle;
+    if (nextTreeStyle && typeof nextTreeStyle === "object" && !Array.isArray(nextTreeStyle)) {
+      const normalized = normalizeTreeStyle(nextTreeStyle);
+      setTreeStyle(normalized);
+      setTreeTitleLabel(normalizeTreeTitleLabel(normalized.titleLabel));
     }
   }, [clan?.id]);
 
   useEffect(() => {
     const normalizedSettings = normalizeLayoutSettings(layoutSettings);
-    setLineRoutes({ ...loadLineRoutes(clan?.id), ...normalizedSettings.line_routes });
-    setCardSizes({ ...loadCardSizes(clan?.id), ...normalizedSettings.card_sizes });
+    setLineRoutes({
+      ...(USE_LOCAL_DRAFT_LAYOUT ? loadLineRoutes(clan?.id) : {}),
+      ...normalizedSettings.line_routes,
+    });
+    setCardSizes({
+      ...(USE_LOCAL_DRAFT_LAYOUT ? loadCardSizes(clan?.id) : {}),
+      ...normalizedSettings.card_sizes,
+    });
   }, [clan?.id, layoutSettings]);
 
   useEffect(() => {
-    setTreeTitleLabel(loadTreeTitleLabel(clan?.id));
-    setDisplayNodePositions(loadDisplayNodePositions(clan?.id));
-    setTreeStyle(loadTreeStyle(clan?.id));
-  }, [clan?.id]);
+    setTreeTitleLabel(USE_LOCAL_DRAFT_LAYOUT ? loadTreeTitleLabel(clan?.id) : normalizeTreeTitleLabel(databaseTreeStyle.titleLabel || databaseTreeStyle.title_label));
+    setDisplayNodePositions(USE_LOCAL_DRAFT_LAYOUT ? loadDisplayNodePositions(clan?.id) : {});
+    setTreeStyle(USE_LOCAL_DRAFT_LAYOUT ? loadTreeStyle(clan?.id) : databaseTreeStyle);
+  }, [clan?.id, databaseTreeStyle]);
 
   useEffect(() => {
     saveTreeTitleLabel(clan?.id, treeTitleLabel);
@@ -914,13 +944,26 @@ const coupleActionPerson = useMemo(
   );
   const displayTree = useMemo(
     () => buildDisplayTree(renderPeople, visibleFamilies, visibleChildRows, {
-      nodePositions: displayNodePositions,
+      nodePositions: USE_LOCAL_DRAFT_LAYOUT ? displayNodePositions : {},
       cardOrientation: treeStyle.cardOrientation,
     }),
     [displayNodePositions, renderPeople, treeStyle.cardOrientation, visibleFamilies, visibleChildRows],
   );
   const displayNodes = displayTree.nodes;
   const displayNodeByPersonId = displayTree.nodeByPersonId;
+
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    const localStorageKeys = listFamilyTreeLocalStorageKeys();
+    console.log({
+      clanId: clan?.id,
+      sourceOfLayout: USE_LOCAL_DRAFT_LAYOUT ? "localDraft" : "database",
+      localStorageKeys,
+      dbPositionCount: visiblePeople.filter((person) => toInt(person.tree_x, 0) !== 0 || toInt(person.tree_y, 0) !== 0).length,
+      localPositionCount: Object.keys(displayNodePositions || {}).length,
+    });
+  }, [clan?.id, displayNodePositions, visiblePeople]);
+
   const selectedCoupleNode = useMemo(
     () => displayNodes.find((node) => node.id === selectedCoupleId) || null,
     [displayNodes, selectedCoupleId],
@@ -1002,16 +1045,19 @@ const coupleActionPerson = useMemo(
       await saveTreeLayoutAPI(nextPeople, clan?.id, {
         lineRoutes: nextLineRoutes,
         cardSizes: nextCardSizes,
+        treeStyle: normalizeTreeStyle({ ...treeStyle, titleLabel: treeTitleLabel }),
         clientLayoutId: layoutClientIdRef.current,
       });
-      saveLineRoutes(clan?.id, nextLineRoutes);
-      saveCardSizes(clan?.id, nextCardSizes);
+      if (USE_LOCAL_DRAFT_LAYOUT) {
+        saveLineRoutes(clan?.id, nextLineRoutes);
+        saveCardSizes(clan?.id, nextCardSizes);
+      }
       return true;
     } catch (error) {
       setStatus(error?.message || t("tree.messages.saveLayoutError"));
       return false;
     }
-  }, [canEditAll, cardSizes, clan?.id, lineRoutes, people]);
+  }, [canEditAll, cardSizes, clan?.id, lineRoutes, people, treeStyle, treeTitleLabel, t]);
 
   const applyAutoLayoutAndSave = useCallback(async () => {
     if (!canEditAll) return;
@@ -1023,7 +1069,7 @@ const coupleActionPerson = useMemo(
     try {
       setPeople(nextPeople);
       setLineRoutes({});
-      saveLineRoutes(clan?.id, {});
+      if (USE_LOCAL_DRAFT_LAYOUT) saveLineRoutes(clan?.id, {});
       const saved = await persistFullLayout(nextPeople, {}, cardSizes);
       setStatus(saved ? t("tree.messages.autoLayoutSuccess") : t("tree.messages.autoLayoutError"));
       await onReload?.();
@@ -1684,7 +1730,6 @@ const coupleActionPerson = useMemo(
       }]));
       const movedPersonIds = new Set(
         selectedGroupNodes
-          .filter((item) => item.type !== DISPLAY_NODE_TYPE.COUPLE)
           .flatMap((item) => asArray(item.personIds).map(Number))
           .filter(Number.isFinite),
       );
@@ -1714,19 +1759,6 @@ const coupleActionPerson = useMemo(
         const deltaY = nextPosition.y - originY;
         lastDragRef.current = { tree_x: nextPosition.x, tree_y: nextPosition.y };
 
-        setDisplayNodePositions((current) => {
-          const next = { ...current };
-          originNodes.forEach((origin, nodeId) => {
-            if (origin.type !== DISPLAY_NODE_TYPE.COUPLE) return;
-            next[nodeId] = {
-              x: snap(origin.x + deltaX),
-              y: snap(origin.y + deltaY),
-            };
-          });
-          nextSavedPositions = next;
-          return next;
-        });
-
         setPeople((current) => current.map((item) => {
           const origin = originPeople.get(Number(item.id));
           if (!origin) return item;
@@ -1749,7 +1781,7 @@ const coupleActionPerson = useMemo(
         const finalPosition = lastDragRef.current;
         if (!finalPosition) return;
         if (finalPosition.tree_x !== originX || finalPosition.tree_y !== originY) {
-          if (Array.from(originNodes.values()).some((origin) => origin.type === DISPLAY_NODE_TYPE.COUPLE)) {
+          if (USE_LOCAL_DRAFT_LAYOUT && Array.from(originNodes.values()).some((origin) => origin.type === DISPLAY_NODE_TYPE.COUPLE)) {
             saveDisplayNodePositions(clan?.id, nextSavedPositions);
           }
           const deltaX = finalPosition.tree_x - originX;
@@ -1769,7 +1801,14 @@ const coupleActionPerson = useMemo(
     }
 
     if (node.type === DISPLAY_NODE_TYPE.COUPLE) {
-      let nextSavedPositions = displayNodePositions;
+      const originPeople = new Map(
+        people
+          .filter((item) => movableIds.map(Number).includes(Number(item.id)))
+          .map((item) => [Number(item.id), {
+            tree_x: toInt(item.tree_x, 0),
+            tree_y: toInt(item.tree_y, 0),
+          }]),
+      );
 
       const handleMove = (moveEvent) => {
         moveEvent.preventDefault();
@@ -1786,13 +1825,17 @@ const coupleActionPerson = useMemo(
           y: snap(originY + (moveEvent.clientY - startY) / scale),
         };
         lastDragRef.current = { tree_x: nextPosition.x, tree_y: nextPosition.y };
-        setDisplayNodePositions((current) => {
-          nextSavedPositions = {
-            ...current,
-            [node.id]: nextPosition,
+        const deltaX = nextPosition.x - originX;
+        const deltaY = nextPosition.y - originY;
+        setPeople((current) => current.map((item) => {
+          const origin = originPeople.get(Number(item.id));
+          if (!origin) return item;
+          return {
+            ...item,
+            tree_x: snap(origin.tree_x + deltaX),
+            tree_y: snap(origin.tree_y + deltaY),
           };
-          return nextSavedPositions;
-        });
+        }));
       };
 
       const handleUp = () => {
@@ -1806,7 +1849,14 @@ const coupleActionPerson = useMemo(
         const finalPosition = lastDragRef.current;
         if (!finalPosition) return;
         if (finalPosition.tree_x !== originX || finalPosition.tree_y !== originY) {
-          saveDisplayNodePositions(clan?.id, nextSavedPositions);
+          const deltaX = finalPosition.tree_x - originX;
+          const deltaY = finalPosition.tree_y - originY;
+          const nodes = Array.from(originPeople.entries()).map(([personId, origin]) => ({
+            person_id: personId,
+            tree_x: snap(origin.tree_x + deltaX),
+            tree_y: snap(origin.tree_y + deltaY),
+          }));
+          if (nodes.length) enqueueLayoutChanges({ nodes });
         }
       };
 
@@ -2118,7 +2168,7 @@ const coupleActionPerson = useMemo(
             ...current,
             [familyId]: { ...(current?.[familyId] || {}), [routeKeyX]: finalX, [routeKeyY]: finalY },
           };
-          saveLineRoutes(clan?.id, next);
+          if (USE_LOCAL_DRAFT_LAYOUT) saveLineRoutes(clan?.id, next);
           enqueueLayoutChanges({
             lineRoutes: [
               { family_id: familyId, route_key: routeKeyX, value: finalX },
@@ -2159,12 +2209,12 @@ const coupleActionPerson = useMemo(
       setDraggingLineId(null);
       const finalRoute = lineDragRef.current;
       lineDragRef.current = null;
-      setLineRoutes((current) => {
-        const next = {
-          ...current,
-          [familyId]: { ...(current?.[familyId] || {}), [routeKey]: finalRoute?.value ?? originValue },
-        };
-        saveLineRoutes(clan?.id, next);
+        setLineRoutes((current) => {
+          const next = {
+            ...current,
+            [familyId]: { ...(current?.[familyId] || {}), [routeKey]: finalRoute?.value ?? originValue },
+          };
+        if (USE_LOCAL_DRAFT_LAYOUT) saveLineRoutes(clan?.id, next);
         enqueueLayoutChanges({
           lineRoutes: [{
             family_id: familyId,
@@ -2203,6 +2253,54 @@ const coupleActionPerson = useMemo(
       setSaving(false);
     }
   }, [canEditAll, canonicalTree.childRows, canonicalTree.families, canonicalTree.people, clan?.id, onReload, persistFullLayout, t]);
+
+  const resetLocalLayout = useCallback(() => {
+    const removedKeys = clearFamilyTreeLocalStorage();
+    const normalizedSettings = normalizeLayoutSettings(layoutSettings);
+    setDisplayNodePositions({});
+    setLineRoutes(normalizedSettings.line_routes);
+    setCardSizes(normalizedSettings.card_sizes);
+    setTreeStyle(databaseTreeStyle);
+    setTreeTitleLabel(normalizeTreeTitleLabel(databaseTreeStyle.titleLabel));
+    setStatus(`Đã xóa ${removedKeys.length} layout local. Dữ liệu đăng nhập được giữ nguyên.`);
+  }, [databaseTreeStyle, layoutSettings]);
+
+  const resetLayoutFromDatabase = useCallback(async () => {
+    clearFamilyTreeLocalStorage();
+    pendingLayoutRef.current = {
+      nodes: new Map(),
+      lineRoutes: new Map(),
+      cardSizes: new Map(),
+    };
+    if (layoutFlushTimerRef.current) {
+      window.clearTimeout(layoutFlushTimerRef.current);
+      layoutFlushTimerRef.current = null;
+    }
+    setDisplayNodePositions({});
+    setTreeStyle(databaseTreeStyle);
+    setTreeTitleLabel(normalizeTreeTitleLabel(databaseTreeStyle.titleLabel));
+    setStatus("Đang tải lại layout từ database...");
+    await onReload?.();
+  }, [databaseTreeStyle, onReload]);
+
+  const saveLayoutToDatabase = useCallback(async () => {
+    if (!canEditAll) {
+      setStatus(t("tree.messages.noPermissionAction"));
+      return;
+    }
+    setSaving(true);
+    setStatus("");
+    try {
+      await flushLayoutChanges();
+      const saved = await persistFullLayout(people, lineRoutes, cardSizes);
+      if (saved) {
+        await onReload?.();
+        setStatus("Đã lưu layout vào database.");
+      }
+    } finally {
+      setSaving(false);
+    }
+  }, [canEditAll, cardSizes, flushLayoutChanges, lineRoutes, onReload, people, persistFullLayout, t]);
 
   const openExportDialog = useCallback(() => {
     setMobileTreePanel(null);
@@ -2403,6 +2501,19 @@ const openCreateDialogFromQuickRelation = (relation) => {
   });
 
   setQuickCreateDialog(null);
+};
+
+const listFamilyTreeLocalStorageKeys = () => {
+  if (typeof window === "undefined") return [];
+  return Array.from({ length: window.localStorage.length }, (_, index) => window.localStorage.key(index))
+    .filter((key) => key && key.startsWith("family-tree-"));
+};
+
+const clearFamilyTreeLocalStorage = () => {
+  if (typeof window === "undefined") return [];
+  const keys = listFamilyTreeLocalStorageKeys();
+  keys.forEach((key) => window.localStorage.removeItem(key));
+  return keys;
 };
 
 const openCreateDialogForPerson = (person, relation) => {
@@ -2778,7 +2889,7 @@ const submitCreateDialog = async () => {
       window.removeEventListener("pointerup", handleUp);
       setCardSizes((current) => {
         const next = { ...current, [personId]: latest };
-        saveCardSizes(clan?.id, next);
+        if (USE_LOCAL_DRAFT_LAYOUT) saveCardSizes(clan?.id, next);
         enqueueLayoutChanges({
           cardSizes: [{ person_id: personId, ...latest }],
         });
@@ -3061,6 +3172,15 @@ const submitCreateDialog = async () => {
                   <button type="button" onClick={resetLineRoutes} disabled={!canEditAll || loading || saving} title="Reset line routes">
                     <span className="material-symbols-outlined">alt_route</span>
                   </button>
+                  <button type="button" onClick={saveLayoutToDatabase} disabled={!canEditAll || loading || saving} title="Save layout to database">
+                    <span className="material-symbols-outlined">save</span>
+                  </button>
+                  <button type="button" onClick={resetLayoutFromDatabase} disabled={loading || saving} title="Reset layout về database">
+                    <span className="material-symbols-outlined">database</span>
+                  </button>
+                  <button type="button" onClick={resetLocalLayout} disabled={loading || saving} title="Reset layout local">
+                    <span className="material-symbols-outlined">delete_sweep</span>
+                  </button>
                   <button
                     type="button"
                     onClick={() => {
@@ -3225,6 +3345,18 @@ const submitCreateDialog = async () => {
                       <button type="button" onClick={resetLineRoutes} disabled={loading || saving}>
                         <span className="material-symbols-outlined">alt_route</span>
                         <span>Reset line</span>
+                      </button>
+                      <button type="button" onClick={saveLayoutToDatabase} disabled={loading || saving}>
+                        <span className="material-symbols-outlined">save</span>
+                        <span>Lưu DB</span>
+                      </button>
+                      <button type="button" onClick={resetLayoutFromDatabase} disabled={loading || saving}>
+                        <span className="material-symbols-outlined">database</span>
+                        <span>Layout DB</span>
+                      </button>
+                      <button type="button" onClick={resetLocalLayout} disabled={loading || saving}>
+                        <span className="material-symbols-outlined">delete_sweep</span>
+                        <span>Xóa local</span>
                       </button>
                         </>
                       ) : null}

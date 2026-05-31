@@ -641,7 +641,7 @@
 .member-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 2000;
+  z-index: 9000;
   display: grid;
   place-items: center;
   padding: 20px;
@@ -763,12 +763,27 @@
 .member-clan-modalOverlay {
   position: fixed;
   inset: 0;
-  z-index: 1200;
+  z-index: 9000;
   display: grid;
   place-items: center;
   padding: 24px;
   background: rgba(22, 8, 5, 0.56);
   backdrop-filter: blur(8px);
+}
+
+@media (max-width: 760px) {
+  .member-clan-modalOverlay {
+    align-items: start;
+    place-items: start center;
+    padding: calc(12px + env(safe-area-inset-top)) 12px calc(104px + env(safe-area-inset-bottom));
+    overflow-y: auto;
+  }
+
+  .member-clan-modal {
+    width: min(100%, 720px) !important;
+    max-height: none !important;
+    border-radius: 22px !important;
+  }
 }
 
 .member-clan-modal {

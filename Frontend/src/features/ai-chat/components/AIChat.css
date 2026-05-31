@@ -2,7 +2,7 @@
   position: fixed;
   right: max(16px, env(safe-area-inset-right));
   bottom: max(16px, env(safe-area-inset-bottom));
-  z-index: 1100;
+  z-index: 7000;
   font-family: inherit;
 }
 
@@ -408,5 +408,18 @@
     width: auto;
     height: min(74vh, 640px);
     min-height: 420px;
+  }
+}
+
+@media (max-width: 760px) {
+  body:has(.fte-mobileTreeBar) .ai-chat-widget {
+    right: max(16px, env(safe-area-inset-right));
+    bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+
+  body:has(.fte-mobileTreeBar) .ai-chat-window {
+    inset: auto 8px calc(164px + env(safe-area-inset-bottom)) 8px;
+    height: min(62dvh, 560px);
+    min-height: min(420px, calc(100dvh - 188px));
   }
 }

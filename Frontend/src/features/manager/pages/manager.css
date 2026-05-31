@@ -586,7 +586,7 @@ select.mgr-search.mgr-selectMulti {
 .mgr-modalOverlay {
     position: fixed;
     inset: 0;
-    z-index: 1000;
+    z-index: 9000;
     background: rgba(20, 35, 70, 0.45);
     display: grid;
     place-items: center;
@@ -1062,7 +1062,7 @@ select.mgr-search.mgr-selectMulti {
 .tree-key-modal-overlay {
     position: fixed;
     inset: 0;
-    z-index: 3500;
+    z-index: 9000;
     background: rgba(15, 23, 42, 0.56);
     backdrop-filter: blur(6px);
     display: grid;
@@ -1127,7 +1127,7 @@ select.mgr-search.mgr-selectMulti {
 .tree-fullscreen-overlay {
     position: fixed;
     inset: 0;
-    z-index: 3000;
+    z-index: 9000;
     background: rgba(15, 23, 42, 0.72);
     backdrop-filter: blur(6px);
     padding: 1rem;
@@ -1154,7 +1154,7 @@ select.mgr-search.mgr-selectMulti {
 .usr-modalOverlay {
   position: fixed;
   inset: 0;
-  z-index: 2000;
+  z-index: 9000;
   background: rgba(15, 23, 42, 0.4);
   backdrop-filter: blur(8px);
   display: flex;
@@ -1653,12 +1653,27 @@ select.mgr-search.mgr-selectMulti {
 .clan-info-modalOverlay {
   position: fixed;
   inset: 0;
-  z-index: 1200;
+  z-index: 9000;
   display: grid;
   place-items: center;
   padding: 24px;
   background: rgba(22, 8, 5, 0.58);
   backdrop-filter: blur(8px);
+}
+
+@media (max-width: 760px) {
+  .clan-info-modalOverlay {
+    align-items: start;
+    place-items: start center;
+    padding: calc(12px + env(safe-area-inset-top)) 12px calc(104px + env(safe-area-inset-bottom));
+    overflow-y: auto;
+  }
+
+  .clan-info-modal {
+    width: min(100%, 720px) !important;
+    max-height: none !important;
+    border-radius: 22px !important;
+  }
 }
 
 .clan-info-modal {
