@@ -66,6 +66,15 @@ export const fetchMeAPI = async (token) => {
     return result;
 };
 
+export const fetchSocialRegistrationProfileAPI = async (token) => {
+    const res = await fetch(buildApiUrl(`${BASE_URL}/social-registration?token=${encodeURIComponent(token)}`));
+    const result = await res.json().catch(() => ({}));
+    if (!res.ok) {
+        throw new Error(result.message || "Khong lay duoc thong tin dang ky mang xa hoi.");
+    }
+    return result;
+};
+
 /**
  * ĐĂNG KÝ
  */
@@ -87,6 +96,7 @@ export const registerAPI = async (data) => {
             gender: Number(data.gender) || 1,
             hometown: data.hometown,
             clan_id: clanId,
+            social_registration_token: data.social_registration_token || undefined,
         };
 
         return await postAuth("/register", payload, "Đăng ký không thành công");

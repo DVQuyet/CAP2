@@ -133,6 +133,18 @@ function oauthCallback(provider) {
                 }));
             }
             if (!result?.token) {
+                if (result?.requiresRegistration && result?.socialRegistrationToken) {
+                    return res.redirect(buildOAuthRedirectUrl({
+                        mode: 'register',
+                        socialRegistrationToken: result.socialRegistrationToken,
+                    }));
+                }
+                if (result?.accountDisabled) {
+                    return res.redirect(buildOAuthRedirectUrl({
+                        error: result.code || 'account_disabled',
+                        message: result.message || 'Tai khoan khong the dang nhap.',
+                    }));
+                }
                 return res.redirect(buildOAuthRedirectUrl({
                     error: 'oauth_failed',
                     message: 'Dang nhap mang xa hoi that bai.',
@@ -150,6 +162,7 @@ router.get('/google/callback', oauthCallback('google'));
 router.get('/facebook', requireOAuthConfig('facebook'), passport.authenticate('facebook', facebookAuthOptions));
 router.get('/facebook/callback', oauthCallback('facebook'));
 router.get('/me', authController.me);
+router.get('/social-registration', authController.getSocialRegistrationProfile);
 router.post('/forgot-password', authController.requestPasswordReset);
 router.post('/reset-password', authController.resetPasswordWithCode);
 router.post('/register-clan', clanController.registerClan);

@@ -131,16 +131,17 @@
 .login-stack,
 .auth-login-stack {
     display: grid;
-    gap: 14px;
+    gap: 12px;
 }
 
 .auth-divider {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     color: rgba(246, 222, 176, 0.86);
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 800;
+    margin-top: 2px;
 }
 
 .auth-divider::before,
@@ -152,23 +153,27 @@
 }
 
 .social-login-actions {
-    display: grid;
-    gap: 10px;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
 }
 
 .social-login-btn {
-    width: 100%;
-    min-height: 48px;
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    min-height: 38px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    border-radius: 10px;
+    padding: 0;
+    border-radius: 50%;
     border: 1px solid rgba(243, 198, 63, 0.5);
     background: #fffaf0;
     color: #2b130a;
     font-family: inherit;
-    font-size: 14px;
+    font-size: 12.5px;
     font-weight: 900;
     cursor: pointer;
     transition: transform 0.18s ease, filter 0.18s ease, border-color 0.18s ease;
@@ -195,6 +200,7 @@
     background: rgba(255, 255, 255, 0.92);
     color: #2b130a;
     font-weight: 900;
+    font-size: 15px;
 }
 
 .auth-callback-link {
@@ -632,8 +638,11 @@
     color: #ffe08a;
     display: grid;
     place-items: center;
-    font-size: 22px;
+    font-size: 15px;
+    font-weight: 900;
     line-height: 1;
+    text-decoration: none;
+    font-family: Arial, sans-serif;
     cursor: pointer;
     transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
 }

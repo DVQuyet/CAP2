@@ -25,6 +25,21 @@ export default function AuthCallback() {
       const callbackError = searchParams.get("error");
       const message = searchParams.get("message");
       const token = searchParams.get("token");
+      const mode = searchParams.get("mode");
+      const socialToken = searchParams.get("social_token");
+
+      if (mode === "register" && socialToken) {
+        navigate(`/register?social_token=${encodeURIComponent(socialToken)}`, { replace: true });
+        return;
+      }
+
+      if (callbackError === "ACCOUNT_BLOCKED" || callbackError === "ACCOUNT_ARCHIVED" || callbackError === "account_disabled") {
+        navigate("/account-disabled", {
+          replace: true,
+          state: { message: message || "Tai khoan cua ban dang bi vo hieu hoa." },
+        });
+        return;
+      }
 
       if (callbackError || !token) {
         setError(message || "Đăng nhập mạng xã hội không thành công.");

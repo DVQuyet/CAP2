@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import "./register.css";
-import { registerAPI } from "../../../api/authService";
+import { fetchSocialRegistrationProfileAPI, registerAPI } from "../../../api/authService";
 import DateInput from "../../../shared/components/DateInput";
 import { vietnamDateToIso } from "../../../shared/utils/dateFormat";
 import termsText from "./terms.txt?raw";
@@ -25,6 +25,7 @@ const initialForm = {
 export default function Register({ isOpen, onClose, onLoginClick }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const isModal = typeof isOpen === "boolean";
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -33,6 +34,8 @@ export default function Register({ isOpen, onClose, onLoginClick }) {
   const [modalTitle, setModalTitle] = useState("");
   const [modalContent, setModalContent] = useState("");
   const [form, setForm] = useState(initialForm);
+  const socialToken = !isModal ? searchParams.get("social_token") : "";
+  const isSocialRegistration = Boolean(socialToken);
 
   useEffect(() => {
     if (!isModal) return;
@@ -57,6 +60,38 @@ export default function Register({ isOpen, onClose, onLoginClick }) {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isModal, isOpen, onClose]);
+
+  useEffect(() => {
+    if (!socialToken) return undefined;
+
+    let cancelled = false;
+
+    async function loadSocialProfile() {
+      try {
+        const result = await fetchSocialRegistrationProfileAPI(socialToken);
+        if (cancelled) return;
+
+        const profile = result?.profile || {};
+        setForm((current) => ({
+          ...current,
+          email: profile.email || current.email,
+          display_name: profile.display_name || profile.full_name || current.display_name,
+          surname: profile.surname || current.surname,
+          middle_name: profile.middle_name || current.middle_name,
+          first_name: profile.first_name || current.first_name,
+          clan_id: profile.clan_id ? String(profile.clan_id) : current.clan_id,
+        }));
+        setError("");
+      } catch (err) {
+        if (!cancelled) setError(err?.message || "Khong lay duoc thong tin dang ky mang xa hoi.");
+      }
+    }
+
+    loadSocialProfile();
+    return () => {
+      cancelled = true;
+    };
+  }, [socialToken]);
 
   if (isModal && !isOpen) return null;
 
@@ -148,6 +183,7 @@ export default function Register({ isOpen, onClose, onLoginClick }) {
         gender: Number(form.gender) || 1,
         clan_id: clanId,
         birth_date: vietnamDateToIso(form.birth_date) || null,
+        social_registration_token: socialToken || undefined,
       });
 
       setSuccessMessage(result?.message || t("auth.register.success"));
@@ -174,7 +210,10 @@ export default function Register({ isOpen, onClose, onLoginClick }) {
         <p className="subtitle">{t("auth.register.subtitle")}</p>
 
         <div className="info-link">
-          {t("auth.register.newClanPrompt")} <Link to="/clan-register" onClick={isModal ? onClose : undefined}>{t("auth.register.learnMore")}</Link>
+          {isSocialRegistration
+            ? "Thong tin Google/Facebook da duoc lay san. Vui long bo sung cac truong con lai de tao tai khoan."
+            : t("auth.register.newClanPrompt")}{" "}
+          {!isSocialRegistration && <Link to="/clan-register" onClick={isModal ? onClose : undefined}>{t("auth.register.learnMore")}</Link>}
         </div>
 
         {error && <div className="error-box">{error}</div>}
@@ -198,7 +237,7 @@ export default function Register({ isOpen, onClose, onLoginClick }) {
             <DateInput name="birth_date" value={form.birth_date} onChange={handleChange} required />
           </div>
 
-          <input name="email" value={form.email} placeholder={t("auth.register.emailPlaceholder")} type="email" autoComplete="username" onChange={handleChange} required />
+          <input name="email" value={form.email} placeholder={t("auth.register.emailPlaceholder")} type="email" autoComplete="username" onChange={handleChange} required readOnly={isSocialRegistration} />
           <input name="password" value={form.password} type="password" placeholder={t("auth.register.passwordPlaceholder")} autoComplete="new-password" onChange={handleChange} required />
           <input name="hometown" value={form.hometown} placeholder={t("auth.register.hometownPlaceholder")} onChange={handleChange} required />
 

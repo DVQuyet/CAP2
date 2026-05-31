@@ -4,7 +4,11 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { getRoleName } = require('../../config/roles');
 const { ensureProfileCompletedColumn } = require('../../shared/utils/profileCompletion');
-const { getAuthenticatedUser } = require('./socialAuth.service');
+const {
+    attachSocialProviderToAccount,
+    getAuthenticatedUser,
+    verifySocialRegistrationToken,
+} = require('./socialAuth.service');
 
 const GENERIC_FORGOT_MSG = 'Nếu email đã đăng ký, bạn sẽ nhận mã xác nhận trong vài phút.';
 
@@ -103,8 +107,21 @@ async function clearResetToken(email, accountId = null) {
 
 exports.register = async (req, res) => {
     const { email, password, display_name, first_name, middle_name, surname, birth_date, gender, hometown, clan_id } = req.body;
-    const emailTrim = String(email || '').trim().toLowerCase();
+    let emailTrim = String(email || '').trim().toLowerCase();
     const normalizedClanId = Number(clan_id);
+    let socialRegistration = null;
+
+    if (req.body?.social_registration_token) {
+        try {
+            socialRegistration = verifySocialRegistrationToken(req.body.social_registration_token);
+            if (emailTrim && emailTrim !== socialRegistration.email) {
+                return res.status(400).json({ success: false, message: "Email khong khop voi tai khoan mang xa hoi da xac thuc" });
+            }
+            emailTrim = socialRegistration.email;
+        } catch (error) {
+            return res.status(400).json({ success: false, message: "Phien dang ky bang mang xa hoi khong hop le hoac da het han" });
+        }
+    }
 
     if (!Number.isInteger(normalizedClanId) || normalizedClanId <= 0) {
         return res.status(400).json({ success: false, message: "Vui lòng nhập ID dòng họ hợp lệ" });
@@ -130,7 +147,14 @@ exports.register = async (req, res) => {
         const personId = personResult.insertId;
 
         const sqlAccount = `INSERT INTO accounts (email, password, person_id, role_id) VALUES (?, ?, ?, 3)`;
-        await connection.query(sqlAccount, [emailTrim, hashedPassword, personId]);
+        const [accountResult] = await connection.query(sqlAccount, [emailTrim, hashedPassword, personId]);
+
+        if (socialRegistration) {
+            await attachSocialProviderToAccount(connection, {
+                accountId: accountResult.insertId,
+                token: req.body.social_registration_token,
+            });
+        }
 
         await connection.commit();
         res.json({ success: true, message: "Đăng ký thành công!" });
@@ -231,6 +255,37 @@ exports.login = async (req, res) => {
     } catch (error) {
         console.error("❌ Lỗi Đăng nhập:", error);
         res.status(500).json({ success: false, message: "Lỗi kết nối server" });
+    }
+};
+
+exports.getSocialRegistrationProfile = async (req, res) => {
+    try {
+        const social = verifySocialRegistrationToken(req.query?.token);
+        const nameParts = String(social.fullName || '').trim().split(/\s+/).filter(Boolean);
+        const firstName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : (nameParts[0] || '');
+        const surname = nameParts.length > 1 ? nameParts[0] : '';
+        const middleName = nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : '';
+
+        return res.json({
+            success: true,
+            profile: {
+                provider: social.provider,
+                email: social.email,
+                full_name: social.fullName,
+                display_name: social.fullName,
+                surname,
+                middle_name: middleName,
+                first_name: firstName,
+                avatar_url: social.avatarUrl,
+                invite: social.invite || null,
+                clan_id: social.invite?.clan_id || null,
+            },
+        });
+    } catch (error) {
+        return res.status(400).json({
+            success: false,
+            message: 'Phien dang ky bang mang xa hoi khong hop le hoac da het han.',
+        });
     }
 };
 

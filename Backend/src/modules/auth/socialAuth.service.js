@@ -34,6 +34,51 @@ function getFrontendUrl() {
   ).replace(/\/$/, "");
 }
 
+function signSocialRegistrationToken({ provider, providerId, email, fullName, avatarUrl, invite }) {
+  const secret = process.env.JWT_SECRET || "GiaPhaViet_Secret_Key_2024_Backup";
+  return jwt.sign(
+    {
+      type: "social_registration",
+      provider,
+      providerId,
+      email,
+      fullName: fullName || "",
+      avatarUrl: avatarUrl || "",
+      invite: invite || null,
+    },
+    secret,
+    { expiresIn: "15m" }
+  );
+}
+
+function verifySocialRegistrationToken(token) {
+  const secret = process.env.JWT_SECRET || "GiaPhaViet_Secret_Key_2024_Backup";
+  const decoded = jwt.verify(String(token || ""), secret);
+  if (decoded?.type !== "social_registration") {
+    const error = new Error("Token dang ky mang xa hoi khong hop le.");
+    error.code = "INVALID_SOCIAL_REGISTRATION_TOKEN";
+    throw error;
+  }
+
+  const provider = normalizeProvider(decoded.provider);
+  const providerId = String(decoded.providerId || "").trim();
+  const email = normalizeEmail(decoded.email);
+  if (!provider || !providerId || !email) {
+    const error = new Error("Token dang ky mang xa hoi thieu thong tin.");
+    error.code = "INVALID_SOCIAL_REGISTRATION_TOKEN";
+    throw error;
+  }
+
+  return {
+    provider,
+    providerId,
+    email,
+    fullName: String(decoded.fullName || "").trim(),
+    avatarUrl: String(decoded.avatarUrl || "").trim(),
+    invite: decoded.invite || null,
+  };
+}
+
 async function ensureSocialAuthSchema() {
   if (ensuredSocialAuthSchema) return;
 
@@ -93,6 +138,33 @@ async function linkProvider(connection, { accountId, provider, providerId, email
        updated_at = CURRENT_TIMESTAMP`,
     [accountId, provider, providerId, email, avatarUrl || null]
   );
+}
+
+async function attachSocialProviderToAccount(connection, { accountId, token }) {
+  if (!token) return null;
+  await ensureSocialAuthSchema();
+  const social = verifySocialRegistrationToken(token);
+  await linkProvider(connection, {
+    accountId,
+    provider: social.provider,
+    providerId: social.providerId,
+    email: social.email,
+    avatarUrl: social.avatarUrl,
+  });
+  return social;
+}
+
+async function isArchivedAccount(connection, accountId) {
+  try {
+    const [rows] = await connection.query(
+      "SELECT id FROM archived_members WHERE account_id = ? LIMIT 1",
+      [accountId]
+    );
+    return rows.length > 0;
+  } catch (error) {
+    if (error?.code === "ER_NO_SUCH_TABLE") return false;
+    throw error;
+  }
 }
 
 async function acceptInvitationForAccount(connection, { account, invitation }) {
@@ -273,22 +345,36 @@ async function handleSocialLogin({ provider, providerId, email, fullName, avatar
       const invitation = await findPendingInvitation(connection, normalizedEmail);
 
       if (!account) {
-        const passwordHash = await createSocialPasswordHash();
-        const roleId = invitation ? roleToId(invitation.role) : 3;
-        const status = invitation ? "active" : "pending";
-        const [created] = await connection.query(
-          `INSERT INTO accounts (email, password, person_id, role_id, status, profile_completed)
-           VALUES (?, ?, NULL, ?, ?, 0)`,
-          [normalizedEmail, passwordHash, roleId, status]
-        );
-        account = {
-          id: created.insertId,
-          email: normalizedEmail,
-          person_id: null,
-          role_id: roleId,
-          status,
-          profile_completed: 0,
-          display_name: fullName || normalizedEmail,
+        await connection.commit();
+        return {
+          requiresRegistration: true,
+          socialRegistrationToken: signSocialRegistrationToken({
+            provider: normalizedProvider,
+            providerId: normalizedProviderId,
+            email: normalizedEmail,
+            fullName,
+            avatarUrl,
+            invite: invitation
+              ? {
+                  clan_id: invitation.clan_id || null,
+                  role: invitation.role || null,
+                  generation: invitation.generation || null,
+                }
+              : null,
+          }),
+          profile: {
+            email: normalizedEmail,
+            fullName: fullName || "",
+            avatarUrl: avatarUrl || "",
+            provider: normalizedProvider,
+          },
+          invite: invitation
+            ? {
+                clan_id: invitation.clan_id || null,
+                role: invitation.role || null,
+                generation: invitation.generation || null,
+              }
+            : null,
         };
       }
 
@@ -310,10 +396,22 @@ async function handleSocialLogin({ provider, providerId, email, fullName, avatar
     }
 
     const fresh = await getFreshAccount(connection, account.id, extra);
+    if (await isArchivedAccount(connection, fresh.id)) {
+      await connection.commit();
+      return {
+        accountDisabled: true,
+        code: "ACCOUNT_ARCHIVED",
+        message: "Tai khoan cua ban da bi vo hieu hoa. Vui long lien he quan tri vien.",
+      };
+    }
+
     if (String(fresh.status) === "rejected") {
-      const error = new Error("Tai khoan cua ban da bi khoa hoac tu choi.");
-      error.code = "ACCOUNT_BLOCKED";
-      throw error;
+      await connection.commit();
+      return {
+        accountDisabled: true,
+        code: "ACCOUNT_BLOCKED",
+        message: "Tai khoan cua ban da bi khoa hoac tu choi.",
+      };
     }
 
     const token = signSocialToken(fresh);
@@ -337,16 +435,20 @@ async function getAuthenticatedUser(accountId) {
   return buildSocialUser(account);
 }
 
-function buildOAuthRedirectUrl({ token, error, message }) {
+function buildOAuthRedirectUrl({ token, error, message, socialRegistrationToken, mode }) {
   const url = new URL("/auth/callback", getFrontendUrl());
   if (token) url.searchParams.set("token", token);
   if (error) url.searchParams.set("error", error);
   if (message) url.searchParams.set("message", message);
+  if (mode) url.searchParams.set("mode", mode);
+  if (socialRegistrationToken) url.searchParams.set("social_token", socialRegistrationToken);
   return url.toString();
 }
 
 module.exports = {
+  attachSocialProviderToAccount,
   buildOAuthRedirectUrl,
   getAuthenticatedUser,
   handleSocialLogin,
+  verifySocialRegistrationToken,
 };

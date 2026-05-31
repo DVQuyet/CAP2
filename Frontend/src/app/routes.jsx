@@ -19,6 +19,7 @@ const ClanRegister = lazy(() => import("../features/clan/pages/ClanRegister"));
 const ForgotPassword = lazy(() => import("../features/auth/pages/ForgotPassword"));
 const AuthCallback = lazy(() => import("../features/auth/pages/AuthCallback"));
 const Waiting = lazy(() => import("../features/auth/pages/Waiting"));
+const AccountDisabled = lazy(() => import("../features/auth/pages/AccountDisabled"));
 const InviteAccept = lazy(() => import("../features/auth/pages/InviteAccept"));
 const CompleteProfile = lazy(() => import("../features/auth/pages/CompleteProfile"));
 const InvitationPage = lazy(() => import("../features/invitations/pages/InvitationPage"));
@@ -58,6 +59,7 @@ export default function AppRoutes() {
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/forgot-password" element={<Navigate to="/forgot" replace />} />
         <Route path="/waiting" element={<Waiting />} />
+        <Route path="/account-disabled" element={<AccountDisabled />} />
         <Route path="/invite/accept" element={<InviteAccept />} />
 
         <Route element={<ProtectedRoute allowedRoles={["member", "manager", "admin"]} />}>

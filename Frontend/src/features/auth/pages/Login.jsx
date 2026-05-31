@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import "./login.css";
@@ -147,16 +147,14 @@ export default function Login({ isOpen, onClose, onLoginSuccess, onOpenRegister 
         </button>
       </form>
 
-      <div className="auth-divider"><span>Hoặc</span></div>
+      <div className="auth-divider"><span>Hoáº·c</span></div>
 
       <div className="social-login-actions">
-        <button type="button" className="social-login-btn social-login-btn--google" onClick={() => handleSocialLogin("google")}>
+        <button type="button" className="social-login-btn social-login-btn--google" onClick={() => handleSocialLogin("google")} title="Google">
           <span className="social-login-icon">G</span>
-          Đăng nhập với Google
         </button>
-        <button type="button" className="social-login-btn social-login-btn--facebook" onClick={() => handleSocialLogin("facebook")}>
+        <button type="button" className="social-login-btn social-login-btn--facebook" onClick={() => handleSocialLogin("facebook")} title="Facebook">
           <span className="social-login-icon">f</span>
-          Đăng nhập với Facebook
         </button>
       </div>
     </div>
@@ -165,7 +163,7 @@ export default function Login({ isOpen, onClose, onLoginSuccess, onOpenRegister 
   if (!isModal) {
     return (
       <div className="login-page" data-no-translate="true">
-        <Link to="/" className="back-btn">← {t("navigation.backHome")}</Link>
+        <Link to="/" className="back-btn">â† {t("navigation.backHome")}</Link>
         <div className="login-box">
           <div className="login-header">
             <h2>{t("auth.login.title")}</h2>
@@ -196,7 +194,7 @@ export default function Login({ isOpen, onClose, onLoginSuccess, onOpenRegister 
     <div className="auth-modal-overlay" onClick={onClose} data-no-translate="true">
       <div className="auth-modal-card auth-modal-card--login" onClick={(event) => event.stopPropagation()}>
         <button className="auth-modal-close" onClick={onClose} type="button" aria-label={t("auth.close")}>
-          ×
+          X
         </button>
 
         <section className="auth-panel auth-panel--login">
@@ -233,3 +231,4 @@ export default function Login({ isOpen, onClose, onLoginSuccess, onOpenRegister 
     </div>
   );
 }
+
