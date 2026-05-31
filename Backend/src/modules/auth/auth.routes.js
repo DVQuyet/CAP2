@@ -32,6 +32,18 @@ function getProfileAvatar(profile) {
     return profile?.photos?.[0]?.value || '';
 }
 
+function parseScopeList(value) {
+    return String(value || '')
+        .split(/[,\s]+/)
+        .map((item) => item.trim())
+        .filter(Boolean);
+}
+
+const facebookScopes = parseScopeList(process.env.FACEBOOK_AUTH_SCOPE);
+const facebookAuthOptions = facebookScopes.length
+    ? { scope: facebookScopes, session: false }
+    : { session: false };
+
 const oauthConfigured = {
     google: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
     facebook: Boolean(process.env.FACEBOOK_APP_ID && process.env.FACEBOOK_APP_SECRET),
@@ -135,7 +147,7 @@ router.post('/register', authController.register);
 router.post('/login', authController.login);
 router.get('/google', requireOAuthConfig('google'), passport.authenticate('google', { scope: ['profile', 'email'], session: false }));
 router.get('/google/callback', oauthCallback('google'));
-router.get('/facebook', requireOAuthConfig('facebook'), passport.authenticate('facebook', { scope: ['email'], session: false }));
+router.get('/facebook', requireOAuthConfig('facebook'), passport.authenticate('facebook', facebookAuthOptions));
 router.get('/facebook/callback', oauthCallback('facebook'));
 router.get('/me', authController.me);
 router.post('/forgot-password', authController.requestPasswordReset);
