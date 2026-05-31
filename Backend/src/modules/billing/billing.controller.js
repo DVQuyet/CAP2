@@ -1,5 +1,10 @@
 const db = require('../../config/db');
-const { getClanBillingStatus } = require('./billing.service');
+const {
+  getClanBillingStatus,
+  ensurePaymentPurchaseColumns,
+  normalizePurchaseQuantity,
+  buildPurchaseSummary,
+} = require('./billing.service');
 
 function getSepayQrUrl({ amount, orderCode }) {
   const bankBin = process.env.SEPAY_BANK_BIN;
@@ -147,6 +152,7 @@ async function getClanBilling(req, res) {
 
 async function getClanPayments(req, res) {
   try {
+    await ensurePaymentPurchaseColumns();
     const clanId = Number(req.params.clanId);
 
     if (!Number.isFinite(clanId) || clanId <= 0) {
@@ -189,6 +195,14 @@ async function getClanPayments(req, res) {
     pay.provider,
     pay.order_code,
     pay.amount_vnd,
+    pay.unit_amount_vnd,
+    pay.period_quantity,
+    pay.period_unit,
+    pay.period_months,
+    pay.billing_cycle,
+    pay.period_started_at,
+    pay.period_expires_at,
+    pay.plan_snapshot_json,
     pay.status,
     pay.paid_at,
     pay.created_at,
@@ -245,11 +259,11 @@ async function manualUpgradeClan(req, res) {
   const connection = await db.getConnection();
 
   try {
+    await ensurePaymentPurchaseColumns(connection);
     const clanId = Number(req.params.clanId);
     const body = req.body || {};
 
     const planCode = String(body.plan_code || body.planCode || '').trim().toUpperCase();
-    const months = Number(body.months || 1);
 
     if (!Number.isFinite(clanId) || clanId <= 0) {
       return res.status(400).json({
@@ -286,7 +300,7 @@ async function manualUpgradeClan(req, res) {
     }
 
     const plan = plans[0];
-    const safeMonths = Number.isFinite(months) && months > 0 ? Math.floor(months) : 1;
+    const purchase = buildPurchaseSummary(plan, normalizePurchaseQuantity(body, plan));
 
     await connection.beginTransaction();
 
@@ -300,6 +314,7 @@ async function manualUpgradeClan(req, res) {
         NOW(),
         CASE
           WHEN ? = 'free' THEN NULL
+          WHEN ? IS NULL THEN NULL
           ELSE DATE_ADD(NOW(), INTERVAL ? MONTH)
         END
       )
@@ -315,7 +330,8 @@ async function manualUpgradeClan(req, res) {
         plan.id,
         plan.billing_cycle === 'free' ? 'free' : 'active',
         plan.billing_cycle,
-        safeMonths,
+        purchase.periodMonths,
+        purchase.periodMonths,
       ]
     );
 
@@ -329,23 +345,47 @@ async function manualUpgradeClan(req, res) {
         provider,
         order_code,
         amount_vnd,
+        unit_amount_vnd,
+        period_quantity,
+        period_unit,
+        period_months,
+        billing_cycle,
+        period_started_at,
+        period_expires_at,
+        plan_snapshot_json,
         status,
         paid_at,
         raw_response
       )
-      VALUES (?, ?, ?, 'manual', ?, ?, 'paid', NOW(), ?)
+      VALUES (
+        ?, ?, ?, 'manual', ?, ?,
+        ?, ?, ?, ?, ?, NOW(),
+        CASE
+          WHEN ? IS NULL THEN NULL
+          ELSE DATE_ADD(NOW(), INTERVAL ? MONTH)
+        END,
+        ?, 'paid', NOW(), ?
+      )
       `,
       [
         clanId,
         plan.id,
         req.user?.id || req.user?.account_id || null,
         `MANUAL_${clanId}_${Date.now()}`,
-        plan.price_vnd,
+        purchase.totalAmountVnd,
+        purchase.unitAmountVnd,
+        purchase.periodQuantity,
+        purchase.periodUnit,
+        purchase.periodMonths,
+        purchase.billingCycle,
+        purchase.periodMonths,
+        purchase.periodMonths,
+        JSON.stringify(purchase.planSnapshot),
         JSON.stringify({
           type: 'manual_upgrade',
           admin_id: req.user?.id || req.user?.account_id || null,
           plan_code: plan.code,
-          months: safeMonths,
+          purchase,
         }),
       ]
     );

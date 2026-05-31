@@ -59,10 +59,6 @@ export function connectSocket(accountId, token) {
     console.log("Socket disconnected:", reason);
   });
 
-  socket.onAny((eventName, ...args) => {
-    console.log("[SOCKET EVENT]", eventName, args);
-  });
-
   return socket;
 }
 

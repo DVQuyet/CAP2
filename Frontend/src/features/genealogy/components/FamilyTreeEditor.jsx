@@ -21,7 +21,7 @@ import { asArray, extractCreatedPersonId, formatDisplayDate, fullName, normalize
 import { clearCardSizes, clearLineRoutes, getCardSize, loadCardSizes, loadLineRoutes, normalizeCardSize, normalizeLayoutObject, normalizeLayoutSettings, saveCardSizes, saveLineRoutes } from "../utils/tree-editor/treeStorage";
 import { dedupePeopleByAccount, remapChildrenByPeople, remapFamiliesByPeople } from "../utils/tree-editor/treeNormalize";
 import { autoLayoutPeople, findFounderIds, generationY, mergeManualAndAutoLayout } from "../utils/tree-editor/treeLayout";
-import { blankCreateForm, buildChildRelationPayload, findParentFamilyForChild, findSpouse, findSpouseFamily, getChildrenForFamily, getFamiliesForPerson, relationCandidates, relationLinkedIds } from "../utils/tree-editor/treeRelations";
+import { blankCreateForm, buildChildRelationPayload, findParentFamilyForChild, findSpouse, findSpouseFamily, getChildOrderMapForFamily, getChildrenForFamily, getFamiliesForPerson, relationCandidates, relationLinkedIds } from "../utils/tree-editor/treeRelations";
 import { downloadBlob, exportFileName, exportPreparedTree, prepareTreeExportPayload } from "../utils/tree-editor/treeExport";
 import { DEFAULT_TREE_EXPORT_OPTIONS, TREE_EXPORT_FORMAT, TREE_EXPORT_MODE } from "../utils/tree-editor/treeExportConfig";
 import { TREE_CARD_ORIENTATION, TREE_DISPLAY_MODE } from "../utils/tree-editor/treeDisplayConfig";
@@ -483,6 +483,7 @@ export default function FamilyTreeEditor({
   const [selectedId, setSelectedId] = useState(null);
   const [selectedType, setSelectedType] = useState("person");
   const [selectedCoupleId, setSelectedCoupleId] = useState(null);
+  const [couplePersonAction, setCouplePersonAction] = useState(null);
   const [treeDisplayMode, setTreeDisplayMode] = useState(TREE_DISPLAY_MODE.DETAIL);
   const [treeStyle, setTreeStyle] = useState(() => loadTreeStyle(clan?.id));
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
@@ -537,6 +538,7 @@ export default function FamilyTreeEditor({
       selectedId ||
       relationDialog ||
       quickCreateDialog ||
+      couplePersonAction ||
       archiveDialogOpen ||
       genealogyAiOpen ||
       constraintNotice
@@ -546,6 +548,7 @@ export default function FamilyTreeEditor({
   }, [
     archiveDialogOpen,
     constraintNotice,
+    couplePersonAction,
     dialog,
     genealogyAiOpen,
     isTreeMobile,
@@ -811,8 +814,20 @@ export default function FamilyTreeEditor({
   }, [canonicalTree]);
 
   const selectedPerson = useMemo(
-    () => people.find((person) => Number(person.id) === Number(selectedId)) || null,
-    [people, selectedId],
+    () => {
+      const person = people.find((item) => Number(item.id) === Number(selectedId)) || null;
+      if (!person) return null;
+      const childRow = asArray(canonicalTree.childRows).find((row) => Number(row.person_id) === Number(person.id));
+      if (!childRow) return person;
+      const childOrder = toInt(childRow.sort_order, 0);
+      return {
+        ...person,
+        child_family_id: Number(childRow.family_id),
+        child_order: childOrder,
+        child_sort_order: childOrder,
+      };
+    },
+    [canonicalTree.childRows, people, selectedId],
   );
   const selectedSpouse = useMemo(
     () => findSpouse(selectedPerson, canonicalTree.families, people),
@@ -848,6 +863,12 @@ const quickCreateSourcePerson = useMemo(
     people.find((person) => Number(person.id) === Number(quickCreateDialog?.sourcePersonId)) ||
     null,
   [people, quickCreateDialog?.sourcePersonId]
+);
+const coupleActionPerson = useMemo(
+  () =>
+    people.find((person) => Number(person.id) === Number(couplePersonAction?.personId)) ||
+    null,
+  [people, couplePersonAction?.personId]
 );
   const treeRelationSource = useMemo(
     () => people.find((person) => Number(person.id) === Number(treeRelationPicker?.sourcePersonId)) || null,
@@ -1866,6 +1887,7 @@ const quickCreateSourcePerson = useMemo(
   const openPersonEditor = useCallback((person) => {
     if (!person) return;
     if (canEditPerson(person.id)) treeRealtime.startEditing(person.id);
+    setCouplePersonAction(null);
     setSelectedType("person");
     setSelectedCoupleId(null);
     setSelectedId(person.id);
@@ -2017,6 +2039,7 @@ const quickCreateSourcePerson = useMemo(
       beginDisplayNodeDrag(event, node, {
         onClick: () => {
           setSelectedDisplayNodeIds(new Set([node.id]));
+          setCouplePersonAction(null);
           setSelectedType("couple");
           setSelectedId(null);
           setSelectedCoupleId(node.id);
@@ -2033,13 +2056,15 @@ const quickCreateSourcePerson = useMemo(
         if (clickedPerson) {
           setSelectedType("person");
           setSelectedCoupleId(null);
-          setSelectedId(clickedPerson.id);
+          setSelectedId(null);
+          setCouplePersonAction({ personId: clickedPerson.id, coupleId: node.id });
           if (resolvedPermission.editScope === "limited" && !canEditPerson(clickedPerson.id)) {
             setStatus(t("tree.toolbar.limitedEdit"));
           }
           return;
         }
         setSelectedType("couple");
+        setCouplePersonAction(null);
         setSelectedId(null);
         setSelectedCoupleId(node.id);
       },
@@ -2282,6 +2307,11 @@ const quickCreateSourcePerson = useMemo(
         payload.account_email = accountEmail;
         payload.account_password = accountPassword;
       }
+
+      if (canEditAll && Number(selectedPerson.child_family_id) > 0) {
+        const childOrderText = String(form.child_order ?? "").trim();
+        payload.child_order = childOrderText === "" ? 0 : Math.max(0, Math.round(Number(childOrderText) || 0));
+      }
       const result = await updatePersonAPI(selectedPerson.id, payload);
       if (result.person) {
         let nextPeopleForValidation = null;
@@ -2373,6 +2403,27 @@ const openCreateDialogFromQuickRelation = (relation) => {
   });
 
   setQuickCreateDialog(null);
+};
+
+const openCreateDialogForPerson = (person, relation) => {
+  if (!person?.id) {
+    setStatus(t("tree.messages.linkSourceNotFound"));
+    return;
+  }
+  if (!canEditAll) {
+    setStatus(t("tree.inspector.limitedNote"));
+    return;
+  }
+
+  const spouse = findSpouse(person, canonicalTree.families, people);
+  setDialog({
+    relation,
+    sourcePersonId: person.id,
+    form: blankCreateForm(relation, person, spouse),
+  });
+  setCouplePersonAction(null);
+  setSelectedCoupleId(null);
+  setSelectedId(null);
 };
 
   const openCreateDialog = (relation) => {
@@ -2667,10 +2718,13 @@ const submitCreateDialog = async () => {
         }
         const existingChildren = getChildrenForFamily(family.id, canonicalTree.childRows);
         const childrenIds = existingChildren.filter((id) => Number(id) !== targetId);
+        const childOrders = getChildOrderMapForFamily(family.id, canonicalTree.childRows);
+        delete childOrders[targetId];
         await linkRelationsAPI({
           person_id: selectedPerson.id,
           family_id: family.id,
           children_person_ids: childrenIds,
+          child_orders: childOrders,
         });
       }
 
@@ -3655,6 +3709,45 @@ const submitCreateDialog = async () => {
           </div>
         </div>
       )}
+
+      {coupleActionPerson ? (
+        <div className="fte-modalOverlay" role="presentation" onMouseDown={() => setCouplePersonAction(null)}>
+          <div
+            className="fte-modal fte-personActionModal"
+            role="dialog"
+            aria-modal="true"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="fte-modalHeader">
+              <div>
+                <span>Chọn thao tác</span>
+                <h3>{fullName(coupleActionPerson, t("tree.card.fallbackName"))}</h3>
+              </div>
+              <button type="button" className="fte-iconButton" onClick={() => setCouplePersonAction(null)} title={t("common.close")}>
+                <span className="material-symbols-outlined">close</span>
+              </button>
+            </div>
+
+            <div className="fte-personActionChoices">
+              <button type="button" className="fte-personActionChoice" disabled={!canEditAll} onClick={() => openCreateDialogForPerson(coupleActionPerson, "spouse")}>
+                <span className="material-symbols-outlined">favorite</span>
+                <strong>Tạo thêm vợ/chồng</strong>
+                <small>Tạo card mới và liên kết quan hệ hôn phối với người này.</small>
+              </button>
+              <button type="button" className="fte-personActionChoice" disabled={!canEditAll} onClick={() => openCreateDialogForPerson(coupleActionPerson, "child")}>
+                <span className="material-symbols-outlined">person_add</span>
+                <strong>Tạo thêm con</strong>
+                <small>Tạo hồ sơ con mới và nối vào gia đình hiện tại nếu có.</small>
+              </button>
+              <button type="button" className="fte-personActionChoice" onClick={() => openPersonEditor(coupleActionPerson)}>
+                <span className="material-symbols-outlined">badge</span>
+                <strong>Thông tin</strong>
+                <small>Đổi thông tin cá nhân hoặc chỉ định thêm vợ/con/cha/mẹ đã có.</small>
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {selectedType === "couple" && selectedCoupleNode ? (
         <div className="fte-inspectorOverlay" role="presentation" onMouseDown={() => setSelectedCoupleId(null)}>

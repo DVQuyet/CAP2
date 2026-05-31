@@ -70,8 +70,10 @@ export default function TreeNodeCard({
   const birthYear = yearOnly(person.birth_date || birthText);
   const deathYear = deceased ? yearOnly(person.death_date || deathText) : "";
   const lifeText = birthYear && deathYear ? `${birthYear}-${deathYear}` : birthYear || deathYear || "";
+  const childOrder = Number(person.child_order || person.child_sort_order);
   const metaItems = [
     person.generation ? t("tree.card.generation", { count: person.generation }) : "",
+    Number.isFinite(childOrder) && childOrder > 0 ? `Con thứ ${childOrder}` : "",
     lifeText,
     person.branch ? `Chi ${person.branch}` : "",
     Number(person.role_id) === 2 ? t("tree.card.chief") : "",

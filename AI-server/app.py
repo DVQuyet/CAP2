@@ -16,6 +16,70 @@ load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
 MODEL_NAME = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 
+CHATBOT_ALLOWED_INTENTS = {
+    "relationship_expression",
+    "find_relationship",
+    "list_children",
+    "find_spouse",
+    "self_identity",
+    "family_analytics",
+}
+
+CHATBOT_ALLOWED_EDGES = {
+    "father",
+    "mother",
+    "parent",
+    "spouse",
+    "husband",
+    "wife",
+    "child",
+    "son",
+    "daughter",
+    "older_brother",
+    "younger_brother",
+    "older_sister",
+    "younger_sister",
+    "sibling",
+    "adopted_child",
+    "step_child",
+}
+
+CHATBOT_PLAN_SYSTEM_PROMPT = """
+You are the language planner for a family-tree chatbot.
+You are not allowed to answer genealogy facts directly.
+Return strict JSON only.
+Use only allowed intents and allowed relationship edges.
+Do not invent people.
+Do not invent family relationships.
+If unsure, return confidence below 0.5.
+Output schema:
+{
+  "intent": "relationship_expression",
+  "ast": { "base": "me", "steps": ["mother", "older_sister", "son"] },
+  "confidence": 0.0
+}
+Allowed intents: relationship_expression, find_relationship, list_children, find_spouse, self_identity, family_analytics.
+Allowed edges: father, mother, parent, spouse, husband, wife, child, son, daughter, older_brother, younger_brother, older_sister, younger_sister, sibling, adopted_child, step_child.
+Never include an answer field.
+"""
+
+CHATBOT_EXPLAIN_SYSTEM_PROMPT = """
+You are the wording layer for a family-tree chatbot.
+You are not allowed to answer genealogy facts directly.
+Use only the supplied relation, path, and evidence.
+Do not invent people.
+Do not invent family relationships.
+Return strict JSON only: {"success": true, "explanation": "..."}.
+If evidence is insufficient, return {"success": false, "explanation": ""}.
+"""
+
+CHATBOT_SUGGEST_SYSTEM_PROMPT = """
+You are a follow-up question generator for a family-tree chatbot.
+You are not allowed to answer genealogy facts directly.
+Return strict JSON only: {"success": true, "suggestions": [{"type": "followup", "text": "..."}]}.
+Do not invent facts or people.
+"""
+
 EVENT_FORM_SYSTEM_PROMPT = """
 Bạn là AI chuyên sinh JSON cho form tạo sự kiện và công việc chuẩn bị của Gia Phả Việt.
 
@@ -416,6 +480,124 @@ def strip_json_block(text: str) -> str:
     if start >= 0 and end > start:
         return raw[start : end + 1]
     return raw
+
+
+CHATBOT_TERM_EDGE_MAP = {
+    "cha": ["father"],
+    "bo": ["father"],
+    "ba": ["father"],
+    "me": ["mother"],
+    "ma": ["mother"],
+    "vo": ["spouse"],
+    "chong": ["spouse"],
+    "vo chong": ["spouse"],
+    "ong noi": ["father", "father"],
+    "ba noi": ["father", "mother"],
+    "ong ngoai": ["mother", "father"],
+    "ba ngoai": ["mother", "mother"],
+    "anh trai": ["older_brother"],
+    "chi gai": ["older_sister"],
+    "em trai": ["younger_brother"],
+    "em gai": ["younger_sister"],
+    "anh": ["older_brother"],
+    "chi": ["older_sister"],
+    "em": ["younger_sister"],
+    "bac": ["father", "older_brother"],
+    "chu": ["father", "younger_brother"],
+    "co": ["father", "younger_sister"],
+    "cau": ["mother", "younger_brother"],
+    "di": ["mother", "younger_sister"],
+    "con trai": ["son"],
+    "con gai": ["daughter"],
+    "con": ["child"],
+    "chau": ["child"],
+}
+
+CHATBOT_SORTED_TERMS = sorted(CHATBOT_TERM_EDGE_MAP.keys(), key=lambda item: len(item.split()), reverse=True)
+
+
+def fallback_chatbot_plan(message: str) -> dict[str, Any]:
+    normalized = normalize_vietnamese(message)
+    normalized = re.sub(r"[?!.:,;()[\]{}\"']", " ", normalized)
+    normalized = re.sub(r"\b(cua)\b", " ", normalized)
+    normalized = re.sub(r"\s+", " ", normalized).strip()
+    tokens = normalized.split()
+    base_index = -1
+    for index in range(len(tokens) - 1, -1, -1):
+        if tokens[index] in {"toi", "minh", "con", "em", "chau"}:
+            base_index = index
+            break
+    if base_index <= 0:
+        return {"intent": "relationship_expression", "ast": {"base": "me", "steps": []}, "confidence": 0.0}
+
+    terms: list[str] = []
+    cursor = 0
+    before_base = tokens[:base_index]
+    while cursor < len(before_base):
+        matched = None
+        for term in CHATBOT_SORTED_TERMS:
+            term_tokens = term.split()
+            if before_base[cursor : cursor + len(term_tokens)] == term_tokens:
+                matched = term
+                break
+        if not matched:
+            cursor += 1
+            continue
+        terms.append(matched)
+        cursor += len(matched.split())
+
+    steps: list[str] = []
+    for term in reversed(terms):
+        steps.extend(CHATBOT_TERM_EDGE_MAP.get(term, []))
+    confidence = 0.62 if steps else 0.0
+    return {"intent": "relationship_expression", "ast": {"base": "me", "steps": steps}, "confidence": confidence}
+
+
+def normalize_chatbot_plan(raw: Any) -> dict[str, Any]:
+    data = raw if isinstance(raw, dict) else {}
+    intent = str(data.get("intent") or "").strip()
+    if intent not in CHATBOT_ALLOWED_INTENTS:
+        intent = "relationship_expression"
+    ast = data.get("ast") if isinstance(data.get("ast"), dict) else {}
+    raw_steps = ast.get("steps") or data.get("steps") or data.get("expression") or []
+    steps = []
+    if isinstance(raw_steps, list):
+        for item in raw_steps:
+            edge = str(item or "").strip()
+            if edge == "husband" or edge == "wife":
+                edge = "spouse"
+            if edge in CHATBOT_ALLOWED_EDGES:
+                steps.append(edge)
+    base = ast.get("base") if ast.get("base") in {"me", "current_focus", "selected_person"} else "me"
+    confidence = data.get("confidence")
+    try:
+        confidence = max(0.0, min(1.0, float(confidence)))
+    except (TypeError, ValueError):
+        confidence = 0.0
+    return {"intent": intent, "ast": {"base": base, "steps": steps}, "confidence": confidence}
+
+
+def fallback_chatbot_explanation(body: dict[str, Any]) -> dict[str, Any]:
+    relation = str(body.get("relation") or "").strip()
+    evidence = body.get("evidence") if isinstance(body.get("evidence"), dict) else {}
+    summary = str(evidence.get("summary") or "").strip()
+    if summary:
+        return {"success": True, "explanation": summary}
+    if relation:
+        return {"success": True, "explanation": f"Theo du lieu gia pha hien tai, quan he duoc xac minh la {relation}."}
+    return {"success": False, "explanation": ""}
+
+
+def fallback_chatbot_suggestions(body: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "success": True,
+        "suggestions": [
+            {"type": "explore_person", "text": "Nguoi nay co con la ai?"},
+            {"type": "explore_person", "text": "Vo/chong cua nguoi nay la ai?"},
+            {"type": "explore_generation", "text": "Nguoi nay thuoc doi thu may?"},
+            {"type": "explore_branch", "text": "Nhanh cua nguoi nay gom nhung ai?"},
+        ],
+    }
 
 
 def valid_iso_date(value: Any) -> str | None:
@@ -1828,6 +2010,122 @@ def create_app() -> Flask:
                 "groq_configured": bool(groq_key and not groq_disabled),
             }
         )
+
+    @app.post("/chatbot/plan")
+    def chatbot_plan():
+        body = request.get_json(silent=True) or {}
+        message = str(body.get("message") or "").strip()
+        if not message:
+            return jsonify({"intent": "relationship_expression", "ast": {"base": "me", "steps": []}, "confidence": 0.0})
+
+        fallback = fallback_chatbot_plan(message)
+        if groq_client is None:
+            return jsonify(normalize_chatbot_plan(fallback))
+
+        try:
+            user_payload = {
+                "message": message,
+                "memory": body.get("memory") or {},
+                "context": body.get("context") or {},
+            }
+            res = groq_client.chat.completions.create(
+                model=MODEL_NAME,
+                messages=[
+                    {"role": "system", "content": CHATBOT_PLAN_SYSTEM_PROMPT},
+                    {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
+                ],
+                temperature=0.0,
+                max_tokens=500,
+            )
+            content = res.choices[0].message.content or "{}"
+            if debug_enabled:
+                app.logger.debug("CHATBOT_PLAN_AI_RAW=%s", content[:2000])
+            parsed = json.loads(strip_json_block(content))
+            normalized = normalize_chatbot_plan(parsed)
+            if not normalized["ast"]["steps"] and fallback.get("ast", {}).get("steps"):
+                return jsonify(normalize_chatbot_plan(fallback))
+            return jsonify(normalized)
+        except Exception as exc:
+            if debug_enabled:
+                app.logger.exception("AI chatbot planning failed: %s", exc)
+            return jsonify(normalize_chatbot_plan(fallback))
+
+    @app.post("/chatbot/explain")
+    def chatbot_explain():
+        body = request.get_json(silent=True) or {}
+        fallback = fallback_chatbot_explanation(body)
+        if groq_client is None:
+            return jsonify(fallback)
+
+        try:
+            user_payload = {
+                "relation": body.get("relation"),
+                "path": body.get("path") or [],
+                "evidence": body.get("evidence") or {},
+            }
+            res = groq_client.chat.completions.create(
+                model=MODEL_NAME,
+                messages=[
+                    {"role": "system", "content": CHATBOT_EXPLAIN_SYSTEM_PROMPT},
+                    {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
+                ],
+                temperature=0.1,
+                max_tokens=400,
+            )
+            content = res.choices[0].message.content or "{}"
+            if debug_enabled:
+                app.logger.debug("CHATBOT_EXPLAIN_AI_RAW=%s", content[:2000])
+            parsed = json.loads(strip_json_block(content))
+            if not isinstance(parsed, dict):
+                return jsonify(fallback)
+            explanation = str(parsed.get("explanation") or "").strip()
+            return jsonify({"success": bool(parsed.get("success") and explanation), "explanation": explanation})
+        except Exception as exc:
+            if debug_enabled:
+                app.logger.exception("AI chatbot explanation failed: %s", exc)
+            return jsonify(fallback)
+
+    @app.post("/chatbot/suggest")
+    def chatbot_suggest():
+        body = request.get_json(silent=True) or {}
+        fallback = fallback_chatbot_suggestions(body)
+        if groq_client is None:
+            return jsonify(fallback)
+
+        try:
+            user_payload = {
+                "message": body.get("message"),
+                "relation": body.get("relation"),
+                "evidence": body.get("evidence") or {},
+                "memory": body.get("memory") or {},
+            }
+            res = groq_client.chat.completions.create(
+                model=MODEL_NAME,
+                messages=[
+                    {"role": "system", "content": CHATBOT_SUGGEST_SYSTEM_PROMPT},
+                    {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)},
+                ],
+                temperature=0.2,
+                max_tokens=500,
+            )
+            content = res.choices[0].message.content or "{}"
+            if debug_enabled:
+                app.logger.debug("CHATBOT_SUGGEST_AI_RAW=%s", content[:2000])
+            parsed = json.loads(strip_json_block(content))
+            suggestions = parsed.get("suggestions") if isinstance(parsed, dict) else []
+            if not isinstance(suggestions, list):
+                return jsonify(fallback)
+            clean = []
+            for item in suggestions[:4]:
+                if isinstance(item, str) and item.strip():
+                    clean.append({"type": "followup", "text": item.strip()})
+                elif isinstance(item, dict) and str(item.get("text") or "").strip():
+                    clean.append({"type": str(item.get("type") or "followup"), "text": str(item.get("text")).strip()})
+            return jsonify({"success": True, "suggestions": clean or fallback["suggestions"]})
+        except Exception as exc:
+            if debug_enabled:
+                app.logger.exception("AI chatbot suggestion failed: %s", exc)
+            return jsonify(fallback)
 
     @app.post("/event-form/generate")
     def event_form_generate():

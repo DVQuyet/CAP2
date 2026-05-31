@@ -1,4 +1,9 @@
 const db = require('../../config/db');
+const {
+  ensurePaymentPurchaseColumns,
+  normalizePurchaseQuantity,
+  buildPurchaseSummary,
+} = require('../billing/billing.service');
 const PAYMENT_PREFIX = 'DH';
 
 function buildOrderCode(clanId) {
@@ -91,8 +96,238 @@ function extractSepayAmount(payload = {}) {
   );
 }
 
+function getWebhookSecret(req, payload = {}) {
+  const authorization = String(req.headers['authorization'] || '').trim();
+
+  if (/^Bearer\s+/i.test(authorization)) {
+    return authorization.replace(/^Bearer\s+/i, '').trim();
+  }
+
+  if (/^Apikey\s+/i.test(authorization)) {
+    return authorization.replace(/^Apikey\s+/i, '').trim();
+  }
+
+  return String(
+    req.headers['x-sepay-secret'] ||
+      authorization ||
+      payload.secret ||
+      payload.apiKey ||
+      ''
+  ).trim();
+}
+
+function getSepayApiToken() {
+  return (
+    process.env.SEPAY_API_TOKEN ||
+    process.env.SEPAY_USER_API_TOKEN ||
+    process.env.SEPAY_BEARER_TOKEN ||
+    ''
+  ).trim();
+}
+
+function getPaymentPlanSnapshot(payment = {}) {
+  if (payment.plan_snapshot_json && typeof payment.plan_snapshot_json === 'object') {
+    return payment.plan_snapshot_json;
+  }
+
+  if (typeof payment.plan_snapshot_json === 'string') {
+    try {
+      return JSON.parse(payment.plan_snapshot_json);
+    } catch (_) {
+      // Fall through to the current plan columns.
+    }
+  }
+
+  return {
+    id: payment.plan_id,
+    code: payment.plan_code,
+    name: payment.plan_name,
+    description: payment.plan_description || null,
+    price_vnd: Number(payment.plan_price_vnd || payment.unit_amount_vnd || payment.amount_vnd || 0),
+    billing_cycle: payment.plan_billing_cycle || payment.billing_cycle || 'monthly',
+    person_limit: Number(payment.plan_person_limit || 0),
+    account_limit: Number(payment.plan_account_limit || 0),
+  };
+}
+
+function buildPurchaseFromPayment(payment = {}) {
+  const billingCycle = payment.billing_cycle || payment.plan_billing_cycle || 'monthly';
+  return {
+    planSnapshot: getPaymentPlanSnapshot(payment),
+    billingCycle,
+    periodQuantity: Number(payment.period_quantity || 1),
+    periodUnit: payment.period_unit || (billingCycle === 'yearly' ? 'year' : 'month'),
+    periodMonths:
+      payment.period_months === null || payment.period_months === undefined
+        ? (billingCycle === 'yearly' ? 12 : 1)
+        : Number(payment.period_months),
+    unitAmountVnd: Number(payment.unit_amount_vnd || payment.plan_price_vnd || payment.amount_vnd || 0),
+    totalAmountVnd: Number(payment.amount_vnd || 0),
+  };
+}
+
+function normalizeTransactionContent(transaction = {}) {
+  return String(
+    transaction.transaction_content ||
+      transaction.content ||
+      transaction.description ||
+      transaction.reference_number ||
+      transaction.referenceCode ||
+      transaction.code ||
+      ''
+  );
+}
+
+function getTransactionAmountIn(transaction = {}) {
+  return normalizeAmount(
+    transaction.amount_in ||
+      transaction.transferAmount ||
+      transaction.amount ||
+      transaction.creditAmount ||
+      0
+  );
+}
+
+function transactionMatchesPayment(transaction = {}, payment = {}) {
+  const orderCode = String(payment.order_code || '').trim();
+  const content = normalizeTransactionContent(transaction);
+  const reference = String(transaction.reference_number || transaction.referenceCode || '').trim();
+  const code = String(transaction.code || '').trim();
+  const transferType = String(transaction.transfer_type || transaction.transferType || 'in').toLowerCase();
+
+  return (
+    orderCode &&
+    (content.includes(orderCode) || reference.includes(orderCode) || code.includes(orderCode)) &&
+    transferType !== 'out' &&
+    getTransactionAmountIn(transaction) === Number(payment.amount_vnd || 0)
+  );
+}
+
+async function fetchSepayTransactionForPayment(payment = {}) {
+  const apiToken = getSepayApiToken();
+
+  if (!apiToken) {
+    return {
+      checked: false,
+      reason: 'missing_api_token',
+    };
+  }
+
+  if (typeof fetch !== 'function') {
+    return {
+      checked: false,
+      reason: 'fetch_unavailable',
+    };
+  }
+
+  const url = new URL('https://userapi.sepay.vn/v2/transactions');
+  url.searchParams.set('q', payment.order_code);
+  url.searchParams.set('transfer_type', 'in');
+  url.searchParams.set('amount_in_min', String(payment.amount_vnd || 0));
+  url.searchParams.set('amount_in_max', String(payment.amount_vnd || 0));
+  url.searchParams.set('per_page', '20');
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${apiToken}`,
+    },
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    return {
+      checked: true,
+      reason: 'api_error',
+      status: response.status,
+      data,
+    };
+  }
+
+  const transactions = Array.isArray(data.data)
+    ? data.data
+    : Array.isArray(data.transactions)
+      ? data.transactions
+      : [];
+  const matchedTransaction = transactions.find((transaction) => transactionMatchesPayment(transaction, payment));
+
+  return {
+    checked: true,
+    transaction: matchedTransaction || null,
+    transaction_count: transactions.length,
+  };
+}
+
+async function markPaymentAsPaid(payment = {}, rawPayload = {}, source = 'sepay_webhook_paid') {
+  const purchase = buildPurchaseFromPayment(payment);
+  const connection = await db.getConnection();
+
+  try {
+    await connection.beginTransaction();
+
+    await connection.query(
+      `
+      UPDATE payments
+      SET status = 'paid',
+          paid_at = NOW(),
+          period_started_at = NOW(),
+          period_expires_at = CASE
+            WHEN ? IS NULL THEN NULL
+            ELSE DATE_ADD(NOW(), INTERVAL ? MONTH)
+          END,
+          raw_response = ?
+      WHERE id = ?
+      `,
+      [
+        purchase.periodMonths,
+        purchase.periodMonths,
+        JSON.stringify({
+          type: source,
+          sepay_payload: rawPayload,
+          purchase,
+        }),
+        payment.id,
+      ]
+    );
+
+    await connection.query(
+      `
+      INSERT INTO subscriptions (clan_id, plan_id, status, started_at, expires_at)
+      VALUES (
+        ?,
+        ?,
+        'active',
+        NOW(),
+        CASE
+          WHEN ? IS NULL THEN NULL
+          ELSE DATE_ADD(NOW(), INTERVAL ? MONTH)
+        END
+      )
+      ON DUPLICATE KEY UPDATE
+        plan_id = VALUES(plan_id),
+        status = VALUES(status),
+        started_at = VALUES(started_at),
+        expires_at = VALUES(expires_at),
+        cancelled_at = NULL
+      `,
+      [payment.clan_id, payment.plan_id, purchase.periodMonths, purchase.periodMonths]
+    );
+
+    await connection.commit();
+    return purchase;
+  } catch (error) {
+    await connection.rollback();
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
 async function createSepayPayment(req, res) {
   try {
+    await ensurePaymentPurchaseColumns();
     await cancelExpiredPendingPayments();
     const body = req.body || {};
     const planCode = String(body.plan_code || body.planCode || '').trim().toUpperCase();
@@ -159,6 +394,7 @@ if (pendingPayments.length) {
     }
 
     const plan = plans[0];
+    const purchase = buildPurchaseSummary(plan, normalizePurchaseQuantity(body, plan));
     const orderCode = buildOrderCode(clanId);
 
     await db.query(
@@ -171,26 +407,39 @@ if (pendingPayments.length) {
         provider,
         order_code,
         amount_vnd,
+        unit_amount_vnd,
+        period_quantity,
+        period_unit,
+        period_months,
+        billing_cycle,
+        plan_snapshot_json,
         status,
         raw_response
       )
-      VALUES (?, ?, ?, 'sepay', ?, ?, 'pending', ?)
+      VALUES (?, ?, ?, 'sepay', ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
       `,
       [
         clanId,
         plan.id,
         req.user.id,
         orderCode,
-        plan.price_vnd,
+        purchase.totalAmountVnd,
+        purchase.unitAmountVnd,
+        purchase.periodQuantity,
+        purchase.periodUnit,
+        purchase.periodMonths,
+        purchase.billingCycle,
+        JSON.stringify(purchase.planSnapshot),
         JSON.stringify({
           type: 'sepay_create',
           plan_code: plan.code,
+          purchase,
         }),
       ]
     );
 
     const qrUrl = getSepayQrUrl({
-      amount: plan.price_vnd,
+      amount: purchase.totalAmountVnd,
       orderCode,
     });
 
@@ -198,7 +447,13 @@ if (pendingPayments.length) {
       success: true,
       provider: 'sepay',
       order_code: orderCode,
-      amount_vnd: plan.price_vnd,
+      amount_vnd: purchase.totalAmountVnd,
+      unit_amount_vnd: purchase.unitAmountVnd,
+      period_quantity: purchase.periodQuantity,
+      period_unit: purchase.periodUnit,
+      period_months: purchase.periodMonths,
+      billing_cycle: purchase.billingCycle,
+      plan_snapshot: purchase.planSnapshot,
       transfer_content: orderCode,
       qr_url: qrUrl,
       bank_bin: process.env.SEPAY_BANK_BIN || null,
@@ -221,12 +476,10 @@ async function handleSepayWebhook(req, res) {
   const payload = req.body || {};
 
   try {
+    await ensurePaymentPurchaseColumns();
     await cancelExpiredPendingPayments();
     const configuredSecret = process.env.SEPAY_WEBHOOK_SECRET;
-    const receivedSecret =
-      req.headers['x-sepay-secret'] ||
-      req.headers['authorization']?.replace(/^Bearer\s+/i, '') ||
-      payload.secret;
+    const receivedSecret = getWebhookSecret(req, payload);
 
     if (configuredSecret && receivedSecret && String(receivedSecret) !== String(configuredSecret)) {
       return res.status(401).json({
@@ -247,7 +500,15 @@ async function handleSepayWebhook(req, res) {
 
     const [payments] = await db.query(
       `
-      SELECT pay.*, pl.billing_cycle
+      SELECT
+        pay.*,
+        pl.code AS plan_code,
+        pl.name AS plan_name,
+        pl.description AS plan_description,
+        pl.price_vnd AS plan_price_vnd,
+        pl.billing_cycle AS plan_billing_cycle,
+        pl.person_limit AS plan_person_limit,
+        pl.account_limit AS plan_account_limit
       FROM payments pay
       INNER JOIN plans pl ON pl.id = pay.plan_id
       WHERE ? LIKE CONCAT('%', pay.order_code, '%')
@@ -266,6 +527,7 @@ async function handleSepayWebhook(req, res) {
     }
 
     const payment = payments[0];
+    const purchase = buildPurchaseFromPayment(payment);
 
 if (payment.status === 'paid') {
   return res.json({
@@ -319,6 +581,20 @@ if (isPaymentOlderThan24Hours(payment)) {
       });
     }
 
+    await markPaymentAsPaid(payment, payload, 'sepay_webhook_paid');
+
+    return res.json({
+      success: true,
+      message: 'XÃ¡c nháº­n thanh toÃ¡n SePay thÃ nh cÃ´ng.',
+      purchase: {
+        plan: purchase.planSnapshot,
+        period_quantity: purchase.periodQuantity,
+        period_unit: purchase.periodUnit,
+        period_months: purchase.periodMonths,
+        amount_vnd: purchase.totalAmountVnd,
+      },
+    });
+
     const connection = await db.getConnection();
 
     try {
@@ -329,10 +605,24 @@ if (isPaymentOlderThan24Hours(payment)) {
         UPDATE payments
         SET status = 'paid',
             paid_at = NOW(),
+            period_started_at = NOW(),
+            period_expires_at = CASE
+              WHEN ? IS NULL THEN NULL
+              ELSE DATE_ADD(NOW(), INTERVAL ? MONTH)
+            END,
             raw_response = ?
         WHERE id = ?
         `,
-        [JSON.stringify(payload), payment.id]
+        [
+          purchase.periodMonths,
+          purchase.periodMonths,
+          JSON.stringify({
+            type: 'sepay_webhook_paid',
+            webhook_payload: payload,
+            purchase,
+          }),
+          payment.id,
+        ]
       );
 
       await connection.query(
@@ -343,7 +633,10 @@ if (isPaymentOlderThan24Hours(payment)) {
           ?,
           'active',
           NOW(),
-          DATE_ADD(NOW(), INTERVAL 1 MONTH)
+          CASE
+            WHEN ? IS NULL THEN NULL
+            ELSE DATE_ADD(NOW(), INTERVAL ? MONTH)
+          END
         )
         ON DUPLICATE KEY UPDATE
           plan_id = VALUES(plan_id),
@@ -352,7 +645,7 @@ if (isPaymentOlderThan24Hours(payment)) {
           expires_at = VALUES(expires_at),
           cancelled_at = NULL
         `,
-        [payment.clan_id, payment.plan_id]
+        [payment.clan_id, payment.plan_id, purchase.periodMonths, purchase.periodMonths]
       );
 
       await connection.commit();
@@ -360,6 +653,13 @@ if (isPaymentOlderThan24Hours(payment)) {
       return res.json({
         success: true,
         message: 'Xác nhận thanh toán SePay thành công.',
+        purchase: {
+          plan: purchase.planSnapshot,
+          period_quantity: purchase.periodQuantity,
+          period_unit: purchase.periodUnit,
+          period_months: purchase.periodMonths,
+          amount_vnd: purchase.totalAmountVnd,
+        },
       });
     } catch (error) {
       await connection.rollback();
@@ -380,6 +680,7 @@ if (isPaymentOlderThan24Hours(payment)) {
 
 async function getPaymentStatus(req, res) {
   try {
+     await ensurePaymentPurchaseColumns();
      await cancelExpiredPendingPayments();
     const orderCode = String(req.params.orderCode || '').trim();
 
@@ -398,9 +699,22 @@ async function getPaymentStatus(req, res) {
         pay.plan_id,
         pl.code AS plan_code,
         pl.name AS plan_name,
+        pl.description AS plan_description,
+        pl.price_vnd AS plan_price_vnd,
+        pl.billing_cycle AS plan_billing_cycle,
+        pl.person_limit AS plan_person_limit,
+        pl.account_limit AS plan_account_limit,
         pay.provider,
         pay.order_code,
         pay.amount_vnd,
+        pay.unit_amount_vnd,
+        pay.period_quantity,
+        pay.period_unit,
+        pay.period_months,
+        pay.billing_cycle,
+        pay.period_started_at,
+        pay.period_expires_at,
+        pay.plan_snapshot_json,
         pay.status,
         pay.paid_at,
         pay.created_at
@@ -434,6 +748,30 @@ async function getPaymentStatus(req, res) {
       payment.status = 'cancelled';
     }
 
+    if (payment.status === 'pending' && String(payment.provider || '').toLowerCase() === 'sepay') {
+      const reconciliation = await fetchSepayTransactionForPayment(payment);
+
+      if (reconciliation.transaction) {
+        await markPaymentAsPaid(payment, reconciliation.transaction, 'sepay_reconciliation_paid');
+
+        payment.status = 'paid';
+        payment.paid_at = new Date();
+        payment.reconciliation = {
+          checked: true,
+          matched: true,
+          transaction_id: reconciliation.transaction.id || null,
+        };
+      } else {
+        payment.reconciliation = {
+          checked: reconciliation.checked,
+          matched: false,
+          reason: reconciliation.reason || null,
+          status: reconciliation.status || null,
+          transaction_count: reconciliation.transaction_count || 0,
+        };
+      }
+    }
+
     return res.json({
       success: true,
       payment,
@@ -451,6 +789,7 @@ async function getPaymentStatus(req, res) {
 
 async function cancelPendingPayment(req, res) {
   try {
+    await ensurePaymentPurchaseColumns();
     await cancelExpiredPendingPayments();
     const { paymentId } = req.params;
 

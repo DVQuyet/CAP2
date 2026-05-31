@@ -70,7 +70,9 @@ const normalizeFamilyRelationshipStatus = (value) => {
 
 const parseRelationIdList = (value) => {
     if (Array.isArray(value)) {
-        return value.map(parseNullableId).filter(Boolean);
+        return value
+            .map((item) => (item && typeof item === 'object' ? parseNullableId(item.person_id ?? item.id) : parseNullableId(item)))
+            .filter(Boolean);
     }
     if (value === undefined || value === null || value === '') return [];
     if (typeof value === 'string') {
@@ -464,7 +466,10 @@ const linkRelations = async (req, res) => {
             const fatherId = parseNullableId(body.parent_father_id ?? body.father_person_id);
             const motherId = parseNullableId(body.parent_mother_id ?? body.mother_person_id);
             if (fatherId || motherId) {
-                const relation = await applyBloodlineForPerson(personId, person.clan_id, fatherId, motherId, db, { forceSaveHistoricalRelation: body.forceSaveHistoricalRelation });
+                const relation = await applyBloodlineForPerson(personId, person.clan_id, fatherId, motherId, db, {
+                    forceSaveHistoricalRelation: body.forceSaveHistoricalRelation,
+                    sort_order: body.sort_order ?? body.child_order,
+                });
                 if (!relation.ok) return res.status(relationHttpStatus(relation)).json(relationPayload(relation));
             } else {
                 await db.query('DELETE FROM children WHERE person_id = ?', [personId]);
@@ -478,6 +483,7 @@ const linkRelations = async (req, res) => {
             if (has('family_id')) relationBody.family_id = body.family_id;
             if (has('spouse_id') || has('spouse_person_id')) relationBody.spouse_id = body.spouse_id ?? body.spouse_person_id;
             if (has('children_ids') || has('children_person_ids')) relationBody.children_ids = body.children_ids ?? body.children_person_ids;
+            if (has('child_orders') || has('children_orders')) relationBody.child_orders = body.child_orders ?? body.children_orders;
             if (has('marriage_date')) relationBody.marriage_date = body.marriage_date;
             if (has('relationship_status')) relationBody.relationship_status = body.relationship_status;
             if (has('ended_at')) relationBody.ended_at = body.ended_at;
@@ -705,6 +711,7 @@ const updateTreePerson = async (req, res) => {
         }
 
         const hasBloodline = has('parent_father_id') || has('parent_mother_id') || has('father_person_id') || has('mother_person_id');
+        const hasChildOrderField = has('child_order');
         const pendingFatherId = hasBloodline ? parseNullableId(body.parent_father_id ?? body.father_person_id) : null;
         const pendingMotherId = hasBloodline ? parseNullableId(body.parent_mother_id ?? body.mother_person_id) : null;
         if (permission.scope === 'limited' && hasBloodline) {
@@ -726,7 +733,7 @@ const updateTreePerson = async (req, res) => {
         }
 
         const hasMarriage = has('family_id') || has('spouse_id') || has('spouse_person_id') || has('children_ids') || has('children_person_ids');
-        if (permission.scope === 'limited' && hasMarriage) {
+        if (permission.scope === 'limited' && (hasMarriage || hasChildOrderField)) {
             return res.status(403).json({
                 success: false,
                 message: 'Temporary edit key khong cho phep sua quan he hon nhan va con cai.',
@@ -782,7 +789,10 @@ const updateTreePerson = async (req, res) => {
 
         if (hasBloodline) {
             if (pendingFatherId || pendingMotherId) {
-                const relation = await applyBloodlineForPerson(personId, nextClanId, pendingFatherId, pendingMotherId, db, { forceSaveHistoricalRelation: body.forceSaveHistoricalRelation });
+                const relation = await applyBloodlineForPerson(personId, nextClanId, pendingFatherId, pendingMotherId, db, {
+                    forceSaveHistoricalRelation: body.forceSaveHistoricalRelation,
+                    sort_order: body.sort_order ?? body.child_order,
+                });
                 if (!relation.ok) return res.status(relationHttpStatus(relation)).json(relationPayload(relation));
             } else {
                 await db.query('DELETE FROM children WHERE person_id = ?', [personId]);
@@ -794,6 +804,7 @@ const updateTreePerson = async (req, res) => {
             if (has('family_id')) relationBody.family_id = body.family_id;
             if (has('spouse_id') || has('spouse_person_id')) relationBody.spouse_id = body.spouse_id ?? body.spouse_person_id;
             if (has('children_ids') || has('children_person_ids')) relationBody.children_ids = body.children_ids ?? body.children_person_ids;
+            if (has('child_orders') || has('children_orders')) relationBody.child_orders = body.child_orders ?? body.children_orders;
             if (has('marriage_date')) relationBody.marriage_date = body.marriage_date;
             if (has('relationship_status')) relationBody.relationship_status = body.relationship_status;
             if (has('ended_at')) relationBody.ended_at = body.ended_at;
@@ -803,6 +814,28 @@ const updateTreePerson = async (req, res) => {
                 { ...relationBody, forceSaveHistoricalRelation: body.forceSaveHistoricalRelation }
             );
             if (!relation.ok) return res.status(relationHttpStatus(relation)).json(relationPayload(relation));
+        }
+
+        if (hasChildOrderField && !hasBloodline && !hasMarriage) {
+            const childOrder = Math.max(0, parseTreeInt(body.child_order, 0));
+            const [childRows] = await db.query(
+                `
+                SELECT c.family_id
+                FROM children c
+                INNER JOIN families f ON f.id = c.family_id
+                WHERE c.person_id = ?
+                  AND f.clan_id = ?
+                ORDER BY c.id ASC
+                LIMIT 1
+                `,
+                [personId, nextClanId]
+            );
+            if (childRows.length) {
+                await db.query(
+                    'UPDATE children SET sort_order = ? WHERE family_id = ? AND person_id = ?',
+                    [childOrder, childRows[0].family_id, personId]
+                );
+            }
         }
 
         if (pendingRoleAccountId && pendingRoleId) {

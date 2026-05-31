@@ -71,6 +71,38 @@ export function getChildrenForFamily(familyId, childRows) {
     .filter((id) => Number.isFinite(id) && id > 0);
 }
 
+export function getChildOrderMapForFamily(familyId, childRows) {
+  const map = {};
+  asArray(childRows)
+    .filter((row) => Number(row.family_id) === Number(familyId))
+    .forEach((row, index) => {
+      const personId = Number(row.person_id);
+      if (!Number.isFinite(personId) || personId <= 0) return;
+      const order = toInt(row.sort_order, index + 1);
+      map[personId] = order > 0 ? order : index + 1;
+    });
+  return map;
+}
+
+export function getNextChildOrderForParent(parentId, families, childRows, people = []) {
+  const { family } = getPreferredChildFamilyForParent(parentId, families, people);
+  if (!family) return 1;
+  const orders = asArray(childRows)
+    .filter((row) => Number(row.family_id) === Number(family.id))
+    .map((row) => toInt(row.sort_order, 0))
+    .filter((value) => value > 0);
+  return orders.length ? Math.max(...orders) + 1 : getChildrenForFamily(family.id, childRows).length + 1;
+}
+
+export function findChildOrderForParent(parentId, childId, families, childRows) {
+  const parentFamilyIds = new Set(getFamiliesForPerson(parentId, families).map((family) => Number(family.id)));
+  const row = asArray(childRows).find(
+    (item) => parentFamilyIds.has(Number(item.family_id)) && Number(item.person_id) === Number(childId),
+  );
+  const order = toInt(row?.sort_order, 0);
+  return order > 0 ? order : null;
+}
+
 export function getPreferredChildFamilyForParent(parentId, families, people = []) {
   const parentFamilies = getFamiliesForPerson(parentId, families);
   if (!parentFamilies.length) return { family: null };
@@ -89,22 +121,32 @@ export function getPreferredChildFamilyForParent(parentId, families, people = []
   return { family: null, error: "multipleFamilies" };
 }
 
-export function buildChildRelationPayload(parentId, childId, families, childRows, people = []) {
+export function buildChildRelationPayload(parentId, childId, families, childRows, people = [], options = {}) {
   const sourceId = Number(parentId);
   const targetId = Number(childId);
   const { family, error } = getPreferredChildFamilyForParent(sourceId, families, people);
   if (error) return { error };
 
   const existingChildren = family ? getChildrenForFamily(family.id, childRows) : [];
+  const childOrders = family ? getChildOrderMapForFamily(family.id, childRows) : {};
   const childrenIds = Array.from(new Set([...existingChildren, targetId])).filter(
     (id) => Number(id) !== sourceId,
   );
+  childrenIds.forEach((id, index) => {
+    const requestedOrder = Number(id) === targetId ? toInt(options.sort_order, 0) : 0;
+    if (requestedOrder > 0) {
+      childOrders[id] = requestedOrder;
+    } else if (!childOrders[id]) {
+      childOrders[id] = index + 1;
+    }
+  });
 
   return {
     data: {
       person_id: sourceId,
       ...(family ? { family_id: family.id } : {}),
       children_person_ids: childrenIds,
+      child_orders: childOrders,
     },
   };
 }

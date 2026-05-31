@@ -24,6 +24,25 @@ const deleteByIds = async (connection, table, column, ids) => {
   return result?.affectedRows || 0;
 };
 
+const findEmptyFamilyIds = async (connection, familyIds) => {
+  const cleanIds = [...new Set((familyIds || []).map(Number).filter((id) => Number.isFinite(id) && id > 0))];
+  if (!cleanIds.length) return [];
+
+  const [rows] = await connection.query(
+    `
+    SELECT f.id
+    FROM families f
+    LEFT JOIN children c ON c.family_id = f.id
+    WHERE f.id IN (${cleanIds.map(() => '?').join(',')})
+    GROUP BY f.id
+    HAVING COUNT(c.id) = 0
+    `,
+    cleanIds
+  );
+
+  return rows.map((row) => Number(row.id)).filter((id) => Number.isFinite(id) && id > 0);
+};
+
 /**
  * Xoa sach mot person khoi cay gia pha va cac bang lien quan.
  *
@@ -64,12 +83,19 @@ const deletePersonCompletely = async (personId, options = {}) => {
     ]);
     const familyIds = familyRows.map((row) => Number(row.id)).filter(Number.isFinite);
 
+    const [childFamilyRows] = await connection.query('SELECT family_id FROM children WHERE person_id = ?', [targetPersonId]);
+    const childFamilyIds = childFamilyRows.map((row) => Number(row.family_id)).filter(Number.isFinite);
+
     // Xoa quan he cha/me/con nam trong cac family co person nay la vo/chong/cha/me.
     await deleteByIds(connection, 'children', 'family_id', familyIds);
     await deleteByIds(connection, 'families', 'id', familyIds);
 
     // Xoa quan he person nay dang la con cua mot family khac.
     await connection.query('DELETE FROM children WHERE person_id = ?', [targetPersonId]);
+
+    // Neu family do chi co moi person nay la con, xoa luon family rong khoi cay.
+    const emptyChildFamilyIds = await findEmptyFamilyIds(connection, childFamilyIds);
+    await deleteByIds(connection, 'families', 'id', emptyChildFamilyIds);
 
     // Don cac bang phu khong phai luc nao cung co trong database cu.
     await queryMaybe(connection, 'DELETE FROM account_clans WHERE person_id = ?', [targetPersonId]);
@@ -92,7 +118,8 @@ const deletePersonCompletely = async (personId, options = {}) => {
     return {
       person_id: targetPersonId,
       deleted_person_rows: deletedPerson?.affectedRows || 0,
-      deleted_family_ids: familyIds,
+      deleted_family_ids: [...new Set([...familyIds, ...emptyChildFamilyIds])],
+      deleted_empty_child_family_ids: emptyChildFamilyIds,
       affected_account_ids: accountIds,
       deleted_accounts: deleteAccounts ? accountIds : [],
     };

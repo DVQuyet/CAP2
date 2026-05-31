@@ -21,6 +21,7 @@ export default function PersonInspector({
 }) {
   const { t } = useLanguage();
   const [form, setForm] = useState(() => personToForm(person));
+  const hasParentFamily = Number(person?.child_family_id) > 0;
 
   useEffect(() => {
     setForm(personToForm(person));
@@ -190,6 +191,19 @@ export default function PersonInspector({
               disabled={!canEdit}
             />
           </label>
+
+          {hasParentFamily ? (
+            <label>
+              Con thứ mấy trong nhà
+              <input
+                type="number"
+                min="0"
+                value={form.child_order}
+                onChange={(event) => setField("child_order", event.target.value)}
+                disabled={!canEditRelations}
+              />
+            </label>
+          ) : null}
 
           <label>
             {t("tree.inspector.fields.branch")}

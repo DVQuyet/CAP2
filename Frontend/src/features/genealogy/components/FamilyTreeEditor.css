@@ -2486,6 +2486,59 @@ body.fte-bodyFullscreen {
     line-height: 1.45;
     color: #7a5b33;
 }
+
+.fte-personActionModal {
+    max-width: 680px;
+}
+
+.fte-personActionChoices {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    padding: 10px 0 4px;
+}
+
+.fte-personActionChoice {
+    border: 1px solid #d8b36a;
+    border-radius: 12px;
+    background: #fffaf0;
+    color: #5c3718;
+    padding: 16px 14px;
+    display: flex;
+    min-height: 148px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    cursor: pointer;
+    text-align: left;
+    transition: 0.18s ease;
+}
+
+.fte-personActionChoice:hover:not(:disabled) {
+    background: #fff1cf;
+    border-color: #c99233;
+    transform: translateY(-1px);
+}
+
+.fte-personActionChoice:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+
+.fte-personActionChoice .material-symbols-outlined {
+    font-size: 28px;
+}
+
+.fte-personActionChoice strong {
+    font-size: 16px;
+    font-weight: 800;
+}
+
+.fte-personActionChoice small {
+    color: #755532;
+    font-size: 13px;
+    line-height: 1.45;
+}
 .fte-lunarHint {
   display: inline-flex;
   align-items: center;
@@ -3485,6 +3538,7 @@ body.fte-bodyFullscreen {
     .fte-aiDraftFields,
     .fte-aiDraftFields:has(label:nth-child(3)),
     .fte-accountCreateBox,
+    .fte-personActionChoices,
     .fte-quickCreateChoices {
         grid-template-columns: 1fr;
     }

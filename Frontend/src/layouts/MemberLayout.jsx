@@ -9,6 +9,7 @@ import { useResponsiveSidebar } from "../shared/hooks/useResponsiveSidebar";
 import NotificationBell from "./NotificationBell";
 import LanguageToggle from "../shared/components/LanguageToggle";
 import ProfileDrawer from "../shared/components/ProfileDrawer";
+import AIChatGateway from "../features/ai-chat/components/AIChatGateway";
 import "./MemberLayout.css";
 
 const menuItems = [
@@ -202,6 +203,7 @@ export default function MemberLayout() {
         roleLabel={t("layout.familyMember")}
         title={t("common.editProfile")}
       />
+      <AIChatGateway />
     </div>
   );
 }

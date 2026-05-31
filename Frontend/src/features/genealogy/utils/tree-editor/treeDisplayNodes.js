@@ -130,7 +130,30 @@ export function buildDisplayTree(people = [], families = [], childRows = [], opt
   const exportMode = Boolean(options.exportMode);
   const cardOrientation = normalizeCardOrientation(options.cardOrientation);
   const nodePositions = options.nodePositions || {};
-  const peopleById = new Map(asArray(people).map((person) => [Number(person.id), person]));
+  const childMetaByPersonId = new Map();
+  asArray(childRows)
+    .slice()
+    .sort(siblingSort)
+    .forEach((row) => {
+      const personId = Number(row.person_id);
+      if (!Number.isFinite(personId) || personId <= 0 || childMetaByPersonId.has(personId)) return;
+      childMetaByPersonId.set(personId, {
+        child_family_id: Number(row.family_id),
+        child_sort_order: toInt(row.sort_order, 0),
+      });
+    });
+  const withChildMeta = (person) => {
+    if (!person) return person;
+    const meta = childMetaByPersonId.get(Number(person.id));
+    if (!meta) return person;
+    return {
+      ...person,
+      child_family_id: meta.child_family_id,
+      child_sort_order: meta.child_sort_order,
+      child_order: meta.child_sort_order,
+    };
+  };
+  const peopleById = new Map(asArray(people).map((person) => [Number(person.id), withChildMeta(person)]));
   const childRowsByFamily = new Map();
   asArray(childRows).forEach((row) => {
     const familyId = Number(row.family_id);

@@ -158,6 +158,28 @@ function formatMoney(value) {
   return `${Number(value || 0).toLocaleString("vi-VN")}đ`;
 }
 
+function getPlanPeriodUnit(plan) {
+  return String(plan?.billing_cycle || "monthly").toLowerCase() === "yearly" ? "năm" : "tháng";
+}
+
+function getPlanPeriodQuantity(plan, quantities) {
+  const value = Number(quantities?.[plan?.id] || 1);
+  return Number.isFinite(value) && value > 0 ? Math.floor(value) : 1;
+}
+
+function getPlanTotalAmount(plan, quantities) {
+  return Number(plan?.price_vnd || 0) * getPlanPeriodQuantity(plan, quantities);
+}
+
+function paymentMatchesPlanPurchase(payment, plan, periodQuantity) {
+  if (!payment || !plan) return false;
+  const samePlan = normalizePlanCode(payment.plan_code) === normalizePlanCode(plan.code);
+  const paymentQuantity = Number(payment.period_quantity || 1);
+  const paymentAmount = Number(payment.amount_vnd || 0);
+  const expectedAmount = Number(plan.price_vnd || 0) * Number(periodQuantity || 1);
+  return samePlan && paymentQuantity === Number(periodQuantity) && paymentAmount === expectedAmount;
+}
+
 function getEmptyPlanForm() {
   return {
     code: "",
@@ -202,6 +224,7 @@ export default function BillingPage() {
   const [editingPlan, setEditingPlan] = useState(null);
   const [planForm, setPlanForm] = useState(getEmptyPlanForm());
   const [planSaving, setPlanSaving] = useState(false);
+  const [purchaseQuantities, setPurchaseQuantities] = useState({});
 
   const currentRole = getCurrentUserRole();
   const isAdmin = currentRole === "admin";
@@ -439,13 +462,38 @@ const getStatusText = (status) =>
     }
   };
 
+  const handlePeriodQuantityChange = (planId, value) => {
+    const next = Math.min(120, Math.max(1, Math.floor(Number(value) || 1)));
+    setPurchaseQuantities((current) => ({ ...current, [planId]: next }));
+  };
+
   const handleCreateSepayPayment = async (plan) => {
     try {
       setMessage("");
+      const periodQuantity = getPlanPeriodQuantity(plan, purchaseQuantities);
       if (activePendingPayment) {
-        setSelectedPayment(activePendingPayment);
-        setMessage(t("billingPayment.messages.pendingExists"));
-        return;
+        if (paymentMatchesPlanPurchase(activePendingPayment, plan, periodQuantity)) {
+          setSelectedPayment(activePendingPayment);
+          handlePaySelectedPayment(activePendingPayment);
+          setMessage(t("billingPayment.messages.pendingExists"));
+          return;
+        }
+
+        const ok = window.confirm(
+          `Bạn đang có giao dịch chờ thanh toán cho gói ${activePendingPayment.plan_name || activePendingPayment.plan_code || ""}. Hủy giao dịch cũ để tạo mã QR mới cho ${getPlanNameText(plan)} (${periodQuantity} ${getPlanPeriodUnit(plan)})?`
+        );
+        if (!ok) {
+          setSelectedPayment(activePendingPayment);
+          return;
+        }
+
+        setPaymentActionLoading(true);
+        try {
+          await cancelPendingPayment(activePendingPayment.id);
+        } finally {
+          setPaymentActionLoading(false);
+        }
+        await loadBillingForClan(clanId);
       }
 
       if (isPlanDowngrade(plan.code)) {
@@ -457,9 +505,11 @@ const getStatusText = (status) =>
         ? {
             clan_id: clanId,
             plan_code: plan.code,
+            period_quantity: periodQuantity,
           }
         : {
             plan_code: plan.code,
+            period_quantity: periodQuantity,
           };
 
       const result = await createSepayPayment(payload);
@@ -474,6 +524,9 @@ const getStatusText = (status) =>
         bankAccount: result.bank_account,
         accountName: result.account_name,
         status: "pending",
+        periodQuantity: result.period_quantity || periodQuantity,
+        periodUnit: result.period_unit || getPlanPeriodUnit(plan),
+        periodMonths: result.period_months,
       });
     } catch (error) {
       setMessage(error.message || t("billingPayment.messages.createError"));
@@ -513,6 +566,16 @@ const getStatusText = (status) =>
             }
           : prev
       );
+
+      if (payment?.reconciliation?.reason === "missing_api_token") {
+        setMessage("Thanh toán chưa được xác nhận vì backend chưa cấu hình SEPAY_API_TOKEN để đối soát giao dịch.");
+        return;
+      }
+
+      if (payment?.reconciliation?.reason === "api_error") {
+        setMessage("Không thể đối soát SePay lúc này. Vui lòng kiểm tra API token hoặc nhật ký webhook SePay.");
+        return;
+      }
 
       setMessage(t("billingPayment.messages.payNotConfirmed"));
     } catch (error) {
@@ -593,6 +656,9 @@ const handlePaySelectedPayment = (payment) => {
     bankAccount: payment.bank_account,
     accountName: payment.account_name,
     status: payment.status || "pending",
+    periodQuantity: payment.period_quantity || 1,
+    periodUnit: payment.period_unit || getPlanPeriodUnit(payment),
+    periodMonths: payment.period_months,
   });
 };
   useEffect(() => {
@@ -761,8 +827,8 @@ const handlePaySelectedPayment = (payment) => {
                   {getPlanNameText(payment)}
                 </strong>
                 <span>
-                  {payment.payer_email || t("billingPayment.history.unknown")} ·{" "}
-                  {payment.provider || "manual"}
+              {payment.payer_email || t("billingPayment.history.unknown")} ·{" "}
+                  {payment.provider || "manual"} · {payment.period_quantity || 1} {getPlanPeriodUnit(payment)}
                 </span>
               </div>
 
@@ -825,6 +891,20 @@ const handlePaySelectedPayment = (payment) => {
       <div>
         <span>{t("billingPayment.transactionDetail.amount")}</span>
         <strong>{formatMoney(selectedPayment.amount_vnd)}</strong>
+      </div>
+
+      <div>
+        <span>Thời hạn mua</span>
+        <strong>{selectedPayment.period_quantity || 1} {getPlanPeriodUnit(selectedPayment)}</strong>
+      </div>
+
+      <div>
+        <span>Hết hạn theo giao dịch</span>
+        <strong>
+          {selectedPayment.period_expires_at
+            ? formatDateVN(selectedPayment.period_expires_at)
+            : t("billingPayment.currentPlan.unlimited")}
+        </strong>
       </div>
 
       <div>
@@ -914,6 +994,7 @@ const handlePaySelectedPayment = (payment) => {
             <div>
               <div className="billing-info-list is-payment">
                 <div><span>{t("billingPayment.paymentDialog.amount")}</span><strong>{formatMoney(paymentDialog.amountVnd)}</strong></div>
+                <div><span>Thời hạn mua</span><strong>{paymentDialog.periodQuantity || 1} {getPlanPeriodUnit(paymentDialog.plan)}</strong></div>
                 <div><span>{t("billingPayment.paymentDialog.content")}</span><strong>{paymentDialog.transferContent}</strong></div>
                 <div><span>{t("billingPayment.paymentDialog.recipient")}</span><strong>{paymentDialog.bankAccount || t("billingPayment.paymentDialog.notConfigured")} - {paymentDialog.accountName || t("billingPayment.paymentDialog.notConfigured")}</strong></div>
               </div>
@@ -1082,6 +1163,23 @@ const handlePaySelectedPayment = (payment) => {
                   <strong>{formatMoney(plan.price_vnd)}</strong>
                   {plan.billing_cycle === "monthly" ? <span>{t("billingPayment.plans.monthly")}</span> : null}
                 </div>
+                {String(plan.billing_cycle || "").toLowerCase() !== "free" && (
+                  <div className="billing-period-picker">
+                    <label>
+                      <span>Số {getPlanPeriodUnit(plan)} muốn mua</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max="120"
+                        value={getPlanPeriodQuantity(plan, purchaseQuantities)}
+                        onChange={(event) => handlePeriodQuantityChange(plan.id, event.target.value)}
+                      />
+                    </label>
+                    <strong>
+                      Tổng: {formatMoney(getPlanTotalAmount(plan, purchaseQuantities))}
+                    </strong>
+                  </div>
+                )}
                 <ul>
                   <li><span className="material-symbols-outlined">account_tree</span>{plan.person_limit} {t("billingPayment.plans.recordsUnit")}</li>
                   <li><span className="material-symbols-outlined">group</span>{plan.account_limit} {t("billingPayment.plans.accountsUnit")}</li>
@@ -1109,7 +1207,10 @@ const handlePaySelectedPayment = (payment) => {
                       if (!ok) return;
                       try {
                         setMessage("");
-                        await manualUpgradeClan(clanId, { plan_code: plan.code, months: 1 });
+                        await manualUpgradeClan(clanId, {
+                          plan_code: plan.code,
+                          period_quantity: getPlanPeriodQuantity(plan, purchaseQuantities),
+                        });
                         await loadBillingForClan(clanId);
                         setMessage(t("billingPayment.messages.upgradeTestSuccess", { id: clanId, name: getPlanNameText(plan) }));
                       } catch (error) {

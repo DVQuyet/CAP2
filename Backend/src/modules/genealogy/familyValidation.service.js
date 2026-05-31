@@ -10,6 +10,45 @@ const {
     validateParentChildSpouseConflict,
 } = require('./kinshipValidation.service');
 
+const MALE = 1;
+const FEMALE = 2;
+
+const normalizeBinaryGender = (gender) => {
+    const value = Number(gender);
+    return value === MALE || value === FEMALE ? value : null;
+};
+
+const validateSpouseRoleGender = ({ husbandPerson = null, wifePerson = null } = {}) => {
+    const husbandGender = normalizeBinaryGender(husbandPerson?.gender);
+    const wifeGender = normalizeBinaryGender(wifePerson?.gender);
+
+    if (husbandGender && wifeGender && husbandGender === wifeGender) {
+        return {
+            ok: false,
+            code: 'SAME_GENDER_SPOUSE',
+            message: 'Khong the tao quan he vo/chong giua hai nguoi cung gioi tinh.',
+        };
+    }
+
+    if (husbandGender === FEMALE) {
+        return {
+            ok: false,
+            code: 'FEMALE_AS_HUSBAND',
+            message: 'Khong the chon nguoi co gioi tinh nu lam chong.',
+        };
+    }
+
+    if (wifeGender === MALE) {
+        return {
+            ok: false,
+            code: 'MALE_AS_WIFE',
+            message: 'Khong the chon nguoi co gioi tinh nam lam vo.',
+        };
+    }
+
+    return { ok: true };
+};
+
 const getDescendantIds = async(connection, personId, clanId) => {
     const rootId = toPositiveId(personId);
     if (!rootId) return new Set();
@@ -47,24 +86,22 @@ const validateFamilyParents = async({ connection = db, clanId, fatherId, motherI
     const parentIds = uniquePositiveIds([nextFatherId, nextMotherId]);
 
     if (nextFatherId && nextMotherId && nextFatherId === nextMotherId) {
-        return { ok: false, message: 'Cha và mẹ không thể là cùng một người.' };
+        return { ok: false, message: 'Cha va me khong the la cung mot nguoi.' };
     }
 
     const peopleById = await loadPeopleByIds(connection, parentIds);
     for (const parentId of parentIds) {
         const parent = peopleById.get(parentId);
         if (!parent || Number(parent.clan_id) !== Number(clanId)) {
-            return { ok: false, message: 'Cha/mẹ phải là người trong cùng dòng họ hoặc ID không tồn tại.' };
+            return { ok: false, message: 'Cha/me phai la nguoi trong cung dong ho hoac ID khong ton tai.' };
         }
     }
 
-    if (nextFatherId && Number(peopleById.get(nextFatherId)?.gender) === 2) {
-        return { ok: false, message: 'Không thể chọn người có giới tính nữ làm cha.' };
-    }
-
-    if (nextMotherId && Number(peopleById.get(nextMotherId)?.gender) === 1) {
-        return { ok: false, message: 'Không thể chọn người có giới tính nam làm mẹ.' };
-    }
+    const spouseRoleGender = validateSpouseRoleGender({
+        husbandPerson: nextFatherId ? peopleById.get(nextFatherId) : null,
+        wifePerson: nextMotherId ? peopleById.get(nextMotherId) : null,
+    });
+    if (!spouseRoleGender.ok) return spouseRoleGender;
 
     if (nextFatherId || nextMotherId) {
         const [duplicates] = await connection.query(
@@ -84,7 +121,7 @@ const validateFamilyParents = async({ connection = db, clanId, fatherId, motherI
                 ok: false,
                 level: 'error',
                 code: 'DUPLICATE_SPOUSE_FAMILY',
-                message: 'Không được tạo duplicate spouse/family theo chiều ngược hoặc trùng cặp.',
+                message: 'Khong duoc tao duplicate spouse/family theo chieu nguoc hoac trung cap.',
             };
         }
     }
@@ -309,20 +346,28 @@ const validatePersonGenerationWithRelations = async(connection, personId, nextGe
 };
 
 const validatePersonGenderWithFamilyRole = async(connection, personId, nextGender) => {
-    const gender = Number(nextGender);
-    if (gender !== 1 && gender !== 2) return { ok: true };
+    const gender = normalizeBinaryGender(nextGender);
+    if (!gender) return { ok: true };
 
-    if (gender === 2) {
+    if (gender === FEMALE) {
         const [fatherRows] = await connection.query('SELECT id FROM families WHERE father_id = ? LIMIT 1', [personId]);
         if (fatherRows.length) {
-            return { ok: false, message: 'Không thể đặt giới tính nữ cho người đang là cha.' };
+            return {
+                ok: false,
+                code: 'FEMALE_AS_HUSBAND',
+                message: 'Khong the dat gioi tinh nu cho nguoi dang o vai tro chong/cha.',
+            };
         }
     }
 
-    if (gender === 1) {
+    if (gender === MALE) {
         const [motherRows] = await connection.query('SELECT id FROM families WHERE mother_id = ? LIMIT 1', [personId]);
         if (motherRows.length) {
-            return { ok: false, message: 'Không thể đặt giới tính nam cho người đang là mẹ.' };
+            return {
+                ok: false,
+                code: 'MALE_AS_WIFE',
+                message: 'Khong the dat gioi tinh nam cho nguoi dang o vai tro vo/me.',
+            };
         }
     }
 
@@ -425,6 +470,10 @@ const assertCanDeleteTreePerson = async(personId) => {
 };
 
 module.exports = {
+    MALE,
+    FEMALE,
+    normalizeBinaryGender,
+    validateSpouseRoleGender,
     getDescendantIds,
     validateFamilyParents,
     getParentGeneration,

@@ -1,5 +1,113 @@
 const db = require('../../config/db');
 
+const NO_TABLE_OR_COLUMN = new Set(['ER_NO_SUCH_TABLE', 'ER_BAD_FIELD_ERROR', 'ER_DUP_FIELDNAME']);
+
+async function columnExists(connection, tableName, columnName) {
+  const [rows] = await connection.query(
+    `
+    SELECT COLUMN_NAME
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = ?
+      AND COLUMN_NAME = ?
+    LIMIT 1
+    `,
+    [tableName, columnName]
+  );
+
+  return rows.length > 0;
+}
+
+async function addColumnIfMissing(connection, tableName, columnName, definition) {
+  if (await columnExists(connection, tableName, columnName)) return;
+
+  try {
+    await connection.query(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${definition}`);
+  } catch (error) {
+    if (!NO_TABLE_OR_COLUMN.has(error.code)) throw error;
+  }
+}
+
+async function ensurePaymentPurchaseColumns(connection = db) {
+  await addColumnIfMissing(connection, 'payments', 'unit_amount_vnd', 'INT NULL AFTER amount_vnd');
+  await addColumnIfMissing(connection, 'payments', 'period_quantity', 'INT NOT NULL DEFAULT 1 AFTER unit_amount_vnd');
+  await addColumnIfMissing(connection, 'payments', 'period_unit', "ENUM('month','year','lifetime') NOT NULL DEFAULT 'month' AFTER period_quantity");
+  await addColumnIfMissing(connection, 'payments', 'period_months', 'INT NULL AFTER period_unit');
+  await addColumnIfMissing(connection, 'payments', 'billing_cycle', "VARCHAR(20) NULL AFTER period_months");
+  await addColumnIfMissing(connection, 'payments', 'period_started_at', 'DATETIME NULL AFTER paid_at');
+  await addColumnIfMissing(connection, 'payments', 'period_expires_at', 'DATETIME NULL AFTER period_started_at');
+  await addColumnIfMissing(connection, 'payments', 'plan_snapshot_json', 'JSON NULL AFTER period_expires_at');
+}
+
+function normalizePurchaseQuantity(body = {}, plan = {}) {
+  const billingCycle = String(plan.billing_cycle || '').toLowerCase();
+  const raw =
+    body.period_quantity ??
+    body.periodQuantity ??
+    body.quantity ??
+    body.qty ??
+    (billingCycle === 'yearly' ? body.years : body.months) ??
+    1;
+
+  const quantity = Number(raw);
+  const safeQuantity = Number.isFinite(quantity) && quantity > 0 ? Math.floor(quantity) : 1;
+  return Math.min(safeQuantity, 120);
+}
+
+function getPurchasePeriod(plan = {}, quantity = 1) {
+  const billingCycle = String(plan.billing_cycle || 'monthly').toLowerCase();
+  const safeQuantity = Math.max(1, Math.floor(Number(quantity) || 1));
+
+  if (billingCycle === 'yearly') {
+    return {
+      quantity: safeQuantity,
+      unit: 'year',
+      months: safeQuantity * 12,
+    };
+  }
+
+  if (billingCycle === 'lifetime') {
+    return {
+      quantity: 1,
+      unit: 'lifetime',
+      months: null,
+    };
+  }
+
+  return {
+    quantity: safeQuantity,
+    unit: 'month',
+    months: safeQuantity,
+  };
+}
+
+function buildPlanSnapshot(plan = {}) {
+  return {
+    id: plan.id,
+    code: plan.code,
+    name: plan.name,
+    description: plan.description || null,
+    price_vnd: Number(plan.price_vnd || 0),
+    billing_cycle: plan.billing_cycle,
+    person_limit: Number(plan.person_limit || 0),
+    account_limit: Number(plan.account_limit || 0),
+  };
+}
+
+function buildPurchaseSummary(plan = {}, quantity = 1) {
+  const period = getPurchasePeriod(plan, quantity);
+  const unitAmount = Number(plan.price_vnd || 0);
+  return {
+    planSnapshot: buildPlanSnapshot(plan),
+    billingCycle: String(plan.billing_cycle || 'monthly').toLowerCase(),
+    periodQuantity: period.quantity,
+    periodUnit: period.unit,
+    periodMonths: period.months,
+    unitAmountVnd: unitAmount,
+    totalAmountVnd: unitAmount * period.quantity,
+  };
+}
+
 async function getClanUsage(clanId) {
   const [peopleRows] = await db.query(
     `
@@ -193,4 +301,7 @@ module.exports = {
   ensureFreeSubscriptionForClan,
   ensureCanAddPerson,
   ensureCanAddAccount,
+  ensurePaymentPurchaseColumns,
+  normalizePurchaseQuantity,
+  buildPurchaseSummary,
 };

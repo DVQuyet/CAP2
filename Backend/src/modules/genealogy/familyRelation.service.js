@@ -1,7 +1,6 @@
 const {
     db,
     parseNullableId,
-    parseChildrenIds,
     hasDuplicateIds,
 } = require('../manager/common.service');
 const {
@@ -92,6 +91,83 @@ const normalizeOptionalText = (value) => {
     return text || null;
 };
 
+const normalizeChildPersonId = (value) => {
+    if (value && typeof value === 'object') {
+        return parseNullableId(value.person_id ?? value.id);
+    }
+    return parseNullableId(value);
+};
+
+const normalizeChildOrderMap = (value) => {
+    const map = new Map();
+    if (!value) return map;
+
+    if (Array.isArray(value)) {
+        value.forEach((item) => {
+            if (!item || typeof item !== 'object') return;
+            const personId = normalizeChildPersonId(item);
+            const order = Number(item.sort_order ?? item.child_order ?? item.order);
+            if (personId && Number.isFinite(order)) map.set(personId, Math.max(0, Math.round(order)));
+        });
+        return map;
+    }
+
+    if (typeof value === 'object') {
+        Object.entries(value).forEach(([key, rawOrder]) => {
+            const personId = parseNullableId(key);
+            const order = Number(rawOrder);
+            if (personId && Number.isFinite(order)) map.set(personId, Math.max(0, Math.round(order)));
+        });
+    }
+    return map;
+};
+
+const normalizeChildRelationItems = (childrenValue, orderValue) => {
+    const orderMap = normalizeChildOrderMap(orderValue);
+    const values = Array.isArray(childrenValue)
+        ? childrenValue
+        : typeof childrenValue === 'string'
+            ? childrenValue.split(',').map((item) => item.trim()).filter(Boolean)
+            : childrenValue === undefined || childrenValue === null || childrenValue === ''
+                ? []
+                : [childrenValue];
+    const seen = new Set();
+    const items = [];
+
+    values.forEach((item, index) => {
+        const personId = normalizeChildPersonId(item);
+        if (!personId || seen.has(personId)) return;
+        seen.add(personId);
+        const itemOrder = item && typeof item === 'object'
+            ? Number(item.sort_order ?? item.child_order ?? item.order)
+            : NaN;
+        const mappedOrder = orderMap.get(personId);
+        const sortOrder = Number.isFinite(itemOrder)
+            ? itemOrder
+            : Number.isFinite(mappedOrder)
+                ? mappedOrder
+                : index + 1;
+        items.push({
+            person_id: personId,
+            sort_order: Math.max(0, Math.round(sortOrder)),
+        });
+    });
+
+    return items;
+};
+
+const hasDuplicateChildRelationItems = (childrenValue) => {
+    const values = Array.isArray(childrenValue)
+        ? childrenValue
+        : typeof childrenValue === 'string'
+            ? childrenValue.split(',').map((item) => item.trim()).filter(Boolean)
+            : childrenValue === undefined || childrenValue === null || childrenValue === ''
+                ? []
+                : [childrenValue];
+    const ids = values.map(normalizeChildPersonId).filter(Boolean);
+    return new Set(ids).size !== ids.length;
+};
+
 const personLabel = (person) => {
     if (!person) return null;
     const display = String(person.display_name || '').trim();
@@ -110,6 +186,8 @@ const mapFamilyRelationRows = (familyRows, childRows) => {
         childrenByFamily.get(familyId).push({
             id: child.person_id,
             person_id: child.person_id,
+            sort_order: child.sort_order,
+            child_order: child.sort_order,
             display_name: personLabel(child),
             name: personLabel(child),
         });
@@ -180,6 +258,7 @@ const getFamiliesForPerson = async(personId, connection = db) => {
         SELECT
             c.family_id,
             c.person_id,
+            c.sort_order,
             p.display_name,
             p.surname,
             p.middle_name,
@@ -477,8 +556,8 @@ async function applyBloodlineForPerson(targetPersonId, clanId, parentFatherId, p
     await connection.query(
         `
         INSERT INTO children (family_id, person_id, sort_order)
-        VALUES (?, ?, 0)
-        `, [familyId, targetPersonId]
+        VALUES (?, ?, ?)
+        `, [familyId, targetPersonId, Math.max(0, Math.round(Number(options.sort_order) || 0))]
     );
 
     if (childValidation.childGeneration) {
@@ -497,7 +576,8 @@ async function applyMarriageRelationsForPersonV2(context, body) {
     const has = (key) => Object.prototype.hasOwnProperty.call(body || {}, key);
     const familyIdInput = parseNullableId(body?.family_id);
     const spouseId = parseNullableId(body?.spouse_id);
-    const childrenIds = parseChildrenIds(body?.children_ids);
+    const childItems = normalizeChildRelationItems(body?.children_ids, body?.child_orders ?? body?.children_orders);
+    const childrenIds = childItems.map((item) => item.person_id);
     const hasFamilyField = has('family_id');
     const hasSpouseField = has('spouse_id');
     const hasChildrenField = has('children_ids');
@@ -512,7 +592,7 @@ async function applyMarriageRelationsForPersonV2(context, body) {
 
     await ensureFamilyRelationshipColumns(connection);
 
-    if (hasChildrenField && hasDuplicateIds(body?.children_ids)) {
+    if (hasChildrenField && (hasDuplicateIds(childrenIds) || hasDuplicateChildRelationItems(body?.children_ids))) {
         return { ok: false, level: 'error', code: 'DUPLICATE_CHILD_IN_FAMILY', message: 'Khong duoc them trung con trong cung mot gia dinh.' };
     }
 
@@ -753,7 +833,8 @@ async function applyMarriageRelationsForPersonV2(context, body) {
         }
 
         await connection.query('DELETE FROM children WHERE family_id = ?', [selfFamilyId]);
-        for (const childId of childrenIds) {
+        for (const childItem of childItems) {
+            const childId = childItem.person_id;
             const childValidation = await validateChildAgainstParents({
                 connection,
                 clanId: context.clan_id,
@@ -768,9 +849,10 @@ async function applyMarriageRelationsForPersonV2(context, body) {
                     childId,
                 ]);
             }
-            await connection.query('INSERT INTO children (family_id, person_id, sort_order) VALUES (?, ?, 0)', [
+            await connection.query('INSERT INTO children (family_id, person_id, sort_order) VALUES (?, ?, ?)', [
                 selfFamilyId,
                 childId,
+                childItem.sort_order,
             ]);
         }
     }

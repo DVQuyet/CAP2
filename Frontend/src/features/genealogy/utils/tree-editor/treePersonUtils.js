@@ -89,6 +89,7 @@ export function personToForm(person) {
     is_living: Number(person?.is_living) === 0 ? "0" : "1",
     role_id: person?.role_id == null ? "" : String(person.role_id),
     generation: person?.generation != null ? String(person.generation) : "1",
+    child_order: person?.child_order || person?.child_sort_order || "",
     branch: person?.branch != null ? String(person.branch) : "",
     hometown: person?.hometown || "",
     address: person?.address || "",

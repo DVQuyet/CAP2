@@ -10,6 +10,7 @@ import { useResponsiveSidebar } from "../shared/hooks/useResponsiveSidebar";
 import NotificationBell from "./NotificationBell";
 import LanguageToggle from "../shared/components/LanguageToggle";
 import ProfileDrawer from "../shared/components/ProfileDrawer";
+import AIChatGateway from "../features/ai-chat/components/AIChatGateway";
 import "./ManagerLayout.css";
 
 const menuItems = [
@@ -375,6 +376,7 @@ export default function ManagerLayout() {
         roleLabel={t("layout.clanManager")}
         title={t("common.editProfile")}
       />
+      <AIChatGateway />
     </div>
   );
 }

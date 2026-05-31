@@ -28,6 +28,8 @@ function PersonHalf({
   const name = person ? fullName(person, t("tree.card.fallbackName")) : "Chua ro";
   const meta = lifeMeta(person);
   const generation = person?.generation ? t("tree.card.generation", { count: person.generation }) : "";
+  const childOrder = Number(person?.child_order || person?.child_sort_order);
+  const childOrderLabel = Number.isFinite(childOrder) && childOrder > 0 ? `Con thứ ${childOrder}` : "";
   const stopActionPointer = (event) => {
     event.preventDefault();
     event.stopPropagation();
@@ -66,7 +68,7 @@ function PersonHalf({
       ) : null}
       <strong>{name}</strong>
       {meta ? <span>{meta}</span> : null}
-      {generation ? <small>{generation}</small> : null}
+      {generation || childOrderLabel ? <small>{[generation, childOrderLabel].filter(Boolean).join(" · ")}</small> : null}
     </div>
   );
 }

@@ -76,6 +76,7 @@ const managerRoutes = require('./src/modules/manager/manager.routes');
 const memberRoutes = require('./src/modules/member/member.routes');
 const adminRoutes = require('./src/modules/admin/admin.routes');
 const aiRoutes = require('./src/modules/ai/ai.routes');
+const chatbotRoutes = require('./src/modules/chatbot/chatbotRoutes');
 const voiceRoutes = require('../voice/backend/backendRoutes');
 const mediaRoutes = require('./src/modules/media/media.routes');
 const calendarRoutes = require('./src/modules/calendar/calendar.routes');
@@ -479,6 +480,7 @@ app.use('/api/manager', managerRoutes);
 app.use('/api/member', memberRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/chatbot', chatbotRoutes);
 app.use('/api/voice', voiceRoutes);
 
 // 9. 404 handler phải luôn nằm cuối routes

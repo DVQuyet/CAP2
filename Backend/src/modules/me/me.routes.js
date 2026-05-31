@@ -10,4 +10,25 @@ router.put(
   meController.updateMyProfile
 );
 
+router.get(
+  "/context",
+  verifyToken,
+  checkRole(["admin", "manager", "member"]),
+  meController.getMyContext
+);
+
+router.get(
+  "/context/people",
+  verifyToken,
+  checkRole(["admin", "manager", "member"]),
+  meController.listContextPeople
+);
+
+router.post(
+  "/context/person",
+  verifyToken,
+  checkRole(["admin", "manager", "member"]),
+  meController.setCurrentPerson
+);
+
 module.exports = router;

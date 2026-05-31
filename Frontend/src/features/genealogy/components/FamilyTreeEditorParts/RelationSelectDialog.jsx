@@ -19,7 +19,6 @@ export default function RelationSelectDialog({
 }) {
   const { t } = useLanguage();
   const [query, setQuery] = useState("");
-  if (!relation || !selectedPerson) return null;
 
   const linkedIds = relationLinkedIds(relation, selectedPerson, families, childRows);
   const candidates = relationCandidates(relation, selectedPerson, people, linkedIds, families);
@@ -31,6 +30,12 @@ export default function RelationSelectDialog({
   const title = t(`tree.relationModal.titles.${relation}`) || t("tree.relationModal.titles.generic");
   const selectedLinked = linkedIds.has(Number(value));
   const canUnlink = linkedIds.size > 0 && (relation !== "child" || selectedLinked);
+
+  const selectPerson = (personId) => {
+    onChange(personId);
+  };
+
+  if (!relation || !selectedPerson) return null;
 
   return (
     <div className="fte-modalOverlay" role="presentation" onMouseDown={onCancel}>
@@ -69,7 +74,7 @@ export default function RelationSelectDialog({
                   className={`fte-relationOption ${Number(value) === Number(person.id) ? "is-selected" : ""} ${
                     linkedIds.has(Number(person.id)) ? "is-linked" : ""
                   }`}
-                  onClick={() => onChange(person.id)}
+                  onClick={() => selectPerson(person.id)}
                 >
                   <span className="fte-relationAvatar">
                     {person.avatar_url ? <img src={person.avatar_url} alt={fullName(person)} /> : fullName(person).charAt(0).toUpperCase()}
@@ -95,7 +100,12 @@ export default function RelationSelectDialog({
             <span className="material-symbols-outlined">link_off</span>
             {t("tree.relationModal.actions.unlink")}
           </button>
-          <button type="button" className="fte-primaryButton" disabled={saving || !value} onClick={onSubmit}>
+          <button
+            type="button"
+            className="fte-primaryButton"
+            disabled={saving || !value}
+            onClick={() => onSubmit()}
+          >
             <span className="material-symbols-outlined">link</span>
             {saving ? t("tree.relationModal.actions.linking") : t("tree.relationModal.actions.link")}
           </button>

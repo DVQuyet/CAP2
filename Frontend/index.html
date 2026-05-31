@@ -23,26 +23,6 @@
 <body>
     <div id="root"></div>
     <script type="module" src="/src/app/main.jsx"></script>
-    <script>
-        // Chặn console
-        (function() {
-            const noop = function() {};
-            const methods = ['log', 'debug', 'info', 'warn', 'error', 'table', 'trace', 'dir', 'dirxml', 'group', 'groupCollapsed', 'groupEnd', 'clear', 'count', 'countReset', 'assert', 'profile', 'profileEnd', 'time', 'timeLog', 'timeEnd', 'timeStamp'];
-            methods.forEach(method => {
-                console[method] = noop;
-            });
-        })();
-
-        // Chặn debugger
-        setInterval(function() {
-            (function() {
-                return false;
-            }['constructor']('debugger')['call']());
-        }, 50);
-    </script>
-    <!--  -->
-    <!--  -->
-    <!--  -->
 </body>
 
 </html>
