@@ -51,7 +51,7 @@ Backend/
 - `src/modules/manager/`: dashboard manager, clan info, member, moderation, event/task, archive, route chính của manager.
 - `src/modules/member/`: dashboard/profile/submission của member.
 - `src/modules/genealogy/`: controller và service chuyên về cây gia phả.
-- `src/modules/ai/`: proxy tới AI-server.
+- `src/modules/ai/`: gọi Groq trực tiếp cho event form và genealogy extraction.
 - `src/modules/media/`: upload/phục vụ media.
 - `src/modules/calendar/`: lịch và reminder.
 - `src/modules/fund/`: quỹ dòng họ.
@@ -265,7 +265,8 @@ DB_CONNECTION_LIMIT=5
 DB_SSL=false
 
 FRONTEND_URL=http://localhost:5173
-AI_SERVER_URL=http://localhost:8001
+GROQ_API_KEY=your_groq_api_key_here
+GROQ_MODEL=llama3-8b-8192
 ```
 
 Tùy tính năng:
@@ -304,11 +305,11 @@ http://localhost:3000
 
 ## Tích Hợp AI
 
-Backend không gọi Groq trực tiếp. Các route trong `src/modules/ai` proxy sang AI-server:
+Backend gọi Groq trực tiếp qua `GROQ_API_KEY`. Không cần chạy dịch vụ Python riêng cho AI.
 
 ```text
-POST /api/ai/event-form/generate -> AI_SERVER_URL/event-form/generate
-POST /api/ai/genealogy/extract   -> AI_SERVER_URL/genealogy/extract
+POST /api/ai/event-form/generate
+POST /api/ai/genealogy/extract
 ```
 
 ## Tích Hợp Voice

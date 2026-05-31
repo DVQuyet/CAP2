@@ -1,5 +1,5 @@
 const intentParser = require('./intentParserService');
-const { planChatbotQuery } = require('./aiChatbotClient');
+const { planChatbotQuery } = require('./chatbotAI');
 const { validatePlannerOutput } = require('./plannerValidatorService');
 const db = require('../../config/db');
 
@@ -33,9 +33,19 @@ async function auditPlanner({ userId, clanId, request, response, accepted, rejec
     }
 }
 
-async function planQuery({ message, memory, userId, clanId, currentMemberId } = {}) {
+async function planQuery({
+    message,
+    memory,
+    userId,
+    clanId,
+    currentMemberId,
+    history,
+    userProfile,
+    clanContext,
+    forceAI = false,
+} = {}) {
     const rulePlan = intentParser.parse(message);
-    if (rulePlan.intent && rulePlan.intent !== 'unknown') {
+    if (!forceAI && rulePlan.intent && rulePlan.intent !== 'unknown') {
         return {
             plan: rulePlan,
             planner: plannerMetadata('rule_parser', true),
@@ -50,6 +60,9 @@ async function planQuery({ message, memory, userId, clanId, currentMemberId } = 
             clanId,
             currentMemberId,
         },
+        history: history || [],
+        userProfile: userProfile || {},
+        clanContext: clanContext || {},
     };
     const aiResult = await planChatbotQuery(aiRequest);
 

@@ -1,4 +1,4 @@
-const aiChatbotClient = require('./aiChatbotClient');
+const chatbotAI = require('./chatbotAI');
 
 function normalizeSuggestion(item) {
     if (typeof item === 'string') {
@@ -26,7 +26,7 @@ function ruleBasedSuggestions({ relation } = {}) {
 
 async function suggest({ message, relation, evidence, memory } = {}) {
     const fallback = ruleBasedSuggestions({ relation });
-    const result = await aiChatbotClient.suggestFollowups({ message, relation, evidence, memory });
+    const result = await chatbotAI.suggestFollowups({ message, relation, evidence, memory });
     if (!result.success || !result.data?.success || !Array.isArray(result.data.suggestions)) {
         return fallback;
     }

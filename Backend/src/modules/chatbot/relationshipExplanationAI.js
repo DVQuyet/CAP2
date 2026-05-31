@@ -1,4 +1,4 @@
-const aiChatbotClient = require('./aiChatbotClient');
+const chatbotAI = require('./chatbotAI');
 const fallbackExplanationService = require('./relationshipExplanationService');
 
 function hasUsableEvidence(evidence) {
@@ -11,7 +11,7 @@ async function buildExplanation({ relation, path, evidence } = {}) {
         return { explanation: fallback, aiUsed: false, source: 'rule_explanation' };
     }
 
-    const result = await aiChatbotClient.explainRelationship({
+    const result = await chatbotAI.explainRelationship({
         relation: relation?.relationshipLabel || relation?.relation || relation,
         path: path || relation?.relationshipPath || [],
         evidence,

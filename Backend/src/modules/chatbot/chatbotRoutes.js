@@ -8,6 +8,7 @@ const { chatbotRateLimit } = require('./chatbotSecurity');
 router.use(verifyToken, checkRole(['admin', 'manager', 'member']), chatbotRateLimit);
 
 router.post('/ask', chatbotController.ask);
+router.post('/message', chatbotController.ask);
 router.post('/voice', chatbotController.voice);
 router.get('/history', chatbotController.history);
 router.get('/suggestions', chatbotController.suggestions);

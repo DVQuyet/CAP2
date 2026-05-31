@@ -1,10 +1,17 @@
 const VALID_INTENTS = new Set([
     'relationship_expression',
+    'relationship_query',
     'find_relationship',
     'list_children',
     'find_spouse',
     'self_identity',
     'family_analytics',
+    'person_info',
+    'clan_history',
+    'memories_stories',
+    'events_upcoming',
+    'stats_count',
+    'general_chat',
 ]);
 
 const VALID_EDGES = new Set([
@@ -24,11 +31,36 @@ const VALID_EDGES = new Set([
     'sibling',
     'adopted_child',
     'step_child',
+    'grandfather',
+    'grandmother',
+    'grandson',
+    'granddaughter',
+    'uncle_paternal',
+    'aunt_paternal',
+    'uncle_maternal',
+    'aunt_maternal',
+    'nephew',
+    'niece',
+    'cousin',
 ]);
 
 const EDGE_NORMALIZATION = {
     husband: 'spouse',
     wife: 'spouse',
+};
+
+const EDGE_EXPANSION = {
+    grandfather: ['parent', 'father'],
+    grandmother: ['parent', 'mother'],
+    grandson: ['son', 'son'],
+    granddaughter: ['child', 'daughter'],
+    uncle_paternal: ['father', 'younger_brother'],
+    aunt_paternal: ['father', 'younger_sister'],
+    uncle_maternal: ['mother', 'younger_brother'],
+    aunt_maternal: ['mother', 'younger_sister'],
+    nephew: ['sibling', 'son'],
+    niece: ['sibling', 'daughter'],
+    cousin: ['parent', 'sibling', 'child'],
 };
 
 function parseJson(value) {
@@ -49,7 +81,12 @@ function normalizeEdge(edge) {
 
 function normalizeSteps(value) {
     if (!Array.isArray(value)) return [];
-    return value.map(normalizeEdge).filter(Boolean);
+    return value
+        .flatMap((edge) => {
+            const normalized = normalizeEdge(edge);
+            return EDGE_EXPANSION[normalized] || [normalized];
+        })
+        .filter(Boolean);
 }
 
 function validatePlannerOutput(rawOutput) {
@@ -65,11 +102,16 @@ function validatePlannerOutput(rawOutput) {
     const plan = {
         intent: output.intent,
         confidence: Number.isFinite(Number(output.confidence)) ? Number(output.confidence) : null,
-        entities: output.entities && typeof output.entities === 'object' ? output.entities : {},
+        entities: Array.isArray(output.entities)
+            ? output.entities
+            : output.entities && typeof output.entities === 'object'
+                ? output.entities
+                : [],
+        subtype: output.subtype || null,
         ast: output.ast && typeof output.ast === 'object' ? output.ast : null,
     };
 
-    if (plan.intent === 'relationship_expression') {
+    if (plan.intent === 'relationship_expression' || plan.intent === 'relationship_query') {
         const ast = plan.ast || {};
         const base = ast.base === 'current_focus' || ast.base === 'selected_person' ? ast.base : 'me';
         const steps = normalizeSteps(ast.steps || output.steps || output.expression || output.chain);

@@ -444,7 +444,7 @@ FamilyTreeEditor
 -> nhập text hoặc voice transcript
 -> extractGenealogyAI
 -> Backend /api/ai/genealogy/extract
--> AI-server /genealogy/extract
+-> Backend gọi Groq trực tiếp
 -> members/relationships nháp
 -> người dùng chỉnh sửa
 -> save vào cây qua createPersonAPI/linkRelationsAPI
@@ -490,6 +490,6 @@ npm run build
 - Nếu thêm relation type, cập nhật `treeRelations.js`, modal UI và backend validation.
 - Nếu thêm field person, cập nhật form create, inspector, normalize person, API payload và backend DB/controller.
 - Nếu sửa layout, kiểm tra `treeLayout.js`, `treeLines.js`, `treeStorage.js` và save batch.
-- Nếu sửa AI genealogy, kiểm tra `FamilyTreeEditor.jsx`, `aiServerService.js`, AI-server `/genealogy/extract` và flow save draft.
+- Nếu sửa AI genealogy, kiểm tra `FamilyTreeEditor.jsx`, `aiServerService.js`, Backend `/api/ai/genealogy/extract` và flow save draft.
 - Nếu thêm text UI, cập nhật cả `vi.json` và `en.json`.
 - Không commit `dist/`, `.env` hoặc artifact build.

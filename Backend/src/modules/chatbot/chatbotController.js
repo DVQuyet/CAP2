@@ -7,6 +7,8 @@ const queryPlanner = require('./queryPlannerService');
 const confidenceService = require('./relationshipConfidenceService');
 const relationshipExplanationAI = require('./relationshipExplanationAI');
 const relationshipSuggestionService = require('./relationshipSuggestionService');
+const chatbotAI = require('./chatbotAI');
+const { extractKeywords } = require('./extractKeywords');
 const { sanitizeMessage, looksLikePromptInjection } = require('./chatbotSecurity');
 const { parseRelationshipExpression } = require('./relationshipQueryParser');
 const { resolveRelationshipExpression } = require('./relationshipExpressionResolver');
@@ -132,6 +134,142 @@ async function getOrCreateChatbotConversation(accountId) {
         [accountId, 'AI Family Assistant']
     );
     return created.insertId;
+}
+
+async function queryOptional(sql, params = []) {
+    try {
+        const [rows] = await db.query(sql, params);
+        return rows;
+    } catch (error) {
+        if (['ER_NO_SUCH_TABLE', 'ER_BAD_FIELD_ERROR', 'ER_FT_MATCHING_KEY_NOT_FOUND'].includes(error.code)) return [];
+        throw error;
+    }
+}
+
+async function loadChatbotContext({ clanId, currentMemberId, conversationId, message }) {
+    const [clanInfo] = await queryOptional(
+        'SELECT id, clan_name, history, hall_address FROM clans WHERE id = ? LIMIT 1',
+        [clanId]
+    );
+    const [userProfile] = await queryOptional(
+        `SELECT id, display_name, gender, generation, branch,
+                birth_date, death_date, is_living, address, hometown, bio
+         FROM people WHERE id = ? LIMIT 1`,
+        [currentMemberId]
+    );
+    const recentMemories = await queryOptional(
+        `SELECT title, content, created_at
+         FROM family_memories
+         WHERE clan_id = ? AND status = 'approved'
+           AND visibility = 'clan'
+         ORDER BY created_at DESC LIMIT 5`,
+        [clanId]
+    );
+    const keywords = extractKeywords(message);
+    const relevantTranscripts = keywords
+        ? await queryOptional(
+            `SELECT transcript
+             FROM recordings
+             WHERE clan_id = ? AND status = 'completed'
+               AND MATCH(transcript) AGAINST (? IN BOOLEAN MODE)
+             LIMIT 3`,
+            [clanId, keywords]
+        )
+        : [];
+    let history = [];
+    if (conversationId && await memberSearch.tableExists('chatbot_messages')) {
+        const columns = await getTableColumns('chatbot_messages');
+        const senderSelect = columns.has('role')
+            ? "CASE WHEN role = 'assistant' THEN 'bot' ELSE role END AS sender"
+            : columns.has('sender')
+                ? 'sender'
+                : "'user' AS sender";
+        history = (await queryOptional(
+            `SELECT ${senderSelect}, message, intent
+             FROM chatbot_messages
+             WHERE conversation_id = ?
+             ORDER BY created_at DESC, id DESC
+             LIMIT 10`,
+            [conversationId]
+        )).reverse();
+    }
+
+    return {
+        clanInfo: clanInfo || {},
+        userProfile: userProfile || {},
+        recentMemories,
+        relevantTranscripts,
+        history,
+        keywords,
+    };
+}
+
+function normalizeShortcutMessage(message) {
+    return String(message || '')
+        .trim()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/g, 'd')
+        .replace(/[!?.~,;:]+/g, '')
+        .replace(/\s+/g, ' ');
+}
+
+function isCommonChatShortcut(message) {
+    const text = normalizeShortcutMessage(message);
+    if (!text) return false;
+    return /^(hi|hello|hey|alo|ok|okay|thanks|thank you|cam on|chao|xin chao|u|uh|um|vang|da|duoc|roi)(\s+(ban|anh|chi|em|toi|nhe|nha|a))?$/.test(text);
+}
+
+function buildSuggestedQuestions(userProfile = {}, clanInfo = {}) {
+    const displayName = String(userProfile.display_name || '').trim();
+    const clanName = String(clanInfo.clan_name || '').trim();
+    return [
+        displayName ? `${displayName} là đời thứ mấy trong gia phả?` : 'Tôi là đời thứ mấy trong gia phả?',
+        'Ai là cha mẹ của tôi?',
+        clanName ? `Lịch sử dòng họ ${clanName} có gì?` : 'Lịch sử dòng họ có gì?',
+        'Gia phả hiện có bao nhiêu thành viên?',
+    ];
+}
+
+function buildGreetingReply(userProfile = {}, clanInfo = {}) {
+    const displayName = String(userProfile.display_name || '').trim();
+    const clanName = String(clanInfo.clan_name || '').trim();
+    const hello = displayName ? `Chào ${displayName}.` : 'Chào bạn.';
+    const scope = clanName ? ` trong dòng họ ${clanName}` : '';
+    return `${hello} Tôi có thể giúp bạn tra quan hệ, tìm thông tin thành viên, xem lịch sử, kỷ niệm và thống kê gia phả${scope}.`;
+}
+
+async function maybeGenerateConversationTitle(conversationId) {
+    if (!conversationId || !(await memberSearch.tableExists('chatbot_messages'))) return;
+    const [conversationRows] = await queryOptional('SELECT title FROM conversations WHERE id = ? LIMIT 1', [conversationId]);
+    const currentTitle = String(conversationRows?.title || '').trim();
+    if (currentTitle && currentTitle !== 'AI Family Assistant') return;
+
+    const columns = await getTableColumns('chatbot_messages');
+    const [countRow] = await queryOptional('SELECT COUNT(*) AS total FROM chatbot_messages WHERE conversation_id = ?', [conversationId]);
+    const total = Number(countRow?.total || 0);
+    if (total < 2 || total > 4) return;
+
+    const senderSelect = columns.has('role')
+        ? "CASE WHEN role = 'assistant' THEN 'bot' ELSE role END AS sender"
+        : columns.has('sender')
+            ? 'sender'
+            : "'user' AS sender";
+    const rows = await queryOptional(
+        `SELECT ${senderSelect}, message
+         FROM chatbot_messages
+         WHERE conversation_id = ?
+         ORDER BY created_at ASC, id ASC
+         LIMIT 2`,
+        [conversationId]
+    );
+    const messages = rows.map((row) => row.message).filter(Boolean);
+    if (messages.length < 2) return;
+    const result = await chatbotAI.generateConversationTitle({ messages });
+    const title = String(result?.data?.title || '').trim().slice(0, 255);
+    if (!result.success || !title) return;
+    await queryOptional('UPDATE conversations SET title = ? WHERE id = ?', [title, conversationId]);
 }
 
 function publicRelationPayload(payload) {
@@ -482,6 +620,7 @@ async function handleRelationshipExpression({ clanId, currentMemberId, message }
 
 async function handlePlannedRelationshipExpression({ clanId, currentMemberId, message, parsed, memory, planner }) {
     const graph = await relationshipEngine.loadClanGraph(clanId);
+    const responseIntent = parsed.intent || 'relationship_query';
     const base = parsed?.ast?.base || 'me';
     const focusId = toPositiveId(memory?.currentFocusMember?.id || memory?.lastMentionedPersonId);
     const sourcePersonId = base === 'current_focus' ? focusId : currentMemberId;
@@ -490,7 +629,7 @@ async function handlePlannedRelationshipExpression({ clanId, currentMemberId, me
         return {
             success: false,
             code: 'RELATIONSHIP_BASE_NOT_FOUND',
-            intent: 'relationship_expression',
+            intent: responseIntent,
             answer: 'TÃ´i chÆ°a biáº¿t báº¡n Ä‘ang nháº¯c tá»›i ngÆ°á»i nÃ o. Vui lÃ²ng nÃªu tÃªn ngÆ°á»i Ä‘Ã³.',
             confidence: 0,
             planner,
@@ -515,7 +654,7 @@ async function handlePlannedRelationshipExpression({ clanId, currentMemberId, me
         return {
             success: false,
             error: 'RELATIONSHIP_NOT_FOUND',
-            intent: 'relationship_expression',
+            intent: responseIntent,
             answer: 'Theo dá»¯ liá»‡u gia pháº£ hiá»‡n táº¡i, tÃ´i chÆ°a tÃ¬m tháº¥y ngÆ°á»i khá»›p vá»›i quan há»‡ báº¡n há»i.',
             confidence: 0,
             planner,
@@ -531,7 +670,7 @@ async function handlePlannedRelationshipExpression({ clanId, currentMemberId, me
     if (resolved.needsClarification) {
         return {
             success: true,
-            intent: 'relationship_expression',
+            intent: responseIntent,
             answer: `TÃ´i tÃ¬m tháº¥y nhiá»u ngÆ°á»i khá»›p vá»›i quan há»‡ nÃ y: ${formatPeopleList(people)}. Vui lÃ²ng chá»n má»™t ngÆ°á»i cá»¥ thá»ƒ.`,
             confidence: Math.min(parsed.confidence || 0.65, 0.7),
             needsClarification: true,
@@ -550,7 +689,7 @@ async function handlePlannedRelationshipExpression({ clanId, currentMemberId, me
         return {
             success: false,
             error: 'RELATIONSHIP_NOT_FOUND',
-            intent: 'relationship_expression',
+            intent: responseIntent,
             answer: 'Theo dá»¯ liá»‡u gia pháº£ hiá»‡n táº¡i, tÃ´i chÆ°a xÃ¡c minh Ä‘Æ°á»£c Ä‘Æ°á»ng quan há»‡ nÃ y trong gia pháº£.',
             confidence: 0,
             planner,
@@ -581,7 +720,7 @@ async function handlePlannedRelationshipExpression({ clanId, currentMemberId, me
 
     return {
         success: true,
-        intent: 'relationship_expression',
+        intent: responseIntent,
         answer: explanation || `Theo dá»¯ liá»‡u gia pháº£ hiá»‡n táº¡i, ${relation.targetName} lÃ  ${relation.relationshipLabel} cá»§a ${sourceName}.`,
         relation: relation.relationshipLabel,
         confidence,
@@ -604,6 +743,192 @@ async function handlePlannedRelationshipExpression({ clanId, currentMemberId, me
             plannerUsed: planner?.source === 'llm_planner' && planner.accepted,
             explanationUsed: Boolean(aiExplanation.aiUsed),
         },
+    };
+}
+
+function firstEntity(plan) {
+    if (Array.isArray(plan?.entities)) return plan.entities.find(Boolean) || null;
+    if (plan?.entities && typeof plan.entities === 'object') {
+        return plan.entities.name || plan.entities.targetName || plan.entities.personName || null;
+    }
+    return null;
+}
+
+function formatDateOnly(value) {
+    if (!value) return null;
+    if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString().slice(0, 10);
+    return String(value).slice(0, 10);
+}
+
+async function explainResolvedIntent({ intent, message, resolvedData, context }) {
+    const result = await chatbotAI.explainRelationship({
+        intent,
+        userMessage: message,
+        resolvedData,
+        clanContext: {
+            clan_name: context.clanInfo?.clan_name,
+            history: context.clanInfo?.history,
+            hall_address: context.clanInfo?.hall_address,
+        },
+        userProfile: context.userProfile || {},
+        recentMemories: context.recentMemories || [],
+        relevantTranscripts: context.relevantTranscripts || [],
+        history: context.history || [],
+    });
+    const explanation = String(result?.data?.explanation || '').trim();
+    if (result.success && result.data?.success && explanation) return { explanation, aiUsed: true };
+    return { explanation: null, aiUsed: false };
+}
+
+async function handlePersonInfoIntent({ clanId, currentMemberId, message, parsed, context, planner }) {
+    const entity = firstEntity(parsed);
+    let rows = [];
+    if (entity) {
+        const resolved = await memberSearch.resolvePerson({ clanId, names: [entity], limit: 3 });
+        if (resolved.status === 'resolved') rows = [resolved.person];
+        else rows = resolved.candidates || [];
+    } else {
+        const person = await relationshipEngine.getPerson(currentMemberId, { clanId });
+        if (person) rows = [person];
+    }
+
+    const ids = rows.map((row) => toPositiveId(row.id)).filter(Boolean).slice(0, 3);
+    const profiles = ids.length
+        ? await queryOptional(
+            `SELECT id, display_name, gender, generation, branch,
+                    birth_date, death_date, is_living, address, hometown, bio, note
+             FROM people
+             WHERE clan_id = ? AND id IN (${ids.map(() => '?').join(',')})`,
+            [clanId, ...ids]
+        )
+        : [];
+    const resolvedData = { type: 'person_profile', data: profiles, entity: entity || null, subtype: parsed.subtype || null };
+    const ai = await explainResolvedIntent({ intent: parsed.intent, message, resolvedData, context });
+    const fallback = profiles.length
+        ? profiles.map((person) => {
+            const details = [
+                person.generation ? `Ä‘á»i thá»© ${person.generation}` : null,
+                person.branch ? `chi ${person.branch}` : null,
+                person.birth_date ? `sinh ngÃ y ${formatDateOnly(person.birth_date)}` : null,
+                person.hometown ? `quÃª quÃ¡n ${person.hometown}` : null,
+            ].filter(Boolean).join(', ');
+            return `${person.display_name || 'ThÃ nh viÃªn'}${details ? `: ${details}` : ''}.`;
+        }).join(' ')
+        : 'TÃ´i chÆ°a tÃ¬m tháº¥y thÃ´ng tin ngÆ°á»i nÃ y trong gia pháº£.';
+    return {
+        success: true,
+        intent: parsed.intent,
+        answer: ai.explanation || fallback,
+        confidence: profiles.length ? (parsed.confidence || 0.75) : 0.35,
+        source: 'database',
+        planner,
+        resolvedData,
+        people: profiles.map((person) => ({ id: person.id, name: person.display_name })),
+        ai: { plannerUsed: planner?.source === 'llm_planner' && planner.accepted, explanationUsed: ai.aiUsed },
+    };
+}
+
+async function handleClanHistoryIntent({ message, parsed, context, planner }) {
+    const resolvedData = { type: 'clan_info', data: context.clanInfo || {} };
+    const ai = await explainResolvedIntent({ intent: parsed.intent, message, resolvedData, context });
+    const clanName = context.clanInfo?.clan_name || 'dÃ²ng há»';
+    const history = context.clanInfo?.history || 'Hiá»‡n chÆ°a cÃ³ thÃ´ng tin lá»‹ch sá»­ dÃ²ng há» Ä‘Æ°á»£c ghi nháº­n.';
+    return {
+        success: true,
+        intent: parsed.intent,
+        answer: ai.explanation || `${clanName}: ${history}`,
+        confidence: context.clanInfo?.history ? (parsed.confidence || 0.8) : 0.45,
+        source: 'database',
+        planner,
+        resolvedData,
+        ai: { plannerUsed: planner?.source === 'llm_planner' && planner.accepted, explanationUsed: ai.aiUsed },
+    };
+}
+
+async function handleMemoriesIntent({ message, parsed, context, planner }) {
+    const resolvedData = { type: 'memories', data: context.recentMemories || [] };
+    const ai = await explainResolvedIntent({ intent: parsed.intent, message, resolvedData, context });
+    const fallback = context.recentMemories?.length
+        ? context.recentMemories.map((item) => `${item.title}: ${String(item.content || '').slice(0, 180)}`).join('\n')
+        : 'Hiá»‡n chÆ°a cÃ³ ká»· niá»‡m gia Ä‘Ã¬nh phÃ¹ há»£p Ä‘Æ°á»£c ghi nháº­n.';
+    return {
+        success: true,
+        intent: parsed.intent,
+        answer: ai.explanation || fallback,
+        confidence: context.recentMemories?.length ? (parsed.confidence || 0.78) : 0.42,
+        source: 'database',
+        planner,
+        resolvedData,
+        ai: { plannerUsed: planner?.source === 'llm_planner' && planner.accepted, explanationUsed: ai.aiUsed },
+    };
+}
+
+async function handleStatsIntent({ clanId, message, parsed, context, planner }) {
+    const stats = await queryOptional(
+        `SELECT generation, COUNT(*) AS count,
+                SUM(gender = 1) AS male_count,
+                SUM(gender = 2) AS female_count,
+                SUM(is_living = 1) AS living_count
+         FROM people
+         WHERE clan_id = ?
+         GROUP BY generation
+         ORDER BY generation`,
+        [clanId]
+    );
+    const resolvedData = { type: 'statistics', data: stats };
+    const ai = await explainResolvedIntent({ intent: parsed.intent, message, resolvedData, context });
+    const total = stats.reduce((sum, row) => sum + Number(row.count || 0), 0);
+    return {
+        success: true,
+        intent: parsed.intent,
+        answer: ai.explanation || `Gia pháº£ hiá»‡n cÃ³ ${total} thÃ nh viÃªn trong cÃ¡c Ä‘á»i Ä‘Ã£ ghi nháº­n.`,
+        confidence: stats.length ? (parsed.confidence || 0.8) : 0.4,
+        source: 'database',
+        planner,
+        resolvedData,
+        ai: { plannerUsed: planner?.source === 'llm_planner' && planner.accepted, explanationUsed: ai.aiUsed },
+    };
+}
+
+async function handleEventsIntent({ clanId, message, parsed, context, planner }) {
+    const events = await queryOptional(
+        `SELECT title, event_date, start_date, end_date, description
+         FROM events
+         WHERE clan_id = ?
+           AND (event_date >= CURDATE() OR start_date >= CURDATE())
+         ORDER BY COALESCE(event_date, start_date) ASC
+         LIMIT 5`,
+        [clanId]
+    );
+    const resolvedData = { type: 'events_upcoming', data: events };
+    const ai = await explainResolvedIntent({ intent: parsed.intent, message, resolvedData, context });
+    const fallback = events.length
+        ? events.map((event) => `${event.title} (${formatDateOnly(event.event_date || event.start_date) || 'chÆ°a rÃµ ngÃ y'})`).join(', ')
+        : 'Hiá»‡n chÆ°a cÃ³ sá»± kiá»‡n sáº¯p tá»›i Ä‘Æ°á»£c ghi nháº­n.';
+    return {
+        success: true,
+        intent: parsed.intent,
+        answer: ai.explanation || fallback,
+        confidence: events.length ? (parsed.confidence || 0.75) : 0.4,
+        source: 'database',
+        planner,
+        resolvedData,
+        ai: { plannerUsed: planner?.source === 'llm_planner' && planner.accepted, explanationUsed: ai.aiUsed },
+    };
+}
+
+async function handleGeneralChatIntent({ message, parsed, context, planner }) {
+    const resolvedData = { type: 'general', data: null };
+    const ai = await explainResolvedIntent({ intent: parsed.intent, message, resolvedData, context });
+    return {
+        success: true,
+        intent: parsed.intent,
+        answer: ai.explanation || 'ChÃ o báº¡n, tÃ´i cÃ³ thá»ƒ giÃºp tra quan há»‡, thÃ´ng tin thÃ nh viÃªn, ká»· niá»‡m vÃ  lá»‹ch sá»­ dÃ²ng há».',
+        confidence: parsed.confidence || 0.6,
+        source: 'assistant',
+        planner,
+        resolvedData,
+        ai: { plannerUsed: planner?.source === 'llm_planner' && planner.accepted, explanationUsed: ai.aiUsed },
     };
 }
 
@@ -798,6 +1123,71 @@ exports.ask = async (req, res) => {
             clanId,
         });
         const conversationMemory = getConversationMemory(memorySessionId);
+        const conversationId = body.conversationId || body.conversation_id || (accountId ? await getOrCreateChatbotConversation(accountId).catch(() => null) : null);
+        const chatbotContext = await loadChatbotContext({
+            clanId,
+            currentMemberId,
+            conversationId,
+            message,
+        });
+
+        if (isCommonChatShortcut(message)) {
+            const suggestedQuestions = buildSuggestedQuestions(chatbotContext.userProfile, chatbotContext.clanInfo);
+            responsePayload = {
+                success: true,
+                intent: 'general_chat',
+                answer: buildGreetingReply(chatbotContext.userProfile, chatbotContext.clanInfo),
+                reply: buildGreetingReply(chatbotContext.userProfile, chatbotContext.clanInfo),
+                suggestedQuestions,
+                suggestions: suggestedQuestions.map((text) => ({ type: 'quick_question', text })),
+                confidence: 1,
+                source: 'rule_shortcut',
+                planner: {
+                    source: 'rule_shortcut',
+                    accepted: true,
+                    aiServerSkipped: true,
+                },
+                ai: {
+                    plannerUsed: false,
+                    explanationUsed: false,
+                },
+            };
+
+            await storeChatbotMessage({
+                conversationId,
+                clanId,
+                accountId,
+                currentMemberId,
+                role: 'user',
+                message,
+                intent: responsePayload.intent,
+                confidence: responsePayload.confidence,
+                metadata: { planner: responsePayload.planner },
+            });
+            await storeChatbotMessage({
+                conversationId,
+                clanId,
+                accountId,
+                currentMemberId,
+                role: 'assistant',
+                message: responsePayload.answer,
+                intent: responsePayload.intent,
+                confidence: responsePayload.confidence,
+                metadata: responsePayload,
+            });
+            if (conversationId) {
+                await maybeGenerateConversationTitle(conversationId).catch(() => {});
+            }
+            if (req.app?.locals?.emitToAccount && accountId) {
+                req.app.locals.emitToAccount(accountId, 'chatbot_answered', {
+                    clanId,
+                    currentMemberId,
+                    intent: responsePayload.intent,
+                    confidence: responsePayload.confidence,
+                });
+            }
+            return res.json(responsePayload);
+        }
 
         const planning = await queryPlanner.planQuery({
             message,
@@ -805,6 +1195,14 @@ exports.ask = async (req, res) => {
             userId: accountId || currentMemberId,
             clanId,
             currentMemberId,
+            history: chatbotContext.history,
+            userProfile: chatbotContext.userProfile,
+            clanContext: {
+                clan_name: chatbotContext.clanInfo?.clan_name,
+                history: chatbotContext.clanInfo?.history,
+                hall_address: chatbotContext.clanInfo?.hall_address,
+            },
+            forceAI: true,
         });
         const parsed = planning.plan;
         const planner = planning.planner;
@@ -813,7 +1211,7 @@ exports.ask = async (req, res) => {
             parsed.entities.targetPersonId = explicitTargetPersonId;
         }
         await storeChatbotMessage({
-            conversationId: body.conversationId || body.conversation_id,
+            conversationId,
             clanId,
             accountId,
             currentMemberId,
@@ -849,6 +1247,27 @@ exports.ask = async (req, res) => {
                 memory: conversationMemory,
                 planner,
             });
+        } else if (parsed.intent === 'relationship_query' && parsed.ast?.steps?.length) {
+            responsePayload = await handlePlannedRelationshipExpression({
+                clanId,
+                currentMemberId,
+                message,
+                parsed,
+                memory: conversationMemory,
+                planner,
+            });
+        } else if (parsed.intent === 'person_info') {
+            responsePayload = await handlePersonInfoIntent({ clanId, currentMemberId, message, parsed, context: chatbotContext, planner });
+        } else if (parsed.intent === 'clan_history') {
+            responsePayload = await handleClanHistoryIntent({ message, parsed, context: chatbotContext, planner });
+        } else if (parsed.intent === 'memories_stories') {
+            responsePayload = await handleMemoriesIntent({ message, parsed, context: chatbotContext, planner });
+        } else if (parsed.intent === 'stats_count' || parsed.intent === 'family_analytics') {
+            responsePayload = await handleStatsIntent({ clanId, message, parsed, context: chatbotContext, planner });
+        } else if (parsed.intent === 'events_upcoming') {
+            responsePayload = await handleEventsIntent({ clanId, message, parsed, context: chatbotContext, planner });
+        } else if (parsed.intent === 'general_chat') {
+            responsePayload = await handleGeneralChatIntent({ message, parsed, context: chatbotContext, planner });
         } else {
             responsePayload = await handleCoreferenceFollowUp({ clanId, currentMemberId, message, memory: conversationMemory }) ||
                 await handleRelationshipExpression({ clanId, currentMemberId, message }) || {
@@ -883,7 +1302,7 @@ exports.ask = async (req, res) => {
         }
 
         await storeChatbotMessage({
-            conversationId: body.conversationId || body.conversation_id,
+            conversationId,
             clanId,
             accountId,
             currentMemberId,
@@ -893,6 +1312,10 @@ exports.ask = async (req, res) => {
             confidence: responsePayload.confidence,
             metadata: responsePayload,
         });
+
+        if (conversationId) {
+            await maybeGenerateConversationTitle(conversationId).catch(() => {});
+        }
 
         if (req.app?.locals?.emitToAccount && accountId) {
             req.app.locals.emitToAccount(accountId, 'chatbot_answered', {
