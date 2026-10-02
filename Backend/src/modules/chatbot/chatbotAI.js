@@ -2,7 +2,8 @@ const { callGroq } = require('./groqClient');
 const {
     buildPlanPrompt,
     buildExplainPrompt,
-    buildSuggestPrompt,
+    buildExplainData,
+    escapeDataBlock,
     buildTitlePrompt,
 } = require('./chatbotPrompts');
 
@@ -55,40 +56,22 @@ function fallbackExplain({ intent, relation, evidence, userProfile, clanContext 
     return '';
 }
 
-function fallbackSuggest(userProfile) {
-    const generation = userProfile?.generation || '';
-    return {
-        suggestions: [
-            'Dòng họ mình có lịch sử thế nào?',
-            generation ? `Đời thứ ${generation} có những ai?` : 'Tôi có bao nhiêu anh chị em họ?',
-            'Sắp có sự kiện gì của dòng họ không?',
-        ],
-    };
-}
-
-function normalizeSuggestions(result, userProfile) {
-    const fallback = fallbackSuggest(userProfile);
-    const raw = Array.isArray(result?.suggestions) ? result.suggestions : [];
-    const suggestions = raw
-        .map((item) => {
-            if (typeof item === 'string') return item.trim();
-            return String(item?.text || '').trim();
-        })
-        .filter(Boolean)
-        .slice(0, 4);
-    return { suggestions: suggestions.length ? suggestions : fallback.suggestions };
-}
-
 async function getPlan({ message, history, userProfile, clanContext } = {}) {
     const historyText = (history || [])
         .map((item) => `${item.sender === 'user' ? 'User' : 'Bot'}: ${item.message || ''}`)
         .join('\n');
-    const userContent = [
+    // Bộ phân tích chỉ cần biết người hỏi thuộc đời/chi nào; không gửi địa chỉ, ngày sinh, tiểu sử.
+    const profile = {
+        display_name: userProfile?.display_name || null,
+        gender: userProfile?.gender ?? null,
+        generation: userProfile?.generation ?? null,
+        branch: userProfile?.branch || null,
+    };
+    const userContent = escapeDataBlock([
         `Lịch sử hội thoại:\n${historyText || '(chưa có)'}`,
-        `Người dùng: ${JSON.stringify(userProfile || {})}`,
-        `Dòng họ: ${JSON.stringify(clanContext || {})}`,
-        `Câu hỏi mới: "${message || ''}"`,
-    ].join('\n\n');
+        `Người dùng: ${JSON.stringify(profile)}`,
+        `Dòng họ: ${clanContext?.clan_name || ''}`,
+    ].join('\n\n')) + `\n\n<cau_hoi>${escapeDataBlock(message || '')}</cau_hoi>`;
 
     const raw = await callGroq(buildPlanPrompt(), userContent, 500);
     if (!raw) return fallbackPlan(message);
@@ -108,34 +91,22 @@ async function getExplanation({
     recentMemories,
     history,
 } = {}) {
-    const systemPrompt = buildExplainPrompt(clanContext, userProfile, recentMemories);
-    let userContent = [
-        `Intent: ${intent || ''}`,
-        `Câu hỏi: "${userMessage || ''}"`,
-        `Dữ liệu đã tra cứu: ${JSON.stringify(resolvedData || {}, null, 2)}`,
-        `Quan hệ đã xác minh: ${JSON.stringify({ relation, path: path || [], evidence: evidence || {} }, null, 2)}`,
-        `Lịch sử hội thoại: ${JSON.stringify(history || [])}`,
+    const systemPrompt = buildExplainPrompt();
+    const lookup = [
+        `Loại câu hỏi: ${intent || ''}`,
+        `Dữ liệu đã tra cứu: ${JSON.stringify(resolvedData || {})}`,
+        `Quan hệ đã xác minh: ${JSON.stringify({ relation, path: path || [], evidence: evidence || {} })}`,
+        `Lịch sử hội thoại: ${JSON.stringify((history || []).slice(-6))}`,
     ].join('\n');
-
-    if (intent === 'general_chat') {
-        userContent = `Người dùng nói: "${userMessage || ''}"\nTrả lời thân thiện, ngắn gọn 1-2 câu.`;
-    }
+    const data = buildExplainData({ clanContext, userProfile, recentMemories, extra: intent === 'general_chat' ? '' : lookup });
+    const question = intent === 'general_chat'
+        ? `${escapeDataBlock(userMessage || '')}\n(Trả lời thân thiện, ngắn gọn 1-2 câu.)`
+        : escapeDataBlock(userMessage || '');
+    const userContent = `<du_lieu>\n${data}\n</du_lieu>\n\n<cau_hoi>${question}</cau_hoi>`;
 
     const raw = await callGroq(systemPrompt, userContent, 800);
     const text = String(raw || '').trim();
     return text || fallbackExplain({ intent, relation, evidence, userProfile, clanContext });
-}
-
-async function getSuggestions({ intent, resolvedData, relation, evidence, userProfile } = {}) {
-    if (intent === 'general_chat') return fallbackSuggest(userProfile);
-
-    const raw = await callGroq(
-        buildSuggestPrompt(intent, userProfile),
-        `Dữ liệu: ${JSON.stringify({ resolvedData: resolvedData || {}, relation, evidence: evidence || {} })}`,
-        300
-    );
-    const parsed = raw ? parseJsonObject(raw) : null;
-    return normalizeSuggestions(parsed, userProfile);
 }
 
 async function generateTitle(messages = []) {
@@ -163,17 +134,6 @@ async function explainRelationship(payload = {}) {
     return { success: Boolean(explanation), data: { success: Boolean(explanation), explanation } };
 }
 
-async function suggestFollowups(payload = {}) {
-    const data = await getSuggestions(payload);
-    return {
-        success: true,
-        data: {
-            success: true,
-            suggestions: (data.suggestions || []).map((text) => ({ type: 'followup', text })),
-        },
-    };
-}
-
 async function generateConversationTitle({ messages } = {}) {
     return { success: true, data: { title: await generateTitle(messages || []) } };
 }
@@ -181,10 +141,8 @@ async function generateConversationTitle({ messages } = {}) {
 module.exports = {
     getPlan,
     getExplanation,
-    getSuggestions,
     generateTitle,
     planChatbotQuery,
     explainRelationship,
-    suggestFollowups,
     generateConversationTitle,
 };
