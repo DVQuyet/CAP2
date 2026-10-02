@@ -3,6 +3,7 @@ const db = require('../../config/db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { getJwtSecret } = require('../../config/jwt');
+const { sendMail, isSmtpConfigured: isEmailConfigured } = require('../../shared/utils/email');
 const { getRoleName } = require('../../config/roles');
 const { ensureProfileCompletedColumn } = require('../../shared/utils/profileCompletion');
 const {
@@ -21,13 +22,6 @@ function normalizeEmail(s) {
     return String(s ?? '').trim().toLowerCase();
 }
 
-function isSmtpConfigured() {
-    const host = process.env.SMTP_HOST;
-    const user = process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASS;
-    return Boolean(host && user && pass);
-}
-
 async function sendResetEmail(to, code) {
     const subject = 'Mã đặt lại mật khẩu — Gia Phả Việt';
     const text = `Mã xác nhận đặt lại mật khẩu của bạn: ${code}\nMã có hiệu lực trong 15 phút. Nếu bạn không yêu cầu, bỏ qua email này.`;
@@ -38,31 +32,8 @@ async function sendResetEmail(to, code) {
       <p>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</p>
     `;
 
-    if (!isSmtpConfigured()) {
-        const err = new Error('SMTP_NOT_CONFIGURED');
-        err.code = 'SMTP_NOT_CONFIGURED';
-        throw err;
-    }
-
-    const host = process.env.SMTP_HOST;
-    const port = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 587;
-    const user = process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASS;
-    const from = process.env.SMTP_FROM || user || 'noreply@localhost';
-
-    let nodemailer;
-    try {
-        nodemailer = require('nodemailer');
-    } catch (e) {
-        const err = new Error('Chưa cài nodemailer. Mở terminal trong thư mục Backend và chạy: npm install');
-        err.code = 'SMTP_NO_MODULE';
-        throw err;
-    }
-
-    const transporter = nodemailer.createTransport({
-        host, port, secure: port === 465, auth: { user, pass },
-    });
-    await transporter.sendMail({ from, to, subject, text, html });
+    // Dùng chung bộ gửi mail: ưu tiên Resend (Render chặn cổng SMTP), dự phòng SMTP.
+    await sendMail({ to, subject, text, html });
 }
 
 let hasEnsuredArchivedMembersTable = false;
@@ -345,8 +316,8 @@ exports.requestPasswordReset = async (req, res) => {
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         return res.status(400).json({ success: false, message: 'Email không hợp lệ.' });
     }
-    if (!isSmtpConfigured()) {
-        return res.status(503).json({ success: false, message: 'Chức năng quên mật khẩu cần cấu hình SMTP trong file .env.' });
+    if (!isEmailConfigured()) {
+        return res.status(503).json({ success: false, message: 'Chức năng quên mật khẩu cần cấu hình RESEND_API_KEY hoặc SMTP trong file .env.' });
     }
 
     try {

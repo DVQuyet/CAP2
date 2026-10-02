@@ -50,7 +50,7 @@ function createAuthRateLimit({ name, windowMs = DEFAULT_WINDOW_MS, max = DEFAULT
 
 module.exports = {
     createAuthRateLimit,
-    loginRateLimit: createAuthRateLimit({ name: 'login', max: 20 }),
+    loginRateLimit: createAuthRateLimit({ name: 'login' }),
     registerRateLimit: createAuthRateLimit({ name: 'register', windowMs: 60 * 60 * 1000, max: 10 }),
     forgotPasswordRateLimit: createAuthRateLimit({ name: 'forgot-password', max: 5 }),
     resetPasswordRateLimit: createAuthRateLimit({ name: 'reset-password', max: 10 }),
