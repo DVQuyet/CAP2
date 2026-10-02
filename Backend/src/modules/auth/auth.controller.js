@@ -65,7 +65,6 @@ async function sendResetEmail(to, code) {
     await transporter.sendMail({ from, to, subject, text, html });
 }
 
-const passwordResetMemory = new Map();
 let hasEnsuredArchivedMembersTable = false;
 async function ensureArchivedMembersTable() {
     if (hasEnsuredArchivedMembersTable) return;
@@ -84,26 +83,45 @@ async function ensureArchivedMembersTable() {
     `);
     hasEnsuredArchivedMembersTable = true;
 }
-function setResetMemory(email, codeHash, expiresAt) {
-    passwordResetMemory.set(email, { code_hash: codeHash, expires_at: expiresAt });
-}
-function getResetMemory(email) {
-    return passwordResetMemory.get(email) || null;
-}
-function clearResetMemory(email) {
-    passwordResetMemory.delete(email);
-}
-async function clearResetToken(email, accountId = null) {
-    clearResetMemory(email);
-    try {
-        if (accountId) {
-            await db.query('DELETE FROM password_reset_tokens WHERE account_id = ?', [accountId]);
-        } else {
-            await db.query('DELETE FROM password_reset_tokens WHERE account_id = (SELECT id FROM accounts WHERE LOWER(TRIM(email)) = ? LIMIT 1)', [email]);
-        }
-    } catch (dbErr) {
-        if (dbErr?.code !== 'ER_NO_SUCH_TABLE') throw dbErr;
+const RESET_CODE_TTL_MS = 15 * 60 * 1000;
+const RESET_RESEND_COOLDOWN_MS = 60 * 1000;
+const RESET_MAX_FAILED_ATTEMPTS = 5;
+
+// Mã đặt lại lưu trong DB (không lưu bộ nhớ tạm, vì server khởi động lại sẽ làm mất mã).
+let resetTokensTableReady = null;
+function ensurePasswordResetTokensTable() {
+    if (!resetTokensTableReady) {
+        resetTokensTableReady = (async () => {
+            await db.query(`
+                CREATE TABLE IF NOT EXISTS password_reset_tokens (
+                    id INT NOT NULL AUTO_INCREMENT,
+                    account_id INT NOT NULL,
+                    code_hash VARCHAR(255) NOT NULL,
+                    expires_at DATETIME NOT NULL,
+                    failed_attempts INT NOT NULL DEFAULT 0,
+                    created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (id),
+                    UNIQUE KEY uk_password_reset_account (account_id),
+                    CONSTRAINT fk_password_reset_account FOREIGN KEY (account_id) REFERENCES accounts (id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            `);
+            const [columns] = await db.query(
+                `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'password_reset_tokens' AND COLUMN_NAME = 'failed_attempts'`
+            );
+            if (!columns.length) {
+                await db.query('ALTER TABLE password_reset_tokens ADD COLUMN failed_attempts INT NOT NULL DEFAULT 0');
+            }
+        })().catch((error) => {
+            resetTokensTableReady = null;
+            throw error;
+        });
     }
+    return resetTokensTableReady;
+}
+
+async function clearResetToken(accountId) {
+    await db.query('DELETE FROM password_reset_tokens WHERE account_id = ?', [accountId]);
 }
 
 exports.register = async (req, res) => {
@@ -332,29 +350,38 @@ exports.requestPasswordReset = async (req, res) => {
     }
 
     try {
+        await ensurePasswordResetTokensTable();
         const [rows] = await db.query('SELECT id FROM accounts WHERE LOWER(TRIM(email)) = ? LIMIT 1', [email]);
         if (rows.length === 0) return res.json({ success: true, message: GENERIC_FORGOT_MSG });
+        const accountId = rows[0].id;
+
+        // Chống spam email: mỗi tài khoản chỉ nhận một mã mới mỗi phút.
+        // Tính tuổi mã bằng đồng hồ của DB để không lệch múi giờ giữa DB và server.
+        const [existing] = await db.query(
+            'SELECT TIMESTAMPDIFF(SECOND, created_at, CURRENT_TIMESTAMP) AS age_seconds FROM password_reset_tokens WHERE account_id = ? LIMIT 1',
+            [accountId]
+        );
+        const ageSeconds = existing.length ? Number(existing[0].age_seconds) : null;
+        if (ageSeconds !== null && ageSeconds * 1000 < RESET_RESEND_COOLDOWN_MS) {
+            return res.json({ success: true, message: GENERIC_FORGOT_MSG });
+        }
 
         const code = generateOtp();
+        const codeHash = await bcrypt.hash(code, 10);
+        const expiresAt = new Date(Date.now() + RESET_CODE_TTL_MS);
+        await db.query(
+            `INSERT INTO password_reset_tokens (account_id, code_hash, expires_at, failed_attempts) VALUES (?, ?, ?, 0)
+             ON DUPLICATE KEY UPDATE code_hash = VALUES(code_hash), expires_at = VALUES(expires_at),
+                                     failed_attempts = 0, created_at = CURRENT_TIMESTAMP`,
+            [accountId, codeHash, expiresAt]
+        );
+
         try {
             await sendResetEmail(email, code);
         } catch (mailErr) {
             console.error('❌ sendResetEmail:', mailErr);
+            await clearResetToken(accountId);
             return res.status(500).json({ success: false, message: 'Không gửi được email. Kiểm tra SMTP và thử lại.' });
-        }
-
-        const codeHash = await bcrypt.hash(code, 10);
-        const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
-        setResetMemory(email, codeHash, expiresAt);
-
-        try {
-            await db.query(
-                `INSERT INTO password_reset_tokens (account_id, code_hash, expires_at) VALUES (?, ?, ?)
-                 ON DUPLICATE KEY UPDATE code_hash = VALUES(code_hash), expires_at = VALUES(expires_at), created_at = CURRENT_TIMESTAMP`,
-                [rows[0].id, codeHash, expiresAt]
-            );
-        } catch (dbErr) {
-            if (dbErr?.code !== 'ER_NO_SUCH_TABLE') throw dbErr;
         }
 
         return res.json({ success: true, message: GENERIC_FORGOT_MSG });
@@ -367,51 +394,48 @@ exports.requestPasswordReset = async (req, res) => {
 exports.resetPasswordWithCode = async (req, res) => {
     const email = normalizeEmail(req.body?.email);
     const code = String(req.body?.code ?? '').trim();
-    const newPassword = String(req.body?.new_password ?? '').trim();
+    // Không trim mật khẩu: đăng ký và đăng nhập so sánh nguyên văn.
+    const newPassword = String(req.body?.new_password ?? '');
 
-    if (!email || !code || !newPassword) return res.status(400).json({ success: false, message: 'Vui lòng nhập đủ thông tin.' });
+    if (!email || !code || !newPassword.trim()) return res.status(400).json({ success: false, message: 'Vui lòng nhập đủ thông tin.' });
     if (newPassword.length < 6) return res.status(400).json({ success: false, message: 'Mật khẩu mới tối thiểu 6 ký tự.' });
     if (!/^\d{6}$/.test(code)) return res.status(400).json({ success: false, message: 'Mã gồm 6 chữ số.' });
 
-    let code_hash = null; let expires_at = null;
-
     try {
-        try {
-            const [tokRows] = await db.query(
-                `SELECT prt.code_hash, prt.expires_at FROM password_reset_tokens prt
-                 JOIN accounts a ON prt.account_id = a.id
-                 WHERE LOWER(TRIM(a.email)) = ? LIMIT 1`,
-                [email]
-            );
-            if (tokRows.length) ({ code_hash, expires_at } = tokRows[0]);
-        } catch (dbErr) {
-            if (dbErr?.code !== 'ER_NO_SUCH_TABLE') throw dbErr;
-        }
+        await ensurePasswordResetTokensTable();
+        const [tokRows] = await db.query(
+            `SELECT prt.account_id, prt.code_hash, prt.expires_at, prt.failed_attempts
+             FROM password_reset_tokens prt
+             JOIN accounts a ON prt.account_id = a.id
+             WHERE LOWER(TRIM(a.email)) = ? LIMIT 1`,
+            [email]
+        );
+        const token = tokRows[0];
+        if (!token) return res.status(400).json({ success: false, message: 'Mã không hợp lệ hoặc đã hết hạn.' });
 
-        if (!code_hash || !expires_at) {
-            const mem = getResetMemory(email);
-            if (!mem) return res.status(400).json({ success: false, message: 'Mã không hợp lệ hoặc đã hết hạn.' });
-            ({ code_hash, expires_at } = mem);
-        }
-
-        if (new Date(expires_at) < new Date()) {
-            await clearResetToken(email);
+        if (new Date(token.expires_at) < new Date()) {
+            await clearResetToken(token.account_id);
             return res.status(400).json({ success: false, message: 'Mã đã hết hạn. Yêu cầu gửi mã mới.' });
         }
 
-        const ok = await bcrypt.compare(code, code_hash);
-        if (!ok) return res.status(400).json({ success: false, message: 'Mã xác nhận không đúng.' });
-
-        const hashed = await bcrypt.hash(newPassword, 10);
-        const [accRows] = await db.query('SELECT id FROM accounts WHERE LOWER(TRIM(email)) = ? LIMIT 1', [email]);
-        
-        if (accRows.length === 0) {
-            await clearResetToken(email);
-            return res.status(400).json({ success: false, message: 'Tài khoản không tồn tại.' });
+        const ok = await bcrypt.compare(code, token.code_hash);
+        if (!ok) {
+            // Mã 6 số chỉ có 1 triệu khả năng: hủy mã sau vài lần nhập sai để chặn dò mã.
+            const attempts = Number(token.failed_attempts || 0) + 1;
+            if (attempts >= RESET_MAX_FAILED_ATTEMPTS) {
+                await clearResetToken(token.account_id);
+                return res.status(400).json({ success: false, message: 'Nhập sai quá nhiều lần. Vui lòng yêu cầu mã mới.' });
+            }
+            await db.query('UPDATE password_reset_tokens SET failed_attempts = ? WHERE account_id = ?', [attempts, token.account_id]);
+            return res.status(400).json({
+                success: false,
+                message: `Mã xác nhận không đúng. Bạn còn ${RESET_MAX_FAILED_ATTEMPTS - attempts} lần thử.`,
+            });
         }
 
-        await db.query('UPDATE accounts SET password = ? WHERE id = ?', [hashed, accRows[0].id]);
-        await clearResetToken(email, accRows[0].id);
+        const hashed = await bcrypt.hash(newPassword, 10);
+        await db.query('UPDATE accounts SET password = ? WHERE id = ?', [hashed, token.account_id]);
+        await clearResetToken(token.account_id);
 
         return res.json({ success: true, message: 'Đặt lại mật khẩu thành công. Bạn có thể đăng nhập.' });
     } catch (error) {
@@ -419,3 +443,4 @@ exports.resetPasswordWithCode = async (req, res) => {
         return res.status(500).json({ success: false, message: 'Lỗi hệ thống. Thử lại sau.' });
     }
 };
+
