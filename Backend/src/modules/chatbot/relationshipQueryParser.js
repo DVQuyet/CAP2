@@ -1,11 +1,15 @@
 const BASE_TERMS = new Set(['toi', 'minh', 'em', 'con', 'chau']);
 
+// Xưng hô theo cách dùng phổ biến. Những từ không phân biệt được (bác, cậu, cô, dì)
+// dùng cạnh chung để trả về mọi người khớp rồi hỏi lại, thay vì đoán sai một người.
 const TERM_EDGE_MAP = new Map([
     ['cha', ['father']],
     ['bo', ['father']],
     ['ba', ['father']],
     ['me', ['mother']],
     ['ma', ['mother']],
+    ['bo me', ['parent']],
+    ['cha me', ['parent']],
     ['vo', ['spouse']],
     ['chong', ['spouse']],
     ['vo chong', ['spouse']],
@@ -20,14 +24,29 @@ const TERM_EDGE_MAP = new Map([
     ['anh', ['older_brother']],
     ['chi', ['older_sister']],
     ['em', ['younger_sibling']],
-    ['bac', ['father', 'older_brother']],
+    ['anh chi em', ['sibling']],
+    ['anh em', ['sibling']],
+    // Anh/chị/em của cha hoặc mẹ.
+    ['bac', ['parent', 'older_sibling']],
+    ['bac trai', ['parent', 'older_brother']],
+    ['bac gai', ['parent', 'older_sister']],
     ['chu', ['father', 'younger_brother']],
-    ['co', ['father', 'younger_sister']],
-    ['cau', ['mother', 'younger_brother']],
-    ['di', ['mother', 'younger_sister']],
+    ['co', ['father', 'sister']],
+    ['cau', ['mother', 'brother']],
+    ['di', ['mother', 'sister']],
+    ['thim', ['father', 'younger_brother', 'spouse']],
+    ['mo', ['mother', 'brother', 'spouse']],
+    // Con của anh chị em cha mẹ (anh/chị/em họ), chưa xét thứ bậc theo vai cha mẹ.
+    ['anh ho', ['parent', 'sibling', 'son']],
+    ['chi ho', ['parent', 'sibling', 'daughter']],
+    ['em ho', ['parent', 'sibling', 'child']],
+    ['anh chi em ho', ['parent', 'sibling', 'child']],
     ['con trai', ['son']],
     ['con gai', ['daughter']],
     ['con', ['child']],
+    ['chau noi', ['son', 'child']],
+    ['chau ngoai', ['daughter', 'child']],
+    ['chau', ['child', 'child']],
 ]);
 
 const SORTED_TERMS = [...TERM_EDGE_MAP.keys()].sort((a, b) => b.split(' ').length - a.split(' ').length);
@@ -59,8 +78,9 @@ function relationshipTermToEdges(term) {
 function stripQuestionIntent(text) {
     return text
         .replace(/^(ai la|cho toi hoi|toi hoi|xin hoi|hoi)\s+/g, '')
-        .replace(/\s+(la ai|ten gi|gom ai|la nhung ai)$/g, '')
+        .replace(/\s+(la ai|ten gi|ten la gi|gom ai|la nhung ai|gom nhung ai|co nhung ai)$/g, '')
         .replace(/\s+(goi toi la gi|goi toi bang gi)$/g, '')
+        .replace(/\s+la gi (cua|voi) (toi|minh)$/g, '')
         .trim();
 }
 

@@ -1,6 +1,7 @@
 const intentParser = require('./intentParserService');
 const { planChatbotQuery } = require('./chatbotAI');
 const { validatePlannerOutput } = require('./plannerValidatorService');
+const { parseRelationshipExpression } = require('./relationshipQueryParser');
 const db = require('../../config/db');
 
 const DETERMINISTIC_RULE_INTENTS = new Set([
@@ -72,6 +73,24 @@ async function planQuery({
             plan: rulePlan,
             planner: plannerMetadata('rule_parser', true),
         };
+    }
+
+    // Câu hỏi thuần xưng hô ("Chú tôi tên gì?", "Anh họ tôi là ai?") được giải bằng
+    // đồ thị gia phả, không cần gọi LLM.
+    if (!rulePlan.intent || rulePlan.intent === 'unknown') {
+        const expression = parseRelationshipExpression(message);
+        if (!expression.needsClarification) {
+            return {
+                plan: {
+                    intent: 'relationship_expression',
+                    confidence: expression.confidence,
+                    entities: {},
+                    ast: { base: 'me', steps: expression.chain },
+                    expression: expression.chain,
+                },
+                planner: plannerMetadata('rule_expression', true),
+            };
+        }
     }
 
     const aiRequest = {

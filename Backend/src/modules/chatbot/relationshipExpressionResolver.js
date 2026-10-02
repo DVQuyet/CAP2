@@ -1,4 +1,26 @@
-const { normalizeEdge } = require('./vietnameseKinshipRules');
+// Cạnh trong đồ thị đã mang giới tính và thứ bậc (older_brother, daughter...). Cạnh được hỏi
+// có thể cụ thể (older_brother) hoặc chung (sibling, brother, child). Cạnh dữ liệu chưa rõ
+// giới tính (older_sibling, child) vẫn được chấp nhận vì không mâu thuẫn với câu hỏi.
+const EDGE_ACCEPTS = {
+    parent: ['father', 'mother', 'parent'],
+    father: ['father', 'parent'],
+    mother: ['mother', 'parent'],
+    child: ['son', 'daughter', 'child'],
+    son: ['son', 'child'],
+    daughter: ['daughter', 'child'],
+    spouse: ['spouse', 'husband', 'wife'],
+    husband: ['spouse', 'husband'],
+    wife: ['spouse', 'wife'],
+    sibling: ['older_brother', 'younger_brother', 'older_sister', 'younger_sister', 'older_sibling', 'younger_sibling', 'sibling', 'half_sibling'],
+    brother: ['older_brother', 'younger_brother', 'older_sibling', 'younger_sibling', 'sibling'],
+    sister: ['older_sister', 'younger_sister', 'older_sibling', 'younger_sibling', 'sibling'],
+    older_sibling: ['older_brother', 'older_sister', 'older_sibling'],
+    younger_sibling: ['younger_brother', 'younger_sister', 'younger_sibling'],
+    older_brother: ['older_brother', 'older_sibling'],
+    younger_brother: ['younger_brother', 'younger_sibling'],
+    older_sister: ['older_sister', 'older_sibling'],
+    younger_sister: ['younger_sister', 'younger_sibling'],
+};
 
 function uniqueNumbers(values = []) {
     return [...new Set(values.map((value) => Number(value)).filter((value) => Number.isFinite(value) && value > 0))];
@@ -6,10 +28,8 @@ function uniqueNumbers(values = []) {
 
 function edgeMatches(edgeType, expectedType) {
     if (edgeType === expectedType) return true;
-    if (expectedType === 'child') return edgeType === 'son' || edgeType === 'daughter' || edgeType === 'child';
-    if (expectedType === 'parent') return edgeType === 'father' || edgeType === 'mother' || edgeType === 'parent';
-    if (expectedType === 'spouse') return edgeType === 'spouse';
-    return normalizeEdge(edgeType) === normalizeEdge(expectedType);
+    const accepted = EDGE_ACCEPTS[expectedType];
+    return Boolean(accepted && accepted.includes(edgeType));
 }
 
 function resolveRelationshipExpression(ast, context = {}) {
@@ -80,5 +100,7 @@ function resolveRelationshipExpression(ast, context = {}) {
 }
 
 module.exports = {
+    EDGE_ACCEPTS,
+    edgeMatches,
     resolveRelationshipExpression,
 };

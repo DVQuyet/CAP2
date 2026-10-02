@@ -601,7 +601,7 @@ if (isPaymentOlderThan24Hours(payment)) {
 
     return res.json({
       success: true,
-      message: 'XÃ¡c nháº­n thanh toÃ¡n SePay thÃ nh cÃ´ng.',
+      message: 'Xác nhận thanh toán SePay thành công.',
       purchase: {
         plan: purchase.planSnapshot,
         period_quantity: purchase.periodQuantity,

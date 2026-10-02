@@ -147,7 +147,7 @@ export default function Login({ isOpen, onClose, onLoginSuccess, onOpenRegister 
         </button>
       </form>
 
-      <div className="auth-divider"><span>Hoáº·c</span></div>
+      <div className="auth-divider"><span>Hoặc</span></div>
 
       <div className="social-login-actions">
         <button type="button" className="social-login-btn social-login-btn--google" onClick={() => handleSocialLogin("google")} title="Google">

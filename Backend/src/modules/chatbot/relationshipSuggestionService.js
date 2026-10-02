@@ -15,12 +15,12 @@ function normalizeSuggestion(item) {
 }
 
 function ruleBasedSuggestions({ relation } = {}) {
-    const targetName = relation?.targetName || relation?.targetPerson?.name || 'ngÆ°á»i nÃ y';
+    const targetName = relation?.targetName || relation?.targetPerson?.name || 'người này';
     return [
-        { type: 'explore_person', text: `${targetName} cÃ³ con lÃ  ai?` },
-        { type: 'explore_person', text: `Vá»£/chá»“ng cá»§a ${targetName} lÃ  ai?` },
-        { type: 'explore_generation', text: `${targetName} thuá»™c Ä‘á»i thá»© máº¥y?` },
-        { type: 'explore_branch', text: `NhÃ¡nh cá»§a ${targetName} gá»“m nhá»¯ng ai?` },
+        { type: 'explore_person', text: `${targetName} có con là ai?` },
+        { type: 'explore_person', text: `Vợ/chồng của ${targetName} là ai?` },
+        { type: 'explore_generation', text: `${targetName} thuộc đời thứ mấy?` },
+        { type: 'explore_branch', text: `Nhánh của ${targetName} gồm những ai?` },
     ];
 }
 

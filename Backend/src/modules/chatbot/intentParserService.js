@@ -300,16 +300,34 @@ function parseGeneration(message) {
     };
 }
 
+function parseAgeRanking(message) {
+    const normalized = normalizeText(stripQuestionNoise(message));
+    const oldest = /\b(lon tuoi nhat|cao tuoi nhat|gia nhat|nhieu tuoi nhat|cao nien nhat)\b/.test(normalized);
+    const youngest = /\b(nho tuoi nhat|tre nhat|it tuoi nhat|be nhat)\b/.test(normalized);
+    if (!oldest && !youngest) return null;
+    return {
+        intent: 'stats_count',
+        confidence: 0.86,
+        entities: { metric: oldest ? 'oldest_living' : 'youngest_living', generation: null },
+    };
+}
+
 function parseStatsCount(message) {
     const normalized = normalizeText(stripQuestionNoise(message));
     if (/\bthuoc\s+(?:doi|the he)\b/.test(normalized) && /\bmay\b/.test(normalized)) return null;
     const asksCount = /\b(co bao nhieu|bao nhieu|may|so luong|tong so|thong ke|dem)\b/.test(normalized);
-    const inFamilyScope = /\b(gia pha|dong ho|ho toc|thanh vien|nguoi|doi|the he|chi|nhanh)\b/.test(normalized);
+    const inFamilyScope = /\b(gia pha|dong ho|ho toc|thanh vien|nguoi|doi|the he|chi|nhanh|nam|nu|con song|da mat|qua doi)\b/.test(normalized);
     if (!asksCount || !inFamilyScope) return null;
 
     const generationMatch = normalized.match(/\b(?:doi|doi thu|the he|the he thu)\s*(?:thu\s*)?(\d{1,3})\b/);
     const generation = generationMatch ? Number(generationMatch[1]) : null;
-    const metric = /\b(chi|nhanh)\b/.test(normalized)
+    const metric = /\b(da mat|qua doi|da khuat|tu tran)\b/.test(normalized)
+        ? 'deceased_count'
+        : /\b(con song|dang song|con tai the)\b/.test(normalized)
+            ? 'living_count'
+            : /\b(nam va nu|nam nu|bao nhieu nam|bao nhieu nu|may nam|may nu|gioi tinh)\b/.test(normalized)
+                ? 'gender_count'
+                : /\b(chi|nhanh)\b/.test(normalized)
         ? 'branch_count'
         : /\b(doi|the he)\b/.test(normalized) && !generation
             ? 'generation_count'
@@ -351,7 +369,7 @@ function parseEventsUpcoming(message) {
 
 function parseMemoriesStories(message) {
     const normalized = normalizeText(stripQuestionNoise(message));
-    if (!/\b(ky niem|ki niem|cau chuyen|chuyen xua|hoi uc|gia truyen)\b/.test(normalized)) return null;
+    if (!/\b(ky niem|ki niem|cau chuyen|chuyen xua|hoi uc|gia truyen|ke chuyen)\b/.test(normalized)) return null;
     return {
         intent: 'memories_stories',
         confidence: 0.82,
@@ -423,6 +441,7 @@ function parse(message) {
         parseSpouse,
         parseParents,
         parseKinshipLookup,
+        parseAgeRanking,
         parseStatsCount,
         parseEventsUpcoming,
         parseMemoriesStories,

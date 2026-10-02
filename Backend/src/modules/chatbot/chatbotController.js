@@ -10,6 +10,7 @@ const relationshipSuggestionService = require('./relationshipSuggestionService')
 const chatbotAI = require('./chatbotAI');
 const { sanitizeMessage, looksLikePromptInjection } = require('./chatbotSecurity');
 const { parseRelationshipExpression } = require('./relationshipQueryParser');
+const { resolveKinshipReference } = require('./kinshipReferenceService');
 const { resolveRelationshipExpression } = require('./relationshipExpressionResolver');
 const {
     buildConversationSessionId,
@@ -314,7 +315,24 @@ function notFoundResponse(res, intent, name) {
     });
 }
 
-async function resolveNamedPerson(res, clanId, intent, names) {
+async function resolveNamedPerson(res, clanId, intent, names, currentMemberId = null) {
+    const kinship = await resolveKinshipReference({ clanId, currentMemberId, names });
+    if (kinship?.status === 'resolved') return kinship.person;
+    if (kinship?.status === 'ambiguous') {
+        ambiguityResponse(res, intent, kinship.candidates);
+        return null;
+    }
+    if (kinship?.status === 'not_found') {
+        res.status(404).json({
+            success: false,
+            code: 'PERSON_NOT_FOUND',
+            intent,
+            answer: `Theo dữ liệu gia phả hiện tại, tôi chưa tìm thấy ${kinship.label} của bạn.`,
+            confidence: 0,
+        });
+        return null;
+    }
+
     const result = await memberSearch.resolvePerson({ clanId, names });
     if (result.status === 'not_found') {
         notFoundResponse(res, intent, names);
@@ -341,7 +359,7 @@ async function handleFindRelationship({ res, clanId, currentMemberId, parsed }) 
     if (parsed.entities.source === 'selected_person' && parsed.entities.targetPersonId) {
         target = await relationshipEngine.getPerson(parsed.entities.targetPersonId, { clanId });
     } else if (Array.isArray(parsed.entities.targetName) && parsed.entities.targetName.length) {
-        target = await resolveNamedPerson(res, clanId, parsed.intent, parsed.entities.targetName);
+        target = await resolveNamedPerson(res, clanId, parsed.intent, parsed.entities.targetName, currentMemberId);
     }
     if (!target && parsed.entities.source === 'selected_person') {
         return {
@@ -381,10 +399,10 @@ async function handleFindRelationship({ res, clanId, currentMemberId, parsed }) 
     };
 }
 
-async function handleCompareRelationship({ res, clanId, parsed }) {
-    const personA = await resolveNamedPerson(res, clanId, parsed.intent, parsed.entities.personAName);
+async function handleCompareRelationship({ res, clanId, currentMemberId, parsed }) {
+    const personA = await resolveNamedPerson(res, clanId, parsed.intent, parsed.entities.personAName, currentMemberId);
     if (!personA) return null;
-    const personB = await resolveNamedPerson(res, clanId, parsed.intent, parsed.entities.personBName);
+    const personB = await resolveNamedPerson(res, clanId, parsed.intent, parsed.entities.personBName, currentMemberId);
     if (!personB) return null;
 
     const relation = await relationshipEngine.findRelationship(personA.id, personB.id, { clanId });
@@ -415,8 +433,8 @@ async function handleCompareRelationship({ res, clanId, parsed }) {
     };
 }
 
-async function handleListChildren({ res, clanId, parsed }) {
-    const target = await resolveNamedPerson(res, clanId, parsed.intent, parsed.entities.targetName);
+async function handleListChildren({ res, clanId, currentMemberId, parsed }) {
+    const target = await resolveNamedPerson(res, clanId, parsed.intent, parsed.entities.targetName, currentMemberId);
     if (!target) return null;
     const children = await relationshipEngine.getChildrenOf(target.id, { clanId });
     const targetName = relationshipEngine.personName(target);
@@ -432,8 +450,8 @@ async function handleListChildren({ res, clanId, parsed }) {
     };
 }
 
-async function handleFindSpouse({ res, clanId, parsed }) {
-    const target = await resolveNamedPerson(res, clanId, parsed.intent, parsed.entities.targetName);
+async function handleFindSpouse({ res, clanId, currentMemberId, parsed }) {
+    const target = await resolveNamedPerson(res, clanId, parsed.intent, parsed.entities.targetName, currentMemberId);
     if (!target) return null;
     const spouses = await relationshipEngine.getSpousesOf(target.id, { clanId });
     const targetName = relationshipEngine.personName(target);
@@ -461,7 +479,7 @@ async function handleFindParents({ res, clanId, currentMemberId, parsed }) {
     }
     const target = isSelfReferenceName(parsed.entities.targetName)
         ? await relationshipEngine.getPerson(currentMemberId, { clanId })
-        : await resolveNamedPerson(res, clanId, parsed.intent, parsed.entities.targetName);
+        : await resolveNamedPerson(res, clanId, parsed.intent, parsed.entities.targetName, currentMemberId);
     if (!target && isSelfReferenceName(parsed.entities.targetName)) {
         return {
             success: false,
@@ -535,7 +553,7 @@ async function handleFindGeneration({ res, clanId, currentMemberId, parsed }) {
         }
         person = await relationshipEngine.getPerson(currentMemberId, { clanId });
     } else {
-        person = await resolveNamedPerson(res, clanId, parsed.intent, parsed.entities.targetName);
+        person = await resolveNamedPerson(res, clanId, parsed.intent, parsed.entities.targetName, currentMemberId);
         if (!person) return null;
     }
 
@@ -666,7 +684,7 @@ async function handlePlannedRelationshipExpression({ clanId, currentMemberId, me
             success: false,
             code: 'RELATIONSHIP_BASE_NOT_FOUND',
             intent: responseIntent,
-            answer: 'TÃ´i chÆ°a biáº¿t báº¡n Ä‘ang nháº¯c tá»›i ngÆ°á»i nÃ o. Vui lÃ²ng nÃªu tÃªn ngÆ°á»i Ä‘Ã³.',
+            answer: 'Tôi chưa biết bạn đang nhắc tới người nào. Vui lòng nêu tên người đó.',
             confidence: 0,
             planner,
         };
@@ -691,7 +709,7 @@ async function handlePlannedRelationshipExpression({ clanId, currentMemberId, me
             success: false,
             error: 'RELATIONSHIP_NOT_FOUND',
             intent: responseIntent,
-            answer: 'Theo dá»¯ liá»‡u gia pháº£ hiá»‡n táº¡i, tÃ´i chÆ°a tÃ¬m tháº¥y ngÆ°á»i khá»›p vá»›i quan há»‡ báº¡n há»i.',
+            answer: 'Theo dữ liệu gia phả hiện tại, tôi chưa tìm thấy người khớp với quan hệ bạn hỏi.',
             confidence: 0,
             planner,
             relationshipExpression: ast,
@@ -707,7 +725,7 @@ async function handlePlannedRelationshipExpression({ clanId, currentMemberId, me
         return {
             success: true,
             intent: responseIntent,
-            answer: `TÃ´i tÃ¬m tháº¥y nhiá»u ngÆ°á»i khá»›p vá»›i quan há»‡ nÃ y: ${formatPeopleList(people)}. Vui lÃ²ng chá»n má»™t ngÆ°á»i cá»¥ thá»ƒ.`,
+            answer: `Tôi tìm thấy nhiều người khớp với quan hệ này: ${formatPeopleList(people)}. Vui lòng chọn một người cụ thể.`,
             confidence: Math.min(parsed.confidence || 0.65, 0.7),
             needsClarification: true,
             planner,
@@ -726,7 +744,7 @@ async function handlePlannedRelationshipExpression({ clanId, currentMemberId, me
             success: false,
             error: 'RELATIONSHIP_NOT_FOUND',
             intent: responseIntent,
-            answer: 'Theo dá»¯ liá»‡u gia pháº£ hiá»‡n táº¡i, tÃ´i chÆ°a xÃ¡c minh Ä‘Æ°á»£c Ä‘Æ°á»ng quan há»‡ nÃ y trong gia pháº£.',
+            answer: 'Theo dữ liệu gia phả hiện tại, tôi chưa xác minh được đường quan hệ này trong gia phả.',
             confidence: 0,
             planner,
             relationshipExpression: ast,
@@ -752,12 +770,12 @@ async function handlePlannedRelationshipExpression({ clanId, currentMemberId, me
         memory,
     });
     const explanation = aiExplanation.explanation || explanationService.explainRelationship(relation);
-    const sourceName = relation.sourceName || relationshipEngine.personName(graph.people.get(Number(sourcePersonId))) || 'báº¡n';
+    const sourceName = relation.sourceName || relationshipEngine.personName(graph.people.get(Number(sourcePersonId))) || 'bạn';
 
     return {
         success: true,
         intent: responseIntent,
-        answer: explanation || `Theo dá»¯ liá»‡u gia pháº£ hiá»‡n táº¡i, ${relation.targetName} lÃ  ${relation.relationshipLabel} cá»§a ${sourceName}.`,
+        answer: explanation || `Theo dữ liệu gia phả hiện tại, ${relation.targetName} là ${relation.relationshipLabel} của ${sourceName}.`,
         relation: relation.relationshipLabel,
         confidence,
         source: 'rule_engine',
@@ -792,7 +810,11 @@ function firstEntity(plan) {
 
 function formatDateOnly(value) {
     if (!value) return null;
-    if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString().slice(0, 10);
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+        // mysql2 trả cột DATE là nửa đêm giờ địa phương; toISOString() sẽ lùi 1 ngày ở múi giờ +7.
+        const pad = (number) => String(number).padStart(2, '0');
+        return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`;
+    }
     return String(value).slice(0, 10);
 }
 
@@ -856,7 +878,17 @@ async function explainResolvedIntent({ intent, message, resolvedData, context })
 async function handlePersonInfoIntent({ clanId, currentMemberId, message, parsed, context, planner }) {
     const entity = firstEntity(parsed);
     let rows = [];
-    if (entity) {
+    const kinship = entity
+        ? await resolveKinshipReference({
+            clanId,
+            currentMemberId,
+            names: [].concat(Array.isArray(parsed.entities) ? parsed.entities : entity),
+        })
+        : null;
+    if (kinship) {
+        if (kinship.status === 'resolved') rows = [kinship.person];
+        else if (kinship.status === 'ambiguous') rows = kinship.candidates;
+    } else if (entity) {
         const resolved = await memberSearch.resolvePerson({ clanId, names: [entity], limit: 3 });
         if (resolved.status === 'resolved') rows = [resolved.person];
         else rows = resolved.candidates || [];
@@ -880,14 +912,14 @@ async function handlePersonInfoIntent({ clanId, currentMemberId, message, parsed
     const fallback = profiles.length
         ? profiles.map((person) => {
             const details = [
-                person.generation ? `Ä‘á»i thá»© ${person.generation}` : null,
+                person.generation ? `đời thứ ${person.generation}` : null,
                 person.branch ? `chi ${person.branch}` : null,
-                person.birth_date ? `sinh ngÃ y ${formatDateOnly(person.birth_date)}` : null,
-                person.hometown ? `quÃª quÃ¡n ${person.hometown}` : null,
+                person.birth_date ? `sinh ngày ${formatDateOnly(person.birth_date)}` : null,
+                person.hometown ? `quê quán ${person.hometown}` : null,
             ].filter(Boolean).join(', ');
-            return `${person.display_name || 'ThÃ nh viÃªn'}${details ? `: ${details}` : ''}.`;
+            return `${person.display_name || 'Thành viên'}${details ? `: ${details}` : ''}.`;
         }).join(' ')
-        : 'TÃ´i chÆ°a tÃ¬m tháº¥y thÃ´ng tin ngÆ°á»i nÃ y trong gia pháº£.';
+        : 'Tôi chưa tìm thấy thông tin người này trong gia phả.';
     return {
         success: true,
         intent: parsed.intent,
@@ -945,7 +977,7 @@ async function handlePersonExistsIntent({ clanId, parsed, planner }) {
 }
 
 async function handleClanHistoryIntent({ message, parsed, context, planner }) {
-    const clanName = context.clanInfo?.clan_name || 'dÃ²ng há»';
+    const clanName = context.clanInfo?.clan_name || 'dòng họ';
     const history = String(context.clanInfo?.history || '').trim();
     return {
         success: true,
@@ -964,7 +996,7 @@ async function handleMemoriesIntent({ message, parsed, context, planner }) {
     const ai = await explainResolvedIntent({ intent: parsed.intent, message, resolvedData, context });
     const fallback = context.recentMemories?.length
         ? context.recentMemories.map((item) => `${item.title}: ${String(item.content || '').slice(0, 180)}`).join('\n')
-        : 'Hiá»‡n chÆ°a cÃ³ ká»· niá»‡m gia Ä‘Ã¬nh phÃ¹ há»£p Ä‘Æ°á»£c ghi nháº­n.';
+        : 'Hiện chưa có kỷ niệm gia đình phù hợp được ghi nhận.';
     return {
         success: true,
         intent: parsed.intent,
@@ -1017,6 +1049,31 @@ async function handleStatsIntent({ clanId, message, parsed, context, planner }) 
             ? `Gia phả hiện có ${branchCount} chi/nhánh đã ghi nhận.`
             : 'Gia phả hiện chưa có dữ liệu chi/nhánh.';
         resolvedData.branches = branchCount;
+    } else if (metric === 'gender_count') {
+        const male = stats.reduce((sum, row) => sum + Number(row.male_count || 0), 0);
+        const female = stats.reduce((sum, row) => sum + Number(row.female_count || 0), 0);
+        const unknown = total - male - female;
+        answer = `Gia phả hiện có ${male} nam và ${female} nữ${unknown > 0 ? `, ${unknown} người chưa ghi giới tính` : ''}.`;
+    } else if (metric === 'living_count' || metric === 'deceased_count') {
+        const living = stats.reduce((sum, row) => sum + Number(row.living_count || 0), 0);
+        answer = metric === 'living_count'
+            ? `Gia phả hiện ghi nhận ${living} thành viên còn sống.`
+            : `Gia phả hiện ghi nhận ${total - living} thành viên đã mất.`;
+    } else if (metric === 'oldest_living' || metric === 'youngest_living') {
+        const order = metric === 'oldest_living' ? 'ASC' : 'DESC';
+        const [person] = await queryOptional(
+            `SELECT id, display_name, birth_date, generation
+             FROM people
+             WHERE clan_id = ? AND is_living = 1 AND birth_date IS NOT NULL
+             ORDER BY birth_date ${order}, id ASC
+             LIMIT 1`,
+            [clanId]
+        );
+        const label = metric === 'oldest_living' ? 'lớn tuổi nhất' : 'nhỏ tuổi nhất';
+        answer = person
+            ? `Thành viên còn sống ${label} có ghi ngày sinh là ${person.display_name} (sinh ${formatDateOnly(person.birth_date)}${person.generation ? `, đời thứ ${person.generation}` : ''}).`
+            : 'Gia phả chưa có đủ dữ liệu ngày sinh để xác định.';
+        resolvedData.person = person || null;
     }
 
     return {
@@ -1044,8 +1101,8 @@ async function handleEventsIntent({ clanId, message, parsed, context, planner })
     const resolvedData = { type: 'events_upcoming', data: events };
     const ai = await explainResolvedIntent({ intent: parsed.intent, message, resolvedData, context });
     const fallback = events.length
-        ? events.map((event) => `${event.title} (${formatDateOnly(event.event_date || event.start_date) || 'chÆ°a rÃµ ngÃ y'})`).join(', ')
-        : 'Hiá»‡n chÆ°a cÃ³ sá»± kiá»‡n sáº¯p tá»›i Ä‘Æ°á»£c ghi nháº­n.';
+        ? events.map((event) => `${event.title} (${formatDateOnly(event.event_date || event.start_date) || 'chưa rõ ngày'})`).join(', ')
+        : 'Hiện chưa có sự kiện sắp tới được ghi nhận.';
     return {
         success: true,
         intent: parsed.intent,
@@ -1064,7 +1121,7 @@ async function handleGeneralChatIntent({ message, parsed, context, planner }) {
     return {
         success: true,
         intent: parsed.intent,
-        answer: ai.explanation || 'ChÃ o báº¡n, tÃ´i cÃ³ thá»ƒ giÃºp tra quan há»‡, thÃ´ng tin thÃ nh viÃªn, ká»· niá»‡m vÃ  lá»‹ch sá»­ dÃ²ng há».',
+        answer: ai.explanation || 'Chào bạn, tôi có thể giúp tra quan hệ, thông tin thành viên, kỷ niệm và lịch sử dòng họ.',
         confidence: parsed.confidence || 0.6,
         source: 'assistant',
         planner,
@@ -1366,11 +1423,11 @@ exports.ask = async (req, res) => {
         if (parsed.intent === 'find_relationship') {
             responsePayload = await handleFindRelationship({ res, clanId, currentMemberId, parsed });
         } else if (parsed.intent === 'compare_relationship') {
-            responsePayload = await handleCompareRelationship({ res, clanId, parsed });
+            responsePayload = await handleCompareRelationship({ res, clanId, currentMemberId, parsed });
         } else if (parsed.intent === 'list_children') {
-            responsePayload = await handleListChildren({ res, clanId, parsed });
+            responsePayload = await handleListChildren({ res, clanId, currentMemberId, parsed });
         } else if (parsed.intent === 'find_spouse') {
-            responsePayload = await handleFindSpouse({ res, clanId, parsed });
+            responsePayload = await handleFindSpouse({ res, clanId, currentMemberId, parsed });
         } else if (parsed.intent === 'find_parents') {
             responsePayload = await handleFindParents({ res, clanId, currentMemberId, parsed });
         } else if (parsed.intent === 'find_by_kinship') {

@@ -16,10 +16,12 @@ Intent hợp lệ:
 - general_chat: chào hỏi, cảm ơn, câu hỏi chung
 
 Với relationship_query, ast.steps chỉ dùng:
-father, mother, son, daughter, older_brother, younger_brother,
-older_sister, younger_sister, husband, wife, grandfather, grandmother,
-grandson, granddaughter, uncle_paternal, aunt_paternal,
-uncle_maternal, aunt_maternal, nephew, niece, cousin
+father, mother, parent, son, daughter, child, spouse, husband, wife,
+sibling, brother, sister, older_sibling, younger_sibling,
+older_brother, younger_brother, older_sister, younger_sister,
+grandfather, grandmother, grandson, granddaughter,
+uncle_paternal, aunt_paternal, uncle_maternal, aunt_maternal, nephew, niece, cousin
+Dùng cạnh chung (sibling, brother, sister, parent, child) khi câu hỏi không nói rõ lớn/nhỏ hoặc nam/nữ.
 
 Output schema:
 {

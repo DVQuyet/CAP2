@@ -15,54 +15,36 @@ const VALID_INTENTS = new Set([
     'general_chat',
 ]);
 
-const VALID_EDGES = new Set([
-    'father',
-    'mother',
-    'parent',
-    'spouse',
-    'husband',
-    'wife',
-    'child',
-    'son',
-    'daughter',
-    'older_brother',
-    'younger_brother',
-    'older_sister',
-    'younger_sister',
-    'sibling',
-    'adopted_child',
-    'step_child',
-    'grandfather',
-    'grandmother',
-    'grandson',
-    'granddaughter',
-    'uncle_paternal',
-    'aunt_paternal',
-    'uncle_maternal',
-    'aunt_maternal',
-    'nephew',
-    'niece',
-    'cousin',
-]);
+const { EDGE_ACCEPTS } = require('./relationshipExpressionResolver');
+
+// Cạnh LLM được phép trả về: các cạnh resolver hiểu được, cộng các cạnh viết tắt được
+// mở rộng ở EDGE_EXPANSION bên dưới.
+const EDGE_EXPANSION = {
+    grandfather: ['parent', 'father'],
+    grandmother: ['parent', 'mother'],
+    grandson: ['child', 'son'],
+    granddaughter: ['child', 'daughter'],
+    uncle_paternal: ['father', 'brother'],
+    aunt_paternal: ['father', 'sister'],
+    uncle_maternal: ['mother', 'brother'],
+    aunt_maternal: ['mother', 'sister'],
+    nephew: ['sibling', 'son'],
+    niece: ['sibling', 'daughter'],
+    cousin: ['parent', 'sibling', 'child'],
+};
 
 const EDGE_NORMALIZATION = {
     husband: 'spouse',
     wife: 'spouse',
 };
 
-const EDGE_EXPANSION = {
-    grandfather: ['parent', 'father'],
-    grandmother: ['parent', 'mother'],
-    grandson: ['son', 'son'],
-    granddaughter: ['child', 'daughter'],
-    uncle_paternal: ['father', 'younger_brother'],
-    aunt_paternal: ['father', 'younger_sister'],
-    uncle_maternal: ['mother', 'younger_brother'],
-    aunt_maternal: ['mother', 'younger_sister'],
-    nephew: ['sibling', 'son'],
-    niece: ['sibling', 'daughter'],
-    cousin: ['parent', 'sibling', 'child'],
-};
+const VALID_EDGES = new Set([
+    ...Object.keys(EDGE_ACCEPTS),
+    ...Object.keys(EDGE_EXPANSION),
+    ...Object.keys(EDGE_NORMALIZATION),
+    'adopted_child',
+    'step_child',
+]);
 
 function parseJson(value) {
     if (typeof value === 'string') {
