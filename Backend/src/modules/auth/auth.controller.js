@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const db = require('../../config/db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { getJwtSecret } = require('../../config/jwt');
 const { getRoleName } = require('../../config/roles');
 const { ensureProfileCompletedColumn } = require('../../shared/utils/profileCompletion');
 const {
@@ -213,8 +214,7 @@ exports.login = async (req, res) => {
                 return res.status(403).json({ success: false, message: 'Tài khoản của bạn đang chờ quản trị viên phê duyệt.' });
             }
 
-            // Dùng khóa dự phòng nếu mất file .env -> Không bao giờ bị lỗi 500 nữa!
-            const secret = process.env.JWT_SECRET || 'GiaPhaViet_Secret_Key_2024_Backup';
+            const secret = getJwtSecret();
             const role_name = getRoleName(user.role_id);
             
             const token = jwt.sign(
@@ -301,7 +301,7 @@ exports.me = async (req, res) => {
     }
 
     try {
-        const secret = process.env.JWT_SECRET || 'GiaPhaViet_Secret_Key_2024_Backup';
+        const secret = getJwtSecret();
         const decoded = jwt.verify(token, secret);
         const accountId = Number(decoded.id || decoded.account_id || decoded.userId);
         if (!Number.isFinite(accountId) || accountId <= 0) {

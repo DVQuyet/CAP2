@@ -10,3 +10,6 @@ Backend/storage/
 __pycache__/
 *.pyc*
 backend/.env
+# File tạm / scratch
+*.tmp
+brain/

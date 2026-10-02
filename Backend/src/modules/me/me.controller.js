@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const { getJwtSecret } = require("../../config/jwt");
 const db = require("../../config/db");
 const { getRoleName } = require("../../config/roles");
 const { ensureProfileCompletedColumn } = require("../../shared/utils/profileCompletion");
@@ -172,7 +173,7 @@ async function resolveMyContext(connection, accountId) {
 }
 
 function signAuthToken(account) {
-  const secret = process.env.JWT_SECRET || "GiaPhaViet_Secret_Key_2024_Backup";
+  const secret = getJwtSecret();
   const roleName = getRoleName(account.role_id);
 
   return jwt.sign(

@@ -1,6 +1,6 @@
 -- MySQL dump 10.13  Distrib 8.0.45, for Win64 (x86_64)
 --
--- Host: your-db-host.aivencloud.com    Database: defaultdb
+-- Host: <aiven-host>    Database: defaultdb
 -- ------------------------------------------------------
 -- Server version	8.0.45
 

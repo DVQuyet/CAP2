@@ -2,7 +2,7 @@
 -- version 5.2.3
 -- https://www.phpmyadmin.net/
 --
--- Máy chủ: your-db-host.aivencloud.com:16931
+-- Máy chủ: <aiven-host>:16931
 -- Thời gian đã tạo: Th4 21, 2026 lúc 05:36 PM
 -- Phiên bản máy phục vụ: 8.0.45
 -- Phiên bản PHP: 8.3.26

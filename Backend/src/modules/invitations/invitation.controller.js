@@ -1,5 +1,6 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { getJwtSecret } = require("../../config/jwt");
 const db = require("../../config/db");
 const { getRoleName } = require("../../config/roles");
 const { sendMail, isSmtpConfigured } = require("../../shared/utils/email");
@@ -36,7 +37,7 @@ function makeInviteLink(req, token) {
 }
 
 function signAuthToken(account) {
-  const secret = process.env.JWT_SECRET || "GiaPhaViet_Secret_Key_2024_Backup";
+  const secret = getJwtSecret();
   const roleName = getRoleName(account.role_id);
 
   return jwt.sign(

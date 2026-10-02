@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { getJwtSecret } = require('../config/jwt');
 
 exports.verifyToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
@@ -12,7 +13,7 @@ exports.verifyToken = (req, res, next) => {
     }
 
     try {
-        const secret = process.env.JWT_SECRET || 'GiaPhaViet_Secret_Key_2024_Backup';
+        const secret = getJwtSecret();
         const decoded = jwt.verify(token, secret);
         req.user = decoded; // Lưu id, role_id và role_name vào req
         next();

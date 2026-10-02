@@ -8,8 +8,12 @@ const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
+const { getJwtSecret } = require('./src/config/jwt');
 const passport = require('passport');
 const db = require('./src/config/db');
+
+// Dừng ngay khi khởi động nếu thiếu JWT_SECRET thay vì chạy với khóa đoán được.
+getJwtSecret();
 
 const app = express();
 app.set("trust proxy", 1);
@@ -127,7 +131,7 @@ io.use(async (socket, next) => {
     try {
         const token = getSocketAuthToken(socket);
         if (!token) return next(new Error('Socket JWT is required'));
-        const secret = process.env.JWT_SECRET || 'GiaPhaViet_Secret_Key_2024_Backup';
+        const secret = getJwtSecret();
         const decoded = jwt.verify(token, secret);
         const accountId = Number(decoded.id || decoded.account_id);
         if (!Number.isFinite(accountId) || accountId <= 0) return next(new Error('Socket JWT account is invalid'));

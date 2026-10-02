@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { getJwtSecret } = require("../../config/jwt");
 const db = require("../../config/db");
 const { getRoleName } = require("../../config/roles");
 const { ensureProfileCompletedColumn } = require("../../shared/utils/profileCompletion");
@@ -35,7 +36,7 @@ function getFrontendUrl() {
 }
 
 function signSocialRegistrationToken({ provider, providerId, email, fullName, avatarUrl, invite }) {
-  const secret = process.env.JWT_SECRET || "GiaPhaViet_Secret_Key_2024_Backup";
+  const secret = getJwtSecret();
   return jwt.sign(
     {
       type: "social_registration",
@@ -52,7 +53,7 @@ function signSocialRegistrationToken({ provider, providerId, email, fullName, av
 }
 
 function verifySocialRegistrationToken(token) {
-  const secret = process.env.JWT_SECRET || "GiaPhaViet_Secret_Key_2024_Backup";
+  const secret = getJwtSecret();
   const decoded = jwt.verify(String(token || ""), secret);
   if (decoded?.type !== "social_registration") {
     const error = new Error("Token dang ky mang xa hoi khong hop le.");
@@ -237,7 +238,7 @@ async function getFreshAccount(connection, accountId, extra = {}) {
 }
 
 function signSocialToken(account) {
-  const secret = process.env.JWT_SECRET || "GiaPhaViet_Secret_Key_2024_Backup";
+  const secret = getJwtSecret();
   const roleName = getRoleName(account.role_id);
 
   return jwt.sign(
