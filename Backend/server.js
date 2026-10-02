@@ -234,21 +234,6 @@ io.on('connection', (socket) => {
         app.locals.treeEditing.delete(treeSocketKey(clanId, targetPersonId, socket.id));
         emitTreePresence(clanId);
     });
-    socket.on('send_task', (data) => {
-        const { receiverId, title, senderName, dueDate } = data;
-        const receiverSocketId = app.locals.onlineUsers[receiverId];
-
-        if (receiverSocketId) {
-            io.to(receiverSocketId).emit('new_notification', {
-                message: `Bạn có việc mới: "${title}" từ ${senderName}`,
-                dueDate,
-                time: new Date().toLocaleTimeString()
-            });
-
-            console.log(`✅ Đã bắn thông báo tới User ${receiverId}`);
-        }
-    });
-
     socket.on('disconnect', () => {
         for (const id in app.locals.onlineUsers) {
             if (app.locals.onlineUsers[id] === socket.id) {
@@ -303,7 +288,7 @@ app.post('/api/upload', verifyToken, (req, res) => {
             const context = await getUploadContext(accountId);
             const usageType = req.body?.usage_type || req.body?.usageType || 'other';
 
-            const mediaId = await createMediaFile({
+            const { mediaId, accessKey } = await createMediaFile({
                 ownerAccountId: accountId,
                 ownerPersonId: context.owner_person_id || context.ownerPersonId || req.user?.person_id || null,
                 clanId: context.clan_id || context.clanId || null,
@@ -314,7 +299,7 @@ app.post('/api/upload', verifyToken, (req, res) => {
                 imageBuffer: req.file.buffer,
             });
 
-            const imageUrl = getMediaUrl(req, mediaId);
+            const imageUrl = getMediaUrl(req, mediaId, accessKey);
 
             return res.json({
                 success: true,
@@ -368,7 +353,7 @@ app.post('/api/upload-memory-media', verifyToken, (req, res) => {
 
             const accountId = req.user?.id || req.user?.account_id || null;
             const context = await getUploadContext(accountId);
-            const mediaId = await createMediaFile({
+            const { mediaId, accessKey } = await createMediaFile({
                 ownerAccountId: accountId,
                 ownerPersonId: context.owner_person_id || context.ownerPersonId || req.user?.person_id || null,
                 clanId: context.clan_id || context.clanId || null,
@@ -378,7 +363,7 @@ app.post('/api/upload-memory-media', verifyToken, (req, res) => {
                 fileSizeBytes: req.file.size,
                 imageBuffer: req.file.buffer,
             });
-            const url = getMediaUrl(req, mediaId);
+            const url = getMediaUrl(req, mediaId, accessKey);
             return res.json({
                 success: true,
                 mediaId,

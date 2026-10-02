@@ -8,7 +8,6 @@ const {
     ensureCanAddPerson,
     extractMediaIdFromUrl,
     fmtSqlDate,
-    getMediaUrl,
     normalizeMediaId,
     parseNullableId,
     parseTreeInt,
@@ -43,6 +42,7 @@ const {
     resolveManagedClanId,
 } = require('../manager/managerClan.service');
 
+const { getMediaUrlById } = require('../../shared/utils/media');
 const { ensureClanTreeStyleColumn, ensureTreeLayoutSettingsTable } = require('../../shared/utils/treeLayoutSettings');
 const { emitTreeUpdated } = require('../../socket/treeRealtime');
 
@@ -255,7 +255,7 @@ const createPerson = async (req, res) => {
             avatar_url != null && String(avatar_url).trim()
                 ? String(avatar_url).trim()
                 : avatarMediaIdValue
-                    ? getMediaUrl(req, avatarMediaIdValue)
+                    ? await getMediaUrlById(req, avatarMediaIdValue)
                     : null;
 
         const fatherId = parseNullableId(parent_father_id ?? father_person_id);
@@ -680,7 +680,7 @@ const updateTreePerson = async (req, res) => {
             nextAvatarMediaId = extractMediaIdFromUrl(nextAvatarUrl);
         }
         if (!nextAvatarUrl && nextAvatarMediaId) {
-            nextAvatarUrl = getMediaUrl(req, nextAvatarMediaId);
+            nextAvatarUrl = await getMediaUrlById(req, nextAvatarMediaId);
         }
 
         const nextTreeX = has('tree_x') ? parseTreeInt(body.tree_x, current.tree_x || 0) : current.tree_x || 0;

@@ -61,7 +61,8 @@ const ensureFamilyMemoriesSchemaForManager = async () => {
 const mapManagerMemoryRow = (row) => ({
     ...row,
     media_id: row.media_id || null,
-    media_url: row.media_id ? `/api/media/${row.media_id}` : row.media_url || null,
+    // URL lưu lúc upload đã kèm khóa truy cập (?k=); chỉ dựng từ id khi thiếu URL.
+    media_url: row.media_url || (row.media_id ? `/api/media/${row.media_id}` : null),
     author_name: row.author_name || row.author_email || 'Thành viên dòng họ',
     visibility: row.visibility || 'clan',
     scheduled_publish_at: row.scheduled_publish_at || null,

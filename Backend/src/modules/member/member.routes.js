@@ -46,6 +46,6 @@ router.get("/fund/campaigns/:id", verifyToken, checkRole(["admin", "manager", "m
 router.post("/fund/report-payment", verifyToken, checkRole(["admin", "manager", "member"]), fundController.reportPayment);
 router.get("/fund/stats", verifyToken, checkRole(["admin", "manager", "member"]), fundController.getFundStats);
 router.post("/fund/income", verifyToken, checkRole(["admin", "manager", "member"]), fundController.addIncome);
-router.post("/fund/expense", verifyToken, checkRole(["admin", "manager", "member"]), fundController.addExpense);
+// Khoản chi chỉ do manager/admin ghi qua /api/manager/fund/expense.
 
 module.exports = router;

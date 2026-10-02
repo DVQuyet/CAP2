@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const db = require('../../config/db');
 const {
   ensurePaymentPurchaseColumns,
@@ -53,6 +54,20 @@ function getManagerClanId(accountId) {
       [accountId]
     )
     .then(([rows]) => rows[0]?.clan_id || null);
+}
+
+function isValidWebhookSecret(configuredSecret, receivedSecret) {
+  if (!configuredSecret || !receivedSecret) return false;
+  const expected = Buffer.from(String(configuredSecret));
+  const received = Buffer.from(String(receivedSecret));
+  return expected.length === received.length && crypto.timingSafeEqual(expected, received);
+}
+
+// Manager chỉ được thao tác với payment của dòng họ mình; admin được thao tác tất cả.
+async function canAccessPaymentClan(req, paymentClanId) {
+  if (Number(req.user?.role_id) === 1) return true;
+  const managerClanId = await getManagerClanId(req.user?.id);
+  return managerClanId != null && Number(managerClanId) === Number(paymentClanId);
 }
 
 function getSepayQrUrl({ amount, orderCode }) {
@@ -481,7 +496,8 @@ async function handleSepayWebhook(req, res) {
     const configuredSecret = process.env.SEPAY_WEBHOOK_SECRET;
     const receivedSecret = getWebhookSecret(req, payload);
 
-    if (configuredSecret && receivedSecret && String(receivedSecret) !== String(configuredSecret)) {
+    // Bắt buộc có secret: thiếu cấu hình hoặc request không gửi secret đều bị từ chối.
+    if (!isValidWebhookSecret(configuredSecret, receivedSecret)) {
       return res.status(401).json({
         success: false,
         message: 'Invalid webhook secret',
@@ -735,6 +751,13 @@ async function getPaymentStatus(req, res) {
 
     const payment = rows[0];
 
+    if (!(await canAccessPaymentClan(req, payment.clan_id))) {
+      return res.status(403).json({
+        success: false,
+        message: 'Bạn không có quyền với giao dịch này.',
+      });
+    }
+
     if (payment.status === 'pending' && isPaymentOlderThan24Hours(payment)) {
       await db.query(
         `
@@ -811,6 +834,13 @@ async function cancelPendingPayment(req, res) {
     }
 
     const payment = rows[0];
+
+    if (!(await canAccessPaymentClan(req, payment.clan_id))) {
+      return res.status(403).json({
+        success: false,
+        message: 'Bạn không có quyền với giao dịch này.',
+      });
+    }
     if (payment.status === 'pending' && isPaymentOlderThan24Hours(payment)) {
   await db.query(
     `

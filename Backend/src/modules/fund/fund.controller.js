@@ -54,13 +54,34 @@ const getUserClanId = async (accountId) => {
     return rows.length ? rows[0].clan_id : null;
 };
 
+// Dòng họ được phép xem quỹ: admin xem theo ?clan_id, người khác chỉ xem dòng họ của mình.
+// Trả về { clanId } hoặc { status, message } khi không hợp lệ.
+const resolveReadableClanId = async (req) => {
+    const requestedClanId = req.query.clan_id ? Number(req.query.clan_id) : null;
+    if (Number(req.user?.role_id) === 1 && requestedClanId) {
+        return { clanId: requestedClanId };
+    }
+
+    const ownClanId = req.user ? await getUserClanId(req.user.id) : null;
+    if (!ownClanId) return { status: 400, message: 'Clan ID is required' };
+    if (requestedClanId && Number(requestedClanId) !== Number(ownClanId)) {
+        return { status: 403, message: 'Bạn không có quyền xem quỹ của dòng họ khác.' };
+    }
+    return { clanId: ownClanId };
+};
+
+const toPositiveAmount = (value) => {
+    const amount = Number(value);
+    return Number.isFinite(amount) && amount > 0 ? amount : null;
+};
+
 // --- CAMPAIGN MANAGEMENT ---
 
 exports.getCampaigns = async (req, res) => {
     try {
-        let clanId = req.query.clan_id;
-        if (!clanId && req.user) clanId = await getUserClanId(req.user.id);
-        if (!clanId) return res.status(400).json({ success: false, message: 'Clan ID is required' });
+        const scope = await resolveReadableClanId(req);
+        if (!scope.clanId) return res.status(scope.status).json({ success: false, message: scope.message });
+        const clanId = scope.clanId;
 
         const [campaigns] = await db.query(
             'SELECT * FROM fund_campaigns WHERE clan_id = ? ORDER BY year DESC, created_at DESC',
@@ -101,9 +122,9 @@ exports.getCampaigns = async (req, res) => {
 
 exports.getFundOverview = async (req, res) => {
     try {
-        let clanId = req.query.clan_id;
-        if (!clanId && req.user) clanId = await getUserClanId(req.user.id);
-        if (!clanId) return res.status(400).json({ success: false, message: 'Clan ID is required' });
+        const scope = await resolveReadableClanId(req);
+        if (!scope.clanId) return res.status(scope.status).json({ success: false, message: scope.message });
+        const clanId = scope.clanId;
 
         const [incomeResult] = await db.query(
             "SELECT SUM(amount) as total_income FROM event_contributions WHERE clan_id = ? AND status = 'approved'",
@@ -134,9 +155,9 @@ exports.getFundOverview = async (req, res) => {
 
 exports.getTransactions = async (req, res) => {
     try {
-        let clanId = req.query.clan_id;
-        if (!clanId && req.user) clanId = await getUserClanId(req.user.id);
-        if (!clanId) return res.status(400).json({ success: false, message: 'Clan ID is required' });
+        const scope = await resolveReadableClanId(req);
+        if (!scope.clanId) return res.status(scope.status).json({ success: false, message: scope.message });
+        const clanId = scope.clanId;
 
         const [userRows] = await db.query('SELECT person_id FROM accounts WHERE id = ?', [req.user.id]);
         const currentUserPersonId = userRows[0]?.person_id;
@@ -202,6 +223,11 @@ exports.addIncome = async (req, res) => {
             campaign_id
         } = req.body;
 
+        const validAmount = toPositiveAmount(amount);
+        if (!validAmount) {
+            return res.status(400).json({ success: false, message: 'Số tiền phải lớn hơn 0.' });
+        }
+
         const clanId = await getUserClanId(req.user.id);
 
         if (!clanId) {
@@ -232,7 +258,7 @@ exports.addIncome = async (req, res) => {
                 event_id || null,
                 campaign_id || null,
                 finalPersonId || null,
-                amount,
+                validAmount,
                 date || new Date(),
                 method || 'Tiền mặt',
                 note,
@@ -267,6 +293,17 @@ exports.addExpense = async (req, res) => {
             paid_to_manager,
             date
         } = req.body;
+
+        const validAmount = toPositiveAmount(amount);
+        if (!validAmount) {
+            return res.status(400).json({ success: false, message: 'Số tiền phải lớn hơn 0.' });
+        }
+
+        // Member chỉ được đề xuất khoản chi (chờ duyệt); manager/admin mới được ghi thẳng
+        // hoặc tự chọn trạng thái.
+        const isManagerOrAdmin = [1, 2].includes(Number(req.user?.role_id));
+        const requestedStatus = ['pending', 'approved', 'rejected'].includes(req.body.status) ? req.body.status : 'approved';
+        const finalStatus = isManagerOrAdmin ? requestedStatus : 'pending';
 
         const clanId = await getUserClanId(req.user.id);
 
@@ -303,13 +340,13 @@ exports.addExpense = async (req, res) => {
                 campaign_id || null,
                 recipient_person_id || null,
                 note,
-                amount,
+                validAmount,
                 note,
                 recipient_note || null,
                 paid_to_manager ? 1 : 0,
                 date || new Date(),
                 category || 'Khác',
-                req.body.status || 'approved',
+                finalStatus,
                 req.body.method || 'Tiền mặt'
             ]
         );
@@ -503,6 +540,16 @@ exports.getCampaignDetails = async (req, res) => {
         }
 
         const campaign = campaignRows[0];
+
+        if (Number(req.user?.role_id) !== 1) {
+            const ownClanId = await getUserClanId(req.user.id);
+            if (Number(ownClanId) !== Number(campaign.clan_id)) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Bạn không có quyền xem chiến dịch của dòng họ khác.'
+                });
+            }
+        }
 
         const [transactions] = await db.query(`
             SELECT 
@@ -703,18 +750,9 @@ exports.approvePayment = async (req, res) => {
 
 exports.getFundStats = async (req, res) => {
     try {
-        let clanId = req.query.clan_id;
-
-        if (!clanId && req.user) {
-            clanId = await getUserClanId(req.user.id);
-        }
-
-        if (!clanId) {
-            return res.status(400).json({
-                success: false,
-                message: 'Clan ID is required'
-            });
-        }
+        const scope = await resolveReadableClanId(req);
+        if (!scope.clanId) return res.status(scope.status).json({ success: false, message: scope.message });
+        const clanId = scope.clanId;
 
         const [incomeByYear] = await db.query(
             "SELECT YEAR(contribution_date) as year, SUM(amount) as total FROM event_contributions WHERE clan_id = ? AND status = 'approved' GROUP BY year ORDER BY year ASC",

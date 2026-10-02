@@ -77,6 +77,15 @@ const getAccountContext = async (accountId) => {
   return rows[0] || null;
 };
 
+// Admin được quản lý nội dung mọi dòng họ; manager chỉ trong dòng họ của mình.
+const canModerateClanContent = async (req, contentClanId) => {
+  const roleId = Number(req.user?.role_id);
+  if (roleId === 1) return true;
+  if (roleId !== 2) return false;
+  const context = await getAccountContext(req.user.id);
+  return context?.clan_id != null && Number(context.clan_id) === Number(contentClanId);
+};
+
 const normalizePostStats = (post) => ({
   ...post,
   like_count: Number(post.like_count || 0),
@@ -1889,7 +1898,8 @@ const inferMemoryMediaType = (mimeType) => {
 const mapMemoryRow = (row) => ({
   ...row,
   media_id: row.media_id || null,
-  media_url: row.media_id ? `/api/media/${row.media_id}` : row.media_url || null,
+  // URL lưu lúc upload đã kèm khóa truy cập (?k=); chỉ dựng từ id khi thiếu URL.
+  media_url: row.media_url || (row.media_id ? `/api/media/${row.media_id}` : null),
   author_name: row.author_name || row.author_email || 'Thành viên dòng họ',
   visibility: row.visibility || 'clan',
   scheduled_publish_at: row.scheduled_publish_at || null,
@@ -2128,9 +2138,8 @@ exports.deleteFamilyMemory = async (req, res) => {
     const memory = rows[0];
     if (!memory) return res.status(404).json({ success: false, message: 'Không tìm thấy kỷ niệm.' });
 
-    const roleId = Number(req.user?.role_id);
     const isOwner = Number(memory.author_account_id) === Number(req.user.id);
-    const isManagerOrAdmin = roleId === 1 || roleId === 2;
+    const isManagerOrAdmin = !isOwner && await canModerateClanContent(req, memory.clan_id);
 
     if (!isOwner && !isManagerOrAdmin) {
       return res.status(403).json({ success: false, message: 'Bạn không có quyền xóa kỷ niệm này.' });
@@ -2156,9 +2165,8 @@ exports.updateFamilyMemory = async (req, res) => {
     const memory = rows[0];
     if (!memory) return res.status(404).json({ success: false, message: 'Không tìm thấy kỷ niệm.' });
 
-    const roleId = Number(req.user?.role_id);
     const isOwner = Number(memory.author_account_id) === Number(req.user.id);
-    const isManagerOrAdmin = roleId === 1 || roleId === 2;
+    const isManagerOrAdmin = !isOwner && await canModerateClanContent(req, memory.clan_id);
 
     if (!isOwner && !isManagerOrAdmin) {
       return res.status(403).json({ success: false, message: 'Bạn không có quyền sửa kỷ niệm này.' });
@@ -2200,9 +2208,8 @@ exports.deletePost = async (req, res) => {
     const post = rows[0];
     if (!post) return res.status(404).json({ success: false, message: 'Không tìm thấy bài đăng.' });
 
-    const roleId = Number(req.user?.role_id);
     const isOwner = Number(post.author_id) === Number(req.user.id);
-    const isManagerOrAdmin = roleId === 1 || roleId === 2;
+    const isManagerOrAdmin = !isOwner && await canModerateClanContent(req, post.clan_id);
 
     if (!isOwner && !isManagerOrAdmin) {
       return res.status(403).json({ success: false, message: 'Bạn không có quyền xóa bài đăng này.' });
@@ -2237,9 +2244,8 @@ exports.updatePost = async (req, res) => {
     const post = rows[0];
     if (!post) return res.status(404).json({ success: false, message: 'Không tìm thấy bài đăng.' });
 
-    const roleId = Number(req.user?.role_id);
     const isOwner = Number(post.author_id) === Number(req.user.id);
-    const isManagerOrAdmin = roleId === 1 || roleId === 2;
+    const isManagerOrAdmin = !isOwner && await canModerateClanContent(req, post.clan_id);
 
     if (!isOwner && !isManagerOrAdmin) {
       return res.status(403).json({ success: false, message: 'Bạn không có quyền sửa bài đăng này.' });

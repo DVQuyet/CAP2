@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const db = require('../../config/db');
@@ -29,10 +30,50 @@ function isAllowedPostMediaMimeType(mimeType) {
   return ALLOWED_POST_MEDIA_MIME_TYPES.has(mime) || mime.startsWith('video/') || mime.startsWith('audio/');
 }
 
-function getMediaUrl(req, mediaId) {
+// Media mới được cấp access_key ngẫu nhiên; URL phải kèm ?k=<access_key> (hoặc token đăng nhập
+// cùng dòng họ) mới tải được. Media cũ (access_key NULL) vẫn truy cập như trước để không vỡ URL đã lưu.
+let mediaAccessKeyColumnReady = null;
+function ensureMediaAccessKeyColumn() {
+  if (!mediaAccessKeyColumnReady) {
+    mediaAccessKeyColumnReady = (async () => {
+      const [columns] = await db.query(
+        `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'media_files' AND COLUMN_NAME = 'access_key'`
+      );
+      if (!columns.length) {
+        await db.query('ALTER TABLE media_files ADD COLUMN access_key CHAR(32) NULL');
+      }
+    })().catch((error) => {
+      mediaAccessKeyColumnReady = null;
+      throw error;
+    });
+  }
+  return mediaAccessKeyColumnReady;
+}
+
+function getMediaPath(mediaId, accessKey = null) {
+  if (!mediaId) return null;
+  return `${API_MEDIA_PREFIX}${mediaId}${accessKey ? `?k=${accessKey}` : ''}`;
+}
+
+function getMediaUrl(req, mediaId, accessKey = null) {
   if (!mediaId) return null;
   const baseUrl = process.env.BACKEND_PUBLIC_URL || `${req.protocol}://${req.get('host')}`;
-  return `${String(baseUrl).replace(/\/$/, '')}${API_MEDIA_PREFIX}${mediaId}`;
+  return `${String(baseUrl).replace(/\/$/, '')}${getMediaPath(mediaId, accessKey)}`;
+}
+
+async function getMediaUrlById(req, mediaId) {
+  if (!mediaId) return null;
+  await ensureMediaAccessKeyColumn();
+  const [rows] = await db.query('SELECT access_key FROM media_files WHERE id = ? LIMIT 1', [mediaId]);
+  return getMediaUrl(req, mediaId, rows[0]?.access_key || null);
+}
+
+function isValidMediaAccessKey(expectedKey, providedKey) {
+  if (!expectedKey || !providedKey) return false;
+  const expected = Buffer.from(String(expectedKey));
+  const provided = Buffer.from(String(providedKey));
+  return expected.length === provided.length && crypto.timingSafeEqual(expected, provided);
 }
 
 function normalizeMediaId(value) {
@@ -74,6 +115,9 @@ async function createMediaFile({
     'other',
   ].includes(usageType) ? usageType : 'other';
 
+  await ensureMediaAccessKeyColumn();
+  const accessKey = crypto.randomBytes(16).toString('hex');
+
   const [result] = await db.query(
     `INSERT INTO media_files (
        owner_account_id,
@@ -83,8 +127,9 @@ async function createMediaFile({
        original_filename,
        mime_type,
        file_size_bytes,
-       image_data
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+       image_data,
+       access_key
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       ownerAccountId,
       ownerPersonId,
@@ -94,10 +139,11 @@ async function createMediaFile({
       mimeType,
       fileSizeBytes,
       imageBuffer,
+      accessKey,
     ]
   );
 
-  return result.insertId;
+  return { mediaId: result.insertId, accessKey };
 }
 
 async function getUploadContext(accountId) {
@@ -159,7 +205,7 @@ async function createMediaFromLocalFile({ rawUrlOrPath, usageType, ownerAccountI
   const mimeType = detectMimeTypeFromFile(filePath);
   if (!isAllowedImageMimeType(mimeType)) return null;
   const buffer = fs.readFileSync(filePath);
-  return createMediaFile({
+  const { mediaId } = await createMediaFile({
     ownerAccountId,
     ownerPersonId,
     clanId,
@@ -169,6 +215,7 @@ async function createMediaFromLocalFile({ rawUrlOrPath, usageType, ownerAccountI
     fileSizeBytes: buffer.length,
     imageBuffer: buffer,
   });
+  return mediaId;
 }
 
 module.exports = {
@@ -180,6 +227,10 @@ module.exports = {
   isAllowedImageMimeType,
   isAllowedPostMediaMimeType,
   getMediaUrl,
+  getMediaPath,
+  getMediaUrlById,
+  ensureMediaAccessKeyColumn,
+  isValidMediaAccessKey,
   normalizeMediaId,
   extractMediaIdFromUrl,
   looksLikeMediaUrl,
