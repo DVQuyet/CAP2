@@ -1,5 +1,9 @@
 const { callGroq } = require('../chatbot/groqClient');
 
+const MAX_EVENT_PROMPT_LENGTH = 2000;
+const MAX_GENEALOGY_PROMPT_LENGTH = 6000;
+const MAX_EXISTING_TASKS = 50;
+
 const VALID_EVENT_MODES = new Set(['event_create', 'task_create']);
 const VALID_GENEALOGY_INPUT_SOURCES = new Set(['text', 'voice_transcript']);
 
@@ -38,13 +42,6 @@ function validIsoDate(value) {
     return /^\d{4}-\d{2}-\d{2}$/.test(text || '') ? text : null;
 }
 
-function addDays(isoDate, days) {
-    const date = new Date(`${isoDate}T00:00:00.000Z`);
-    if (Number.isNaN(date.getTime())) return isoDate;
-    date.setUTCDate(date.getUTCDate() + days);
-    return date.toISOString().slice(0, 10);
-}
-
 function normalizeEventMode(value) {
     return VALID_EVENT_MODES.has(value) ? value : 'event_create';
 }
@@ -74,7 +71,7 @@ function fallbackEventForm(body = {}) {
         manager_tasks: Array.from({ length: taskCount }, (_, index) => ({
             title: `Chuẩn bị hạng mục ${index + 1}`,
             description: `Kiểm tra và phân công công việc ${index + 1} cho sự kiện.`,
-            due_date: addDays(today, Math.max(index - taskCount, -1)),
+            due_date: today,
             suggested_role: 'manager',
             status: 'assigned',
         })),
@@ -105,7 +102,7 @@ function normalizeEventFormResult(result, body) {
         .map((task, index) => ({
             title: normalizeText(task.title, 160) || `Chuẩn bị hạng mục ${index + 1}`,
             description: normalizeText(task.description, 1200) || '',
-            due_date: validIsoDate(task.due_date) || fallback.manager_tasks[index % fallback.manager_tasks.length]?.due_date || event.start_date,
+            due_date: validIsoDate(task.due_date) || event.start_date,
             suggested_role: normalizeText(task.suggested_role, 80) || 'manager',
             status: normalizeText(task.status, 40) || 'assigned',
         }))
@@ -117,6 +114,37 @@ function normalizeEventFormResult(result, body) {
         mode,
         event,
         manager_tasks: managerTasks.length ? managerTasks : fallback.manager_tasks.slice(0, taskLimit),
+    };
+}
+
+function pickEventFields(event) {
+    if (!event || typeof event !== 'object') return null;
+    return {
+        title: normalizeText(event.title, 160),
+        start_date: validIsoDate(event.start_date),
+        end_date: validIsoDate(event.end_date),
+        description: normalizeText(event.description, 1000),
+    };
+}
+
+// Chỉ gửi cho LLM những trường cần thiết, có giới hạn độ dài, thay vì nguyên req.body.
+function buildEventAiPayload(body, prompt) {
+    const existingTasks = Array.isArray(body.existing_tasks) ? body.existing_tasks : [];
+    return {
+        mode: normalizeEventMode(body.mode),
+        prompt,
+        today: validIsoDate(body.today) || new Date().toISOString().slice(0, 10),
+        requested_task_count: body.requested_task_count,
+        current_event: pickEventFields(body.current_event),
+        existing_tasks: existingTasks
+            .filter((task) => task && typeof task === 'object')
+            .slice(0, MAX_EXISTING_TASKS)
+            .map((task) => ({
+                title: normalizeText(task.title, 160),
+                description: normalizeText(task.description, 300),
+                due_date: validIsoDate(task.due_date),
+                status: normalizeText(task.status, 40),
+            })),
     };
 }
 
@@ -297,7 +325,7 @@ exports.generateEventFormAI = async (req, res) => {
         }
 
         const body = req.body || {};
-        const normalizedPrompt = normalizeText(body.prompt);
+        const normalizedPrompt = normalizeText(body.prompt, MAX_EVENT_PROMPT_LENGTH);
         if (!normalizedPrompt) {
             return res.status(400).json({
                 success: false,
@@ -305,24 +333,18 @@ exports.generateEventFormAI = async (req, res) => {
             });
         }
 
-        const aiPayload = {
-            ...body,
-            mode: normalizeEventMode(body.mode),
-            prompt: normalizedPrompt,
-            today: validIsoDate(body.today) || new Date().toISOString().slice(0, 10),
-            account_id: accountId,
-            user: {
-                account_id: accountId,
-                role: req.user?.role || null,
-                role_id: req.user?.role_id || null,
-                person_id: req.user?.person_id || null,
-                clan_id: body.clan_id || req.user?.clan_id || null,
-            },
-        };
-        const fallback = fallbackEventForm(aiPayload);
+        const aiPayload = buildEventAiPayload(body, normalizedPrompt);
         const raw = await callGroq(buildEventFormPrompt(), JSON.stringify(aiPayload, null, 2), 1800);
         const parsed = raw ? parseJsonObject(raw) : null;
-        const normalized = normalizeEventFormResult(parsed || fallback, aiPayload);
+        if (!parsed) {
+            // Không trả form giả khi AI lỗi để người dùng biết cần thử lại.
+            return res.status(503).json({
+                success: false,
+                code: 'AI_UNAVAILABLE',
+                message: 'AI tạm thời không phản hồi. Vui lòng thử lại sau hoặc tạo sự kiện thủ công.',
+            });
+        }
+        const normalized = normalizeEventFormResult(parsed, aiPayload);
         return res.json({ success: true, ...normalized });
     } catch (error) {
         console.error('generateEventFormAI error:', error);
@@ -345,7 +367,7 @@ exports.extractGenealogyAI = async (req, res) => {
         }
 
         const body = req.body || {};
-        const prompt = normalizeText(body.prompt);
+        const prompt = normalizeText(body.prompt, MAX_GENEALOGY_PROMPT_LENGTH);
         const inputSource = VALID_GENEALOGY_INPUT_SOURCES.has(body.input_source) ? body.input_source : 'text';
         if (!prompt) {
             const result = emptyGenealogyExtractResult();
@@ -353,20 +375,7 @@ exports.extractGenealogyAI = async (req, res) => {
             return res.status(400).json(result);
         }
 
-        const aiPayload = {
-            input_source: inputSource,
-            prompt,
-            clan_id: body.clan_id || req.user?.clan_id || null,
-            context: body.context || {},
-            account_id: accountId,
-            user: {
-                account_id: accountId,
-                role: req.user?.role || null,
-                role_id: req.user?.role_id || null,
-                person_id: req.user?.person_id || null,
-                clan_id: body.clan_id || req.user?.clan_id || null,
-            },
-        };
+        const aiPayload = { input_source: inputSource, prompt };
 
         const raw = await callGroq(buildGenealogyPrompt(), JSON.stringify(aiPayload, null, 2), 2400);
         const parsed = raw ? parseJsonObject(raw) : null;

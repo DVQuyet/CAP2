@@ -4,12 +4,12 @@ const DEFAULT_WINDOW_MS = Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS || 15 * 6
 const DEFAULT_MAX = Number(process.env.AUTH_RATE_LIMIT_MAX || 20);
 const MAX_BUCKETS = Number(process.env.AUTH_RATE_LIMIT_MAX_BUCKETS || 10000);
 
-function createAuthRateLimit({ name, windowMs = DEFAULT_WINDOW_MS, max = DEFAULT_MAX }) {
+function createAuthRateLimit({ name, windowMs = DEFAULT_WINDOW_MS, max = DEFAULT_MAX, keyGenerator = null }) {
     const buckets = new Map();
     let lastCleanupAt = 0;
 
     return function authRateLimit(req, res, next) {
-        const key = String(req.ip || 'anonymous');
+        const key = String((keyGenerator && keyGenerator(req)) || req.ip || 'anonymous');
         const current = Date.now();
 
         if (current - lastCleanupAt > windowMs) {

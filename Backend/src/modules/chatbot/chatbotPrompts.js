@@ -41,14 +41,10 @@ Input: "Ông Hai sinh năm nào?"
 Output: {"intent":"person_info","ast":null,"entities":["Ông Hai"],"subtype":"birth_info","confidence":0.9}`;
 }
 
-function buildExplainPrompt(clanContext, userProfile, recentMemories, relevantTranscripts) {
+function buildExplainPrompt(clanContext, userProfile, recentMemories) {
     const memories = (recentMemories || [])
         .map((memory) => `- ${memory.title || ''}: ${String(memory.content || '').slice(0, 200)}`)
         .join('\n') || 'Chưa có ký ức được ghi nhận.';
-
-    const transcripts = (relevantTranscripts || [])
-        .map((item) => String(item?.transcript || item || '').slice(0, 300))
-        .join('\n') || 'Không có ghi âm liên quan.';
 
     return `Bạn là trợ lý gia phả thân thiện, am hiểu văn hóa Việt Nam.
 Dòng họ: ${clanContext?.clan_name || ''}
@@ -61,9 +57,6 @@ Người đang hỏi:
 
 Ký ức gia đình:
 ${memories}
-
-Ghi âm liên quan:
-${transcripts}
 
 Nguyên tắc:
 1. Trả lời tiếng Việt, tự nhiên như người thân.

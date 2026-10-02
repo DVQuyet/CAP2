@@ -106,10 +106,9 @@ async function getExplanation({
     clanContext,
     userProfile,
     recentMemories,
-    relevantTranscripts,
     history,
 } = {}) {
-    const systemPrompt = buildExplainPrompt(clanContext, userProfile, recentMemories, relevantTranscripts);
+    const systemPrompt = buildExplainPrompt(clanContext, userProfile, recentMemories);
     let userContent = [
         `Intent: ${intent || ''}`,
         `Câu hỏi: "${userMessage || ''}"`,

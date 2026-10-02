@@ -8,7 +8,6 @@ const confidenceService = require('./relationshipConfidenceService');
 const relationshipExplanationAI = require('./relationshipExplanationAI');
 const relationshipSuggestionService = require('./relationshipSuggestionService');
 const chatbotAI = require('./chatbotAI');
-const { extractKeywords } = require('./extractKeywords');
 const { sanitizeMessage, looksLikePromptInjection } = require('./chatbotSecurity');
 const { parseRelationshipExpression } = require('./relationshipQueryParser');
 const { resolveRelationshipExpression } = require('./relationshipExpressionResolver');
@@ -136,6 +135,21 @@ async function getOrCreateChatbotConversation(accountId) {
     return created.insertId;
 }
 
+// Chỉ dùng conversationId client gửi lên khi hội thoại đó thuộc tài khoản đang hỏi;
+// nếu không, quay về hội thoại của chính tài khoản.
+async function resolveOwnedConversationId(accountId, requestedConversationId) {
+    if (!accountId) return null;
+    const requestedId = toPositiveId(requestedConversationId);
+    if (requestedId && await memberSearch.tableExists('conversations')) {
+        const [rows] = await db.query(
+            'SELECT id FROM conversations WHERE id = ? AND account_id = ? LIMIT 1',
+            [requestedId, accountId]
+        );
+        if (rows.length) return rows[0].id;
+    }
+    return getOrCreateChatbotConversation(accountId).catch(() => null);
+}
+
 async function queryOptional(sql, params = []) {
     try {
         const [rows] = await db.query(sql, params);
@@ -165,17 +179,6 @@ async function loadChatbotContext({ clanId, currentMemberId, conversationId, mes
          ORDER BY created_at DESC LIMIT 5`,
         [clanId]
     );
-    const keywords = extractKeywords(message);
-    const relevantTranscripts = keywords
-        ? await queryOptional(
-            `SELECT transcript
-             FROM recordings
-             WHERE clan_id = ? AND status = 'completed'
-               AND MATCH(transcript) AGAINST (? IN BOOLEAN MODE)
-             LIMIT 3`,
-            [clanId, keywords]
-        )
-        : [];
     let history = [];
     if (conversationId && await memberSearch.tableExists('chatbot_messages')) {
         const columns = await getTableColumns('chatbot_messages');
@@ -198,9 +201,7 @@ async function loadChatbotContext({ clanId, currentMemberId, conversationId, mes
         clanInfo: clanInfo || {},
         userProfile: userProfile || {},
         recentMemories,
-        relevantTranscripts,
         history,
-        keywords,
     };
 }
 
@@ -845,7 +846,6 @@ async function explainResolvedIntent({ intent, message, resolvedData, context })
         },
         userProfile: context.userProfile || {},
         recentMemories: context.recentMemories || [],
-        relevantTranscripts: context.relevantTranscripts || [],
         history: context.history || [],
     });
     const explanation = String(result?.data?.explanation || '').trim();
@@ -1264,7 +1264,7 @@ exports.ask = async (req, res) => {
             clanId,
         });
         const conversationMemory = getConversationMemory(memorySessionId);
-        const conversationId = body.conversationId || body.conversation_id || (accountId ? await getOrCreateChatbotConversation(accountId).catch(() => null) : null);
+        const conversationId = await resolveOwnedConversationId(accountId, body.conversationId || body.conversation_id);
         const chatbotContext = await loadChatbotContext({
             clanId,
             currentMemberId,
@@ -1507,15 +1507,17 @@ exports.history = async (req, res) => {
             where.push('clan_id = ?');
             params.push(clanId);
         }
+        // Lịch sử luôn gắn với tài khoản đang đăng nhập; current_member_id do client gửi
+        // lên nên không đủ để phân quyền.
+        if (columns.has('account_id') && accountId) {
+            where.push('account_id = ?');
+            params.push(accountId);
+        } else {
+            return res.json({ success: true, messages: [], pagination: { limit, offset } });
+        }
         if (columns.has('current_member_id')) {
             where.push('current_member_id = ?');
             params.push(currentMemberId);
-        } else if (columns.has('account_id') && accountId) {
-            where.push('account_id = ?');
-            params.push(accountId);
-        }
-        if (!where.length) {
-            return res.json({ success: true, messages: [], pagination: { limit, offset } });
         }
         params.push(limit, offset);
 
