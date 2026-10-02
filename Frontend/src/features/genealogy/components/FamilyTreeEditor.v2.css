@@ -1,0 +1,1453 @@
+/*
+ * Giao diện mới của trình chỉnh sửa cây gia phả (thanh công cụ, vùng vẽ, thẻ, chủ đề màu).
+ * Nạp sau FamilyTreeEditor.css; mọi rule đều bắt đầu bằng .fte2 để ghi đè giao diện cũ
+ * mà không cần !important. Màu sắc lấy từ biến của chủ đề (data-tree-theme).
+ */
+
+/* ===== Chủ đề màu ===== */
+.fte2 {
+    --t-canvas: #f6efe2;
+    --t-canvas-pattern: radial-gradient(circle at 1px 1px, rgba(140, 104, 58, 0.11) 1px, transparent 0);
+    --t-surface: #fffaf1;
+    --t-surface-2: #f3e9d6;
+    --t-border: #e2cfa6;
+    --t-ink: #3b2a1a;
+    --t-muted: #8a7458;
+    --t-accent: #9c2f1c;
+    --t-accent-ink: #fffaf1;
+    --t-accent-soft: rgba(156, 47, 28, 0.1);
+    --t-line: #a98458;
+    --t-line-strong: #8a5a2b;
+    --t-male: #3d6a8a;
+    --t-female: #b4566b;
+    --t-unknown: #9c8b72;
+    --t-gold: #c9a24a;
+    --t-shadow: 0 8px 24px rgba(74, 46, 18, 0.12);
+    --t-card-shadow: 0 2px 8px rgba(74, 46, 18, 0.1);
+    --t-lane: rgba(140, 104, 58, 0.05);
+    --t-font-title: "Noto Serif", "Lora", Georgia, serif;
+    color: var(--t-ink);
+}
+
+.fte2[data-tree-theme="modern"] {
+    --t-canvas: #f5f7fa;
+    --t-canvas-pattern: radial-gradient(circle at 1px 1px, rgba(100, 116, 139, 0.14) 1px, transparent 0);
+    --t-surface: #ffffff;
+    --t-surface-2: #eef2f7;
+    --t-border: #e1e6ee;
+    --t-ink: #1f2937;
+    --t-muted: #6b7280;
+    --t-accent: #2563eb;
+    --t-accent-ink: #ffffff;
+    --t-accent-soft: rgba(37, 99, 235, 0.1);
+    --t-line: #9aa8bd;
+    --t-line-strong: #64748b;
+    --t-male: #2f6fd6;
+    --t-female: #d0457f;
+    --t-unknown: #94a3b8;
+    --t-gold: #f59e0b;
+    --t-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
+    --t-card-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+    --t-lane: rgba(100, 116, 139, 0.05);
+    --t-font-title: "Manrope", "Segoe UI", sans-serif;
+}
+
+.fte2[data-tree-theme="dark"] {
+    --t-canvas: #171a21;
+    --t-canvas-pattern: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.06) 1px, transparent 0);
+    --t-surface: #232833;
+    --t-surface-2: #2c3240;
+    --t-border: #3a4252;
+    --t-ink: #e8eaf0;
+    --t-muted: #9aa3b2;
+    --t-accent: #f0b35a;
+    --t-accent-ink: #1b1d22;
+    --t-accent-soft: rgba(240, 179, 90, 0.14);
+    --t-line: #6b7690;
+    --t-line-strong: #9aa6c0;
+    --t-male: #6ea8fe;
+    --t-female: #f08bb4;
+    --t-unknown: #8892a6;
+    --t-gold: #f0b35a;
+    --t-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+    --t-card-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+    --t-lane: rgba(255, 255, 255, 0.03);
+    --t-font-title: "Manrope", "Segoe UI", sans-serif;
+}
+
+/* ===== Khung: luôn vừa chiều cao màn hình, vùng vẽ chiếm phần còn lại ===== */
+.fte-shell.fte2 {
+    position: relative;
+    height: clamp(520px, calc(100dvh - 48px), 1400px);
+    gap: 10px;
+    padding: 0;
+}
+
+.fte-shell.fte2.is-mobile {
+    height: clamp(460px, calc(100dvh - 24px), 2000px);
+    gap: 0;
+}
+
+.fte-shell.fte2.is-fullscreen {
+    height: 100dvh;
+    padding: 12px;
+    background: var(--t-canvas);
+}
+
+.fte-shell.fte2.is-mobile.is-fullscreen {
+    padding: 0;
+}
+
+.fte2 .fte-workspace,
+.fte-shell.fte2.is-fullscreen .fte-workspace {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+    margin: 0;
+    padding: 0;
+}
+
+.fte2 .fte-viewport,
+.fte-shell.fte2.is-fullscreen .fte-viewport {
+    position: absolute;
+    inset: 0;
+    min-height: 0;
+    height: auto;
+    border: 1px solid var(--t-border);
+    border-radius: 16px;
+    background-color: var(--fte-tree-bg, var(--t-canvas));
+    background-image: var(--t-canvas-pattern);
+    background-size: 22px 22px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.fte-shell.fte2.is-mobile .fte-viewport {
+    border-radius: 14px;
+}
+
+.fte2 .fte-transformWrapper {
+    width: 100%;
+    height: 100%;
+}
+
+.fte2 .fte-canvas {
+    background: transparent;
+}
+
+.fte2 .fte-loading {
+    min-height: 0;
+    height: 100%;
+    color: var(--t-muted);
+}
+
+/* ===== Thanh công cụ máy tính ===== */
+.fte2-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 58px;
+    padding: 8px 10px;
+    border: 1px solid var(--t-border);
+    border-radius: 14px;
+    background: var(--t-surface);
+    box-shadow: var(--t-card-shadow);
+    position: relative;
+    z-index: 30;
+    flex: 0 0 auto;
+}
+
+.fte2-toolbarSearch {
+    flex: 0 1 360px;
+    min-width: 200px;
+    position: relative;
+}
+
+.fte2-toolbarSpacer {
+    flex: 1 1 auto;
+}
+
+.fte2-toolbarActions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.fte2 button {
+    font: inherit;
+}
+
+.fte2-iconBtn,
+.fte2-chipBtn,
+.fte2-primaryBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 40px;
+    border-radius: 10px;
+    border: 1px solid var(--t-border);
+    background: var(--t-surface);
+    color: var(--t-ink);
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fte2-iconBtn {
+    width: 40px;
+    padding: 0;
+}
+
+.fte2-chipBtn {
+    padding: 0 12px;
+    max-width: 240px;
+    font-size: 0.88rem;
+    font-weight: 700;
+}
+
+.fte2-chipText {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fte2-primaryBtn {
+    padding: 0 14px;
+    border-color: var(--t-accent);
+    background: var(--t-accent);
+    color: var(--t-accent-ink);
+    font-size: 0.9rem;
+    font-weight: 800;
+}
+
+.fte2-iconBtn:hover:not(:disabled),
+.fte2-chipBtn:hover:not(:disabled) {
+    background: var(--t-surface-2);
+}
+
+.fte2-primaryBtn:hover:not(:disabled) {
+    filter: brightness(1.08);
+}
+
+.fte2-iconBtn.is-active,
+.fte2-chipBtn.is-active {
+    border-color: var(--t-accent);
+    background: var(--t-accent-soft);
+    color: var(--t-accent);
+}
+
+.fte2-iconBtn:disabled,
+.fte2-primaryBtn:disabled,
+.fte2-toolItem:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.fte2 .material-symbols-outlined {
+    font-size: 21px;
+    line-height: 1;
+}
+
+.fte2-badge {
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: var(--t-accent-soft);
+    color: var(--t-accent);
+    font-size: 0.78rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.fte2-segmented {
+    display: inline-flex;
+    padding: 3px;
+    gap: 2px;
+    border-radius: 11px;
+    background: var(--t-surface-2);
+    border: 1px solid var(--t-border);
+}
+
+.fte2-segmented button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--t-muted);
+    font-size: 0.86rem;
+    font-weight: 800;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.fte2-segmented button.is-active {
+    background: var(--t-surface);
+    color: var(--t-ink);
+    box-shadow: var(--t-card-shadow);
+}
+
+.fte2-segmented--block {
+    display: flex;
+    width: 100%;
+}
+
+.fte2-segmented--block button {
+    flex: 1 1 0;
+    justify-content: center;
+    height: 38px;
+}
+
+/* Ô tìm kiếm gọn trên thanh công cụ, kết quả hiện dạng danh sách thả xuống. */
+.fte2 .fte-searchPanel--compact {
+    position: relative;
+    width: 100%;
+}
+
+.fte2 .fte-searchPanel--compact .fte-searchForm {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    height: 40px;
+    padding: 0 4px 0 12px;
+    border: 1px solid var(--t-border);
+    border-radius: 10px;
+    background: var(--t-surface-2);
+}
+
+.fte2 .fte-searchPanel--compact .fte-searchForm label {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: block;
+}
+
+.fte2 .fte-searchPanel--compact .fte-searchForm label > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+}
+
+.fte2 .fte-searchPanel--compact input[type="search"] {
+    width: 100%;
+    height: 36px;
+    padding: 0;
+    border: 0;
+    outline: none;
+    background: transparent;
+    color: var(--t-ink);
+    font-size: 0.9rem;
+    box-shadow: none;
+}
+
+.fte2 .fte-searchPanel--compact .fte-iconButton {
+    width: 32px;
+    height: 32px;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--t-muted);
+    box-shadow: none;
+}
+
+.fte2 .fte-searchPanel--compact .fte-iconButton:hover {
+    background: var(--t-surface);
+    color: var(--t-ink);
+}
+
+.fte2 .fte-searchPanel--compact .fte-searchResults {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    z-index: 70;
+    max-height: 320px;
+    overflow: auto;
+    padding: 6px;
+    border: 1px solid var(--t-border);
+    border-radius: 12px;
+    background: var(--t-surface);
+    box-shadow: var(--t-shadow);
+}
+
+.fte2 .fte-searchResults button {
+    color: var(--t-ink);
+}
+
+/* ===== Menu thả xuống ===== */
+.fte2-menuWrap {
+    position: relative;
+}
+
+.fte2-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 80;
+    width: 300px;
+    max-height: min(70vh, 640px);
+    overflow: auto;
+    padding: 8px;
+    border: 1px solid var(--t-border);
+    border-radius: 14px;
+    background: var(--t-surface);
+    box-shadow: var(--t-shadow);
+    color: var(--t-ink);
+}
+
+.fte2-menu--root {
+    left: 0;
+    right: auto;
+    width: 340px;
+    padding: 12px;
+}
+
+.fte2-toolList {
+    display: grid;
+    gap: 6px;
+}
+
+.fte2-toolGroup {
+    display: grid;
+    gap: 2px;
+    padding: 4px 0;
+}
+
+.fte2-toolGroup + .fte2-toolGroup {
+    border-top: 1px solid var(--t-border);
+    padding-top: 8px;
+}
+
+.fte2-toolGroup h4 {
+    margin: 0 0 4px;
+    padding: 0 8px;
+    color: var(--t-muted);
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.fte2-toolItem {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 38px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--t-ink);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+}
+
+.fte2-toolItem:hover:not(:disabled) {
+    background: var(--t-surface-2);
+}
+
+.fte2-toolItem.is-active {
+    background: var(--t-accent-soft);
+    color: var(--t-accent);
+}
+
+.fte2-toolItem .material-symbols-outlined {
+    color: var(--t-muted);
+}
+
+.fte2-toolItem.is-active .material-symbols-outlined {
+    color: var(--t-accent);
+}
+
+/* ===== Tuỳ chỉnh giao diện ===== */
+.fte2-styleControls {
+    display: grid;
+    gap: 12px;
+    padding: 4px 8px 6px;
+}
+
+.fte2-field {
+    display: grid;
+    gap: 6px;
+}
+
+.fte2-fieldRow {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 14px;
+    align-items: end;
+}
+
+.fte2-fieldLabel {
+    color: var(--t-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.fte2-themeChips {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+}
+
+.fte2-themeChip {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 4px;
+    border: 1px solid var(--t-border);
+    border-radius: 10px;
+    background: var(--t-surface);
+    color: var(--t-ink);
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.fte2-themeChip.is-active {
+    border-color: var(--t-accent);
+    box-shadow: 0 0 0 2px var(--t-accent-soft);
+}
+
+.fte2-themeSwatch {
+    width: 100%;
+    height: 22px;
+    border-radius: 6px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.fte2-themeChip.is-traditional .fte2-themeSwatch {
+    background: linear-gradient(90deg, #f6efe2 0 50%, #9c2f1c 50% 75%, #c9a24a 75%);
+}
+
+.fte2-themeChip.is-modern .fte2-themeSwatch {
+    background: linear-gradient(90deg, #f5f7fa 0 50%, #2563eb 50% 75%, #d0457f 75%);
+}
+
+.fte2-themeChip.is-dark .fte2-themeSwatch {
+    background: linear-gradient(90deg, #171a21 0 50%, #f0b35a 50% 75%, #6ea8fe 75%);
+}
+
+.fte2-colorField input[type="color"] {
+    width: 44px;
+    height: 32px;
+    padding: 2px;
+    border: 1px solid var(--t-border);
+    border-radius: 8px;
+    background: var(--t-surface);
+    cursor: pointer;
+}
+
+.fte2-rangeField input[type="range"] {
+    width: 100%;
+    accent-color: var(--t-accent);
+}
+
+/* ===== Cụm zoom nổi ===== */
+.fte2-zoom {
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 4px;
+    border: 1px solid var(--t-border);
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--t-surface) 88%, transparent);
+    backdrop-filter: blur(8px);
+    box-shadow: var(--t-shadow);
+}
+
+.fte2-zoom button {
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--t-ink);
+    cursor: pointer;
+}
+
+.fte2-zoom button:hover {
+    background: var(--t-surface-2);
+}
+
+.fte2-zoom button.is-active {
+    color: var(--t-accent);
+}
+
+.fte2-zoomValue {
+    min-width: 38px;
+    padding: 2px 0;
+    color: var(--t-muted);
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-align: center;
+    user-select: none;
+}
+
+.fte2-zoomDivider {
+    width: 22px;
+    height: 1px;
+    margin: 2px 0;
+    background: var(--t-border);
+}
+
+.fte2-zoom.is-compact {
+    right: 12px;
+    bottom: 88px;
+    border-radius: 999px;
+    padding: 4px;
+}
+
+.fte2-zoom.is-compact button {
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+}
+
+/* ===== Điện thoại: nút nổi kiểu Facebook ===== */
+.fte2-mSearchFab {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    z-index: 25;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 44px;
+    padding: 0 18px 0 14px;
+    border: 1px solid var(--t-border);
+    border-radius: 999px;
+    background: var(--t-surface);
+    color: var(--t-ink);
+    font-size: 0.92rem;
+    font-weight: 700;
+    box-shadow: var(--t-shadow);
+    cursor: pointer;
+}
+
+.fte2-mSearchFab .material-symbols-outlined {
+    color: var(--t-muted);
+}
+
+.fte2-mScrim {
+    position: absolute;
+    inset: 0;
+    z-index: 35;
+    border-radius: 14px;
+    background: rgba(17, 12, 6, 0.32);
+    animation: fte2-fade 0.18s ease;
+}
+
+.fte2-speedDial {
+    position: absolute;
+    right: 12px;
+    bottom: 16px;
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+}
+
+.fte2-fab {
+    width: 58px;
+    height: 58px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 999px;
+    background: var(--t-accent);
+    color: var(--t-accent-ink);
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28), 0 2px 6px rgba(0, 0, 0, 0.18);
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.fte2-fab .material-symbols-outlined {
+    font-size: 30px;
+    transition: transform 0.22s ease;
+}
+
+.fte2-speedDial.is-open .fte2-fab .material-symbols-outlined {
+    transform: rotate(45deg);
+}
+
+.fte2-fab:active {
+    transform: scale(0.94);
+}
+
+.fte2-speedDialActions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 12px;
+    pointer-events: none;
+}
+
+.fte2-speedDial.is-open .fte2-speedDialActions {
+    pointer-events: auto;
+}
+
+.fte2-speedDialAction {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0;
+    margin-right: 7px;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(14px) scale(0.9);
+    transition: opacity 0.16s ease, transform 0.2s ease;
+    transition-delay: calc(var(--i, 0) * 25ms);
+}
+
+.fte2-speedDial.is-open .fte2-speedDialAction {
+    opacity: 1;
+    transform: none;
+}
+
+.fte2-speedDialAction:disabled {
+    opacity: 0.4;
+}
+
+.fte2-speedDialLabel {
+    padding: 7px 12px;
+    border-radius: 10px;
+    background: var(--t-surface);
+    color: var(--t-ink);
+    font-size: 0.88rem;
+    font-weight: 700;
+    white-space: nowrap;
+    box-shadow: var(--t-shadow);
+}
+
+.fte2-speedDialIcon {
+    width: 44px;
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: var(--t-surface);
+    color: var(--t-accent);
+    box-shadow: var(--t-shadow);
+}
+
+.fte2-sheetBackdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 2147483100;
+    border: 0;
+    background: rgba(17, 12, 6, 0.4);
+    animation: fte2-fade 0.18s ease;
+}
+
+.fte2-sheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 2147483101;
+    max-height: 82dvh;
+    display: flex;
+    flex-direction: column;
+    border-radius: 20px 20px 0 0;
+    background: var(--t-surface);
+    color: var(--t-ink);
+    box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.2);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    animation: fte2-sheet-in 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.fte2-sheetHandle {
+    width: 40px;
+    height: 4px;
+    margin: 8px auto 2px;
+    border-radius: 999px;
+    background: var(--t-border);
+}
+
+.fte2-sheetHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 16px 10px;
+    border-bottom: 1px solid var(--t-border);
+}
+
+.fte2-sheetHeader strong {
+    font-size: 1.02rem;
+}
+
+.fte2-sheetHeader button {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 999px;
+    background: var(--t-surface-2);
+    color: var(--t-ink);
+}
+
+.fte2-sheetBody {
+    display: grid;
+    gap: 14px;
+    padding: 14px 16px 20px;
+    overflow: auto;
+}
+
+.fte2-sheetSection {
+    padding-top: 12px;
+    border-top: 1px solid var(--t-border);
+}
+
+.fte2-sheet .fte2-toolItem {
+    min-height: 46px;
+    font-size: 0.95rem;
+}
+
+@keyframes fte2-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fte2-sheet-in {
+    from { transform: translateY(100%); }
+    to { transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .fte2-speedDialAction,
+    .fte2-fab,
+    .fte2-fab .material-symbols-outlined,
+    .fte2-sheet,
+    .fte2-sheetBackdrop,
+    .fte2-mScrim {
+        transition: none;
+        animation: none;
+    }
+}
+
+/* Ẩn cụm zoom khi menu nút nổi đang mở để các nút không chồng lên nhau. */
+.fte2 .fte-workspace:has(.fte2-speedDial.is-open) .fte2-zoom {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* ===== Thẻ người ===== */
+.fte2 .fte-canvas .fte-personCard,
+.fte2 .fte-canvas .fte-coupleCard {
+    border: 1px solid var(--t-border);
+    border-radius: 12px;
+    background: var(--t-surface);
+    color: var(--t-ink);
+    box-shadow: var(--t-card-shadow);
+    transition: box-shadow 0.18s ease, border-color 0.18s ease, opacity 0.18s ease, transform 0.18s ease;
+}
+
+.fte2 .fte-canvas .fte-personCard:hover,
+.fte2 .fte-canvas .fte-coupleCard:hover {
+    border-color: color-mix(in srgb, var(--t-accent) 45%, var(--t-border));
+    box-shadow: var(--t-shadow);
+    filter: none;
+}
+
+.fte2 .fte-canvas .fte-personCard {
+    display: block;
+    padding: 10px 12px 10px 16px;
+    /* Cho các nút thao tác khi rê chuột hiện ra ngoài mép thẻ. */
+    overflow: visible;
+}
+
+/* Dải màu bên trái theo giới tính; dâu/rể nhạt hơn người trực hệ. */
+.fte2 .fte-canvas .fte-personCard::before,
+.fte2 .fte-canvas .fte-coupleHalf::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 5px;
+    background: var(--t-unknown);
+    pointer-events: none;
+}
+
+.fte2 .fte-canvas .fte-personCard::before {
+    border-radius: 12px 0 0 12px;
+}
+
+.fte2 .fte-canvas .fte-personCard.is-male::before,
+.fte2 .fte-canvas .fte-coupleHalf.is-male::before {
+    background: var(--t-male);
+}
+
+.fte2 .fte-canvas .fte-personCard.is-female::before,
+.fte2 .fte-canvas .fte-coupleHalf.is-female::before {
+    background: var(--t-female);
+}
+
+.fte2 .fte-canvas .fte-personCard.is-inLaw::before,
+.fte2 .fte-canvas .fte-coupleHalf.is-inLaw::before {
+    opacity: 0.38;
+}
+
+.fte2 .fte-canvas .fte-coupleHalf.is-left::before {
+    border-radius: 12px 0 0 12px;
+}
+
+.fte2-cardBody {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+}
+
+.fte2-cardText {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: grid;
+    gap: 3px;
+    text-align: left;
+}
+
+.fte2 .fte-canvas .fte-cardName {
+    margin: 0;
+    color: var(--t-ink);
+    font-size: calc(var(--fte-card-name-size, 17px) * 0.88);
+    font-weight: 800;
+    line-height: 1.2;
+    text-align: left;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.fte2 .fte-canvas .fte-cardMeta {
+    color: var(--t-muted);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.25;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.fte2 .fte-canvas .fte2-avatar {
+    flex: 0 0 auto;
+    max-width: none;
+    line-height: 1;
+    white-space: normal;
+    width: 46px;
+    height: 46px;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    border-radius: 999px;
+    border: 2px solid var(--t-unknown);
+    background: color-mix(in srgb, var(--t-unknown) 16%, var(--t-surface));
+    color: var(--t-unknown);
+    font-family: var(--t-font-title);
+    font-size: 19px;
+    font-weight: 800;
+}
+
+.fte2 .fte-canvas .fte2-avatar.is-male {
+    border-color: var(--t-male);
+    background: color-mix(in srgb, var(--t-male) 14%, var(--t-surface));
+    color: var(--t-male);
+}
+
+.fte2 .fte-canvas .fte2-avatar.is-female {
+    border-color: var(--t-female);
+    background: color-mix(in srgb, var(--t-female) 14%, var(--t-surface));
+    color: var(--t-female);
+}
+
+.fte2 .fte-canvas .fte2-avatar > span {
+    max-width: none;
+    overflow: visible;
+    color: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: 1;
+}
+
+.fte2 .fte-canvas .fte2-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.fte2 .fte-canvas .fte2-avatar.is-deceased {
+    filter: grayscale(1);
+    opacity: 0.85;
+}
+
+.fte2 .fte-canvas .fte2-deceasedTag {
+    max-width: none;
+    text-align: center;
+    position: absolute;
+    top: -4px;
+    right: -6px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--t-ink) 9%, transparent);
+    color: var(--t-muted);
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.5;
+    white-space: nowrap;
+}
+
+.fte2-srOnly {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+.fte2 .fte-canvas .fte-personCard.is-deceased,
+.fte2 .fte-canvas .fte-coupleHalf.is-deceased {
+    background: color-mix(in srgb, var(--t-surface-2) 55%, var(--t-surface));
+}
+
+/* Chế độ tổng quan: không ảnh, không thông tin phụ, tên căn giữa. */
+.fte2 .fte-canvas .is-overview .fte2-cardText,
+.fte2 .fte-canvas .is-overview .fte-cardName {
+    text-align: center;
+}
+
+.fte2 .fte-canvas .is-overview .fte2-deceasedTag {
+    display: none;
+}
+
+/* Thẻ vợ chồng */
+.fte2 .fte-canvas .fte-coupleCard {
+    padding: 0;
+}
+
+.fte2 .fte-canvas .fte-coupleHalf {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px 10px 16px;
+    background: transparent;
+}
+
+.fte2 .fte-canvas .fte-coupleHalf.is-right {
+    padding-left: 22px;
+}
+
+.fte2 .fte-canvas .fte-coupleHalf.is-deceased {
+    background: color-mix(in srgb, var(--t-surface-2) 55%, var(--t-surface));
+}
+
+.fte2 .fte-canvas .fte-coupleHalf.is-right.is-deceased {
+    border-radius: 0 12px 12px 0;
+}
+
+.fte2 .fte-canvas .fte-coupleHalf.is-left.is-deceased {
+    border-radius: 12px 0 0 12px;
+}
+
+.fte2 .fte-canvas .fte-coupleHalf:hover,
+.fte2 .fte-canvas .fte-coupleHalf.is-selectedPerson {
+    background: var(--t-accent-soft);
+}
+
+.fte2 .fte-canvas .fte-coupleHalf.is-selectedPerson {
+    box-shadow: inset 0 0 0 2px var(--t-accent);
+}
+
+.fte2 .fte-canvas .fte-coupleDivider {
+    top: 12px;
+    bottom: 12px;
+    width: 1px;
+    background: var(--t-border);
+    z-index: 2;
+}
+
+.fte2-coupleKnot {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 18px;
+    height: 18px;
+    transform: translate(-50%, -50%);
+    border: 1px solid var(--t-border);
+    border-radius: 999px;
+    background: var(--t-surface);
+}
+
+.fte2-coupleKnot::after {
+    content: "♥";
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: var(--t-accent);
+    font-size: 9px;
+    line-height: 1;
+}
+
+.fte2 .fte-canvas .fte-coupleCard.is-vertical .fte-coupleDivider {
+    left: 14px;
+    right: 14px;
+    top: 50%;
+    bottom: auto;
+    width: auto;
+    height: 1px;
+}
+
+.fte2 .fte-canvas .fte-coupleCard.is-vertical .fte-coupleHalf.is-right {
+    padding-left: 16px;
+}
+
+.fte2 .fte-canvas .fte-coupleCard.is-vertical .fte-coupleHalf.is-left::before {
+    border-radius: 12px 0 0 0;
+}
+
+.fte2 .fte-canvas .fte-coupleCard.is-vertical .fte-coupleHalf.is-right::before {
+    border-radius: 0 0 0 12px;
+}
+
+/* Trạng thái */
+.fte2 .fte-canvas .fte-personCard.is-selected,
+.fte2 .fte-canvas .fte-coupleCard.is-selected {
+    border-color: var(--t-accent);
+    box-shadow: 0 0 0 3px var(--t-accent-soft), var(--t-shadow);
+}
+
+.fte2 .fte-canvas .fte-personCard.is-searchMatch {
+    border-color: var(--t-gold);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--t-gold) 35%, transparent), var(--t-shadow);
+}
+
+.fte2 .fte-canvas .fte-personCard.is-dimmed,
+.fte2 .fte-canvas .fte-coupleCard.is-dimmed {
+    opacity: 0.32;
+}
+
+.fte2 .fte-canvas .fte-personCard.is-founder {
+    border-color: color-mix(in srgb, var(--t-gold) 70%, var(--t-border));
+}
+
+.fte2 .fte-canvas .fte-personCard.is-founder .fte2-avatar {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--t-gold) 40%, transparent);
+}
+
+/* Thu phóng theo ngữ nghĩa: khi xem xa chỉ hiện tên với chữ to hơn. */
+.fte2 .fte-canvas.is-zoomFar .fte2-avatar,
+.fte2 .fte-canvas.is-zoomFar .fte-cardMeta,
+.fte2 .fte-canvas.is-zoomFar .fte2-deceasedTag,
+.fte2 .fte-canvas.is-zoomFar .fte2-coupleKnot {
+    display: none;
+}
+
+.fte2 .fte-canvas.is-zoomFar .fte2-cardText,
+.fte2 .fte-canvas.is-zoomFar .fte-cardName {
+    text-align: center;
+}
+
+.fte2 .fte-canvas.is-zoomFar .fte-cardName {
+    font-size: calc(var(--fte-card-name-size, 17px) * 0.88 * var(--fte2-zoom-comp, 1));
+    line-height: 1.1;
+}
+
+/* ===== Dải thế hệ ===== */
+.fte2 .fte-canvas .fte2-lane {
+    position: absolute;
+    z-index: 0;
+    border-radius: 18px;
+    pointer-events: none;
+}
+
+.fte2 .fte-canvas .fte2-lane.is-striped {
+    background: var(--t-lane);
+}
+
+.fte2-laneLabel {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 4px 10px;
+    border: 1px solid var(--t-border);
+    border-radius: 999px;
+    background: var(--t-surface);
+    color: var(--t-muted);
+    font-family: var(--t-font-title);
+    font-size: calc(16px * var(--fte2-zoom-comp, 1));
+    font-weight: 800;
+    white-space: nowrap;
+    transform-origin: left center;
+}
+
+.fte2 .fte-canvas .fte-lines {
+    z-index: 1;
+}
+
+/* ===== Đường nối ===== */
+.fte2 .fte-lines .fte-line.is-blood {
+    stroke: var(--t-line);
+}
+
+.fte2 .fte-lines .fte-line.is-spouse {
+    stroke: var(--t-line-strong);
+}
+
+.fte2 .fte-lines .fte-line.is-mainBranch {
+    stroke: var(--t-line-strong);
+}
+
+/* Khi chọn một người: tô đậm các đường nối của họ, làm mờ phần còn lại. */
+.fte2 .fte-lines .fte-line.is-related {
+    stroke: var(--t-accent);
+    stroke-width: 3 !important;
+    opacity: 1;
+    filter: none;
+}
+
+.fte2 .fte-lines .fte-line.is-dimmed {
+    opacity: 0.22;
+}
+
+/* Tiêu đề cây theo chủ đề màu */
+.fte2 .fte-canvas .fte-canvasTitle {
+    padding: 6px 10px;
+    border-radius: 12px;
+    background: transparent;
+    backdrop-filter: none;
+    color: var(--t-accent);
+    font-family: var(--t-font-title);
+}
+
+.fte2 .fte-canvas .fte-canvasTitle > span {
+    color: var(--t-muted);
+    letter-spacing: 0.12em;
+}
+
+.fte2 .fte-canvas .fte-canvasTitle > strong {
+    color: inherit;
+}
+
+/* Bỏ khung bao cũ quanh ô tìm kiếm */
+.fte2 .fte-searchPanel.fte-searchPanel--compact {
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+/* Chọn người làm gốc (trong menu máy tính và bảng điện thoại) */
+.fte2 .fte-viewMode {
+    display: grid;
+    gap: 10px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.fte2 .fte-viewMode > button,
+.fte2 .fte-rootPicker label > button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 38px;
+    padding: 0 12px;
+    border: 1px solid var(--t-border);
+    border-radius: 10px;
+    background: var(--t-surface);
+    color: var(--t-ink);
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.fte2 .fte-viewMode > button.is-active,
+.fte2 .fte-rootPicker label > button.is-active {
+    border-color: var(--t-accent);
+    background: var(--t-accent-soft);
+    color: var(--t-accent);
+}
+
+.fte2 .fte-rootPicker {
+    display: grid;
+    gap: 8px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+}
+
+.fte2 .fte-rootPicker label {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px 8px;
+    align-items: center;
+}
+
+.fte2 .fte-rootPicker label > span {
+    grid-column: 1 / -1;
+    color: var(--t-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+.fte2 .fte-rootPicker input[type="search"],
+.fte2 .fte-searchPanel:not(.fte-searchPanel--compact) input[type="search"] {
+    width: 100%;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--t-border);
+    border-radius: 10px;
+    background: var(--t-surface-2);
+    color: var(--t-ink);
+    font-size: 0.92rem;
+    box-shadow: none;
+}
+
+.fte2 .fte-rootPickerResults {
+    /* Chỉ hiện khi ô đang được gõ (rule gốc: :focus-within); nằm trong menu thay vì nổi. */
+    position: static;
+    gap: 2px;
+    max-height: 260px;
+    overflow: auto;
+    padding: 4px;
+    border: 1px solid var(--t-border);
+    border-radius: 10px;
+    background: var(--t-surface);
+    box-shadow: none;
+}
+
+.fte2 .fte-rootPickerResults button,
+.fte2 .fte-searchResults button {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--t-ink);
+    text-align: left;
+    cursor: pointer;
+}
+
+.fte2 .fte-rootPickerResults button:hover,
+.fte2 .fte-searchResults button:hover,
+.fte2 .fte-rootPickerResults button.is-selected {
+    background: var(--t-surface-2);
+}
+
+.fte2 .fte-rootPickerResults small,
+.fte2 .fte-searchResults small {
+    color: var(--t-muted);
+    font-size: 0.78rem;
+}
+
+.fte2 .fte-viewModeRoot {
+    color: var(--t-accent);
+    font-size: 0.82rem;
+    font-weight: 700;
+}
+
+/* Cỡ chữ cố định cho nút thanh công cụ (không phụ thuộc rule cũ) */
+.fte2 .fte2-toolbar .fte2-chipBtn,
+.fte2 .fte2-toolbar .fte2-primaryBtn {
+    font-size: 0.88rem;
+    line-height: 1;
+}
+
+.fte2 .fte2-themeChip {
+    font-size: 0.74rem;
+    white-space: nowrap;
+}
+
+.fte2 .fte-viewMode {
+    grid-template-columns: 1fr;
+}
+
+/* Ô tìm kiếm trong bảng trượt điện thoại */
+.fte2-sheet .fte-searchPanel {
+    display: grid;
+    gap: 10px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.fte2-sheet .fte-searchForm {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.fte2-sheet .fte-searchForm label {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.fte2-sheet .fte-searchForm label > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+}
+
+.fte2-sheet .fte-searchForm .fte-iconButton {
+    width: 40px;
+    height: 40px;
+    min-height: 0;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--t-border);
+    border-radius: 10px;
+    background: var(--t-surface);
+    color: var(--t-ink);
+    box-shadow: none;
+}
+
+.fte2-sheet .fte-searchResults {
+    display: grid;
+    gap: 2px;
+}
+
+/* Rule cũ trên điện thoại ép nút "Toàn bộ cây" thành ô 44px không chữ (dùng !important). */
+.fte2 .fte-viewMode > button {
+    width: 100% !important;
+    padding: 0 12px !important;
+    font-size: 0.9rem;
+}

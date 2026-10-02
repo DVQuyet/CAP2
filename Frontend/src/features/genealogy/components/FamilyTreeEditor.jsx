@@ -5,8 +5,10 @@ import { createPersonAPI, deletePersonAPI, linkRelationsAPI, saveTreeLayoutBatch
 import { extractGenealogyAI } from "../../../api/aiServerService";
 import { onSocketEvent } from "../../../services/socket";
 import { vietnamDateToIso } from "../../../shared/utils/dateFormat";
-import TreeSearchPanel from "./TreeSearchPanel";
-import TreeViewModeSelector from "./TreeViewModeSelector";
+import TreeToolbar from "./TreeToolbarParts/TreeToolbar";
+import TreeMobileControls from "./TreeToolbarParts/TreeMobileControls";
+import TreeZoomControls from "./TreeToolbarParts/TreeZoomControls";
+import TreeStyleControls from "./TreeToolbarParts/TreeStyleControls";
 import CoupleCard from "./CoupleCard";
 import TreeNodeCard from "./TreeNodeCard";
 import { useLanguage } from "../../../i18n/LanguageContext";
@@ -24,10 +26,11 @@ import { autoLayoutPeople, findFounderIds, generationY, mergeManualAndAutoLayout
 import { blankCreateForm, buildChildRelationPayload, findParentFamilyForChild, findSpouse, findSpouseFamily, getChildOrderMapForFamily, getChildrenForFamily, getFamiliesForPerson, relationCandidates, relationLinkedIds } from "../utils/tree-editor/treeRelations";
 import { downloadBlob, exportFileName, exportPreparedTree, prepareTreeExportPayload } from "../utils/tree-editor/treeExport";
 import { DEFAULT_TREE_EXPORT_OPTIONS, TREE_EXPORT_FORMAT, TREE_EXPORT_MODE } from "../utils/tree-editor/treeExportConfig";
-import { TREE_CARD_ORIENTATION, TREE_DISPLAY_MODE } from "../utils/tree-editor/treeDisplayConfig";
+import { TREE_CARD_ORIENTATION, TREE_DISPLAY_MODE, TREE_THEME, TREE_THEMES, TREE_THEME_BACKGROUNDS } from "../utils/tree-editor/treeDisplayConfig";
 import { DISPLAY_NODE_TYPE, buildDisplayTree, buildDisplayTreeLines } from "../utils/tree-editor/treeDisplayNodes";
 import { CenterNoticeDialog, CreatePersonDialog, PersonInspector, QuickCreateRelationDialog, RelationSelectDialog, ArchivedMembersDialog } from "./FamilyTreeEditorParts/index.js";
 import "./FamilyTreeEditor.css";
+import "./FamilyTreeEditor.v2.css";
 
 const shouldSuppressInlineRelationError = (error) => Boolean(error?.__centeredNoticeShown);
 
@@ -104,11 +107,21 @@ const DEFAULT_TREE_TITLE_LABEL = {
 };
 const DEFAULT_TREE_STYLE = {
   cardOrientation: TREE_CARD_ORIENTATION.HORIZONTAL,
-  backgroundColor: "#f8f2e8",
+  theme: TREE_THEME.TRADITIONAL,
+  // null = dùng màu nền của chủ đề.
+  backgroundColor: null,
   fontSize: 17,
 };
+// Màu nền mặc định cũ; dữ liệu đã lưu với màu này được coi là "chưa chọn màu riêng".
+const LEGACY_DEFAULT_BACKGROUND = "#f8f2e8";
 
 const TREE_MOBILE_QUERY = "(max-width: 760px)";
+// Dưới mức zoom này thẻ chỉ hiện tên (chữ lớn hơn) để vẫn đọc được khi xem toàn cây.
+const FAR_ZOOM_SCALE = 0.55;
+// Hệ số phóng chữ = FAR_ZOOM_TEXT_TARGET / zoom, để tên trên màn hình luôn khoảng 9px trở lên.
+const FAR_ZOOM_TEXT_TARGET = 0.66;
+// Khoảng trống bên trái cây dành cho nhãn "Đời N".
+const GENERATION_LANE_GUTTER = 120;
 
 // Giữ tiêu đề luôn nằm trong vùng an toàn của canvas.
 // Local layout draft is disabled by default; database layout is the canonical source.
@@ -134,7 +147,11 @@ const normalizeTreeStyle = (value) => {
     cardOrientation: source.cardOrientation === TREE_CARD_ORIENTATION.VERTICAL
       ? TREE_CARD_ORIENTATION.VERTICAL
       : TREE_CARD_ORIENTATION.HORIZONTAL,
-    backgroundColor: normalizeHexColor(source.backgroundColor ?? source.background_color, DEFAULT_TREE_STYLE.backgroundColor),
+    theme: TREE_THEMES.includes(source.theme) ? source.theme : DEFAULT_TREE_STYLE.theme,
+    backgroundColor: (() => {
+      const color = normalizeHexColor(source.backgroundColor ?? source.background_color, null);
+      return color && color.toLowerCase() !== LEGACY_DEFAULT_BACKGROUND ? color : null;
+    })(),
     fontSize: Number.isFinite(fontSize) ? clamp(fontSize, 12, 28) : DEFAULT_TREE_STYLE.fontSize,
     titleLabel: normalizeTreeTitleLabel(source.titleLabel || source.title_label),
   };
@@ -1087,6 +1104,33 @@ const coupleActionPerson = useMemo(
     return { width: maxX, height: maxY };
   }, [displayNodes, lines]);
 
+  const generationLanes = useMemo(() => {
+    const byGeneration = new Map();
+    displayNodes.forEach((node) => {
+      const generation = toInt(node.generation, 0);
+      if (!generation) return;
+      const top = toInt(node.y, 0);
+      const bottom = top + node.height;
+      const current = byGeneration.get(generation);
+      byGeneration.set(generation, current
+        ? { top: Math.min(current.top, top), bottom: Math.max(current.bottom, bottom) }
+        : { top, bottom });
+    });
+    if (byGeneration.size < 2) return [];
+    const left = Math.min(...displayNodes.map((node) => toInt(node.x, 0))) - GENERATION_LANE_GUTTER;
+    const right = Math.max(...displayNodes.map((node) => toInt(node.x, 0) + node.width)) + 40;
+    return [...byGeneration.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([generation, range], index) => ({
+        generation,
+        left: Math.max(0, left),
+        top: range.top - 18,
+        width: right - Math.max(0, left),
+        height: range.bottom - range.top + 36,
+        striped: index % 2 === 1,
+      }));
+  }, [displayNodes]);
+
   const canvasPointFromEvent = useCallback((event) => {
     const rect = treeRef.current?.getBoundingClientRect();
     const scale = scaleRef.current || 1;
@@ -1687,6 +1731,13 @@ const coupleActionPerson = useMemo(
       const dragGroup = dragGroupRef.current;
       dragGroupRef.current = null;
       if (!finalPosition) return;
+      if (finalPosition.tree_x === originX && finalPosition.tree_y === originY) {
+        // Bấm mà không kéo: chọn người này để tô sáng các đường nối của họ.
+        setSelectedType("person");
+        setSelectedCoupleId(null);
+        setSelectedId(person.id);
+        return;
+      }
       if (finalPosition.tree_x !== originX || finalPosition.tree_y !== originY) {
         const deltaX = finalPosition.tree_x - originX;
         const deltaY = finalPosition.tree_y - originY;
@@ -2329,7 +2380,7 @@ const coupleActionPerson = useMemo(
         options: {
           ...normalizedOptions,
           lineRoutes,
-          directLineagePersonIds: Array.from(directLineagePersonIds),
+          directLineagePersonIds: Array.from(bloodLinePersonIds),
           displayNodes,
           displayLines: lines,
           treeStyle,
@@ -2340,7 +2391,7 @@ const coupleActionPerson = useMemo(
       const blob = await exportPreparedTree({ ...payload, clan, t });
       const extension = normalizedOptions.format === TREE_EXPORT_FORMAT.SVG ? "svg" : normalizedOptions.format === TREE_EXPORT_FORMAT.PDF ? "pdf" : "png";
       downloadBlob(blob, exportFileName(clan?.clan_name, extension));
-      setStatus(normalizedOptions.format === TREE_EXPORT_FORMAT.SVG ? "Da xuat SVG." : t("tree.messages.exportSuccess"));
+      setStatus(normalizedOptions.format === TREE_EXPORT_FORMAT.SVG ? t("tree.export.svgDone") : t("tree.messages.exportSuccess"));
       setExportDialogOpen(false);
     } catch (error) {
       console.error("Export tree failed:", error);
@@ -2862,6 +2913,18 @@ const submitCreateDialog = async () => {
     () => findFounderIds(people, canonicalTree.families, canonicalTree.childRows),
     [people, canonicalTree.families, canonicalTree.childRows],
   );
+  // Người trực hệ để tô màu thẻ: con cháu có cha mẹ trong cây, cộng thủy tổ ở gốc
+  // (người chồng của cặp gốc, hoặc người gốc không có chồng).
+  const bloodLinePersonIds = useMemo(() => {
+    const result = new Set(directLineagePersonIds);
+    founderIds.forEach((id) => {
+      const isWifeOfFounder = asArray(canonicalTree.families).some((family) => (
+        Number(family.mother_id) === Number(id) && founderIds.has(Number(family.father_id))
+      ));
+      if (!isWifeOfFounder) result.add(Number(id));
+    });
+    return result;
+  }, [canonicalTree.families, directLineagePersonIds, founderIds]);
 
   const beginCardResize = useCallback((event, person) => {
     if (!canEditPerson(person.id) || (event.button != null && event.button !== 0)) return;
@@ -2930,23 +2993,29 @@ const submitCreateDialog = async () => {
       };
     }, { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity });
 
+    if (generationLanes.length) bounds.left -= GENERATION_LANE_GUTTER;
     const treeWidth = Math.max(1, bounds.right - bounds.left);
     const treeHeight = Math.max(1, bounds.bottom - bounds.top);
     const padding = isTreeMobile ? 42 : 92;
     const usableWidth = Math.max(1, rect.width - padding * 2);
     const usableHeight = Math.max(1, rect.height - padding * 2);
-    const minFitScale = isTreeMobile ? 0.24 : 0.32;
-    const nextScale = clamp(Math.min(usableWidth / treeWidth, usableHeight / treeHeight), minFitScale, 1.05);
+    // Không thu nhỏ quá mức đọc được; cây lớn hơn màn hình thì căn theo đỉnh để thấy thủy tổ trước.
+    const minFitScale = isTreeMobile ? 0.3 : 0.2;
+    const fitScale = Math.min(usableWidth / treeWidth, usableHeight / treeHeight);
+    const nextScale = clamp(fitScale, minFitScale, 1.05);
     const treeCenterX = bounds.left + treeWidth / 2;
     const treeCenterY = bounds.top + treeHeight / 2;
     const nextX = rect.width / 2 - treeCenterX * nextScale;
-    const nextY = rect.height / 2 - treeCenterY * nextScale;
+    const overflowsVertically = treeHeight * nextScale > usableHeight;
+    const nextY = overflowsVertically
+      ? padding + (isTreeMobile ? 48 : 0) - bounds.top * nextScale
+      : rect.height / 2 - treeCenterY * nextScale;
 
     scaleRef.current = nextScale;
     setCurrentScale(nextScale);
     api.setTransform(nextX, nextY, nextScale, duration);
     return true;
-  }, [displayNodes, isTreeMobile]);
+  }, [displayNodes, generationLanes.length, isTreeMobile]);
 
   useEffect(() => {
     document.body.classList.toggle("fte-bodyFullscreen", treeFullscreen);
@@ -3029,11 +3098,80 @@ const submitCreateDialog = async () => {
     setDraggingTitleLabel(false);
   }, []);
 
+  const busy = loading || saving;
+  const toggleTreeFullscreen = () => {
+    setTreeFullscreen((value) => !value);
+    window.setTimeout(() => fitTreeToScreen(260), 120);
+  };
+  const treeSearchProps = {
+    query: treeSearch.query,
+    onQueryChange: treeSearch.setQuery,
+    onSubmit: treeSearch.submitSearch,
+    onClear: treeSearch.clearSearch,
+    submittedQuery: treeSearch.submittedQuery,
+    results: treeSearch.results,
+    onFindMe: handleFindMe,
+    onResultClick: (person) => {
+      if (!visiblePeople.some((item) => Number(item.id) === Number(person.id))) {
+        treeViewMode.setFullMode();
+      }
+      focusPerson(person.id, { search: true });
+    },
+  };
+  const rootPersonForToolbar = people.find((person) => Number(person.id) === Number(treeViewMode.rootPersonId));
+  const rootSelectorProps = {
+    people,
+    mode: treeViewMode.mode,
+    rootPersonId: treeViewMode.rootPersonId,
+    rootName: rootPersonForToolbar ? fullName(rootPersonForToolbar, "") : "",
+    onFullMode: treeViewMode.setFullMode,
+    onRootMode: (personId) => {
+      treeViewMode.setRootMode(personId);
+      focusPerson(personId);
+    },
+  };
+  const toolbarPrimaryActions = [
+    { key: "add", icon: "person_add", label: t("tree.toolbar.addPerson"), primary: true, onClick: () => openCreateDialog("person"), disabled: busy, hidden: !canEditAll },
+    { key: "auto", icon: "auto_fix_high", label: t("tree.toolbar.autoLayout"), title: t("tree.toolbar.autoLayoutHint"), onClick: applyAutoLayoutAndSave, disabled: busy, hidden: !canEditAll },
+    { key: "save", icon: "save", label: t("tree.toolbar.saveLayout"), onClick: saveLayoutToDatabase, disabled: busy, hidden: !canEditAll },
+    { key: "export", icon: "download", label: t("tree.toolbar.exportPng"), onClick: openExportDialog, disabled: busy },
+  ];
+  const toolbarToolGroups = [
+    {
+      key: "layout",
+      label: t("tree.toolbar.groupLayout"),
+      items: [
+        { key: "resetLines", icon: "alt_route", label: t("tree.toolbar.resetLines"), onClick: resetLineRoutes, disabled: busy, hidden: !canEditAll },
+        { key: "bulk", icon: "select_all", label: bulkMoveMode ? t("tree.toolbar.bulkSelectOff") : t("tree.toolbar.bulkSelect"), onClick: toggleBulkMoveMode, disabled: busy, active: bulkMoveMode, hidden: !canEditAll },
+        { key: "resetTitle", icon: "title", label: t("tree.toolbar.resetTitle"), onClick: resetTreeTitleLabel, disabled: busy, hidden: !canEditAll },
+        { key: "reload", icon: "cloud_sync", label: t("tree.toolbar.reloadLayout"), onClick: resetLayoutFromDatabase, disabled: busy },
+        { key: "clearLocal", icon: "delete_sweep", label: t("tree.toolbar.clearLocalLayout"), onClick: resetLocalLayout, disabled: busy },
+      ],
+    },
+    {
+      key: "data",
+      label: t("tree.toolbar.groupData"),
+      items: [
+        { key: "validate", icon: "rule", label: t("tree.toolbar.validate"), onClick: handleValidateTree, disabled: busy },
+        { key: "ai", icon: "auto_awesome", label: t("tree.genealogyAi.open"), onClick: openGenealogyAiDialog, disabled: busy, hidden: !canEditAll },
+        { key: "archive", icon: "inventory_2", label: t("tree.toolbar.archive"), onClick: () => setArchiveDialogOpen(true), disabled: busy, hidden: !canEditAll },
+      ],
+    },
+  ];
+  const mobileSpeedDialActions = [
+    { key: "add", icon: "person_add", label: t("tree.toolbar.addPerson"), onClick: () => openCreateDialog("person"), disabled: busy, hidden: !canEditAll },
+    { key: "findMe", icon: "my_location", label: t("tree.toolbar.findMe"), onClick: handleFindMe },
+    { key: "auto", icon: "auto_fix_high", label: t("tree.toolbar.autoLayout"), onClick: applyAutoLayoutAndSave, disabled: busy, hidden: !canEditAll },
+    { key: "save", icon: "save", label: t("tree.toolbar.saveLayout"), onClick: saveLayoutToDatabase, disabled: busy, hidden: !canEditAll },
+    { key: "export", icon: "download", label: t("tree.toolbar.exportPng"), onClick: openExportDialog, disabled: busy },
+  ];
+  const treeStyleControls = <TreeStyleControls treeStyle={treeStyle} onChange={updateTreeStyle} />;
+
   const treeEditorShell = (
-    <section className={`fte-shell ${treeFullscreen ? "is-fullscreen" : ""}`}>
+    <section className={`fte-shell fte2 ${treeFullscreen ? "is-fullscreen" : ""} ${isTreeMobile ? "is-mobile" : ""}`} data-tree-theme={treeStyle.theme}>
       <TransformWrapper
         initialScale={isTreeMobile ? 0.68 : 0.85}
-        minScale={isTreeMobile ? 0.24 : 0.35}
+        minScale={isTreeMobile ? 0.12 : 0.18}
         maxScale={2.6}
         centerOnInit={true}
         limitToBounds={false}
@@ -3061,392 +3199,20 @@ const submitCreateDialog = async () => {
           setCurrentScale(scale);
         }}
       >
-        {({ zoomIn, zoomOut, resetTransform, centerView }) => (
+        {({ zoomIn, zoomOut }) => (
           <>
-            <div className="fte-toolbar fte-toolbar--desktop fte-toolbar--redesigned">
-              <section className="fte-toolbarZone fte-toolbarZone--left" aria-label="Tree tools">
-                <button
-                  type="button"
-                  onClick={() => openCreateDialog("person")}
-                  disabled={!canEditAll || loading || saving}
-                  title={canEditAll ? t("tree.toolbar.addPerson") : t("tree.toolbar.addPersonAdminOnly")}
-                  className="fte-toolButton"
-                >
-                  <span className="material-symbols-outlined">person_add</span>
-                </button>
-                <button type="button" onClick={openExportDialog} disabled={loading || saving} title={t("tree.toolbar.exportPng")} className="fte-toolButton">
-                  <span className="material-symbols-outlined">download</span>
-                </button>
-                <label className="fte-toolButton fte-toolColor" title="Mau nen cay gia pha">
-                  <span className="material-symbols-outlined">palette</span>
-                  <input
-                    type="color"
-                    value={treeStyle.backgroundColor}
-                    onChange={(event) => updateTreeStyle({ backgroundColor: event.target.value })}
-                    aria-label="Mau nen cay gia pha"
-                  />
-                </label>
-                <label className="fte-toolTextSize" title={`Co chu card: ${treeStyle.fontSize}px`}>
-                  <span className="material-symbols-outlined">format_size</span>
-                  <input
-                    type="range"
-                    min="12"
-                    max="28"
-                    value={treeStyle.fontSize}
-                    onChange={(event) => updateTreeStyle({ fontSize: Number(event.target.value) })}
-                    aria-label="Kich thuoc chu tren card"
-                  />
-                  <output>{treeStyle.fontSize}px</output>
-                </label>
-              </section>
-
-              <section className="fte-toolbarZone fte-toolbarZone--center" aria-label="Search and root person">
-                <TreeSearchPanel
-                  variant="toolbar"
-                  query={treeSearch.query}
-                  onQueryChange={treeSearch.setQuery}
-                  onSubmit={treeSearch.submitSearch}
-                  onClear={treeSearch.clearSearch}
-                  submittedQuery={treeSearch.submittedQuery}
-                  results={treeSearch.results}
-                  onFindMe={handleFindMe}
-                  showFindMe={false}
-                  showClear={false}
-                  onResultClick={(person) => {
-                    if (!visiblePeople.some((item) => Number(item.id) === Number(person.id))) {
-                      treeViewMode.setFullMode();
-                    }
-                    focusPerson(person.id, { search: true });
-                  }}
-                />
-                <TreeViewModeSelector
-                  variant="rootOnly"
-                  people={people}
-                  mode={treeViewMode.mode}
-                  rootPersonId={treeViewMode.rootPersonId}
-                  onFullMode={treeViewMode.setFullMode}
-                  onRootMode={(personId) => {
-                    treeViewMode.setRootMode(personId);
-                    focusPerson(personId);
-                  }}
-                />
-              </section>
-
-              <section className="fte-toolbarZone fte-toolbarZone--right" aria-label="View controls">
-                <div className="fte-viewControlGroup fte-viewControlGroup--mode">
-                  <div className="fte-displayToggle" role="group" aria-label="Tree display mode">
-                    <button type="button" className={treeDisplayMode === TREE_DISPLAY_MODE.OVERVIEW ? "is-active" : ""} onClick={() => setTreeDisplayMode(TREE_DISPLAY_MODE.OVERVIEW)}>
-                      <span>Tong quan</span>
-                    </button>
-                    <button type="button" className={treeDisplayMode === TREE_DISPLAY_MODE.DETAIL ? "is-active" : ""} onClick={() => setTreeDisplayMode(TREE_DISPLAY_MODE.DETAIL)}>
-                      <span>Chi tiet</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="fte-viewControlGroup fte-viewControlGroup--zoom" aria-label="Zoom controls">
-                  <button type="button" onClick={() => zoomOut(0.16, 180)} title={t("tree.toolbar.zoomOut")}>
-                    <span className="material-symbols-outlined">remove</span>
-                  </button>
-                  <span className="fte-zoomValue">{Math.round(currentScale * 100)}%</span>
-                  <button type="button" onClick={() => zoomIn(0.16, 180)} title={t("tree.toolbar.zoomIn")}>
-                    <span className="material-symbols-outlined">add</span>
-                  </button>
-                  <button type="button" onClick={() => fitTreeToScreen(260)} title="Fit to screen">
-                    <span>Fit</span>
-                  </button>
-                </div>
-
-                <div className="fte-viewControlGroup fte-viewControlGroup--layout" aria-label="Layout controls">
-                  <button type="button" onClick={applyAutoLayoutAndSave} disabled={!canEditAll || loading || saving} title={canEditAll ? t("tree.toolbar.autoLayout") : t("tree.toolbar.autoLayoutViewerHint")}>
-                    <span className="material-symbols-outlined">auto_fix_high</span>
-                  </button>
-                  <div className="fte-orientationToggle" role="group" aria-label="Huong card">
-                    <button type="button" className={treeStyle.cardOrientation === TREE_CARD_ORIENTATION.HORIZONTAL ? "is-active" : ""} onClick={() => updateTreeStyle({ cardOrientation: TREE_CARD_ORIENTATION.HORIZONTAL })} title="Card nam ngang">
-                      <span className="material-symbols-outlined">view_agenda</span>
-                    </button>
-                    <button type="button" className={treeStyle.cardOrientation === TREE_CARD_ORIENTATION.VERTICAL ? "is-active" : ""} onClick={() => updateTreeStyle({ cardOrientation: TREE_CARD_ORIENTATION.VERTICAL })} title="Card nam doc">
-                      <span className="material-symbols-outlined">view_stream</span>
-                    </button>
-                  </div>
-                  <button type="button" onClick={resetLineRoutes} disabled={!canEditAll || loading || saving} title="Reset line routes">
-                    <span className="material-symbols-outlined">alt_route</span>
-                  </button>
-                  <button type="button" onClick={saveLayoutToDatabase} disabled={!canEditAll || loading || saving} title="Save layout to database">
-                    <span className="material-symbols-outlined">save</span>
-                  </button>
-                  <button type="button" onClick={resetLayoutFromDatabase} disabled={loading || saving} title="Reset layout về database">
-                    <span className="material-symbols-outlined">database</span>
-                  </button>
-                  <button type="button" onClick={resetLocalLayout} disabled={loading || saving} title="Reset layout local">
-                    <span className="material-symbols-outlined">delete_sweep</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const nextFullscreen = !treeFullscreen;
-                      setTreeFullscreen(nextFullscreen);
-                      if (nextFullscreen) {
-                        window.setTimeout(() => {
-                          if (centerView) {
-                            centerView(0.95, 260);
-                          } else {
-                            resetTransform(260);
-                          }
-                        }, 80);
-                      }
-                    }}
-                    title={treeFullscreen ? t("tree.toolbar.exitFullscreen") : t("tree.toolbar.fullscreen")}
-                    className={treeFullscreen ? "is-active" : ""}
-                  >
-                    <span className="material-symbols-outlined">{treeFullscreen ? "close_fullscreen" : "open_in_full"}</span>
-                  </button>
-                </div>
-
-                <div className="fte-viewControlGroup fte-viewControlGroup--secondary" aria-label="Secondary tools">
-                  {canEditAll ? (
-                    <>
-                      <button type="button" onClick={() => setArchiveDialogOpen(true)} disabled={loading || saving} title="Kho luu tru thanh vien">
-                        <span className="material-symbols-outlined">inventory_2</span>
-                      </button>
-                      <button type="button" onClick={openGenealogyAiDialog} disabled={loading || saving} title={t("tree.genealogyAi.open")}>
-                        <span className="material-symbols-outlined">auto_awesome</span>
-                      </button>
-                      <button type="button" onClick={resetTreeTitleLabel} disabled={loading || saving} title="Khoi phuc tieu de gia pha">
-                        <span className="material-symbols-outlined">title</span>
-                      </button>
-                      <button type="button" onClick={toggleBulkMoveMode} disabled={loading || saving} title="Quet vung de chon nhieu card" className={bulkMoveMode ? "is-active" : ""}>
-                        <span className="material-symbols-outlined">select_all</span>
-                      </button>
-                    </>
-                  ) : null}
-                  <button type="button" onClick={handleValidateTree} disabled={loading || saving} title={t("tree.toolbar.validate")}>
-                    <span className="material-symbols-outlined">rule</span>
-                  </button>
-                  {canEditLimited ? <span className="fte-readOnlyBadge">{t("tree.toolbar.limitedEdit")}</span> : null}
-                </div>
-              </section>
-            </div>
-            
-
-            {isTreeMobile ? (
-              <>
-                {mobileTreePanel ? (
-                  <button
-                    type="button"
-                    className="fte-mobileSheetBackdrop"
-                    aria-label={t("common.close")}
-                    onClick={() => setMobileTreePanel(null)}
-                  />
-                ) : null}
-
-                <div className="fte-mobileTreeBar" role="toolbar" aria-label={t("tree.title")}>
-                  <button
-                    type="button"
-                    onClick={() => openCreateDialog("person")}
-                    disabled={!canEditAll || loading || saving}
-                    title={canEditAll ? t("tree.toolbar.addPerson") : t("tree.toolbar.addPersonAdminOnly")}
-                  >
-                    <span className="material-symbols-outlined">person_add</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMobileTreePanel((panel) => (panel === "search" ? null : "search"))}
-                    className={mobileTreePanel === "search" ? "is-active" : ""}
-                    title={t("tree.sidebar.search")}
-                  >
-                    <span className="material-symbols-outlined">search</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleFindMe}
-                    aria-label={t("tree.sidebar.findMe")}
-                    title={t("tree.sidebar.findMe")}
-                  >
-                    <span className="material-symbols-outlined">my_location</span>
-                  </button>
-                  <button type="button" onClick={() => zoomOut(0.16, 180)} title={t("tree.toolbar.zoomOut")}>
-                    <span className="material-symbols-outlined">zoom_out</span>
-                  </button>
-                  <button type="button" onClick={() => zoomIn(0.16, 180)} title={t("tree.toolbar.zoomIn")}>
-                    <span className="material-symbols-outlined">zoom_in</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMobileTreePanel((panel) => (panel === "more" ? null : "more"))}
-                    className={mobileTreePanel === "more" ? "is-active" : ""}
-                    title="Thêm"
-                  >
-                    <span className="material-symbols-outlined">more_horiz</span>
-                  </button>
-                </div>
-
-                {mobileTreePanel === "search" ? (
-                  <div className="fte-mobileSheet" role="dialog" aria-label={t("tree.sidebar.title")}>
-                    <div className="fte-mobileSheetHandle" />
-                    <div className="fte-mobileSheetHeader">
-                      <strong>{t("tree.sidebar.title")}</strong>
-                      <button type="button" onClick={() => setMobileTreePanel(null)} title={t("common.close")}>
-                        <span className="material-symbols-outlined">close</span>
-                      </button>
-                    </div>
-                    <TreeSearchPanel
-                      query={treeSearch.query}
-                      onQueryChange={treeSearch.setQuery}
-                      onSubmit={treeSearch.submitSearch}
-                      onClear={treeSearch.clearSearch}
-                      submittedQuery={treeSearch.submittedQuery}
-                      results={treeSearch.results}
-                      onFindMe={handleFindMe}
-                      onResultClick={(person) => {
-                        if (!visiblePeople.some((item) => Number(item.id) === Number(person.id))) {
-                          treeViewMode.setFullMode();
-                        }
-                        focusPerson(person.id, { search: true });
-                        setMobileTreePanel(null);
-                      }}
-                    />
-                  </div>
-                ) : null}
-
-                {mobileTreePanel === "more" ? (
-                  <div className="fte-mobileSheet" role="dialog" aria-label="Thêm">
-                    <div className="fte-mobileSheetHandle" />
-                    <div className="fte-mobileSheetHeader">
-                      <strong>Thêm</strong>
-                      <span className="fte-mobileZoomText">{Math.round(currentScale * 100)}%</span>
-                      <button type="button" onClick={() => setMobileTreePanel(null)} title={t("common.close")}>
-                        <span className="material-symbols-outlined">close</span>
-                      </button>
-                    </div>
-                    <div className="fte-mobileMoreGrid">
-                      {canEditAll ? (
-                        <>
-                          <button type="button" onClick={() => setArchiveDialogOpen(true)} disabled={loading || saving}>
-                            <span className="material-symbols-outlined">inventory_2</span>
-                            <span>Kho lưu</span>
-                          </button>
-                          <button type="button" onClick={openGenealogyAiDialog} disabled={loading || saving}>
-                            <span className="material-symbols-outlined">auto_awesome</span>
-                            <span>AI</span>
-                          </button>
-                          <button type="button" onClick={resetTreeTitleLabel} disabled={loading || saving}>
-                            <span className="material-symbols-outlined">title</span>
-                            <span>Tiêu đề</span>
-                          </button>
-                          <button type="button" onClick={applyAutoLayoutAndSave} disabled={loading || saving}>
-                            <span className="material-symbols-outlined">auto_fix_high</span>
-                            <span>{t("tree.toolbar.autoLayout")}</span>
-                          </button>
-                      <button type="button" onClick={toggleBulkMoveMode} disabled={loading || saving}>
-                        <span className="material-symbols-outlined">select_all</span>
-                        <span>{bulkMoveMode ? "Tat chon vung" : "Chon vung"}</span>
-                      </button>
-                      <button type="button" onClick={resetLineRoutes} disabled={loading || saving}>
-                        <span className="material-symbols-outlined">alt_route</span>
-                        <span>Reset line</span>
-                      </button>
-                      <button type="button" onClick={saveLayoutToDatabase} disabled={loading || saving}>
-                        <span className="material-symbols-outlined">save</span>
-                        <span>Lưu DB</span>
-                      </button>
-                      <button type="button" onClick={resetLayoutFromDatabase} disabled={loading || saving}>
-                        <span className="material-symbols-outlined">database</span>
-                        <span>Layout DB</span>
-                      </button>
-                      <button type="button" onClick={resetLocalLayout} disabled={loading || saving}>
-                        <span className="material-symbols-outlined">delete_sweep</span>
-                        <span>Xóa local</span>
-                      </button>
-                        </>
-                      ) : null}
-                      <button type="button" onClick={openExportDialog} disabled={loading || saving}>
-                        <span className="material-symbols-outlined">download</span>
-                        <span>{t("tree.toolbar.exportPng")}</span>
-                      </button>
-                      <button type="button" onClick={() => fitTreeToScreen(260)} disabled={loading || saving}>
-                        <span className="material-symbols-outlined">fit_screen</span>
-                        <span>Fit</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setTreeDisplayMode((mode) => (mode === TREE_DISPLAY_MODE.OVERVIEW ? TREE_DISPLAY_MODE.DETAIL : TREE_DISPLAY_MODE.OVERVIEW))}
-                        disabled={loading || saving}
-                      >
-                        <span className="material-symbols-outlined">{treeDisplayMode === TREE_DISPLAY_MODE.OVERVIEW ? "badge" : "view_comfy"}</span>
-                        <span>{treeDisplayMode === TREE_DISPLAY_MODE.OVERVIEW ? "Chi tiet" : "Tong quan"}</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => updateTreeStyle({
-                          cardOrientation: treeStyle.cardOrientation === TREE_CARD_ORIENTATION.HORIZONTAL
-                            ? TREE_CARD_ORIENTATION.VERTICAL
-                            : TREE_CARD_ORIENTATION.HORIZONTAL,
-                        })}
-                        disabled={loading || saving}
-                      >
-                        <span className="material-symbols-outlined">{treeStyle.cardOrientation === TREE_CARD_ORIENTATION.HORIZONTAL ? "view_stream" : "view_agenda"}</span>
-                        <span>{treeStyle.cardOrientation === TREE_CARD_ORIENTATION.HORIZONTAL ? "Card doc" : "Card ngang"}</span>
-                      </button>
-                      <button type="button" onClick={handleValidateTree} disabled={loading || saving}>
-                        <span className="material-symbols-outlined">rule</span>
-                        <span>{t("tree.toolbar.validate")}</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const nextFullscreen = !treeFullscreen;
-                          setTreeFullscreen(nextFullscreen);
-                          setMobileTreePanel(null);
-                          if (nextFullscreen) {
-                            window.setTimeout(() => centerView?.(0.95, 260), 80);
-                          }
-                        }}
-                      >
-                        <span className="material-symbols-outlined">{treeFullscreen ? "close_fullscreen" : "open_in_full"}</span>
-                        <span>{treeFullscreen ? t("tree.toolbar.exitFullscreen") : t("tree.toolbar.fullscreen")}</span>
-                      </button>
-                    </div>
-                    <div className="fte-mobileStyleControls" aria-label="Tuy chinh cay gia pha">
-                      <label>
-                        <span>Nen</span>
-                        <input
-                          type="color"
-                          value={treeStyle.backgroundColor}
-                          onChange={(event) => updateTreeStyle({ backgroundColor: event.target.value })}
-                        />
-                      </label>
-                      <label>
-                        <span>Chu {treeStyle.fontSize}px</span>
-                        <input
-                          type="range"
-                          min="12"
-                          max="28"
-                          value={treeStyle.fontSize}
-                          onChange={(event) => updateTreeStyle({ fontSize: Number(event.target.value) })}
-                        />
-                      </label>
-                    </div>
-                    <div className="fte-mobileViewMode">
-                      <TreeViewModeSelector
-                        people={people}
-                        mode={treeViewMode.mode}
-                        rootPersonId={treeViewMode.rootPersonId}
-                        onFullMode={() => {
-                          treeViewMode.setFullMode();
-                          setMobileTreePanel(null);
-                        }}
-                        onRootMode={(personId) => {
-                          treeViewMode.setRootMode(personId);
-                          focusPerson(personId);
-                          setMobileTreePanel(null);
-                        }}
-                      />
-                    </div>
-                  </div>
-                ) : null}
-              </>
-            ) : null}
+            {isTreeMobile ? null : (
+              <TreeToolbar
+                search={treeSearchProps}
+                rootSelector={rootSelectorProps}
+                displayMode={treeDisplayMode}
+                onDisplayModeChange={setTreeDisplayMode}
+                primaryActions={toolbarPrimaryActions}
+                toolGroups={toolbarToolGroups}
+                styleControls={treeStyleControls}
+                badge={canEditLimited ? t("tree.toolbar.limitedEdit") : ""}
+              />
+            )}
 
             {billingWarning ? (
               <div className="fte-billingWarning">
@@ -3502,7 +3268,7 @@ const submitCreateDialog = async () => {
             ) : null}
 
             <div className="fte-workspace">
-              <div className="fte-viewport" ref={viewportRef} style={{ "--fte-tree-bg": treeStyle.backgroundColor }}>
+              <div className="fte-viewport" ref={viewportRef} style={treeStyle.backgroundColor ? { "--fte-tree-bg": treeStyle.backgroundColor } : undefined}>
                 {loading ? (
                   <div className="fte-loading">{t("tree.messages.loading")}</div>
                 ) : (
@@ -3510,8 +3276,13 @@ const submitCreateDialog = async () => {
                     <div
                       id="family-tree"
                       ref={treeRef}
-                      className={`fte-canvas ${treeRelationPicker ? "is-relation-picking" : ""} ${bulkMoveMode ? "is-bulkMoveMode" : ""}`}
-                      style={{ width: canvasSize.width, height: canvasSize.height, backgroundColor: treeStyle.backgroundColor }}
+                      className={`fte-canvas ${treeRelationPicker ? "is-relation-picking" : ""} ${bulkMoveMode ? "is-bulkMoveMode" : ""} ${currentScale < FAR_ZOOM_SCALE ? "is-zoomFar" : ""}`}
+                      style={{
+                        width: canvasSize.width,
+                        height: canvasSize.height,
+                        // Khi thu nhỏ, phóng chữ trên thẻ để tên vẫn đọc được (thu phóng theo ngữ nghĩa).
+                        "--fte2-zoom-comp": clamp(FAR_ZOOM_TEXT_TARGET / Math.max(currentScale, 0.12), 1, 3).toFixed(3),
+                      }}
                       onPointerDown={beginBulkSelection}
                     >
                       {bulkSelectionRect ? (
@@ -3530,7 +3301,8 @@ const submitCreateDialog = async () => {
                         style={{
                           left: treeTitleLabel.x,
                           top: treeTitleLabel.y,
-                          color: treeTitleLabel.color,
+                          // Màu mặc định thì để theo chủ đề; chỉ áp màu riêng khi người dùng đã chọn.
+                          color: treeTitleLabel.color === DEFAULT_TREE_TITLE_LABEL.color ? undefined : treeTitleLabel.color,
                           "--tree-title-size": `${treeTitleLabel.fontSize}px`,
                         }}
                         title={canEditAll ? "Kéo để di chuyển tiêu đề, dùng nút bên dưới để đổi màu/cỡ chữ" : undefined}
@@ -3564,6 +3336,16 @@ const submitCreateDialog = async () => {
                           </div>
                         ) : null}
                       </div>
+                      {generationLanes.map((lane) => (
+                        <div
+                          key={`lane-${lane.generation}`}
+                          className={`fte2-lane ${lane.striped ? "is-striped" : ""}`}
+                          style={{ left: lane.left, top: lane.top, width: lane.width, height: lane.height }}
+                          aria-hidden="true"
+                        >
+                          <span className="fte2-laneLabel">{t("tree.lanes.generation", { count: lane.generation })}</span>
+                        </div>
+                      ))}
                       <svg className="fte-lines" width={canvasSize.width} height={canvasSize.height} aria-hidden={false}>
                         {lines.filter((line) => line.type !== "route-control").map((line, index) => (
                           (() => {
@@ -3615,11 +3397,12 @@ const submitCreateDialog = async () => {
                               dimmed={dimmed}
                               dragging={draggingId === node.id}
                               canDrag={node.personIds.some((personId) => canEditPerson(personId))}
-                              directLineagePersonIds={directLineagePersonIds}
+                              directLineagePersonIds={bloodLinePersonIds}
                               lineageControlsByPersonId={lineageControlsByPersonId}
                               collapsedIds={treeViewMode.collapsedIds}
                               hiddenAncestorIds={treeViewMode.hiddenAncestorIds}
                               cardOrientation={treeStyle.cardOrientation}
+                              displayMode={treeDisplayMode}
                               fontSize={treeStyle.fontSize}
                               onToggleDescendants={treeViewMode.toggleDescendantBranch}
                               onToggleAncestors={treeViewMode.toggleAncestorBranch}
@@ -3644,7 +3427,7 @@ const submitCreateDialog = async () => {
                             canEdit={canEditPerson(person.id)}
                             canDelete={canEditAll && canEditPerson(person.id)}
                             founder={founderIds.has(Number(person.id))}
-                            directLineage={directLineagePersonIds.has(Number(person.id))}
+                            directLineage={bloodLinePersonIds.has(Number(person.id))}
                             size={{ width: node.width, height: node.height }}
                             displayMode={treeDisplayMode}
                             cardOrientation={treeStyle.cardOrientation}
@@ -3677,6 +3460,26 @@ const submitCreateDialog = async () => {
                   </TransformComponent>
                 )}
               </div>
+              <TreeZoomControls
+                scale={currentScale}
+                compact={isTreeMobile}
+                onZoomIn={() => zoomIn(0.16, 180)}
+                onZoomOut={() => zoomOut(0.16, 180)}
+                onFit={() => fitTreeToScreen(260)}
+                fullscreen={treeFullscreen}
+                onToggleFullscreen={toggleTreeFullscreen}
+              />
+              {isTreeMobile ? (
+                <TreeMobileControls
+                  speedDialActions={mobileSpeedDialActions}
+                  search={treeSearchProps}
+                  rootSelector={rootSelectorProps}
+                  displayMode={treeDisplayMode}
+                  onDisplayModeChange={setTreeDisplayMode}
+                  toolGroups={toolbarToolGroups}
+                  styleControls={treeStyleControls}
+                />
+              ) : null}
             </div>
           </>
         )}
@@ -3687,8 +3490,8 @@ const submitCreateDialog = async () => {
           <div className="fte-modal fte-exportModal" role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}>
             <div className="fte-modalHeader">
               <div>
-                <span>Export</span>
-                <h3>Xuat anh cay gia pha</h3>
+                <span>{t("tree.export.eyebrow")}</span>
+                <h3>{t("tree.export.title")}</h3>
               </div>
               <button
                 type="button"
@@ -3703,10 +3506,10 @@ const submitCreateDialog = async () => {
 
             <div className="fte-exportGrid">
               <section>
-                <h4>Kieu xuat</h4>
+                <h4>{t("tree.export.mode")}</h4>
                 {[
-                  { value: TREE_EXPORT_MODE.OVERVIEW, label: "Tong quan" },
-                  { value: TREE_EXPORT_MODE.DETAIL, label: "Chi tiet" },
+                  { value: TREE_EXPORT_MODE.OVERVIEW, label: t("tree.toolbar.overview") },
+                  { value: TREE_EXPORT_MODE.DETAIL, label: t("tree.toolbar.detail") },
                 ].map((item) => (
                   <label key={item.value} className="fte-radioRow">
                     <input
@@ -3723,7 +3526,7 @@ const submitCreateDialog = async () => {
               </section>
 
               <section>
-                <h4>Dinh dang</h4>
+                <h4>{t("tree.export.format")}</h4>
                 <div className="fte-segmented">
                   {[TREE_EXPORT_FORMAT.PNG, TREE_EXPORT_FORMAT.SVG].map((format) => (
                     <button
@@ -3737,18 +3540,13 @@ const submitCreateDialog = async () => {
                     </button>
                   ))}
                 </div>
-                <button
-                  type="button"
-                  className="fte-pdfStub"
-                  disabled
-                  title="PDF export chua duoc cai dat day du"
-                >
-                  PDF soon
+                <button type="button" className="fte-pdfStub" disabled>
+                  {t("tree.export.pdfSoon")}
                 </button>
               </section>
 
               <section>
-                <h4>Chat luong</h4>
+                <h4>{t("tree.export.quality")}</h4>
                 <div className="fte-segmented">
                   {[1, 2, 3, 4].map((quality) => (
                     <button
@@ -3765,7 +3563,7 @@ const submitCreateDialog = async () => {
               </section>
 
               <section>
-                <h4>Tuy chon</h4>
+                <h4>{t("tree.export.options")}</h4>
                 <label className="fte-checkRow">
                   <input
                     type="checkbox"
@@ -3773,7 +3571,7 @@ const submitCreateDialog = async () => {
                     onChange={(event) => updateExportOptions({ includeBackground: event.target.checked })}
                     disabled={saving}
                   />
-                  <span>Co nen sang</span>
+                  <span>{t("tree.export.background")}</span>
                 </label>
                 <label className="fte-checkRow">
                   <input
@@ -3782,50 +3580,22 @@ const submitCreateDialog = async () => {
                     onChange={(event) => updateExportOptions({ includeTitle: event.target.checked })}
                     disabled={saving}
                   />
-                  <span>Co tieu de gia pha</span>
+                  <span>{t("tree.export.includeTitle")}</span>
+                </label>
+                <label className="fte-checkRow" title={t("tree.export.frameHint")}>
+                  <input
+                    type="checkbox"
+                    checked={Boolean(exportOptions.includeFrame)}
+                    onChange={(event) => updateExportOptions({ includeFrame: event.target.checked })}
+                    disabled={saving}
+                  />
+                  <span>{t("tree.export.frame")}</span>
                 </label>
               </section>
 
-              <section>
-                <h4>Giao dien cay</h4>
-                <div className="fte-segmented">
-                  <button
-                    type="button"
-                    className={treeStyle.cardOrientation === TREE_CARD_ORIENTATION.HORIZONTAL ? "is-active" : ""}
-                    onClick={() => updateTreeStyle({ cardOrientation: TREE_CARD_ORIENTATION.HORIZONTAL })}
-                    disabled={saving}
-                  >
-                    Ngang
-                  </button>
-                  <button
-                    type="button"
-                    className={treeStyle.cardOrientation === TREE_CARD_ORIENTATION.VERTICAL ? "is-active" : ""}
-                    onClick={() => updateTreeStyle({ cardOrientation: TREE_CARD_ORIENTATION.VERTICAL })}
-                    disabled={saving}
-                  >
-                    Doc
-                  </button>
-                </div>
-                <label className="fte-exportField">
-                  <span>Mau nen</span>
-                  <input
-                    type="color"
-                    value={treeStyle.backgroundColor}
-                    onChange={(event) => updateTreeStyle({ backgroundColor: event.target.value })}
-                    disabled={saving}
-                  />
-                </label>
-                <label className="fte-exportField">
-                  <span>Co chu {treeStyle.fontSize}px</span>
-                  <input
-                    type="range"
-                    min="12"
-                    max="28"
-                    value={treeStyle.fontSize}
-                    onChange={(event) => updateTreeStyle({ fontSize: Number(event.target.value) })}
-                    disabled={saving}
-                  />
-                </label>
+              <section className="fte2 fte2-exportAppearance" data-tree-theme={treeStyle.theme}>
+                <h4>{t("tree.export.appearance")}</h4>
+                <TreeStyleControls treeStyle={treeStyle} onChange={updateTreeStyle} />
               </section>
             </div>
 
@@ -3835,7 +3605,7 @@ const submitCreateDialog = async () => {
               </button>
               <button type="button" className="fte-primaryButton" onClick={() => handleExport(exportOptions)} disabled={saving}>
                 <span className="material-symbols-outlined">{saving ? "progress_activity" : "download"}</span>
-                {saving ? "Dang xuat..." : "Xuat"}
+                {saving ? t("tree.export.exporting") : t("tree.export.submit")}
               </button>
             </div>
           </div>
@@ -3886,7 +3656,7 @@ const submitCreateDialog = async () => {
           <aside className="fte-inspector fte-coupleInspector" role="dialog" aria-modal="false" onMouseDown={(event) => event.stopPropagation()}>
             <div className="fte-inspectorHeader">
               <div>
-                <span>Cap doi</span>
+                <span>{t("tree.couple.eyebrow")}</span>
                 <h3>{fullName(selectedCoupleNode.husband, t("tree.card.fallbackName"))}</h3>
                 <p>{fullName(selectedCoupleNode.wife, t("tree.card.fallbackName"))}</p>
               </div>
@@ -3900,7 +3670,7 @@ const submitCreateDialog = async () => {
               </button>
             </div>
             <div className="fte-coupleInspectorChildren">
-              <strong>Con</strong>
+              <strong>{t("tree.couple.children")}</strong>
               {selectedCoupleNode.children.length ? (
                 <div>
                   {selectedCoupleNode.children.map((child) => (
@@ -3910,17 +3680,17 @@ const submitCreateDialog = async () => {
                   ))}
                 </div>
               ) : (
-                <p>Chua co du lieu con.</p>
+                <p>{t("tree.couple.noChildren")}</p>
               )}
             </div>
             <div className="fte-inspectorActions">
               <button type="button" onClick={() => openPersonEditor(selectedCoupleNode.husband)}>
                 <span className="material-symbols-outlined">man</span>
-                Sua thong tin chong
+                {t("tree.couple.editHusband")}
               </button>
               <button type="button" onClick={() => openPersonEditor(selectedCoupleNode.wife)}>
                 <span className="material-symbols-outlined">woman</span>
-                Sua thong tin vo
+                {t("tree.couple.editWife")}
               </button>
               <button
                 type="button"
@@ -3935,11 +3705,7 @@ const submitCreateDialog = async () => {
                 }}
               >
                 <span className="material-symbols-outlined">person_add</span>
-                Them con
-              </button>
-              <button type="button" disabled title="Chua co truong thong tin hon nhan trong schema hien tai">
-                <span className="material-symbols-outlined">favorite</span>
-                Hon nhan
+                {t("tree.couple.addChild")}
               </button>
             </div>
           </aside>

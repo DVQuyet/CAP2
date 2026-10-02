@@ -1,16 +1,7 @@
 import { useLanguage } from "../../../i18n/LanguageContext";
-import { formatDateVN } from "../../../shared/utils/dateFormat";
 import { fullName } from "../utils/tree-editor/treePersonUtils";
 import { WEB_CARD_HEIGHT, WEB_CARD_WIDTH } from "../utils/tree-editor/treeDisplayNodes";
-
-function lifeMeta(person) {
-  const birth = String(person?.birth_date || formatDateVN(person?.birth_date) || "").match(/\d{4}/)?.[0] || "";
-  const death = Number(person?.is_living) === 0
-    ? String(person?.death_date || formatDateVN(person?.death_date) || "").match(/\d{4}/)?.[0] || ""
-    : "";
-  if (birth && death) return `${birth} - ${death}`;
-  return birth || death || "";
-}
+import { CardPersonBody, genderKey, lifeYears } from "./TreeCardParts";
 
 function PersonHalf({
   person,
@@ -23,13 +14,16 @@ function PersonHalf({
   ancestorsCollapsed,
   onToggleDescendants,
   onToggleAncestors,
+  showAvatar = true,
+  showMeta = true,
 }) {
   const { t } = useLanguage();
-  const name = person ? fullName(person, t("tree.card.fallbackName")) : "Chua ro";
-  const meta = lifeMeta(person);
+  const name = person ? fullName(person, t("tree.card.fallbackName")) : t("tree.card.unknownName");
   const generation = person?.generation ? t("tree.card.generation", { count: person.generation }) : "";
   const childOrder = Number(person?.child_order || person?.child_sort_order);
-  const childOrderLabel = Number.isFinite(childOrder) && childOrder > 0 ? `Con thứ ${childOrder}` : "";
+  const childOrderLabel = Number.isFinite(childOrder) && childOrder > 0 ? t("tree.card.childOrder", { count: childOrder }) : "";
+  const meta = [lifeYears(person), generation, childOrderLabel].filter(Boolean).join(" · ");
+  const deceased = Number(person?.is_living) === 0;
   const stopActionPointer = (event) => {
     event.preventDefault();
     event.stopPropagation();
@@ -37,17 +31,16 @@ function PersonHalf({
 
   return (
     <div
-      className={`fte-coupleHalf is-${side} ${selected ? "is-selectedPerson" : ""} ${person ? "" : "is-empty"}`}
+      className={`fte-coupleHalf is-${side} is-${genderKey(person)} ${directLineage ? "is-direct" : "is-inLaw"} ${deceased ? "is-deceased" : ""} ${selected ? "is-selectedPerson" : ""} ${person ? "" : "is-empty"}`}
       data-person-id={person?.id || ""}
-      title={name}
+      title={[name, directLineage ? t("tree.card.directLineageHint") : t("tree.card.inLawHint")].join("\n")}
     >
-      {directLineage ? <span className="fte-directLineageMark" title="Truc he" aria-label="Truc he">◎</span> : null}
       {person && (hasChildren || hasAncestors) ? (
         <div className="fte-coupleHalfActions">
           {hasChildren ? (
             <button
               type="button"
-              title={descendantsCollapsed ? "Mo tat ca doi con chau" : "Dong tat ca doi con chau"}
+              title={descendantsCollapsed ? t("tree.card.descendantsExpand") : t("tree.card.descendantsCollapse")}
               onPointerDown={stopActionPointer}
               onClick={(event) => { event.stopPropagation(); onToggleDescendants?.(person.id); }}
             >
@@ -57,7 +50,7 @@ function PersonHalf({
           {hasAncestors ? (
             <button
               type="button"
-              title={ancestorsCollapsed ? "Mo tat ca doi to tien" : "Dong tat ca doi to tien"}
+              title={ancestorsCollapsed ? t("tree.card.ancestorsExpand") : t("tree.card.ancestorsCollapse")}
               onPointerDown={stopActionPointer}
               onClick={(event) => { event.stopPropagation(); onToggleAncestors?.(person.id); }}
             >
@@ -66,9 +59,11 @@ function PersonHalf({
           ) : null}
         </div>
       ) : null}
-      <strong>{name}</strong>
-      {meta ? <span>{meta}</span> : null}
-      {generation || childOrderLabel ? <small>{[generation, childOrderLabel].filter(Boolean).join(" · ")}</small> : null}
+      {person ? (
+        <CardPersonBody person={person} name={name} meta={showMeta ? meta : ""} showAvatar={showAvatar} directLineage={directLineage} />
+      ) : (
+        <div className="fte2-cardBody"><div className="fte2-cardText"><div className="fte-cardName">{name}</div></div></div>
+      )}
     </div>
   );
 }
@@ -86,11 +81,13 @@ export default function CoupleCard({
   collapsedIds,
   hiddenAncestorIds,
   cardOrientation = "horizontal",
+  displayMode = "detail",
   fontSize,
   onToggleDescendants,
   onToggleAncestors,
   onPointerDown,
 }) {
+  const detail = displayMode !== "overview";
   const { t } = useLanguage();
   const husbandSelected = Number(selectedPersonId) === Number(node?.husband?.id);
   const wifeSelected = Number(selectedPersonId) === Number(node?.wife?.id);
@@ -131,7 +128,7 @@ export default function CoupleCard({
   return (
     <div
       id={`fte-display-${node.id}`}
-      className={`fte-coupleCard is-${cardOrientation} ${selectedCouple ? "is-selected" : ""} ${related ? "is-related" : ""} ${dimmed ? "is-dimmed" : ""} ${dragging ? "is-dragging" : ""}`}
+      className={`fte-coupleCard is-${cardOrientation} is-${displayMode} ${selectedCouple ? "is-selected" : ""} ${related ? "is-related" : ""} ${dimmed ? "is-dimmed" : ""} ${dragging ? "is-dragging" : ""}`}
       style={{
         left: node.x,
         top: node.y,
@@ -157,8 +154,12 @@ export default function CoupleCard({
         ancestorsCollapsed={orderedHalves[0].ancestorsCollapsed}
         onToggleDescendants={onToggleDescendants}
         onToggleAncestors={onToggleAncestors}
+        showAvatar={detail}
+        showMeta={detail}
       />
-      <span className="fte-coupleDivider" aria-hidden="true" />
+      <span className="fte-coupleDivider" aria-hidden="true">
+        <span className="fte2-coupleKnot" title={t("tree.card.spouses")} />
+      </span>
       <PersonHalf
         person={orderedHalves[1].person}
         side={orderedHalves[1].side}
@@ -170,6 +171,8 @@ export default function CoupleCard({
         ancestorsCollapsed={orderedHalves[1].ancestorsCollapsed}
         onToggleDescendants={onToggleDescendants}
         onToggleAncestors={onToggleAncestors}
+        showAvatar={detail}
+        showMeta={detail}
       />
     </div>
   );

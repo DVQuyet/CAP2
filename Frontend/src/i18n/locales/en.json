@@ -1889,13 +1889,40 @@
       "autoLayout": "Auto Layout",
       "autoLayoutHint": "Automatically rearrange and save to database",
       "autoLayoutViewerHint": "Members can only view, cannot auto-arrange",
-      "exportPng": "Export PNG",
+      "exportPng": "Export image",
       "validate": "Validate Tree",
       "zoomIn": "Zoom In",
       "zoomOut": "Zoom Out",
       "fullscreen": "Fullscreen",
       "exitFullscreen": "Exit Fullscreen",
-      "limitedEdit": "Temporary edit: current gen ±1"
+      "limitedEdit": "Temporary edit: current gen ±1",
+      "overview": "Overview",
+      "detail": "Detail",
+      "viewMode": "Display",
+      "more": "More tools",
+      "fitScreen": "Fit to screen",
+      "findMe": "Find me",
+      "search": "Find person",
+      "cardHorizontal": "Horizontal cards",
+      "cardVertical": "Vertical cards",
+      "resetLines": "Reset connectors",
+      "saveLayout": "Save layout",
+      "reloadLayout": "Reload saved layout",
+      "clearLocalLayout": "Clear draft layout",
+      "archive": "Member archive",
+      "resetTitle": "Reset title",
+      "bulkSelect": "Select multiple cards",
+      "bulkSelectOff": "Stop multi-select",
+      "background": "Background",
+      "textSize": "Text size",
+      "theme": "Theme",
+      "rootPerson": "View from a person",
+      "groupView": "Display",
+      "groupLayout": "Layout",
+      "groupData": "Data",
+      "groupTools": "Tools",
+      "close": "Close",
+      "actions": "Actions"
     },
     "genealogyAi": {
       "open": "AI genealogy extraction",
@@ -1999,12 +2026,29 @@
         "online": "Online",
         "search": "Search result",
         "editing": "Editing",
-        "error": "Data error"
+        "error": "Data error",
+        "directLineage": "Direct line"
       },
       "collapse": {
         "expand": "Expand branch",
         "collapse": "Collapse branch"
-      }
+      },
+      "deceased": "Deceased",
+      "male": "Male",
+      "female": "Female",
+      "spouses": "Spouses",
+      "generationShort": "Gen {{count}}",
+      "founder": "Founder",
+      "validationIssue": "Needs review",
+      "descendantsExpand": "Expand all descendants",
+      "descendantsCollapse": "Collapse all descendants",
+      "ancestorsExpand": "Show ancestors",
+      "ancestorsCollapse": "Hide ancestors",
+      "childOrder": "Child #{{count}}",
+      "branch": "Branch {{name}}",
+      "directLineageHint": "Direct line: born into the clan",
+      "inLawHint": "In-law",
+      "unknownName": "Unknown"
     },
     "inspector": {
       "title": "Member Information",
@@ -2160,6 +2204,39 @@
       "child": "child",
       "father": "father",
       "mother": "mother"
+    },
+    "themes": {
+      "traditional": "Traditional",
+      "modern": "Modern",
+      "dark": "Dark"
+    },
+    "lanes": {
+      "generation": "Generation {{count}}"
+    },
+    "export": {
+      "frame": "Decorative frame",
+      "frameHint": "Add an ornamental border and clan name when exporting",
+      "eyebrow": "Export",
+      "title": "Export family tree image",
+      "mode": "Style",
+      "format": "Format",
+      "pdfSoon": "PDF (coming soon)",
+      "quality": "Quality",
+      "options": "Options",
+      "background": "Include background",
+      "includeTitle": "Include clan title",
+      "appearance": "Tree appearance",
+      "svgDone": "SVG exported.",
+      "exporting": "Exporting...",
+      "submit": "Export"
+    },
+    "couple": {
+      "eyebrow": "Couple",
+      "children": "Children",
+      "noChildren": "No children recorded yet.",
+      "editHusband": "Edit husband",
+      "editWife": "Edit wife",
+      "addChild": "Add child"
     }
   },
   "calendar": {

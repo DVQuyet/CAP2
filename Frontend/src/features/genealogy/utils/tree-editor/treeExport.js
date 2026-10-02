@@ -4,12 +4,15 @@ import { asArray, formatDisplayDate, fullName, toInt } from "./treePersonUtils";
 import { getCardSize } from "./treeStorage";
 import { numbersFromPath } from "./treeLines";
 import { DISPLAY_NODE_TYPE, buildDisplayTree, buildDisplayTreeLines } from "./treeDisplayNodes";
-import { TREE_CARD_ORIENTATION } from "./treeDisplayConfig";
+import { TREE_CARD_ORIENTATION, TREE_THEME, TREE_THEMES } from "./treeDisplayConfig";
+import { EXPORT_FRAME_PADDING, drawDecorativeFrame, drawThemedLine, drawThemedNode, drawThemedTitle, paletteFor } from "./treeExportTheme";
 
 const EXPORT_FONT_FAMILY = TREE_EXPORT_CONFIG.fontFamily;
 const DEFAULT_EXPORT_TREE_STYLE = {
   cardOrientation: TREE_CARD_ORIENTATION.HORIZONTAL,
-  backgroundColor: TREE_EXPORT_CONFIG.background,
+  theme: TREE_THEME.TRADITIONAL,
+  // null = dùng màu nền của chủ đề.
+  backgroundColor: null,
   fontSize: null,
 };
 
@@ -24,6 +27,7 @@ function normalizeExportTreeStyle(value = {}) {
     cardOrientation: source.cardOrientation === TREE_CARD_ORIENTATION.VERTICAL
       ? TREE_CARD_ORIENTATION.VERTICAL
       : TREE_CARD_ORIENTATION.HORIZONTAL,
+    theme: TREE_THEMES.includes(source.theme) ? source.theme : DEFAULT_EXPORT_TREE_STYLE.theme,
     backgroundColor: normalizeHexColor(source.backgroundColor ?? source.background_color, DEFAULT_EXPORT_TREE_STYLE.backgroundColor),
     fontSize: Number.isFinite(fontSize) ? Math.max(10, Math.min(40, fontSize)) : DEFAULT_EXPORT_TREE_STYLE.fontSize,
   };
@@ -229,17 +233,17 @@ function drawExportCard(ctx, person, cardSizes, config, t, options = {}) {
   const y = toInt(person.tree_y, 0);
   const width = size.width;
   const height = size.height;
-  const name = fullName(person, t ? t("tree.card.fallbackName") : "Thanh vien");
+  const name = fullName(person, t ? t("tree.card.fallbackName") : "Thành viên");
   const birthText = yearOnly(person.birth_date || formatDisplayDate(person.birth_date));
   const deathText = yearOnly(person.death_date || formatDisplayDate(person.death_date));
   const deceased = Number(person.is_living) === 0;
   const lifeText = birthText && deceased && deathText ? `${birthText}-${deathText}` : birthText || (deceased ? deathText : "");
-  const generationText = t ? t("tree.card.generation", { count: person.generation || 1 }) : `Doi ${person.generation || 1}`;
+  const generationText = t ? t("tree.card.generation", { count: person.generation || 1 }) : `Đời ${person.generation || 1}`;
   const metaItems = [
     generationText,
     lifeText,
     person.branch ? `Chi ${person.branch}` : "",
-    Number(person.role_id) === 2 ? (t ? t("tree.card.chief") : "Truong ho") : "",
+    Number(person.role_id) === 2 ? (t ? t("tree.card.chief") : "Trưởng họ") : "",
   ].filter(Boolean);
   const isFounder = Number(person.generation) === 1 || Number(person.role_id) === 1;
 
@@ -291,88 +295,11 @@ function drawExportCard(ctx, person, cardSizes, config, t, options = {}) {
   ctx.restore();
 }
 
-function drawExportNode(ctx, node, config, t, options = {}) {
-  if (node.type === DISPLAY_NODE_TYPE.COUPLE) {
-    drawExportCoupleCard(ctx, node, config, t, options);
-    return;
-  }
-  drawExportCard(ctx, {
-    ...node.person,
-    tree_x: node.x,
-    tree_y: node.y,
-  }, { [Number(node.person.id)]: { width: node.width, height: node.height } }, config, t, options);
-}
-
-function drawPersonSlot(ctx, person, x, y, width, height, config, t, options = {}) {
-  const name = fullName(person, t ? t("tree.card.fallbackName") : "Thanh vien");
-  const birthText = yearOnly(person?.birth_date || formatDisplayDate(person?.birth_date));
-  const deathText = Number(person?.is_living) === 0 ? yearOnly(person?.death_date || formatDisplayDate(person?.death_date)) : "";
-  const lifeText = [birthText, deathText].filter(Boolean).join(" - ");
-  const generationText = person?.generation ? (t ? t("tree.card.generation", { count: person.generation }) : `Doi ${person.generation}`) : "";
-  ctx.save();
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillStyle = "#2f241b";
-  ctx.font = `800 ${config.nameFontSize}px ${EXPORT_FONT_FAMILY}`;
-  const nameLines = splitTextToLines(ctx, name, width - 28, 2);
-  const lineHeight = Math.round(config.nameFontSize * 1.18);
-  const firstY = y + height * 0.37 - ((nameLines.length - 1) * lineHeight) / 2;
-  nameLines.forEach((line, index) => ctx.fillText(line, x + width / 2, firstY + index * lineHeight));
-  ctx.fillStyle = "#6f6257";
-  ctx.font = `500 ${config.metaFontSize}px ${EXPORT_FONT_FAMILY}`;
-  if (lifeText) ctx.fillText(lifeText, x + width / 2, y + height * 0.66);
-  if (generationText) ctx.fillText(generationText, x + width / 2, y + height * 0.82);
-  if (options.directLineagePersonIds?.has?.(Number(person?.id))) {
-    ctx.fillStyle = "#8b1e13";
-    ctx.font = `900 ${Math.max(12, Math.round(config.metaFontSize * 1.2))}px ${EXPORT_FONT_FAMILY}`;
-    ctx.textAlign = "right";
-    ctx.textBaseline = "top";
-    ctx.fillText("◎", x + width - 8, y + 7);
-  }
-  ctx.restore();
-}
-
 function orderedCouplePeople(node, directLineagePersonIds, vertical = false) {
   const husbandDirect = directLineagePersonIds?.has?.(Number(node?.husband?.id));
   const wifeDirect = directLineagePersonIds?.has?.(Number(node?.wife?.id));
   if (vertical && wifeDirect && !husbandDirect) return [node.wife, node.husband];
   return [node.husband, node.wife];
-}
-
-function drawExportCoupleCard(ctx, node, config, t, options = {}) {
-  const x = node.x;
-  const y = node.y;
-  const width = node.width;
-  const height = node.height;
-  const isVertical = node.cardOrientation === TREE_CARD_ORIENTATION.VERTICAL;
-  const halfWidth = isVertical ? width : width / 2;
-  const halfHeight = isVertical ? height / 2 : height;
-  ctx.save();
-  ctx.shadowColor = "rgba(71, 50, 32, 0.14)";
-  ctx.shadowBlur = 10;
-  ctx.shadowOffsetY = 4;
-  drawRoundRect(ctx, x, y, width, height, 10);
-  ctx.fillStyle = "#fffaf0";
-  ctx.fill();
-  ctx.shadowColor = "transparent";
-  ctx.strokeStyle = "#b9825b";
-  ctx.lineWidth = 2;
-  ctx.stroke();
-  ctx.strokeStyle = "rgba(185, 130, 91, 0.32)";
-  ctx.lineWidth = 1.4;
-  ctx.beginPath();
-  if (isVertical) {
-    ctx.moveTo(x + 12, y + height / 2);
-    ctx.lineTo(x + width - 12, y + height / 2);
-  } else {
-    ctx.moveTo(x + width / 2, y + 12);
-    ctx.lineTo(x + width / 2, y + height - 12);
-  }
-  ctx.stroke();
-  const [firstPerson, secondPerson] = orderedCouplePeople(node, options.directLineagePersonIds, isVertical);
-  drawPersonSlot(ctx, firstPerson, x, y, halfWidth, halfHeight, config, t, options);
-  drawPersonSlot(ctx, secondPerson, isVertical ? x : x + halfWidth, isVertical ? y + halfHeight : y, halfWidth, halfHeight, config, t, options);
-  ctx.restore();
 }
 
 function exportConfigForMode(mode) {
@@ -463,7 +390,7 @@ export function prepareTreeExportPayload({ people = [], families = [], childRows
     directLineagePersonIds,
     exportOptions,
     exportConfig,
-    title: t ? t("tree.title") : "Gia pha",
+    title: t ? t("tree.title") : "Gia phả",
   };
 }
 
@@ -516,25 +443,14 @@ export function getExportPixelRatio(bounds, requestedScale = TREE_EXPORT_CONFIG.
   return Math.max(1, Math.floor(ratio * 100) / 100);
 }
 
-function drawExportTitle(ctx, bounds, clan, t) {
-  ctx.save();
-  ctx.textAlign = "left";
-  ctx.textBaseline = "alphabetic";
-  ctx.fillStyle = "#7b5338";
-  ctx.font = `800 16px ${EXPORT_FONT_FAMILY}`;
-  ctx.fillText((t ? t("tree.title") : "Gia pha").toLocaleUpperCase("vi-VN"), bounds.x + 42, bounds.y + 58);
-  ctx.fillStyle = "#3a2b1f";
-  ctx.font = `900 34px ${EXPORT_FONT_FAMILY}`;
-  ctx.fillText(String(clan?.clan_name || "Dong ho").toLocaleUpperCase("vi-VN"), bounds.x + 42, bounds.y + 96);
-  ctx.restore();
-}
-
 export async function renderFamilyTreePngBlob({ people, nodes, lines, cardSizes, clan, t, exportOptions = {}, exportConfig = TREE_EXPORT_DETAIL_CONFIG, directLineagePersonIds: rawDirectLineagePersonIds = [] }) {
   const options = normalizeExportOptions(exportOptions);
   const styledExportConfig = withTreeStyleFont(exportConfig, options.treeStyle);
   const directLineagePersonIds = new Set(asArray(rawDirectLineagePersonIds).map(Number).filter(Number.isFinite));
   const drawableNodes = asArray(nodes).length ? nodes : asArray(people);
-  const bounds = getTreeExportBounds(drawableNodes, lines, cardSizes, TREE_EXPORT_CONFIG.padding);
+  const palette = paletteFor(options.treeStyle.theme);
+  const framePadding = options.includeFrame ? EXPORT_FRAME_PADDING : 0;
+  const bounds = getTreeExportBounds(drawableNodes, lines, cardSizes, TREE_EXPORT_CONFIG.padding + framePadding);
   const pixelRatio = getExportPixelRatio(bounds, options.quality || TREE_EXPORT_CONFIG.scale);
   const canvas = document.createElement("canvas");
   canvas.width = Math.max(1, Math.ceil(bounds.width * pixelRatio));
@@ -547,17 +463,26 @@ export async function renderFamilyTreePngBlob({ people, nodes, lines, cardSizes,
   ctx.save();
   ctx.scale(pixelRatio, pixelRatio);
   if (options.includeBackground) {
-    ctx.fillStyle = options.treeStyle.backgroundColor || TREE_EXPORT_CONFIG.background;
+    ctx.fillStyle = options.treeStyle.backgroundColor || palette.canvas;
     ctx.fillRect(0, 0, bounds.width, bounds.height);
   } else {
     ctx.clearRect(0, 0, bounds.width, bounds.height);
   }
   ctx.translate(-bounds.x, -bounds.y);
-  if (options.includeTitle) drawExportTitle(ctx, bounds, clan, t);
-  asArray(lines).forEach((line) => drawTreeLine(ctx, line, styledExportConfig));
-  asArray(drawableNodes).forEach((node) => (node.type ? drawExportNode(ctx, node, styledExportConfig, t, {
-    overview: options.mode === TREE_EXPORT_MODE.OVERVIEW,
-    directLineagePersonIds,
+  if (options.includeFrame) drawDecorativeFrame(ctx, bounds, palette);
+  if (options.includeTitle) {
+    drawThemedTitle(ctx, bounds, clan, t, palette, { centered: options.includeFrame, inset: options.includeFrame ? 30 : 0 });
+  }
+  const overview = options.mode === TREE_EXPORT_MODE.OVERVIEW;
+  const lineWidth = overview ? 2 : 2.4;
+  asArray(lines).forEach((line) => drawThemedLine(ctx, line, palette, lineWidth));
+  const nameSize = Math.round((Number(options.treeStyle.fontSize) || 17) * 0.88);
+  asArray(drawableNodes).forEach((node) => (node.type ? drawThemedNode(ctx, node, {
+    palette,
+    t,
+    overview,
+    nameSize,
+    directIds: directLineagePersonIds,
   }) : drawExportCard(ctx, node, cardSizes, styledExportConfig, t, {
     overview: options.mode === TREE_EXPORT_MODE.OVERVIEW,
     directLineagePersonIds,
@@ -572,17 +497,18 @@ export function renderFamilyTreeSvgString({ people, nodes, lines, cardSizes, cla
   const styledExportConfig = withTreeStyleFont(exportConfig, options.treeStyle);
   const directLineagePersonIds = new Set(asArray(rawDirectLineagePersonIds).map(Number).filter(Number.isFinite));
   const drawableNodes = asArray(nodes).length ? nodes : asArray(people);
+  const palette = paletteFor(options.treeStyle.theme);
   const bounds = getTreeExportBounds(drawableNodes, lines, cardSizes, TREE_EXPORT_CONFIG.padding);
-  const title = escapeXml(String(clan?.clan_name || "Dong ho").toLocaleUpperCase("vi-VN"));
+  const title = escapeXml(String(clan?.clan_name || "Dòng họ").toLocaleUpperCase("vi-VN"));
   const background = options.includeBackground
-    ? `<rect x="0" y="0" width="${bounds.width}" height="${bounds.height}" fill="${escapeXml(options.treeStyle.backgroundColor || TREE_EXPORT_CONFIG.background)}" />`
+    ? `<rect x="0" y="0" width="${bounds.width}" height="${bounds.height}" fill="${escapeXml(options.treeStyle.backgroundColor || palette.canvas)}" />`
     : "";
   const titleSvg = options.includeTitle
-    ? `<text x="${bounds.x + 42}" y="${bounds.y + 58}" font-family="${escapeXml(EXPORT_FONT_FAMILY)}" font-size="16" font-weight="800" fill="#7b5338">${escapeXml((t ? t("tree.title") : "Gia pha").toLocaleUpperCase("vi-VN"))}</text><text x="${bounds.x + 42}" y="${bounds.y + 96}" font-family="${escapeXml(EXPORT_FONT_FAMILY)}" font-size="34" font-weight="900" fill="#3a2b1f">${title}</text>`
+    ? `<text x="${bounds.x + 42}" y="${bounds.y + 58}" font-family="${escapeXml(EXPORT_FONT_FAMILY)}" font-size="16" font-weight="800" fill="${palette.muted}">${escapeXml((t ? t("tree.title") : "Gia phả").toLocaleUpperCase("vi-VN"))}</text><text x="${bounds.x + 42}" y="${bounds.y + 96}" font-family="${escapeXml(EXPORT_FONT_FAMILY)}" font-size="34" font-weight="900" fill="${palette.accent}">${title}</text>`
     : "";
   const lineSvg = asArray(lines)
     .filter((line) => line?.d && line.type !== "route-control")
-    .map((line) => `<path d="${escapeXml(line.d)}" fill="none" stroke="${line.type === "spouse" ? SPOUSE_LINE_COLOR : line.color || CHILD_LINE_COLOR}" stroke-width="${line.branchLevel === 0 ? Math.max(styledExportConfig.lineWidth, MAIN_LINE_WIDTH) : styledExportConfig.lineWidth}" stroke-linecap="round" stroke-linejoin="round" opacity="${line.type === "spouse" ? "0.9" : "0.86"}" />`)
+    .map((line) => `<path d="${escapeXml(line.d)}" fill="none" stroke="${line.type === "spouse" || line.branchLevel === 0 ? palette.lineStrong : palette.line}" stroke-width="${line.branchLevel === 0 ? Math.max(styledExportConfig.lineWidth, MAIN_LINE_WIDTH) : styledExportConfig.lineWidth}" stroke-linecap="round" stroke-linejoin="round" opacity="${line.type === "spouse" ? "0.9" : "0.86"}" />`)
     .join("");
   const cardSvg = asArray(drawableNodes).map((item) => {
     if (item.type === DISPLAY_NODE_TYPE.COUPLE) {
@@ -599,22 +525,16 @@ export function renderFamilyTreeSvgString({ people, nodes, lines, cardSizes, cla
       const wifeCenterY = isVertical ? y + halfHeight + halfHeight * 0.42 : husbandCenterY;
       const [firstPerson, secondPerson] = orderedCouplePeople(item, directLineagePersonIds, isVertical);
       const coupleChars = Math.max(10, Math.floor((halfWidth - 28) / (styledExportConfig.nameFontSize * 0.55)));
-      const husbandName = splitSvgText(fullName(firstPerson, t ? t("tree.card.fallbackName") : "Thanh vien"), coupleChars, 2)
-        .map((line, index) => `<text x="${husbandCenterX}" y="${husbandCenterY + index * styledExportConfig.nameFontSize * 1.12}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(EXPORT_FONT_FAMILY)}" font-size="${styledExportConfig.nameFontSize}" font-weight="800" fill="#2f241b">${escapeXml(line)}</text>`)
+      const husbandName = splitSvgText(fullName(firstPerson, t ? t("tree.card.fallbackName") : "Thành viên"), coupleChars, 2)
+        .map((line, index) => `<text x="${husbandCenterX}" y="${husbandCenterY + index * styledExportConfig.nameFontSize * 1.12}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(EXPORT_FONT_FAMILY)}" font-size="${styledExportConfig.nameFontSize}" font-weight="800" fill="${palette.ink}">${escapeXml(line)}</text>`)
         .join("");
-      const wifeName = splitSvgText(fullName(secondPerson, t ? t("tree.card.fallbackName") : "Thanh vien"), coupleChars, 2)
-        .map((line, index) => `<text x="${wifeCenterX}" y="${wifeCenterY + index * styledExportConfig.nameFontSize * 1.12}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(EXPORT_FONT_FAMILY)}" font-size="${styledExportConfig.nameFontSize}" font-weight="800" fill="#2f241b">${escapeXml(line)}</text>`)
+      const wifeName = splitSvgText(fullName(secondPerson, t ? t("tree.card.fallbackName") : "Thành viên"), coupleChars, 2)
+        .map((line, index) => `<text x="${wifeCenterX}" y="${wifeCenterY + index * styledExportConfig.nameFontSize * 1.12}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(EXPORT_FONT_FAMILY)}" font-size="${styledExportConfig.nameFontSize}" font-weight="800" fill="${palette.ink}">${escapeXml(line)}</text>`)
         .join("");
-      const husbandMark = directLineagePersonIds.has(Number(firstPerson?.id))
-        ? `<text x="${x + halfWidth - 10}" y="${y + 10}" text-anchor="end" font-family="${escapeXml(EXPORT_FONT_FAMILY)}" font-size="15" font-weight="900" fill="#8b1e13">◎</text>`
-        : "";
-      const wifeMark = directLineagePersonIds.has(Number(secondPerson?.id))
-        ? `<text x="${x + width - 10}" y="${y + 10}" text-anchor="end" font-family="${escapeXml(EXPORT_FONT_FAMILY)}" font-size="15" font-weight="900" fill="#8b1e13">◎</text>`
-        : "";
       const divider = isVertical
-        ? `<line x1="${x + 12}" y1="${y + halfHeight}" x2="${x + width - 12}" y2="${y + halfHeight}" stroke="rgba(185, 130, 91, 0.32)" />`
-        : `<line x1="${x + halfWidth}" y1="${y + 12}" x2="${x + halfWidth}" y2="${y + height - 12}" stroke="rgba(185, 130, 91, 0.32)" />`;
-      return `<g transform="translate(${-bounds.x}, ${-bounds.y})"><rect x="${x}" y="${y}" width="${width}" height="${height}" rx="10" fill="#fffaf0" stroke="#b9825b" stroke-width="2" />${divider}${husbandMark}${wifeMark}${husbandName}${wifeName}</g>`;
+        ? `<line x1="${x + 12}" y1="${y + halfHeight}" x2="${x + width - 12}" y2="${y + halfHeight}" stroke="${palette.border}" />`
+        : `<line x1="${x + halfWidth}" y1="${y + 12}" x2="${x + halfWidth}" y2="${y + height - 12}" stroke="${palette.border}" />`;
+      return `<g transform="translate(${-bounds.x}, ${-bounds.y})"><rect x="${x}" y="${y}" width="${width}" height="${height}" rx="12" fill="${palette.surface}" stroke="${palette.border}" stroke-width="1.5" />${divider}${husbandName}${wifeName}</g>`;
     }
     const person = item.type === DISPLAY_NODE_TYPE.SINGLE ? { ...item.person, tree_x: item.x, tree_y: item.y } : item;
     const localCardSizes = item.type === DISPLAY_NODE_TYPE.SINGLE ? { [Number(item.person.id)]: { width: item.width, height: item.height } } : cardSizes;
@@ -623,8 +543,8 @@ export function renderFamilyTreeSvgString({ people, nodes, lines, cardSizes, cla
     const y = toInt(person.tree_y, 0);
     const width = size.width;
     const height = size.height;
-    const name = fullName(person, t ? t("tree.card.fallbackName") : "Thanh vien");
-    const generationText = t ? t("tree.card.generation", { count: person.generation || 1 }) : `Doi ${person.generation || 1}`;
+    const name = fullName(person, t ? t("tree.card.fallbackName") : "Thành viên");
+    const generationText = t ? t("tree.card.generation", { count: person.generation || 1 }) : `Đời ${person.generation || 1}`;
     const isFounder = Number(person.generation) === 1 || Number(person.role_id) === 1;
     const textLeft = x + width / 2;
     const singleNameSize = styledExportConfig.singleNameFontSize || styledExportConfig.nameFontSize;
@@ -632,11 +552,8 @@ export function renderFamilyTreeSvgString({ people, nodes, lines, cardSizes, cla
     const textWidthChars = Math.max(12, Math.floor((width - 36) / (singleNameSize * 0.55)));
     const nameLines = splitSvgText(name, textWidthChars, 2);
     const nameStartY = y + height * 0.36 - ((nameLines.length - 1) * singleNameSize * 1.15) / 2;
-    const nameText = nameLines.map((line, index) => `<text x="${textLeft}" y="${nameStartY + index * singleNameSize * 1.15}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(EXPORT_FONT_FAMILY)}" font-size="${singleNameSize}" font-weight="800" fill="#2f241b">${escapeXml(line)}</text>`).join("");
-    const directMark = directLineagePersonIds.has(Number(person.id))
-      ? `<text x="${x + width - 10}" y="${y + 10}" text-anchor="end" font-family="${escapeXml(EXPORT_FONT_FAMILY)}" font-size="15" font-weight="900" fill="#8b1e13">◎</text>`
-      : "";
-    return `<g transform="translate(${-bounds.x}, ${-bounds.y})"><rect x="${x}" y="${y}" width="${width}" height="${height}" rx="10" fill="${isFounder ? "#fff1df" : "#fffaf1"}" stroke="${isFounder ? "#a85f39" : "#c97b4d"}" stroke-width="2" />${directMark}${nameText}<text x="${textLeft}" y="${y + height * 0.72}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(EXPORT_FONT_FAMILY)}" font-size="${singleMetaSize}" font-weight="500" fill="#8d5b3b">${escapeXml(generationText)}</text></g>`;
+    const nameText = nameLines.map((line, index) => `<text x="${textLeft}" y="${nameStartY + index * singleNameSize * 1.15}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(EXPORT_FONT_FAMILY)}" font-size="${singleNameSize}" font-weight="800" fill="${palette.ink}">${escapeXml(line)}</text>`).join("");
+    return `<g transform="translate(${-bounds.x}, ${-bounds.y})"><rect x="${x}" y="${y}" width="${width}" height="${height}" rx="12" fill="${palette.surface}" stroke="${isFounder ? palette.gold : palette.border}" stroke-width="1.5" />${nameText}<text x="${textLeft}" y="${y + height * 0.72}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(EXPORT_FONT_FAMILY)}" font-size="${singleMetaSize}" font-weight="500" fill="${palette.muted}">${escapeXml(generationText)}</text></g>`;
   }).join("");
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${bounds.width}" height="${bounds.height}" viewBox="0 0 ${bounds.width} ${bounds.height}">${background}<g transform="translate(${-bounds.x}, ${-bounds.y})">${titleSvg}${lineSvg}</g>${cardSvg}</svg>`;

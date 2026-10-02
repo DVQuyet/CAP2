@@ -1882,13 +1882,40 @@
       "autoLayout": "Tự sắp xếp",
       "autoLayoutHint": "Tự động sắp xếp lại và lưu vào database",
       "autoLayoutViewerHint": "Thành viên chỉ được xem, không được tự sắp xếp",
-      "exportPng": "Export PNG",
+      "exportPng": "Xuất ảnh",
       "validate": "Kiểm tra cây",
       "zoomIn": "Phóng to",
       "zoomOut": "Thu nhỏ",
       "fullscreen": "Toàn màn hình",
       "exitFullscreen": "Thoát toàn màn hình",
-      "limitedEdit": "Chỉnh sửa tạm thời: đời hiện tại ±1"
+      "limitedEdit": "Chỉnh sửa tạm thời: đời hiện tại ±1",
+      "overview": "Tổng quan",
+      "detail": "Chi tiết",
+      "viewMode": "Kiểu hiển thị",
+      "more": "Thêm công cụ",
+      "fitScreen": "Vừa màn hình",
+      "findMe": "Tìm tôi",
+      "search": "Tìm người",
+      "cardHorizontal": "Thẻ ngang",
+      "cardVertical": "Thẻ dọc",
+      "resetLines": "Đặt lại đường nối",
+      "saveLayout": "Lưu bố cục",
+      "reloadLayout": "Tải lại bố cục đã lưu",
+      "clearLocalLayout": "Xoá bố cục nháp",
+      "archive": "Kho lưu trữ thành viên",
+      "resetTitle": "Khôi phục tiêu đề",
+      "bulkSelect": "Chọn nhiều thẻ",
+      "bulkSelectOff": "Tắt chọn nhiều",
+      "background": "Màu nền",
+      "textSize": "Cỡ chữ",
+      "theme": "Giao diện",
+      "rootPerson": "Xem từ một người",
+      "groupView": "Hiển thị",
+      "groupLayout": "Bố cục",
+      "groupData": "Dữ liệu",
+      "groupTools": "Công cụ",
+      "close": "Đóng",
+      "actions": "Thao tác"
     },
     "genealogyAi": {
       "open": "AI trích xuất gia phả",
@@ -1992,12 +2019,29 @@
         "online": "Online",
         "search": "Kết quả tìm",
         "editing": "Đang sửa",
-        "error": "Lỗi dữ liệu"
+        "error": "Lỗi dữ liệu",
+        "directLineage": "Trực hệ"
       },
       "collapse": {
         "expand": "Mở nhánh con",
         "collapse": "Thu gọn nhánh con"
-      }
+      },
+      "deceased": "Đã mất",
+      "male": "Nam",
+      "female": "Nữ",
+      "spouses": "Vợ chồng",
+      "generationShort": "Đời {{count}}",
+      "founder": "Thủy tổ",
+      "validationIssue": "Thông tin cần kiểm tra",
+      "descendantsExpand": "Mở tất cả đời con cháu",
+      "descendantsCollapse": "Thu gọn tất cả đời con cháu",
+      "ancestorsExpand": "Hiện các đời tổ tiên",
+      "ancestorsCollapse": "Ẩn các đời tổ tiên",
+      "childOrder": "Con thứ {{count}}",
+      "branch": "Chi {{name}}",
+      "directLineageHint": "Trực hệ: con cháu trong dòng họ",
+      "inLawHint": "Dâu/rể",
+      "unknownName": "Chưa rõ"
     },
     "inspector": {
       "title": "Thông tin thành viên",
@@ -2153,6 +2197,39 @@
       "child": "con",
       "father": "cha",
       "mother": "mẹ"
+    },
+    "themes": {
+      "traditional": "Truyền thống",
+      "modern": "Hiện đại",
+      "dark": "Tối"
+    },
+    "lanes": {
+      "generation": "Đời {{count}}"
+    },
+    "export": {
+      "frame": "Khung trang trí",
+      "frameHint": "Thêm viền hoa văn và tên dòng họ khi xuất ảnh",
+      "eyebrow": "Xuất ảnh",
+      "title": "Xuất ảnh cây gia phả",
+      "mode": "Kiểu xuất",
+      "format": "Định dạng",
+      "pdfSoon": "PDF (sắp có)",
+      "quality": "Chất lượng",
+      "options": "Tuỳ chọn",
+      "background": "Có màu nền",
+      "includeTitle": "Có tiêu đề gia phả",
+      "appearance": "Giao diện cây",
+      "svgDone": "Đã xuất SVG.",
+      "exporting": "Đang xuất...",
+      "submit": "Xuất"
+    },
+    "couple": {
+      "eyebrow": "Cặp vợ chồng",
+      "children": "Con",
+      "noChildren": "Chưa có con trong gia phả.",
+      "editHusband": "Sửa thông tin chồng",
+      "editWife": "Sửa thông tin vợ",
+      "addChild": "Thêm con"
     }
   },
   "calendar": {

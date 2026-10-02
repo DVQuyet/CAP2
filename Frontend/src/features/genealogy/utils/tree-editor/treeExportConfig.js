@@ -80,4 +80,5 @@ export const DEFAULT_TREE_EXPORT_OPTIONS = {
   quality: 3,
   includeBackground: true,
   includeTitle: true,
+  includeFrame: false,
 };

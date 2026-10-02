@@ -83,8 +83,15 @@ function cardMetrics(exportMode = false, cardOrientation = TREE_CARD_ORIENTATION
   };
 }
 
-function nodeSize(_type, exportMode = false, cardOrientation = TREE_CARD_ORIENTATION.HORIZONTAL) {
+function nodeSize(type, exportMode = false, cardOrientation = TREE_CARD_ORIENTATION.HORIZONTAL) {
   const metrics = cardMetrics(exportMode, cardOrientation);
+  // Thẻ một người chỉ rộng một ô (trên màn hình); thẻ vợ chồng chiếm cả hai ô.
+  if (type === DISPLAY_NODE_TYPE.SINGLE && !exportMode) {
+    return {
+      width: metrics.personSlotWidth,
+      height: normalizeCardOrientation(cardOrientation) === TREE_CARD_ORIENTATION.VERTICAL ? WEB_CARD_HEIGHT : metrics.height,
+    };
+  }
   return {
     width: metrics.width,
     height: metrics.height,
@@ -176,8 +183,10 @@ export function buildDisplayTree(people = [], families = [], childRows = [], opt
       if (usedPersonIds.has(Number(husband.id)) || usedPersonIds.has(Number(wife.id))) return;
 
       const size = nodeSize(DISPLAY_NODE_TYPE.COUPLE, exportMode, cardOrientation);
+      // Căn thẻ vào giữa hai ô của vợ và chồng (mỗi ô rộng personSlotWidth).
+      const slotWidth = cardMetrics(exportMode, cardOrientation).personSlotWidth;
       const leftX = Math.min(personX(husband), personX(wife));
-      const rightX = Math.max(personX(husband), personX(wife)) + size.width;
+      const rightX = Math.max(personX(husband), personX(wife)) + slotWidth;
       const x = Math.round((leftX + rightX) / 2 - size.width / 2);
       const y = Math.min(personY(husband), personY(wife));
       const node = {
@@ -620,7 +629,10 @@ export function buildDisplayTreeLines(displayTree, families = [], childRows = []
     const childRight = Math.max(...childAnchors.map((anchor) => anchor.x));
     const minTrunkX = Math.min(parentAnchor.x, childLeft) - Math.max(110, parentNode.width * 0.45);
     const maxTrunkX = Math.max(parentAnchor.x, childRight) + Math.max(110, parentNode.width * 0.45);
-    const trunkX = boundedRoute(route, "trunkX", "parentBranchX", parentAnchor.x, minTrunkX, maxTrunkX);
+    // Một người con lệch tâm ít (do làm tròn theo lưới): kẻ thẳng xuống thay vì gấp khúc.
+    const singleChildX = childAnchors.length === 1 ? childAnchors[0].x : null;
+    const defaultTrunkX = singleChildX !== null && Math.abs(singleChildX - parentAnchor.x) <= 24 ? singleChildX : parentAnchor.x;
+    const trunkX = boundedRoute(route, "trunkX", "parentBranchX", defaultTrunkX, minTrunkX, maxTrunkX);
     const childBranchRoutes = childNodes.map((childNode, index) => {
       const anchor = childAnchors[index];
       const routeKey = `childX:${childNode.id}`;

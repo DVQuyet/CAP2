@@ -3,6 +3,7 @@ import { formatDateVN } from "../../../shared/utils/dateFormat";
 import { getPersonHighlightState, highlightClassNames } from "../utils/treeHighlight";
 import { CARD_HEIGHT, CARD_WIDTH, META_FONT_SIZE, META_FONT_WEIGHT, NAME_FONT_SIZE, NAME_FONT_WEIGHT } from "../utils/tree-editor/treeConstants";
 import { TREE_DISPLAY_MODE, getTreeDisplayConfig } from "../utils/tree-editor/treeDisplayConfig";
+import { CardPersonBody, lifeYears } from "./TreeCardParts";
 
 function fullName(person, fallback) {
   return person?.display_name || [person?.surname, person?.middle_name, person?.first_name].filter(Boolean).join(" ").trim() || fallback;
@@ -47,7 +48,6 @@ export default function TreeNodeCard({
   const name = fullName(person, t("tree.card.fallbackName"));
   const genderClass = Number(person.gender) === 1 ? "is-male" : Number(person.gender) === 2 ? "is-female" : "is-unknown";
   const birthText = formatDateVN(person.birth_date);
-  const deathText = formatDateVN(person.death_date);
   const deceased = Number(person.is_living) === 0;
   const isClanChief = Number(person.role_id) === 2;
   const generation = Number(person.generation) || 1;
@@ -61,22 +61,24 @@ export default function TreeNodeCard({
     state.editing ? t("tree.card.badges.editing") : "",
     state.error ? t("tree.card.badges.error") : "",
   ].filter(Boolean);
-  const tooltip = [name, ...badges, ...state.errors].join("\n");
+  const tooltip = [
+    name,
+    directLineage ? t("tree.card.directLineageHint") : t("tree.card.inLawHint"),
+    ...badges,
+    ...state.errors,
+  ].join("\n");
   const displayConfig = getTreeDisplayConfig(displayMode);
   const resolvedFontSize = Number(fontSize) || displayConfig.singleNameFontSize || displayConfig.nameFontSize || NAME_FONT_SIZE;
   const showMeta = displayConfig.showMeta !== false;
-  const showAvatar = false;
+  const showAvatar = displayMode !== TREE_DISPLAY_MODE.OVERVIEW;
 
-  const birthYear = yearOnly(person.birth_date || birthText);
-  const deathYear = deceased ? yearOnly(person.death_date || deathText) : "";
-  const lifeText = birthYear && deathYear ? `${birthYear}-${deathYear}` : birthYear || deathYear || "";
+  const lifeText = lifeYears(person) || yearOnly(birthText);
   const childOrder = Number(person.child_order || person.child_sort_order);
   const metaItems = [
-    person.generation ? t("tree.card.generation", { count: person.generation }) : "",
-    Number.isFinite(childOrder) && childOrder > 0 ? `Con thứ ${childOrder}` : "",
     lifeText,
-    person.branch ? `Chi ${person.branch}` : "",
-    Number(person.role_id) === 2 ? t("tree.card.chief") : "",
+    person.generation ? t("tree.card.generation", { count: person.generation }) : "",
+    Number.isFinite(childOrder) && childOrder > 0 ? t("tree.card.childOrder", { count: childOrder }) : "",
+    person.branch ? t("tree.card.branch", { name: person.branch }) : "",
   ].filter(Boolean);
 
   const stopActionPointer = (event) => {
@@ -87,7 +89,7 @@ export default function TreeNodeCard({
   return (
     <div
       id={`fte-person-${person.id}`}
-      className={`fte-personCard is-${displayMode} is-${cardOrientation} ${genderClass} ${generationClass} ${founder ? "is-founder" : ""} ${deceased ? "is-deceased" : ""} ${stateClasses} ${related ? "is-related" : ""} ${dimmed ? "is-dimmed" : ""} ${dragging ? "is-dragging" : ""}`}
+      className={`fte-personCard is-${displayMode} is-${cardOrientation} ${genderClass} ${generationClass} ${directLineage ? "is-direct" : "is-inLaw"} ${founder ? "is-founder" : ""} ${deceased ? "is-deceased" : ""} ${stateClasses} ${related ? "is-related" : ""} ${dimmed ? "is-dimmed" : ""} ${dragging ? "is-dragging" : ""}`}
       style={{
         left: person.tree_x,
         top: person.tree_y,
@@ -147,7 +149,7 @@ export default function TreeNodeCard({
           {hasChildren ? (
             <button
               type="button"
-              title={collapsed ? "Mo tat ca doi con chau" : "Dong tat ca doi con chau"}
+              title={collapsed ? t("tree.card.descendantsExpand") : t("tree.card.descendantsCollapse")}
               onPointerDown={stopActionPointer}
               onClick={(event) => { event.stopPropagation(); onToggleDescendants?.(person.id); }}
             >
@@ -157,7 +159,7 @@ export default function TreeNodeCard({
           {hasAncestors ? (
             <button
               type="button"
-              title={ancestorsCollapsed ? "Mo tat ca doi to tien" : "Dong tat ca doi to tien"}
+              title={ancestorsCollapsed ? t("tree.card.ancestorsExpand") : t("tree.card.ancestorsCollapse")}
               onPointerDown={stopActionPointer}
               onClick={(event) => { event.stopPropagation(); onToggleAncestors?.(person.id); }}
             >
@@ -178,12 +180,13 @@ export default function TreeNodeCard({
       ) : null}
 
       {isClanChief ? <span className="fte-chiefBadge">{t("tree.card.chief")}</span> : null}
-      {directLineage ? <span className="fte-directLineageMark" title="Truc he" aria-label="Truc he">◎</span> : null}
-      {showAvatar ? <div className={`fte-ancestorIcon ${person.avatar_url ? "has-photo" : ""}`}>
-        {person.avatar_url ? <img className="fte-mainPhoto" src={person.avatar_url} alt="" /> : <span className="material-symbols-outlined">person</span>}
-      </div> : null}
-      <div className="fte-cardName">{name}</div>
-      {showMeta && metaItems.length ? <div className="fte-cardMeta">{metaItems.join(" · ")}</div> : null}
+      <CardPersonBody
+        person={person}
+        name={name}
+        meta={showMeta && metaItems.length ? metaItems.join(" · ") : ""}
+        showAvatar={showAvatar}
+        directLineage={directLineage}
+      />
       {state.editing ? <span className="fte-nodeBadge is-editing">{t("tree.card.badges.editing")}</span> : null}
       {state.error ? <span className="fte-nodeBadge is-error">!</span> : null}
       {canEdit ? (
