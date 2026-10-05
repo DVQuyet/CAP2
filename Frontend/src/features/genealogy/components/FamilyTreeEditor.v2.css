@@ -1451,3 +1451,125 @@
     padding: 0 12px !important;
     font-size: 0.9rem;
 }
+
+/* Quan hệ đặc biệt trên cây: nét đứt = hôn nhân đã kết thúc / con nuôi, thừa tự; nét chấm = vợ lẽ / con riêng. */
+.fte-line.is-variant-ended,
+.fte-line.is-variant-adoptive {
+  stroke-dasharray: 8 6;
+}
+
+.fte-line.is-variant-concubine,
+.fte-line.is-variant-step {
+  stroke-dasharray: 2 6;
+}
+
+/* Thẻ tham chiếu: người được vẽ ở vị trí chính nơi khác; bấm để tới đó. */
+.fte-referenceCard {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1.5px dashed var(--fte-card-border, #b08a5a);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--fte-card-bg, #fffaf2) 82%, transparent);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.fte-referenceCard:hover {
+  border-style: solid;
+}
+
+.fte-referenceCard.is-dimmed {
+  opacity: 0.35;
+}
+
+.fte-referenceText {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.fte-referenceText strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fte-referenceText small {
+  opacity: 0.75;
+}
+
+.fte-coupleStatus {
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.06);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.fte-relationOptions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.fte-relationOptions label {
+  display: grid;
+  gap: 4px;
+  font-weight: 700;
+}
+
+.fte-relationOptionsHint {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #9a3412;
+  font-size: 13px;
+}
+
+.fte-relationPreview {
+  margin: 0 18px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.04);
+  font-size: 13px;
+}
+
+.fte-relationPreview p {
+  display: flex;
+  gap: 6px;
+  margin: 4px 0;
+}
+
+.fte-relationPreview .is-blocking { color: #b42318; }
+.fte-relationPreview .is-confirm { color: #9a3412; }
+.fte-relationPreview.is-ok { color: #2f6b47; }
+
+.fte-historicalDate {
+  display: grid;
+  gap: 4px;
+}
+
+.fte-historicalDateRow {
+  display: flex;
+  gap: 6px;
+}
+
+.fte-historicalDateRow > * {
+  min-width: 0;
+}
+
+.fte-inlineCheck {
+  display: flex !important;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500 !important;
+}

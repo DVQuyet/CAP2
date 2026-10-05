@@ -22,7 +22,8 @@ import { CANVAS_PADDING, CARD_HEIGHT, CARD_WIDTH } from "../utils/tree-editor/tr
 import { asArray, extractCreatedPersonId, formatDisplayDate, fullName, normalizePerson, readCurrentAccount, snap, snapLine, clamp, toInt } from "../utils/tree-editor/treePersonUtils";
 import { clearCardSizes, clearLineRoutes, getCardSize, loadCardSizes, loadLineRoutes, normalizeCardSize, normalizeLayoutObject, normalizeLayoutSettings, saveCardSizes, saveLineRoutes } from "../utils/tree-editor/treeStorage";
 import { dedupePeopleByAccount, remapChildrenByPeople, remapFamiliesByPeople } from "../utils/tree-editor/treeNormalize";
-import { autoLayoutPeople, findFounderIds, generationY, mergeManualAndAutoLayout } from "../utils/tree-editor/treeLayout";
+import { autoLayoutPeople, computeReferencePlacements, findFounderIds, generationY, mergeManualAndAutoLayout } from "../utils/tree-editor/treeLayout";
+import ReferenceCard from "./ReferenceCard";
 import { blankCreateForm, buildCreateRelationFields, buildLinkPayload, defaultRelationOptions, findParentFamilyForChild, findSpouse, findSpouseFamily, getChildOrderMapForFamily, getChildrenForFamily, getFamiliesForPerson, relationCandidates, relationLinkedIds } from "../utils/tree-editor/treeRelations";
 import { downloadBlob, exportFileName, exportPreparedTree, prepareTreeExportPayload } from "../utils/tree-editor/treeExport";
 import { DEFAULT_TREE_EXPORT_OPTIONS, TREE_EXPORT_FORMAT, TREE_EXPORT_MODE } from "../utils/tree-editor/treeExportConfig";
@@ -975,12 +976,17 @@ const coupleActionPerson = useMemo(
     () => new Map(renderPeople.map((person) => [Number(person.id), person])),
     [renderPeople],
   );
+  const referencePlacements = useMemo(
+    () => computeReferencePlacements(canonicalTree.people, canonicalTree.families, canonicalTree.childRows),
+    [canonicalTree],
+  );
   const displayTree = useMemo(
     () => buildDisplayTree(renderPeople, visibleFamilies, visibleChildRows, {
       nodePositions: USE_LOCAL_DRAFT_LAYOUT ? displayNodePositions : {},
       cardOrientation: treeStyle.cardOrientation,
+      referencePlacements,
     }),
-    [displayNodePositions, renderPeople, treeStyle.cardOrientation, visibleFamilies, visibleChildRows],
+    [displayNodePositions, referencePlacements, renderPeople, treeStyle.cardOrientation, visibleFamilies, visibleChildRows],
   );
   const displayNodes = displayTree.nodes;
   const displayNodeByPersonId = displayTree.nodeByPersonId;
@@ -3264,7 +3270,7 @@ const submitCreateDialog = async () => {
                             return (
                           <path
                             key={line.id || `${line.type}-${index}`}
-                            className={`fte-line is-${line.type} ${line.branchLevel === 0 && line.type === "blood" ? "is-mainBranch" : ""} ${selectedRelatedIds.size ? (lineRelated ? "is-related" : "is-dimmed") : ""} ${line.dragAxis ? `is-axis-${line.dragAxis}` : ""} ${canEditAll && line.dragAxis ? "is-draggable" : ""} ${draggingLineId === `${Number(line.familyId)}:${line.routeKey || "baseY"}` ? "is-dragging" : ""}`}
+                            className={`fte-line is-${line.type} ${line.variant ? `is-variant-${line.variant}` : ""} ${line.branchLevel === 0 && line.type === "blood" ? "is-mainBranch" : ""} ${selectedRelatedIds.size ? (lineRelated ? "is-related" : "is-dimmed") : ""} ${line.dragAxis ? `is-axis-${line.dragAxis}` : ""} ${canEditAll && line.dragAxis ? "is-draggable" : ""} ${draggingLineId === `${Number(line.familyId)}:${line.routeKey || "baseY"}` ? "is-dragging" : ""}`}
                             d={line.d}
                             style={line.color ? { "--line-color": line.color } : undefined}
                             onPointerDown={canEditAll && line.dragAxis ? (event) => beginLineDrag(event, line) : undefined}
@@ -3297,6 +3303,18 @@ const submitCreateDialog = async () => {
                       {displayNodes.map((node) => {
                         const related = asArray(node.personIds).some((personId) => selectedRelatedIds.has(Number(personId)));
                         const dimmed = selectedRelatedIds.size > 0 && !related;
+                        if (node.type === DISPLAY_NODE_TYPE.REFERENCE) {
+                          const referenceRelated = selectedRelatedIds.has(Number(node.refPersonId));
+                          return (
+                            <ReferenceCard
+                              key={node.id}
+                              node={node}
+                              related={referenceRelated}
+                              dimmed={selectedRelatedIds.size > 0 && !referenceRelated}
+                              onOpen={(personId) => focusPerson(personId, { scale: 1.1 })}
+                            />
+                          );
+                        }
                         if (node.type === DISPLAY_NODE_TYPE.COUPLE) {
                           return (
                             <CoupleCard

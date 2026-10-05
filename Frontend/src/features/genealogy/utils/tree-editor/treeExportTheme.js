@@ -265,6 +265,8 @@ export function drawThemedLine(ctx, line, palette, lineWidth) {
   ctx.lineJoin = "round";
   ctx.strokeStyle = line.type === "spouse" || line.branchLevel === 0 ? palette.lineStrong : palette.line;
   ctx.lineWidth = lineWidth;
+  if (line.variant === "ended" || line.variant === "adoptive") ctx.setLineDash([8, 6]);
+  else if (line.variant) ctx.setLineDash([2, 6]);
   try {
     ctx.stroke(new Path2D(line.d));
   } catch {

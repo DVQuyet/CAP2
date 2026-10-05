@@ -508,7 +508,7 @@ export function renderFamilyTreeSvgString({ people, nodes, lines, cardSizes, cla
     : "";
   const lineSvg = asArray(lines)
     .filter((line) => line?.d && line.type !== "route-control")
-    .map((line) => `<path d="${escapeXml(line.d)}" fill="none" stroke="${line.type === "spouse" || line.branchLevel === 0 ? palette.lineStrong : palette.line}" stroke-width="${line.branchLevel === 0 ? Math.max(styledExportConfig.lineWidth, MAIN_LINE_WIDTH) : styledExportConfig.lineWidth}" stroke-linecap="round" stroke-linejoin="round" opacity="${line.type === "spouse" ? "0.9" : "0.86"}" />`)
+    .map((line) => `<path d="${escapeXml(line.d)}"${line.variant === "ended" || line.variant === "adoptive" ? ' stroke-dasharray="8 6"' : line.variant ? ' stroke-dasharray="2 6"' : ""} fill="none" stroke="${line.type === "spouse" || line.branchLevel === 0 ? palette.lineStrong : palette.line}" stroke-width="${line.branchLevel === 0 ? Math.max(styledExportConfig.lineWidth, MAIN_LINE_WIDTH) : styledExportConfig.lineWidth}" stroke-linecap="round" stroke-linejoin="round" opacity="${line.type === "spouse" ? "0.9" : "0.86"}" />`)
     .join("");
   const cardSvg = asArray(drawableNodes).map((item) => {
     if (item.type === DISPLAY_NODE_TYPE.COUPLE) {
@@ -536,8 +536,10 @@ export function renderFamilyTreeSvgString({ people, nodes, lines, cardSizes, cla
         : `<line x1="${x + halfWidth}" y1="${y + 12}" x2="${x + halfWidth}" y2="${y + height - 12}" stroke="${palette.border}" />`;
       return `<g transform="translate(${-bounds.x}, ${-bounds.y})"><rect x="${x}" y="${y}" width="${width}" height="${height}" rx="12" fill="${palette.surface}" stroke="${palette.border}" stroke-width="1.5" />${divider}${husbandName}${wifeName}</g>`;
     }
-    const person = item.type === DISPLAY_NODE_TYPE.SINGLE ? { ...item.person, tree_x: item.x, tree_y: item.y } : item;
-    const localCardSizes = item.type === DISPLAY_NODE_TYPE.SINGLE ? { [Number(item.person.id)]: { width: item.width, height: item.height } } : cardSizes;
+    // Thẻ một người và thẻ tham chiếu đều vẽ theo người trong thẻ.
+    const isPersonNode = item.type === DISPLAY_NODE_TYPE.SINGLE || item.type === DISPLAY_NODE_TYPE.REFERENCE;
+    const person = isPersonNode ? { ...item.person, tree_x: item.x, tree_y: item.y } : item;
+    const localCardSizes = isPersonNode ? { [Number(item.person.id)]: { width: item.width, height: item.height } } : cardSizes;
     const size = getExportCardSize(localCardSizes, person.id, styledExportConfig);
     const x = toInt(person.tree_x, 0);
     const y = toInt(person.tree_y, 0);
