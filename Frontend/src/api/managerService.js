@@ -85,6 +85,28 @@ const ensureCenteredNoticeStyles = () => {
       background: #dc2626;
       color: #ffffff;
     }
+    .genealogy-notice-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .genealogy-notice-reason {
+      display: grid;
+      gap: 8px;
+      margin-top: 16px;
+      text-align: left;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .genealogy-notice-reason textarea,
+    .genealogy-notice-reason select {
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      padding: 8px 10px;
+      font: inherit;
+      font-weight: 400;
+    }
     @keyframes genealogyNoticePop {
       from { transform: translateY(8px) scale(0.98); opacity: 0; }
       to { transform: translateY(0) scale(1); opacity: 1; }
@@ -93,11 +115,15 @@ const ensureCenteredNoticeStyles = () => {
   document.head.appendChild(style);
 };
 
+// withReason: bắt buộc nhập lý do/nguồn trước khi xác nhận (quan hệ trái quy định nhưng là dữ liệu lịch sử).
+// Khi withReason, kết quả là { ok, reason, sourceType, sourceNote } thay vì true/false.
 const showCenteredGenealogyNotice = ({
   message,
   title = "Thông báo ràng buộc gia phả",
   type = "error",
   confirm = false,
+  withReason = false,
+  confirmLabel = "Vẫn lưu dữ liệu lịch sử",
 }) => {
   if (typeof document === "undefined") {
     return Promise.resolve(false);
@@ -132,10 +158,22 @@ const showCenteredGenealogyNotice = ({
     const actions = document.createElement("div");
     actions.className = "genealogy-notice-actions";
 
+    let reasonInput = null;
+    let sourceSelect = null;
+    let sourceNoteInput = null;
     const close = (value) => {
       document.removeEventListener("keydown", onKeyDown);
       overlay.remove();
-      resolve(value);
+      if (!withReason) {
+        resolve(value);
+        return;
+      }
+      resolve({
+        ok: Boolean(value),
+        reason: reasonInput?.value?.trim() || "",
+        sourceType: sourceSelect?.value || "",
+        sourceNote: sourceNoteInput?.value?.trim() || "",
+      });
     };
 
     const onKeyDown = (event) => {
@@ -153,11 +191,52 @@ const showCenteredGenealogyNotice = ({
       const okBtn = document.createElement("button");
       okBtn.type = "button";
       okBtn.className = "genealogy-notice-btn primary";
-      okBtn.textContent = "Vẫn lưu dữ liệu lịch sử";
+      okBtn.textContent = confirmLabel;
       okBtn.onclick = () => close(true);
 
+      if (withReason) {
+        const reasonBox = document.createElement("div");
+        reasonBox.className = "genealogy-notice-reason";
+        const sourceLabel = document.createElement("label");
+        sourceLabel.textContent = "Nguồn dữ liệu";
+        sourceSelect = document.createElement("select");
+        [
+          ["paper_genealogy", "Gia phả giấy / bản chép tay"],
+          ["document", "Giấy tờ, văn bản"],
+          ["oral", "Lời kể của người trong họ"],
+          ["direct", "Gia đình xác nhận trực tiếp"],
+          ["unknown", "Không rõ"],
+        ].forEach(([value, label]) => {
+          const option = document.createElement("option");
+          option.value = value;
+          option.textContent = label;
+          sourceSelect.append(option);
+        });
+        sourceLabel.append(sourceSelect);
+        const noteLabel = document.createElement("label");
+        noteLabel.textContent = "Ghi chú nguồn (ví dụ: trang 12, bản chữ Hán năm 1938)";
+        sourceNoteInput = document.createElement("input");
+        sourceNoteInput.type = "text";
+        sourceNoteInput.style.cssText = "width:100%;box-sizing:border-box;border:1px solid #d1d5db;border-radius:10px;padding:8px 10px;font:inherit;font-weight:400";
+        noteLabel.append(sourceNoteInput);
+        const reasonLabel = document.createElement("label");
+        reasonLabel.textContent = "Lý do lưu (bắt buộc)";
+        reasonInput = document.createElement("textarea");
+        reasonInput.rows = 3;
+        reasonInput.placeholder = "Ví dụ: Ghi theo gia phả giấy của dòng họ, cụ có vợ lẽ trước năm 1945.";
+        reasonLabel.append(reasonInput);
+        reasonBox.append(sourceLabel, noteLabel, reasonLabel);
+        card.append(reasonBox);
+        okBtn.disabled = true;
+        reasonInput.addEventListener("input", () => {
+          okBtn.disabled = !reasonInput.value.trim();
+        });
+        setTimeout(() => reasonInput.focus(), 0);
+      } else {
+        setTimeout(() => okBtn.focus(), 0);
+      }
+
       actions.append(cancelBtn, okBtn);
-      setTimeout(() => okBtn.focus(), 0);
     } else {
       const okBtn = document.createElement("button");
       okBtn.type = "button";
@@ -168,7 +247,8 @@ const showCenteredGenealogyNotice = ({
       setTimeout(() => okBtn.focus(), 0);
     }
 
-    card.append(icon, titleEl, messageEl, actions);
+    card.prepend(icon, titleEl, messageEl);
+    card.append(actions);
     overlay.append(card);
     document.body.appendChild(overlay);
     document.addEventListener("keydown", onKeyDown);
@@ -187,7 +267,7 @@ const markNoticeShown = (error) => {
   return error;
 };
 
-const mergeForceSaveFlag = (options = {}) => {
+const mergeForceSaveFlag = (options = {}, confirmation = null) => {
   let body = {};
   if (options.body) {
     try {
@@ -196,10 +276,18 @@ const mergeForceSaveFlag = (options = {}) => {
       body = {};
     }
   }
+  const extra = confirmation && typeof confirmation === "object"
+    ? {
+      historicalOverrideReason: confirmation.reason || "",
+      override_source_type: confirmation.sourceType || "",
+      override_source_note: confirmation.sourceNote || "",
+    }
+    : {};
   return {
     ...options,
     body: JSON.stringify({
       ...(body || {}),
+      ...extra,
       forceSaveHistoricalRelation: true,
     }),
   };
@@ -216,12 +304,16 @@ const requestWithHistoricalConfirmation = async (endpoint, options = {}, fallbac
       error?.message ||
       "Quan hệ này vi phạm ràng buộc huyết thống/hôn phối. Đây có thể là dữ liệu lịch sử. Bạn có chắc muốn tiếp tục lưu không?";
 
-    const ok = await showCenteredGenealogyNotice({
+    const reasonRequired = Boolean(error?.data?.reasonRequired);
+    const confirmation = await showCenteredGenealogyNotice({
       message,
-      title: "Cảnh báo quan hệ dữ liệu lịch sử",
+      title: reasonRequired ? "Quan hệ trái quy định hiện hành" : "Cảnh báo dữ liệu bất thường",
       type: "warning",
       confirm: true,
+      withReason: reasonRequired,
+      confirmLabel: reasonRequired ? "Lưu kèm lý do và nguồn" : "Vẫn lưu",
     });
+    const ok = typeof confirmation === "object" ? confirmation.ok && Boolean(confirmation.reason) : confirmation;
     if (!ok) {
       const cancelError = new Error("Đã hủy lưu quan hệ sau cảnh báo vi phạm.");
       cancelError.data = error?.data || null;
@@ -230,7 +322,7 @@ const requestWithHistoricalConfirmation = async (endpoint, options = {}, fallbac
       throw markNoticeShown(cancelError);
     }
 
-    return request(endpoint, mergeForceSaveFlag(options), fallbackError);
+    return request(endpoint, mergeForceSaveFlag(options, typeof confirmation === "object" ? confirmation : null), fallbackError);
   }
 };
 
@@ -524,6 +616,50 @@ export const getDashboardData = async () => {
 };
 
 export const getMediaLibraryData = async () => asArray(await getMediaAPI());
+
+// Xem trước thay đổi quan hệ: lỗi, cảnh báo, thông báo và các thay đổi đời (không ghi gì).
+export const previewRelationsAPI = (data) =>
+  request(
+    "/people/link/preview",
+    {
+      method: "POST",
+      headers: getTreeEditKeyHeader(),
+      body: JSON.stringify(data),
+    },
+    "Không thể kiểm tra trước quan hệ"
+  );
+
+const clanQuery = (clanId) => (clanId ? `?clan_id=${encodeURIComponent(clanId)}` : "");
+
+export const auditFamilyTreeAPI = (clanId) =>
+  request(`/tree/audit${clanQuery(clanId)}`, { method: "GET" }, "Không thể kiểm tra gia phả");
+
+export const recomputeGenerationsAPI = (clanId) =>
+  request(
+    `/tree/recompute-generations${clanQuery(clanId)}`,
+    { method: "POST", body: JSON.stringify({ clan_id: clanId }) },
+    "Không thể cập nhật đời"
+  );
+
+export const getGenealogyPolicyAPI = (clanId) =>
+  request(`/tree/genealogy-policy${clanQuery(clanId)}`, { method: "GET" }, "Không thể đọc cài đặt gia phả");
+
+export const updateGenealogyPolicyAPI = (clanId, policy) =>
+  request(
+    `/tree/genealogy-policy${clanQuery(clanId)}`,
+    { method: "PUT", body: JSON.stringify({ clan_id: clanId, policy }) },
+    "Không thể lưu cài đặt gia phả"
+  );
+
+export const listRelationOverridesAPI = (clanId) =>
+  request(`/tree/relation-overrides${clanQuery(clanId)}`, { method: "GET" }, "Không thể đọc lịch sử xác nhận");
+
+export const describeKinshipAPI = (clanId, sourcePersonId, targetPersonId) =>
+  request(
+    `/tree/kinship?source_person_id=${encodeURIComponent(sourcePersonId)}&target_person_id=${encodeURIComponent(targetPersonId)}${clanId ? `&clan_id=${encodeURIComponent(clanId)}` : ""}`,
+    { method: "GET" },
+    "Không thể tra cứu xưng hô"
+  );
 
 export const createPersonAPI = (data) =>
   requestWithHistoricalConfirmation(

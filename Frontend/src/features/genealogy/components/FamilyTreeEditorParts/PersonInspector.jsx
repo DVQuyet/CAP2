@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
-import DateInput from "../../../../shared/components/DateInput";
 import { useLanguage } from "../../../../i18n/LanguageContext";
 import { fullName, personToForm } from "../../utils/tree-editor/treePersonUtils";
-import LunarDateHint from "./LunarDateHint";
 import ImageUpload from "../../../../shared/components/ImageUpload";
+import HistoricalPersonFields from "./HistoricalPersonFields";
 
 export default function PersonInspector({
   person,
@@ -18,6 +17,8 @@ export default function PersonInspector({
   canEditRelations = false,
   canDelete = false,
   notice = "",
+  relationSummary = [],
+  kinshipLabel = "",
 }) {
   const { t } = useLanguage();
   const [form, setForm] = useState(() => personToForm(person));
@@ -36,7 +37,7 @@ export default function PersonInspector({
       if (field === "is_living" && value === "1") {
         return { ...current, is_living: value, death_date: "" };
       }
-      if (field === "is_living" && value === "0") {
+      if (field === "is_living" && (value === "0" || value === "unknown")) {
         return { ...current, is_living: value, account_email: "", account_password: "" };
       }
       if (field === "role_id" && !person.account_id && value !== "3") {
@@ -109,6 +110,17 @@ export default function PersonInspector({
         ) : null}
 
         {notice ? <div className="fte-readOnlyNote">{notice}</div> : null}
+        {kinshipLabel ? <div className="fte-kinshipNote">{kinshipLabel}</div> : null}
+        {relationSummary.length ? (
+          <ul className="fte-relationSummary">
+            {relationSummary.map((line, index) => (
+              <li key={`${index}-${line.text}`} className={line.muted ? "is-muted" : ""}>
+                <span className="material-symbols-outlined">{line.icon || "link"}</span>
+                {line.text}
+              </li>
+            ))}
+          </ul>
+        ) : null}
 
         <div className="fte-formGrid">
           <label>
@@ -153,33 +165,7 @@ export default function PersonInspector({
             </select>
           </label>
 
-          <label>
-            {t("tree.inspector.fields.status")}
-            <select value={form.is_living} onChange={(event) => setField("is_living", event.target.value)} disabled={!canEdit}>
-              <option value="1">{t("tree.inspector.fields.statusOptions.living")}</option>
-              <option value="0">{t("tree.inspector.fields.statusOptions.deceased")}</option>
-            </select>
-          </label>
-
-          <label>
-            {t("tree.inspector.fields.birthDate")}
-            <DateInput
-              value={form.birth_date}
-              onChange={(event) => setField("birth_date", event.target.value)}
-              disabled={!canEdit}
-            />
-            <LunarDateHint value={form.birth_date} label={t("tree.inspector.fields.lunarBirth")} />
-          </label>
-
-          <label>
-            {t("tree.inspector.fields.deathDate")}
-            <DateInput
-              value={form.death_date}
-              onChange={(event) => setField("death_date", event.target.value)}
-              disabled={!canEdit || form.is_living === "1"}
-            />
-            <LunarDateHint value={form.death_date} label={t("tree.inspector.fields.lunarDeath")} />
-          </label>
+          <HistoricalPersonFields form={form} setField={setField} disabled={!canEdit} />
 
           <label>
             {t("tree.inspector.fields.generation")}
@@ -194,7 +180,7 @@ export default function PersonInspector({
 
           {hasParentFamily ? (
             <label>
-              Con thứ mấy trong nhà
+              {t("tree.inspector.fields.childOrder")}
               <input
                 type="number"
                 min="0"

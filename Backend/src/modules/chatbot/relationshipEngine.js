@@ -1,4 +1,6 @@
 const db = require('../../config/db');
+const { ARCHIVED_MEMBER_JOIN_SQL } = require('../manager/common.service');
+const { ensureArchivedMembersTable } = require('../manager/archive.service');
 const {
     describeRelationshipPath,
     relationshipKeyFromPath,
@@ -8,6 +10,17 @@ const {
 } = require('./vietnameseKinshipRules');
 const { pickBestRelationshipPath, scorePath } = require('./relationshipPathRanker');
 const { buildRelationshipEvidence } = require('./relationshipEvidenceService');
+const { buildKinshipGraph, describeKinship, normalizePolicy } = require('../genealogy/core');
+
+// Con nuôi, con thừa tự, con nuôi dưỡng đều là quan hệ "nuôi" trong đồ thị hỏi đáp.
+const ADOPTIVE_TYPES = new Set(['adopted', 'heir', 'foster']);
+const BLOOD_TYPES = new Set(['biological', 'unknown', '']);
+const normalizeChildTypeForEdges = (value) => {
+    const type = String(value || 'biological').toLowerCase();
+    if (ADOPTIVE_TYPES.has(type)) return 'adopted';
+    if (type === 'step') return 'step';
+    return 'biological';
+};
 
 const GRAPH_TTL_MS = Number(process.env.CHATBOT_GRAPH_CACHE_TTL_MS || 120000);
 const PATH_TTL_MS = Number(process.env.CHATBOT_PATH_CACHE_TTL_MS || 300000);
@@ -94,7 +107,7 @@ function childEdgeLabel(childPerson) {
 }
 
 function typedChildEdgeLabel(childPerson, childType) {
-    const type = String(childType || 'biological').toLowerCase();
+    const type = normalizeChildTypeForEdges(childType);
     const gender = Number(childPerson?.gender);
     if (type === 'adopted') {
         if (gender === MALE) return 'adopted_son';
@@ -110,7 +123,7 @@ function typedChildEdgeLabel(childPerson, childType) {
 }
 
 function parentEdgeLabel(parentRole, childType) {
-    const type = String(childType || 'biological').toLowerCase();
+    const type = normalizeChildTypeForEdges(childType);
     if (type === 'adopted') return 'adopted_parent';
     if (type === 'step') return parentRole === 'mother' ? 'step_mother' : 'step_father';
     return parentRole;
@@ -225,7 +238,19 @@ async function loadClanGraph(clanId, options = {}) {
         clearClanCache(normalizedClanId);
     }
 
-    const [peopleRows] = await db.query('SELECT * FROM people WHERE clan_id = ?', [normalizedClanId]);
+    // Thành viên đã bị xóa khỏi cây (chuyển vào kho lưu trữ) không tham gia suy luận quan hệ.
+    await ensureArchivedMembersTable();
+    const [peopleRows] = await db.query(
+        `
+        SELECT p.*
+        FROM people p
+        LEFT JOIN accounts a ON a.person_id = p.id
+        ${ARCHIVED_MEMBER_JOIN_SQL}
+        WHERE p.clan_id = ? AND am.id IS NULL
+        GROUP BY p.id
+        `,
+        [normalizedClanId]
+    );
     const [familyRows] = await db.query('SELECT * FROM families WHERE clan_id = ?', [normalizedClanId]);
     const familyIds = familyRows.map((family) => Number(family.id)).filter((id) => Number.isFinite(id));
 
@@ -307,11 +332,15 @@ async function loadClanGraph(clanId, options = {}) {
         }
     }
 
+    // Anh chị em cùng cha khác mẹ / cùng mẹ khác cha: xét gia đình cha mẹ ruột của mỗi người.
     const childParentKeys = new Map();
-    for (const [childId, familyIdsForChild] of parentFamiliesByChild.entries()) {
-        const family = families.get(Number(familyIdsForChild[0]));
+    for (const child of childRows) {
+        const childId = Number(child.person_id);
+        if (childParentKeys.has(childId) || !people.has(childId)) continue;
+        if (!BLOOD_TYPES.has(String(child.child_type || '').toLowerCase())) continue;
+        const family = families.get(Number(child.family_id));
         if (!family) continue;
-        childParentKeys.set(Number(childId), {
+        childParentKeys.set(childId, {
             fatherId: toPositiveId(family.father_id),
             motherId: toPositiveId(family.mother_id),
         });
@@ -342,6 +371,9 @@ async function loadClanGraph(clanId, options = {}) {
         parentFamiliesByChild,
         adjacency,
         graphVersion,
+        // Đồ thị cấu trúc để xưng hô theo tổ tiên chung, vai vế, nội/ngoại, thông gia.
+        kinship: buildKinshipGraph({ people: peopleRows, families: familyRows, children: childRows }),
+        region: await loadClanKinshipRegion(normalizedClanId),
         loadedAt: new Date(),
     };
 
@@ -356,7 +388,11 @@ async function loadClanGraph(clanId, options = {}) {
 function buildRelationshipResult(graph, sourceId, targetId, path, edges, pathNodes = []) {
     const sourcePerson = graph.people.get(Number(sourceId));
     const targetPerson = graph.people.get(Number(targetId));
-    const relationshipLabel = describeRelationshipPath(path, { sourcePerson, targetPerson, edges });
+    const pathLabel = describeRelationshipPath(path, { sourcePerson, targetPerson, edges });
+    const structural = graph.kinship && Number(sourceId) !== Number(targetId)
+        ? describeKinship(graph.kinship, sourceId, targetId, { region: graph.region })
+        : null;
+    const relationshipLabel = structural?.label || pathLabel;
     const normalizedPathNodes = Array.isArray(pathNodes) && pathNodes.length
         ? pathNodes
         : [Number(sourceId), ...(edges || []).map((edge) => Number(edge.to)).filter((id) => Number.isFinite(id))];
@@ -369,6 +405,9 @@ function buildRelationshipResult(graph, sourceId, targetId, path, edges, pathNod
         relationshipPath: path,
         relationshipKey: relationshipKeyFromPath(path),
         relationshipLabel,
+        pathLabel,
+        genealogyLabel: structural?.genealogyLabel || null,
+        kinshipCategory: structural?.category || null,
         depth: path.length,
         pathScore: scorePath(path),
         pathNodes: normalizedPathNodes,
@@ -381,7 +420,7 @@ function buildRelationshipResult(graph, sourceId, targetId, path, edges, pathNod
             edges,
             relationshipLabel,
         }),
-        confidence: path.length <= 3 ? 0.94 : Math.max(0.62, 0.9 - path.length * 0.04),
+        confidence: structural?.confidence ?? (path.length <= 3 ? 0.94 : Math.max(0.62, 0.9 - path.length * 0.04)),
         edges,
     };
 }
@@ -583,7 +622,7 @@ async function getChildrenOf(personId, options = {}) {
     const seen = new Set();
 
     for (const edge of graph.adjacency.get(id) || []) {
-        if (edge.type !== 'son' && edge.type !== 'daughter' && edge.type !== 'child') continue;
+        if (!CHILD_EDGE_TYPES.has(edge.type)) continue;
         if (seen.has(edge.to)) continue;
         seen.add(edge.to);
         const person = graph.people.get(edge.to);
@@ -658,6 +697,19 @@ async function getParentWithSpouseFallback(personId, parentType, options = {}) {
 async function getPerson(personId, options = {}) {
     const graph = await loadClanGraph(options.clanId, options);
     return graph.people.get(Number(personId)) || null;
+}
+
+const CHILD_EDGE_TYPES = new Set(['son', 'daughter', 'child', 'adopted_son', 'adopted_daughter', 'adopted_child']);
+
+async function loadClanKinshipRegion(clanId) {
+    try {
+        const [rows] = await db.query('SELECT genealogy_policy FROM clans WHERE id = ? LIMIT 1', [clanId]);
+        const raw = rows[0]?.genealogy_policy;
+        const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw || {};
+        return normalizePolicy(parsed).region;
+    } catch (_) {
+        return normalizePolicy({}).region;
+    }
 }
 
 function clearClanCache(clanId) {

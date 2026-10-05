@@ -69,6 +69,14 @@
     router.post('/people', verifyToken, checkRole(['admin', 'manager', 'member']), managerController.createPerson);
     router.post('/people/create', verifyToken, checkRole(['admin', 'manager', 'member']), managerController.createPerson);
     router.patch('/people/link', verifyToken, checkRole(['admin', 'manager', 'member']), managerController.linkRelations);
+    router.post('/people/link/preview', verifyToken, checkRole(['admin', 'manager', 'member']), managerController.previewRelations);
+    // Kiểm tra toàn cây, sửa đời hàng loạt, chính sách gia phả, lịch sử xác nhận, tra xưng hô.
+    router.get('/tree/audit', verifyToken, checkRole(['admin', 'manager']), managerController.auditFamilyTree);
+    router.post('/tree/recompute-generations', verifyToken, checkRole(['admin', 'manager']), managerController.recomputeGenerations);
+    router.get('/tree/genealogy-policy', verifyToken, checkRole(['admin', 'manager']), managerController.getGenealogyPolicy);
+    router.put('/tree/genealogy-policy', verifyToken, checkRole(['admin', 'manager']), managerController.updateGenealogyPolicy);
+    router.get('/tree/relation-overrides', verifyToken, checkRole(['admin', 'manager']), managerController.listRelationOverrides);
+    router.get('/tree/kinship', verifyToken, checkRole(['admin', 'manager']), managerController.describeKinshipBetween);
     router.patch('/people/layout', verifyToken, checkRole(['admin', 'manager', 'member']), managerController.saveTreeLayout);
     router.patch('/people/:id/position', verifyToken, checkRole(['admin', 'manager', 'member']), managerController.updatePersonPosition);
     router.patch('/people/:id', verifyToken, checkRole(['admin', 'manager', 'member']), managerController.updateTreePerson);

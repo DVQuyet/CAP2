@@ -17,6 +17,12 @@ const {
     getManagerClanId,
     resolveManagedClanId,
 } = require('./managerClan.service');
+const {
+    TREE_CHILD_COLUMNS,
+    TREE_FAMILY_COLUMNS,
+    TREE_PERSON_EXTRA_COLUMNS,
+} = require('../genealogy/treeQueries');
+const { applyFamilyVisibility } = require('../genealogy/treeVisibility');
 
 const getClanInfo = async(req, res) => {
     try {
@@ -128,6 +134,7 @@ const getFamilyTree = async(req, res) => {
                 p.tree_x,
                 p.tree_y,
                 p.display_order,
+                ${TREE_PERSON_EXTRA_COLUMNS},
                 a.id AS account_id,
                 a.email AS account_email,
                 a.role_id,
@@ -143,8 +150,7 @@ const getFamilyTree = async(req, res) => {
         );
 
         const [familyRows] = await db.query(
-            `SELECT id, clan_id, father_id, mother_id, marriage_date,
-                    relationship_status, ended_at, relation_note
+            `SELECT ${TREE_FAMILY_COLUMNS}
              FROM families
              WHERE clan_id = ?
              ORDER BY id ASC`,
@@ -152,14 +158,15 @@ const getFamilyTree = async(req, res) => {
         );
         const [childRows] = await db.query(
             `
-            SELECT c.family_id, c.person_id, c.sort_order
+            SELECT ${TREE_CHILD_COLUMNS}
             FROM families f
             STRAIGHT_JOIN children c ON c.family_id = f.id
             WHERE f.clan_id = ?
             ORDER BY c.family_id, c.sort_order, c.id
             `, [clanId]
         );
-        const visibleTree = filterTreeRelationsForVisiblePeople(familyRows, childRows, peopleRows);
+        const scoped = applyFamilyVisibility({ people: peopleRows, families: familyRows, children: childRows }, req.user);
+        const visibleTree = filterTreeRelationsForVisiblePeople(scoped.families, scoped.children, scoped.people);
         const clan = {
             ...clanRows[0],
             tree_style: layoutSettings.tree_style || {},

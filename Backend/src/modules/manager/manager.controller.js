@@ -3,6 +3,7 @@ const memberController = require('./member.controller');
 const moderationController = require('./moderation.controller');
 const eventTaskController = require('./eventTask.controller');
 const treeController = require('../genealogy/tree.controller');
+const genealogyAuditController = require('../genealogy/genealogyAudit.controller');
 
 module.exports = {
     ...dashboardController,
@@ -10,4 +11,5 @@ module.exports = {
     ...moderationController,
     ...eventTaskController,
     ...treeController,
+    ...genealogyAuditController,
 };

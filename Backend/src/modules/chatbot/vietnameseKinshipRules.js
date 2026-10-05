@@ -89,7 +89,7 @@ const vietnameseRuleMatcher = compileKinshipRules(VIETNAMESE_KINSHIP_RULES, {
 });
 
 function matchVietnameseKinshipRule(path = [], context = {}) {
-    return vietnameseRuleMatcher.match(path, context);
+    return vietnameseRuleMatcher.match(path, { ...context, path });
 }
 
 function describeAncestor(path, targetPerson) {

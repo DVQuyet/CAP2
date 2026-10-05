@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLanguage } from "../../../../i18n/LanguageContext";
 import { fullName } from "../../utils/tree-editor/treePersonUtils";
 import { relationCandidates, relationLinkedIds } from "../../utils/tree-editor/treeRelations";
+import RelationOptionsFields from "./RelationOptionsFields";
+import RelationPreview from "./RelationPreview";
 
 export default function RelationSelectDialog({
   relation,
@@ -16,9 +18,35 @@ export default function RelationSelectDialog({
   onUnlink,
   onPickOnTree,
   saving,
+  relationOptions = {},
+  onRelationOptionsChange,
+  requestPreview,
 }) {
   const { t } = useLanguage();
   const [query, setQuery] = useState("");
+  const [preview, setPreview] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const peopleById = useMemo(() => new Map((people || []).map((person) => [Number(person.id), person])), [people]);
+  const optionsKey = JSON.stringify(relationOptions || {});
+
+  // Kiểm tra trước trên máy chủ mỗi khi đổi người hoặc tùy chọn (không ghi gì).
+  useEffect(() => {
+    let cancelled = false;
+    setPreview(null);
+    const needsUnion = relation === "child" && !relationOptions?.unionKey;
+    if (!value || !requestPreview || needsUnion) return undefined;
+    setPreviewLoading(true);
+    const timer = setTimeout(() => {
+      requestPreview(value, relationOptions)
+        .then((result) => { if (!cancelled) setPreview(result); })
+        .catch(() => { if (!cancelled) setPreview(null); })
+        .finally(() => { if (!cancelled) setPreviewLoading(false); });
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [value, optionsKey, relation, requestPreview]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const linkedIds = relationLinkedIds(relation, selectedPerson, families, childRows);
   const candidates = relationCandidates(relation, selectedPerson, people, linkedIds, families);
@@ -65,6 +93,15 @@ export default function RelationSelectDialog({
               onChange={(event) => setQuery(event.target.value)}
             />
           </label>
+          <RelationOptionsFields
+            relation={relation}
+            sourcePerson={selectedPerson}
+            families={families}
+            people={people}
+            value={relationOptions}
+            onChange={onRelationOptionsChange}
+            disabled={saving}
+          />
           <div className="fte-relationList">
             {filtered.length ? (
               filtered.map((person) => (
@@ -95,6 +132,8 @@ export default function RelationSelectDialog({
           </div>
         </div>
 
+        <RelationPreview preview={preview} loading={previewLoading} peopleById={peopleById} />
+
         <div className="fte-modalFooter">
           <button type="button" className="fte-dangerButton" disabled={saving || !canUnlink} onClick={onUnlink}>
             <span className="material-symbols-outlined">link_off</span>
@@ -103,7 +142,7 @@ export default function RelationSelectDialog({
           <button
             type="button"
             className="fte-primaryButton"
-            disabled={saving || !value}
+            disabled={saving || !value || (onRelationOptionsChange && relation === "child" && !relationOptions?.unionKey) || (preview && preview.can_save === false)}
             onClick={() => onSubmit()}
           >
             <span className="material-symbols-outlined">link</span>

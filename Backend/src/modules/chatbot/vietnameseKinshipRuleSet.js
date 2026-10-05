@@ -9,6 +9,39 @@ const ANY_PARENT = { parent: true };
 
 const gendered = (male, female, unknown) => ({ male, female, unknown });
 
+const OLDER_SIBLING_EDGES = ['older_brother', 'older_sister', 'older_sibling'];
+const YOUNGER_SIBLING_EDGES = ['younger_brother', 'younger_sister', 'younger_sibling'];
+const SIBLING_EDGES = [...OLDER_SIBLING_EDGES, ...YOUNGER_SIBLING_EDGES];
+
+// Phía nhà chồng hay nhà vợ: suy từ giới tính người hỏi (nữ -> nhà chồng, nam -> nhà vợ).
+const spouseSide = (context) => {
+    const gender = Number(context.sourcePerson?.gender);
+    if (gender === 2) return 'chồng';
+    if (gender === 1) return 'vợ';
+    return 'chồng/vợ';
+};
+
+const byTargetGender = (context, male, female, unknown) => {
+    const gender = Number(context.targetPerson?.gender);
+    if (gender === 1) return male;
+    if (gender === 2) return female;
+    return unknown ?? `${male}/${female}`;
+};
+
+// Anh/chị/em của ông bà: xưng theo cách cha/mẹ gọi (bác/chú/cô với bên ông, cậu/dì với bên bà) thêm "ông"/"bà".
+const grandparentSiblingLabel = (path, context) => {
+    const grandparentEdge = path[1];
+    const siblingEdge = path[2];
+    const brother = siblingEdge === 'older_brother' || siblingEdge === 'younger_brother'
+        || (Number(context.targetPerson?.gender) === 1 && SIBLING_EDGES.includes(siblingEdge));
+    const older = OLDER_SIBLING_EDGES.includes(siblingEdge);
+    let term;
+    if (grandparentEdge === 'father') term = brother ? (older ? 'bác' : 'chú') : 'cô';
+    else if (grandparentEdge === 'mother') term = brother ? 'cậu' : 'dì';
+    else term = brother ? 'bác/chú/cậu' : 'cô/dì';
+    return `${brother ? 'ông' : 'bà'} ${term}`;
+};
+
 const VIETNAMESE_KINSHIP_RULES = [
     { id: 'self', priority: 1000, pattern: [], label: 'chính bạn', category: 'self' },
 
@@ -97,6 +130,92 @@ const VIETNAMESE_KINSHIP_RULES = [
         pattern: [ANY_PARENT, ANY_SIBLING, ANY_CHILD],
         label: gendered('anh em họ', 'chị em họ'),
         category: 'cousin',
+    },
+    // Vai vế anh/chị/em họ: con nhà bác (anh/chị của cha mẹ) là anh/chị, con nhà chú/cô/cậu/dì là em.
+    {
+        id: 'senior_branch_cousin',
+        priority: 895,
+        pattern: [ANY_PARENT, OLDER_SIBLING_EDGES, ANY_CHILD],
+        label: gendered('anh họ', 'chị họ', 'anh/chị họ'),
+        category: 'cousin',
+    },
+    {
+        id: 'junior_branch_cousin',
+        priority: 895,
+        pattern: [ANY_PARENT, YOUNGER_SIBLING_EDGES, ANY_CHILD],
+        label: 'em họ',
+        category: 'cousin',
+    },
+    {
+        id: 'grandparent_sibling',
+        priority: 885,
+        pattern: [ANY_PARENT, ['father', 'mother', 'parent'], SIBLING_EDGES],
+        label: (context) => grandparentSiblingLabel(context.path || [], context),
+        category: 'uncle_aunt',
+    },
+
+    // Nhà chồng / nhà vợ.
+    {
+        id: 'parent_in_law',
+        priority: 905,
+        pattern: ['spouse', ['father', 'mother', 'parent']],
+        label: (context) => `${byTargetGender(context, 'bố', 'mẹ', 'bố/mẹ')} ${spouseSide(context)}`,
+        category: 'affinal',
+    },
+    {
+        id: 'older_sibling_in_law',
+        priority: 900,
+        pattern: ['spouse', OLDER_SIBLING_EDGES],
+        label: (context) => `${byTargetGender(context, 'anh', 'chị', 'anh/chị')} ${spouseSide(context)}`,
+        category: 'affinal',
+    },
+    {
+        id: 'younger_sibling_in_law',
+        priority: 900,
+        pattern: ['spouse', YOUNGER_SIBLING_EDGES],
+        label: (context) => `em ${spouseSide(context)}`,
+        category: 'affinal',
+    },
+    {
+        id: 'spouse_step_child',
+        priority: 900,
+        pattern: ['spouse', ANY_CHILD],
+        label: (context) => `con riêng của ${spouseSide(context)}`,
+        category: 'step',
+    },
+    {
+        id: 'child_in_law',
+        priority: 905,
+        pattern: [ANY_CHILD, 'spouse'],
+        label: gendered('con rể', 'con dâu', 'con dâu/rể'),
+        category: 'affinal',
+    },
+    {
+        id: 'grandchild_in_law',
+        priority: 880,
+        pattern: [ANY_CHILD, ANY_CHILD, 'spouse'],
+        label: gendered('cháu rể', 'cháu dâu', 'cháu dâu/rể'),
+        category: 'affinal',
+    },
+    {
+        id: 'step_parent',
+        priority: 900,
+        pattern: [['father', 'mother', 'parent'], 'spouse'],
+        label: gendered('cha dượng', 'mẹ kế', 'cha dượng/mẹ kế'),
+        category: 'step',
+    },
+    {
+        id: 'co_sibling_in_law',
+        priority: 880,
+        pattern: ['spouse', SIBLING_EDGES, 'spouse'],
+        label: (context) => {
+            const source = Number(context.sourcePerson?.gender);
+            const target = Number(context.targetPerson?.gender);
+            if (source === 1 && target === 1) return 'anh em cột chèo';
+            if (source === 2 && target === 2) return 'chị em dâu';
+            return byTargetGender(context, 'anh/em rể', 'chị/em dâu', 'anh/chị/em dâu rể');
+        },
+        category: 'affinal',
     },
     {
         id: 'maternal_parent_cousin',

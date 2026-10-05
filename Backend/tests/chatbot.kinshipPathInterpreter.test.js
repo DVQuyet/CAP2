@@ -52,7 +52,7 @@ const sameGeneration = interpretKinshipPath({
     sourcePerson,
     targetPerson: unknownTarget,
 });
-assert.strictEqual(sameGeneration.addressLabel, 'anh/chị/em họ');
+assert.strictEqual(sameGeneration.addressLabel, 'anh/chị họ', 'con nhà bác là anh/chị họ theo vai');
 
 const childGeneration = interpretKinshipPath({
     path: ['older_brother', 'child'],

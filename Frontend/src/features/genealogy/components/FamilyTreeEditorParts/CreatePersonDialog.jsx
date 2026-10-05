@@ -1,10 +1,22 @@
-import DateInput from "../../../../shared/components/DateInput";
 import { useLanguage } from "../../../../i18n/LanguageContext";
 import { fullName } from "../../utils/tree-editor/treePersonUtils";
-import LunarDateHint from "./LunarDateHint";
 import ImageUpload from "../../../../shared/components/ImageUpload";
+import HistoricalPersonFields from "./HistoricalPersonFields";
+import RelationOptionsFields from "./RelationOptionsFields";
 
-export default function CreatePersonDialog({ relation, form, selectedPerson, onChange, onCancel, onSubmit, saving }) {
+export default function CreatePersonDialog({
+  relation,
+  form,
+  selectedPerson,
+  onChange,
+  onCancel,
+  onSubmit,
+  saving,
+  families = [],
+  people = [],
+  relationOptions = {},
+  onRelationOptionsChange,
+}) {
   const { t } = useLanguage();
   if (!relation || !form) return null;
 
@@ -38,7 +50,7 @@ export default function CreatePersonDialog({ relation, form, selectedPerson, onC
       return;
     }
 
-    if (field === "is_living" && value === "0") {
+    if (field === "is_living" && (value === "0" || value === "unknown")) {
       onChange({
         ...form,
         is_living: value,
@@ -101,6 +113,19 @@ export default function CreatePersonDialog({ relation, form, selectedPerson, onC
         </div>
 
         <div className="fte-formGrid fte-formGrid--modal">
+          {relation !== "person" && selectedPerson ? (
+            <div className="is-wide">
+              <RelationOptionsFields
+                relation={relation}
+                sourcePerson={selectedPerson}
+                families={families}
+                people={people}
+                value={relationOptions}
+                onChange={onRelationOptionsChange}
+                disabled={saving}
+              />
+            </div>
+          ) : null}
           <label className="is-wide">
             {t("tree.inspector.fields.displayName")}
             <input
@@ -154,13 +179,7 @@ export default function CreatePersonDialog({ relation, form, selectedPerson, onC
             />
           </label>
 
-          <label>
-            {t("tree.inspector.fields.status")}
-            <select value={form.is_living || "1"} onChange={(event) => setField("is_living", event.target.value)}>
-              <option value="1">{t("tree.inspector.fields.statusOptions.living")}</option>
-              <option value="0">{t("tree.inspector.fields.statusOptions.deceased")}</option>
-            </select>
-          </label>
+          <HistoricalPersonFields form={form} setField={setField} disabled={saving} />
 
           {form.is_living === "1" ? (
             <div className="fte-accountCreateBox is-wide">
@@ -193,25 +212,6 @@ export default function CreatePersonDialog({ relation, form, selectedPerson, onC
             </div>
           ) : null}
 
-          <label>
-            {t("tree.inspector.fields.birthDate")}
-            <DateInput
-              value={form.birth_date || ""}
-              onChange={(event) => setField("birth_date", event.target.value)}
-            />
-            <LunarDateHint value={form.birth_date} label={t("tree.inspector.fields.lunarBirth")} />
-          </label>
-
-          <label>
-            {t("tree.inspector.fields.deathDate")}
-            <DateInput
-              value={form.death_date || ""}
-              onChange={(event) => setField("death_date", event.target.value)}
-              disabled={form.is_living === "1"}
-            />
-            <LunarDateHint value={form.death_date} label={t("tree.inspector.fields.lunarDeath")} />
-          </label>
-
           <label className="is-wide">
             {t("tree.inspector.fields.hometown")}
             <input
@@ -232,7 +232,12 @@ export default function CreatePersonDialog({ relation, form, selectedPerson, onC
         </div>
 
         <div className="fte-modalFooter">
-          <button type="button" className="fte-primaryButton" disabled={saving} onClick={onSubmit}>
+          <button
+            type="button"
+            className="fte-primaryButton"
+            disabled={saving || (onRelationOptionsChange && relation === "child" && !relationOptions?.unionKey)}
+            onClick={onSubmit}
+          >
             <span className="material-symbols-outlined">person_add</span>
             {saving ? t("tree.createModal.actions.creating") : t("tree.createModal.actions.create")}
           </button>

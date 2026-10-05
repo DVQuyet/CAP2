@@ -150,6 +150,38 @@ function upperGenerationAddress(analysis, targetGender) {
     return `bác/chú/cô/dì họ${distant}`;
 }
 
+function seniorityOfSiblingEdge(edge) {
+    if (edge === 'older_brother' || edge === 'older_sister' || edge === 'older_sibling') return 'senior';
+    if (edge === 'younger_brother' || edge === 'younger_sister' || edge === 'younger_sibling') return 'junior';
+    return null;
+}
+
+function genderedTerm(targetGender, male, female, unknown) {
+    if (targetGender === MALE) return male;
+    if (targetGender === FEMALE) return female;
+    return unknown || `${male}/${female}`;
+}
+
+// Vợ/chồng của một người họ hàng (đường đi kết thúc bằng 'spouse').
+function buildSpouseOfRelativeLabel(analysis, path, targetGender) {
+    const seniority = seniorityOfSiblingEdge(analysis.siblingEdge);
+    if (analysis.relativeGeneration === 0) {
+        if (seniority === 'senior') return genderedTerm(targetGender, 'anh rể họ', 'chị dâu họ', 'anh rể/chị dâu họ');
+        if (seniority === 'junior') return genderedTerm(targetGender, 'em rể họ', 'em dâu họ', 'em rể/em dâu họ');
+        return genderedTerm(targetGender, 'anh/em rể họ', 'chị/em dâu họ', 'anh chị em dâu/rể họ');
+    }
+    if (analysis.relativeGeneration > 0) {
+        const base = analysis.relativeGeneration === 1 ? 'cháu' : analysis.relativeGeneration === 2 ? 'chắt' : 'hậu duệ';
+        return genderedTerm(targetGender, `${base} rể họ`, `${base} dâu họ`);
+    }
+    if (analysis.relativeGeneration === -1) {
+        if (targetGender === MALE) return 'dượng họ';
+        if (analysis.side === 'maternal') return 'mợ họ';
+        return seniority === 'senior' ? 'bác gái họ' : seniority === 'junior' ? 'thím họ' : 'bác gái/thím họ';
+    }
+    return null;
+}
+
 function buildAddressLabel(analysis, context = {}) {
     if (!analysis) return null;
     const path = context.path || [];
@@ -160,13 +192,24 @@ function buildAddressLabel(analysis, context = {}) {
 
     if (!analysis.hasSiblingBranch) return null;
 
+    if (path[path.length - 1] === 'spouse' && path.slice(0, -1).every((edge) => edge !== 'spouse')) {
+        const spouseLabel = buildSpouseOfRelativeLabel(analysis, path, targetGender);
+        if (spouseLabel) return spouseLabel;
+    }
+
     if (analysis.relativeGeneration <= -3) return targetGender === FEMALE ? 'cụ/bà cố họ' : targetGender === MALE ? 'cụ/ông cố họ' : 'cụ/ông bà cố họ';
     if (analysis.relativeGeneration === -2) return targetGender === FEMALE ? 'bà họ' : targetGender === MALE ? 'ông họ' : 'ông/bà họ';
     if (analysis.relativeGeneration === -1) return upperGenerationAddress(analysis, targetGender);
     if (analysis.relativeGeneration === 0 && analysis.isDistant && analysis.upDepth >= 3) {
         return upperGenerationAddress({ ...analysis, relativeGeneration: -1 }, targetGender);
     }
-    if (analysis.relativeGeneration === 0) return 'anh/chị/em họ';
+    if (analysis.relativeGeneration === 0) {
+        // Vai vế: nhánh trên (anh/chị của cha mẹ) là anh/chị họ, nhánh dưới là em họ.
+        const seniority = seniorityOfSiblingEdge(analysis.siblingEdge);
+        if (seniority === 'senior') return genderedTerm(targetGender, 'anh họ', 'chị họ', 'anh/chị họ');
+        if (seniority === 'junior') return 'em họ';
+        return 'anh/chị/em họ';
+    }
     if (analysis.relativeGeneration === 1) return 'cháu họ';
     if (analysis.relativeGeneration === 2) return 'chắt họ';
     return 'hậu duệ họ';

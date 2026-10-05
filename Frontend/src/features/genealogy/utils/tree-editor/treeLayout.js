@@ -1,5 +1,9 @@
-import { CANVAS_PADDING, CARD_WIDTH, FAMILY_GAP, LEVEL_HEIGHT, SIBLING_GAP, SPOUSE_GAP, X_GAP, Y_GAP } from "./treeConstants";
+import { CANVAS_PADDING, CARD_HEIGHT, CARD_WIDTH, FAMILY_GAP, LEVEL_HEIGHT, SIBLING_GAP, SPOUSE_GAP, X_GAP, Y_GAP } from "./treeConstants";
 import { asArray, birthTime, normalizePerson, personSort, snap, toInt } from "./treePersonUtils";
+import { buildUnionModel } from "./treeUnions";
+
+// Khoảng cách giữa các thành viên trong cụm nhiều vợ/chồng (để thấy đường nối hôn nhân).
+const UNION_MEMBER_GAP = 56;
 
 export function findFounderIds(people, families, childRows) {
   const peopleIds = new Set(asArray(people).map((person) => Number(person.id)));
@@ -61,148 +65,206 @@ function childPersonOf(item) {
   return item?.person || item;
 }
 
-export function sortChildrenForFamily(children = [], options = {}) {
-  const familyByParentId = options.familyByParentId || new Map();
+const PRECISE_ENOUGH = new Set(["exact", "month", "year"]);
+
+// Thứ tự anh chị em: ngày sinh khi đủ chính xác và khác nhau, rồi "con thứ" (sort_order), rồi id.
+// Không đẩy người đã có gia đình lên trước: giữ đúng thứ tự trưởng - thứ.
+export function sortChildrenForFamily(children = []) {
   return asArray(children)
     .slice()
     .sort((a, b) => {
       const personA = childPersonOf(a) || {};
       const personB = childPersonOf(b) || {};
-      const idA = Number(personA.id || 0);
-      const idB = Number(personB.id || 0);
-      const branchDiff = (familyByParentId.has(idB) ? 1 : 0) - (familyByParentId.has(idA) ? 1 : 0);
-      if (branchDiff) return branchDiff;
-
-      const birthA = birthTime(personA);
-      const birthB = birthTime(personB);
+      const preciseA = PRECISE_ENOUGH.has(String(personA.birth_date_precision || "exact"));
+      const preciseB = PRECISE_ENOUGH.has(String(personB.birth_date_precision || "exact"));
+      const birthA = preciseA ? birthTime(personA) : null;
+      const birthB = preciseB ? birthTime(personB) : null;
       if (birthA != null && birthB != null && birthA !== birthB) return birthA - birthB;
+
+      const orderA = toInt(a?.sort_order ?? a?.sortOrder, 0);
+      const orderB = toInt(b?.sort_order ?? b?.sortOrder, 0);
+      if (orderA > 0 && orderB > 0 && orderA !== orderB) return orderA - orderB;
       if (birthA != null && birthB == null) return -1;
       if (birthA == null && birthB != null) return 1;
 
-      return idA - idB || personSort(personA, personB);
+      return Number(personA.id || 0) - Number(personB.id || 0) || personSort(personA, personB);
     });
 }
 
-export function autoLayoutPeople(sourcePeople, families = [], childRows = []) {
+// ---------- Khối bố cục với đường viền theo đời (để ép sát các nhánh) ----------
+
+function emptyBlock() {
+  return { positions: new Map(), refs: new Map(), contour: new Map() };
+}
+
+function extendContour(contour, generation, minX, maxX) {
+  const current = contour.get(generation);
+  if (!current) contour.set(generation, { min: minX, max: maxX });
+  else contour.set(generation, { min: Math.min(current.min, minX), max: Math.max(current.max, maxX) });
+}
+
+function shiftBlock(block, dx) {
+  if (!dx) return block;
+  const shifted = emptyBlock();
+  block.positions.forEach((item, id) => shifted.positions.set(id, { ...item, x: item.x + dx }));
+  block.refs.forEach((item, key) => shifted.refs.set(key, { ...item, x: item.x + dx }));
+  block.contour.forEach((range, generation) => shifted.contour.set(generation, { min: range.min + dx, max: range.max + dx }));
+  return shifted;
+}
+
+function mergeInto(target, source) {
+  source.positions.forEach((item, id) => target.positions.set(id, item));
+  source.refs.forEach((item, key) => target.refs.set(key, item));
+  source.contour.forEach((range, generation) => extendContour(target.contour, generation, range.min, range.max));
+  return target;
+}
+
+function blockSpan(block) {
+  let min = Infinity;
+  let max = -Infinity;
+  block.contour.forEach((range) => {
+    min = Math.min(min, range.min);
+    max = Math.max(max, range.max);
+  });
+  return Number.isFinite(min) ? { min, max } : { min: 0, max: 0 };
+}
+
+// Độ dịch nhỏ nhất để `next` nằm bên phải `placed` ở mọi đời chung, cách nhau `gap`.
+function minimalShift(placed, next, gap) {
+  let shift = -Infinity;
+  next.contour.forEach((range, generation) => {
+    const other = placed.contour.get(generation);
+    if (other) shift = Math.max(shift, other.max + gap - range.min);
+  });
+  if (shift === -Infinity) {
+    const placedSpan = blockSpan(placed);
+    const nextSpan = blockSpan(next);
+    return placed.contour.size ? placedSpan.max + gap - nextSpan.min : 0;
+  }
+  return shift;
+}
+
+// Khoảng ngang của hàng trên cùng (đời nhỏ nhất) của khối.
+function topSpan(block) {
+  const generations = [...block.contour.keys()];
+  if (!generations.length) return { min: 0, max: 0 };
+  return block.contour.get(Math.min(...generations));
+}
+
+function packSequential(blocks, gap) {
+  const result = emptyBlock();
+  blocks.forEach((block, index) => {
+    const dx = index === 0 ? 0 : minimalShift(result, block, gap);
+    mergeInto(result, shiftBlock(block, dx));
+  });
+  return result;
+}
+
+// ---------- Bố cục cây theo cụm vợ chồng ----------
+
+export function autoLayoutTree(sourcePeople, families = [], childRows = [], options = {}) {
   const people = asArray(sourcePeople).map(normalizePerson);
-  if (!people.length) return [];
+  if (!people.length) return { people: [], references: [] };
+  const model = buildUnionModel(people, families, childRows, options);
+  if (!model.familiesById.size) return { people: simpleGenerationLayout(people), references: [] };
 
-  const peopleMap = new Map(people.map((person) => [Number(person.id), person]));
-  const familyRows = asArray(families).filter((family) => Number(family.id));
-  if (!familyRows.length) return simpleGenerationLayout(people);
+  const generationOf = (personId) => toInt(model.peopleById.get(Number(personId))?.generation, 1) || 1;
+  const visited = new Set();
 
-  const childrenByFamily = new Map();
-  const childIds = new Set();
-  asArray(childRows).forEach((row) => {
-    const familyId = Number(row.family_id);
-    const childId = Number(row.person_id);
-    if (!peopleMap.has(childId) || !Number.isFinite(familyId)) return;
-    if (!childrenByFamily.has(familyId)) childrenByFamily.set(familyId, []);
-    childrenByFamily.get(familyId).push({
-      person_id: childId,
-      sort_order: toInt(row.sort_order, 0),
-    });
-    childIds.add(childId);
-  });
-
-  const familyByParentId = new Map();
-  familyRows.forEach((family) => {
-    [family.father_id, family.mother_id].forEach((id) => {
-      const parentId = Number(id);
-      if (peopleMap.has(parentId) && !familyByParentId.has(parentId)) {
-        familyByParentId.set(parentId, family);
-      }
-    });
-  });
-
-  const mergePositionMaps = (target, source, offsetX = 0) => {
-    source.forEach((position, id) => {
-      target.set(id, { ...position, x: position.x + offsetX });
-    });
+  const childItemsOf = (familyId) => {
+    const links = (model.linksByFamily.get(Number(familyId)) || [])
+      .map((link) => ({ ...link, sort_order: link.sortOrder, person: model.peopleById.get(link.personId) }))
+      .filter((link) => link.person);
+    return sortChildrenForFamily(links);
   };
 
-  const layoutSingle = (person) => ({
-    width: CARD_WIDTH,
-    positions: new Map([[Number(person.id), { x: 0, y: generationY(person.generation) }]]),
-  });
+  const referenceBlock = (familyId, personId) => {
+    const block = emptyBlock();
+    const generation = generationOf(personId);
+    block.refs.set(`${familyId}:${personId}`, { familyId, personId, x: 0, generation });
+    extendContour(block.contour, generation, 0, CARD_WIDTH);
+    return block;
+  };
 
-  const layoutFamily = (family, visitedFamilies = new Set()) => {
-    const familyId = Number(family.id);
-    if (visitedFamilies.has(familyId)) {
-      const parent = peopleMap.get(Number(family.father_id)) || peopleMap.get(Number(family.mother_id));
-      return parent ? layoutSingle(parent) : { width: CARD_WIDTH, positions: new Map() };
-    }
-
-    const nextVisited = new Set(visitedFamilies);
-    nextVisited.add(familyId);
-
-    const parents = [peopleMap.get(Number(family.father_id)), peopleMap.get(Number(family.mother_id))]
-      .filter(Boolean);
-    const children = sortChildrenForFamily(asArray(childrenByFamily.get(familyId))
-      .map((row) => ({
-        ...row,
-        person: peopleMap.get(Number(row.person_id)),
-      }))
-      .filter((row) => row.person), { familyByParentId })
-      .map((row) => row.person);
-
-    const childUnits = children.map((child) => {
-      const childFamily = familyByParentId.get(Number(child.id));
-      return childFamily ? layoutFamily(childFamily, nextVisited) : layoutSingle(child);
+  const layoutCluster = (cluster) => {
+    visited.add(cluster.id);
+    const block = emptyBlock();
+    const gap = cluster.exclusiveCouple ? SPOUSE_GAP : UNION_MEMBER_GAP;
+    const rowX = new Map();
+    let cursor = 0;
+    cluster.memberIds.forEach((personId, index) => {
+      if (index > 0) cursor += gap;
+      rowX.set(personId, cursor);
+      block.positions.set(personId, { x: cursor, generation: generationOf(personId) });
+      extendContour(block.contour, generationOf(personId), cursor, cursor + CARD_WIDTH);
+      cursor += CARD_WIDTH;
     });
-    const childrenWidth = childUnits.length
-      ? childUnits.reduce((sum, unit) => sum + unit.width, 0) + Math.max(0, childUnits.length - 1) * SIBLING_GAP
-      : 0;
-    const parentWidth = parents.length
-      ? parents.length * CARD_WIDTH + Math.max(0, parents.length - 1) * SPOUSE_GAP
-      : CARD_WIDTH;
-    const width = Math.max(parentWidth, childrenWidth, CARD_WIDTH);
-    const positions = new Map();
 
-    const parentStartX = (width - parentWidth) / 2;
-    parents.forEach((parent, index) => {
-      positions.set(Number(parent.id), {
-        x: parentStartX + index * (CARD_WIDTH + SPOUSE_GAP),
-        y: generationY(parent.generation),
+    const unionAnchorX = (family) => {
+      const ids = [family.father_id, family.mother_id].filter((id) => rowX.has(id));
+      if (!ids.length) return cursor / 2;
+      return ids.reduce((sum, id) => sum + rowX.get(id) + CARD_WIDTH / 2, 0) / ids.length;
+    };
+
+    const groups = cluster.familyIds
+      .map((familyId) => model.familiesById.get(familyId))
+      .filter(Boolean)
+      .map((family) => ({ family, anchorX: unionAnchorX(family), items: childItemsOf(family.id) }))
+      .filter((group) => group.items.length)
+      .sort((a, b) => a.anchorX - b.anchorX);
+
+    const childrenBlock = emptyBlock();
+    groups.forEach((group) => {
+      const itemBlocks = group.items.map((item) => {
+        const childCluster = model.clusterByPersonId.get(item.personId);
+        if (childCluster && model.isHomeLink(group.family.id, item.personId) && !visited.has(childCluster.id)) {
+          return layoutCluster(childCluster);
+        }
+        return referenceBlock(group.family.id, item.personId);
       });
+      const groupBlock = packSequential(itemBlocks, SIBLING_GAP);
+      const span = topSpan(groupBlock);
+      const desired = group.anchorX - (span.min + span.max) / 2;
+      const minimum = childrenBlock.contour.size ? minimalShift(childrenBlock, groupBlock, SIBLING_GAP * 2) : -Infinity;
+      mergeInto(childrenBlock, shiftBlock(groupBlock, Math.max(desired, minimum)));
     });
 
-    let childX = (width - childrenWidth) / 2;
-    childUnits.forEach((unit) => {
-      mergePositionMaps(positions, unit.positions, childX);
-      childX += unit.width + SIBLING_GAP;
-    });
-
-    return { width, positions };
+    mergeInto(block, childrenBlock);
+    const span = blockSpan(block);
+    return shiftBlock(block, -span.min);
   };
 
-  const rootFamilies = familyRows
-    .filter((family) => {
-      const parentIds = [Number(family.father_id), Number(family.mother_id)].filter((id) => peopleMap.has(id));
-      return parentIds.length && parentIds.every((id) => !childIds.has(id));
-    })
-    .sort((a, b) => {
-      const aParent = peopleMap.get(Number(a.father_id)) || peopleMap.get(Number(a.mother_id));
-      const bParent = peopleMap.get(Number(b.father_id)) || peopleMap.get(Number(b.mother_id));
-      return toInt(aParent?.generation, 1) - toInt(bParent?.generation, 1) || personSort(aParent || {}, bParent || {});
-    });
+  const clusterOrder = (a, b) => {
+    const genA = Math.min(...a.memberIds.map(generationOf));
+    const genB = Math.min(...b.memberIds.map(generationOf));
+    if (genA !== genB) return genA - genB;
+    return personSort(model.peopleById.get(a.anchorId) || {}, model.peopleById.get(b.anchorId) || {});
+  };
+
+  const roots = model.clusters
+    .filter((cluster) => !cluster.homeFamilyId || !model.familiesById.has(cluster.homeFamilyId))
+    .sort(clusterOrder);
+
+  const rootBlocks = [];
+  roots.forEach((cluster) => {
+    if (!visited.has(cluster.id)) rootBlocks.push(layoutCluster(cluster));
+  });
+  // Cụm chưa được đặt (dữ liệu vòng lặp...) được đặt thành gốc riêng.
+  model.clusters.slice().sort(clusterOrder).forEach((cluster) => {
+    if (!visited.has(cluster.id)) rootBlocks.push(layoutCluster(cluster));
+  });
+  const forest = packSequential(rootBlocks, FAMILY_GAP);
 
   const positioned = new Map();
-  let cursorX = CANVAS_PADDING;
-  rootFamilies.forEach((family) => {
-    const unit = layoutFamily(family);
-    mergePositionMaps(positioned, unit.positions, cursorX);
-    cursorX += unit.width + FAMILY_GAP;
+  forest.positions.forEach((item, personId) => {
+    positioned.set(personId, { x: CANVAS_PADDING + item.x, y: generationY(item.generation) });
   });
 
-  const placedIds = new Set(positioned.keys());
-  const leftovers = people.filter((person) => !placedIds.has(Number(person.id)));
+  const leftovers = people.filter((person) => !positioned.has(Number(person.id)));
   if (leftovers.length) {
+    const offset = blockSpan(forest).max + FAMILY_GAP;
     simpleGenerationLayout(leftovers).forEach((person) => {
-      positioned.set(Number(person.id), {
-        x: person.tree_x + Math.max(0, cursorX - CANVAS_PADDING),
-        y: person.tree_y,
-      });
+      positioned.set(Number(person.id), { x: person.tree_x + offset, y: person.tree_y });
     });
   }
 
@@ -214,8 +276,38 @@ export function autoLayoutPeople(sourcePeople, families = [], childRows = []) {
       tree_y: snap(position?.y ?? generationY(person.generation)),
     };
   });
+  const finalPeople = straightenLineageRows(assignDisplayOrder(laidOut));
+  const finalById = new Map(finalPeople.map((person) => [Number(person.id), person]));
 
-  return straightenLineageRows(assignDisplayOrder(laidOut));
+  // Thẻ tham chiếu: vị trí tương đối so với điểm nối của gia đình (để vẫn đúng khi người dùng kéo cha mẹ đi chỗ khác).
+  const shiftX = finalPeople.length && laidOut.length
+    ? toInt(finalPeople[0].tree_x, 0) - toInt(laidOut.find((person) => person.id === finalPeople[0].id)?.tree_x, 0)
+    : 0;
+  const references = [];
+  forest.refs.forEach((ref) => {
+    const family = model.familiesById.get(ref.familyId);
+    const parents = [family?.father_id, family?.mother_id].map((id) => finalById.get(Number(id))).filter(Boolean);
+    if (!parents.length) return;
+    const anchorX = parents.reduce((sum, parent) => sum + toInt(parent.tree_x, 0) + CARD_WIDTH / 2, 0) / parents.length;
+    const anchorY = Math.max(...parents.map((parent) => toInt(parent.tree_y, 0) + CARD_HEIGHT));
+    references.push({
+      familyId: ref.familyId,
+      personId: ref.personId,
+      dx: snap(CANVAS_PADDING + ref.x + shiftX + CARD_WIDTH / 2 - anchorX),
+      dy: snap(generationY(ref.generation) - anchorY),
+    });
+  });
+
+  return { people: finalPeople, references };
+}
+
+export function autoLayoutPeople(sourcePeople, families = [], childRows = [], options = {}) {
+  return autoLayoutTree(sourcePeople, families, childRows, options).people;
+}
+
+// Vị trí thẻ tham chiếu (con nuôi tại nhà cha mẹ đẻ, con gái lấy chồng nhánh khác...).
+export function computeReferencePlacements(sourcePeople, families = [], childRows = [], options = {}) {
+  return autoLayoutTree(sourcePeople, families, childRows, options).references;
 }
 
 export function hasManualLayout(people) {
@@ -241,110 +333,6 @@ export function assignDisplayOrder(people) {
   return people.map((person) => ({ ...person, display_order: orderById.get(person.id) ?? person.display_order ?? 0 }));
 }
 
-export function getSpouseAwareGenerationUnits(row, families = []) {
-  const members = asArray(row).slice();
-  const personById = new Map(members.map((person) => [Number(person.id), person]));
-  const used = new Set();
-  const units = [];
-
-  asArray(families).forEach((family) => {
-    const father = personById.get(Number(family.father_id));
-    const mother = personById.get(Number(family.mother_id));
-    if (!father || !mother) return;
-    if (used.has(Number(father.id)) || used.has(Number(mother.id))) return;
-
-    const fatherGeneration = toInt(father.generation, 1) || 1;
-    const motherGeneration = toInt(mother.generation, 1) || 1;
-    if (fatherGeneration !== motherGeneration) return;
-
-    used.add(Number(father.id));
-    used.add(Number(mother.id));
-    units.push({
-      members: [mother, father],
-      x: Math.min(toInt(father.tree_x, 0), toInt(mother.tree_x, 0)),
-      sortPerson: mother,
-      isSpouseUnit: true,
-    });
-  });
-
-  members.forEach((person) => {
-    if (used.has(Number(person.id))) return;
-    units.push({
-      members: [person],
-      x: toInt(person.tree_x, 0),
-      sortPerson: person,
-      isSpouseUnit: false,
-    });
-  });
-
-  return units.sort((a, b) => a.x - b.x || personSort(a.sortPerson || {}, b.sortPerson || {}));
-}
-
-export function getSpouseAwareGenerationRow(row, families = []) {
-  return getSpouseAwareGenerationUnits(row, families).flatMap((unit) => unit.members);
-}
-
-export function getGenerationUnitWidth(unit) {
-  const members = asArray(unit?.members);
-  if (!members.length) return 0;
-  const innerGap = unit?.isSpouseUnit ? SPOUSE_GAP : X_GAP;
-  return members.length * CARD_WIDTH + Math.max(0, members.length - 1) * innerGap;
-}
-
-export function getGenerationUnitsWidth(units) {
-  const safeUnits = asArray(units);
-  if (!safeUnits.length) return CARD_WIDTH;
-  return safeUnits.reduce((sum, unit) => sum + getGenerationUnitWidth(unit), 0) + Math.max(0, safeUnits.length - 1) * X_GAP;
-}
-
-export function normalizeGenerationSpacing(people, families = []) {
-  const grouped = new Map();
-  asArray(people).forEach((person) => {
-    const generation = toInt(person.generation, 1) || 1;
-    if (!grouped.has(generation)) grouped.set(generation, []);
-    grouped.get(generation).push(person);
-  });
-
-  const generations = [...grouped.keys()].sort((a, b) => a - b);
-  const orderedUnits = new Map();
-
-  generations.forEach((generation) => {
-    const row = (grouped.get(generation) || [])
-      .slice()
-      .sort((a, b) => toInt(a.tree_x, 0) - toInt(b.tree_x, 0) || personSort(a, b));
-    orderedUnits.set(generation, getSpouseAwareGenerationUnits(row, families));
-  });
-
-  const maxRowWidth = Math.max(
-    CARD_WIDTH,
-    ...generations.map((generation) => getGenerationUnitsWidth(orderedUnits.get(generation) || [])),
-  );
-
-  const positioned = [];
-  generations.forEach((generation) => {
-    const units = orderedUnits.get(generation) || [];
-    const rowWidth = getGenerationUnitsWidth(units);
-    let cursorX = CANVAS_PADDING + Math.max(0, (maxRowWidth - rowWidth) / 2);
-    let displayOrder = 0;
-
-    units.forEach((unit) => {
-      const innerGap = unit.isSpouseUnit ? SPOUSE_GAP : X_GAP;
-      unit.members.forEach((person, memberIndex) => {
-        positioned.push({
-          ...person,
-          tree_x: snap(cursorX + memberIndex * (CARD_WIDTH + innerGap)),
-          tree_y: generationY(generation),
-          display_order: displayOrder,
-        });
-        displayOrder += 1;
-      });
-      cursorX += getGenerationUnitWidth(unit) + X_GAP;
-    });
-  });
-
-  return positioned.sort((a, b) => toInt(a.generation, 1) - toInt(b.generation, 1) || personSort(a, b));
-}
-
 export function straightenLineageRows(people) {
   const normalized = asArray(people).map(normalizePerson);
   if (!normalized.length) return [];
@@ -364,16 +352,16 @@ export function straightenLineageRows(people) {
   );
 }
 
-export function mergeManualAndAutoLayout(sourcePeople, families = [], childRows = []) {
+export function mergeManualAndAutoLayout(sourcePeople, families = [], childRows = [], options = {}) {
   const normalized = asArray(sourcePeople).map(normalizePerson);
   if (!normalized.length) return [];
 
   const hasAnyManualPosition = hasManualLayout(normalized);
   if (!hasAnyManualPosition) {
-    return autoLayoutPeople(normalized, families, childRows);
+    return autoLayoutPeople(normalized, families, childRows, options);
   }
 
-  const autoPeopleById = new Map(autoLayoutPeople(normalized, families, childRows).map((person) => [Number(person.id), person]));
+  const autoPeopleById = new Map(autoLayoutPeople(normalized, families, childRows, options).map((person) => [Number(person.id), person]));
   const merged = normalized.map((person) => {
     const hasManualPosition = toInt(person.tree_x, 0) !== 0 || toInt(person.tree_y, 0) !== 0;
     if (hasManualPosition) return person;

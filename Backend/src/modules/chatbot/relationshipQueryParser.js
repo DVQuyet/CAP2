@@ -36,11 +36,20 @@ const TERM_EDGE_MAP = new Map([
     ['di', ['mother', 'sister']],
     ['thim', ['father', 'younger_brother', 'spouse']],
     ['mo', ['mother', 'brother', 'spouse']],
-    // Con của anh chị em cha mẹ (anh/chị/em họ), chưa xét thứ bậc theo vai cha mẹ.
-    ['anh ho', ['parent', 'sibling', 'son']],
-    ['chi ho', ['parent', 'sibling', 'daughter']],
-    ['em ho', ['parent', 'sibling', 'child']],
+    // Con của anh chị em cha mẹ, theo vai: con nhà bác (anh/chị của cha mẹ) là anh/chị họ,
+    // con nhà chú/cô/cậu/dì (em của cha mẹ) là em họ - không xét tuổi.
+    ['anh ho', ['parent', 'older_sibling', 'son']],
+    ['chi ho', ['parent', 'older_sibling', 'daughter']],
+    ['em ho', ['parent', 'younger_sibling', 'child']],
     ['anh chi em ho', ['parent', 'sibling', 'child']],
+    // Nhà chồng / nhà vợ, dâu rể.
+    // "bố/ba" đã được chuẩn hóa thành "cha".
+    ['cha chong', ['spouse', 'father']],
+    ['me chong', ['spouse', 'mother']],
+    ['cha vo', ['spouse', 'father']],
+    ['me vo', ['spouse', 'mother']],
+    ['con dau', ['son', 'spouse']],
+    ['con re', ['daughter', 'spouse']],
     ['con trai', ['son']],
     ['con gai', ['daughter']],
     ['con', ['child']],

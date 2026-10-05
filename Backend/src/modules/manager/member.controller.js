@@ -18,15 +18,22 @@ const {
 const {
     applyBloodlineForPerson,
     applyMarriageRelationsForPerson,
+    applyMarriageToDraft,
     getChildBloodline,
     getOwnedFamilyRelations,
 } = require('../genealogy/familyRelation.service');
 const {
-    validatePersonBirthDateWithRelations,
     validatePersonLifeDates,
-    validatePersonGenderWithFamilyRole,
-    validatePersonGenerationWithRelations,
 } = require('../genealogy/familyValidation.service');
+const {
+    RelationDraft,
+    RelationError,
+    evaluateAndCommit,
+    readOverrideOptions,
+    relationResultPayload,
+    successExtras,
+    withRelationTransaction,
+} = require('../genealogy/relationCommand.service');
 
 
 const NO_TABLE_OR_COLUMN_PURGE = new Set(['ER_NO_SUCH_TABLE', 'ER_BAD_FIELD_ERROR']);
@@ -91,14 +98,7 @@ const {
 } = require('./managerClan.service');
 
 const relationHttpStatus = (result) => result?.requiresConfirmation ? 409 : 400;
-const relationPayload = (result) => ({
-    success: false,
-    ok: false,
-    level: result?.level || 'error',
-    code: result?.code || 'RELATION_VALIDATION_ERROR',
-    requiresConfirmation: Boolean(result?.requiresConfirmation),
-    message: result?.message || 'Quan hệ gia phả không hợp lệ',
-});
+const relationPayload = (result) => relationResultPayload(result);
 
 
 const getMemberRelations = async(req, res) => {
@@ -184,14 +184,19 @@ const updateMemberRelations = async(req, res) => {
         if (!gate.ok) return res.status(gate.status).json({ success: false, message: gate.message });
         const { context } = gate;
 
+        let relationResult = null;
         if (mode === 'bloodline') {
             const parentFatherId = parseNullableId(req.body.parent_father_id);
             const parentMotherId = parseNullableId(req.body.parent_mother_id);
-            const r = await applyBloodlineForPerson(context.person_id, context.clan_id, parentFatherId, parentMotherId, db, { forceSaveHistoricalRelation: req.body.forceSaveHistoricalRelation });
-            if (!r.ok) return res.status(relationHttpStatus(r)).json(relationPayload(r));
+            relationResult = await applyBloodlineForPerson(context.person_id, context.clan_id, parentFatherId, parentMotherId, db, {
+                ...req.body,
+                user: req.user,
+                permissionScope: 'all',
+            });
+            if (!relationResult.ok) return res.status(relationHttpStatus(relationResult)).json(relationPayload(relationResult));
         } else if (mode === 'marriage') {
-            const r = await applyMarriageRelationsForPerson({ ...context, forceSaveHistoricalRelation: req.body.forceSaveHistoricalRelation }, req.body);
-            if (!r.ok) return res.status(relationHttpStatus(r)).json(relationPayload(r));
+            relationResult = await applyMarriageRelationsForPerson({ ...context, user: req.user, permissionScope: 'all' }, req.body);
+            if (!relationResult.ok) return res.status(relationHttpStatus(relationResult)).json(relationPayload(relationResult));
         } else {
             return res.status(400).json({ success: false, message: 'mode phải là bloodline hoặc marriage' });
         }
@@ -201,6 +206,7 @@ const updateMemberRelations = async(req, res) => {
         return res.json({
             success: true,
             message: 'Đã lưu quan hệ',
+            ...successExtras(relationResult),
             bloodline: bloodline ? {
                 family_id: bloodline.family_id,
                 parent_father_id: bloodline.parent_father_id,
@@ -832,7 +838,10 @@ const updateMemberByManager = async(req, res) => {
 
         let nextLiving = full.is_living;
         if (has('is_living')) {
-            nextLiving = body.is_living === true || body.is_living === 1 || body.is_living === '1' ? 1 : 0;
+            const raw = body.is_living;
+            nextLiving = raw === null || raw === '' || raw === 'unknown' || Number(raw) === -1
+                ? null
+                : raw === true || raw === 1 || raw === '1' ? 1 : 0;
         }
 
         const nextBirth = dateOrKeep('birth_date', full.birth_date);
@@ -856,50 +865,7 @@ const updateMemberByManager = async(req, res) => {
 
         const nextDisplay = buildDisplayNameFromPartsMgr(nextSurname, nextMiddle, nextFirst) || (full.display_name || '').trim() || '';
 
-        const genderValidation = await validatePersonGenderWithFamilyRole(db, full.person_id, nextGender);
-        if (!genderValidation.ok) {
-            return res.status(400).json({ success: false, message: genderValidation.message });
-        }
-
-        const generationValidation = await validatePersonGenerationWithRelations(db, full.person_id, nextGen);
-        if (!generationValidation.ok) {
-            return res.status(400).json({ success: false, message: generationValidation.message });
-        }
-
-        const birthValidation = await validatePersonBirthDateWithRelations(db, full.person_id, nextBirth, nextLiving, nextDeath);
-        if (!birthValidation.ok) {
-            return res.status(400).json({ success: false, message: birthValidation.message });
-        }
-
-        await db.query(
-            `UPDATE people SET 
-        clan_id = ?, display_name = ?, first_name = ?, middle_name = ?, surname = ?,
-        gender = ?, birth_date = ?, death_date = ?, is_living = ?, generation = ?, branch = ?,
-        hometown = ?, address = ?, phone = ?, email = ?, zalo = ?, facebook = ?,
-        avatar_url = ?, bio = ?, note = ?
-      WHERE id = ?`, [
-                nextClanId, nextDisplay, nextFirst, nextMiddle, nextSurname, nextGender, nextBirth, nextDeath, nextLiving, nextGen, nextBranch,
-                nextHometown, nextAddress, nextPhone, nextPeopleEmail, nextZalo, nextFacebook, nextAvatar || null, nextBio, nextNote, full.person_id,
-            ]
-        );
-
-        const [pRef] = await db.query('SELECT gender, clan_id FROM people WHERE id = ? LIMIT 1', [full.person_id]);
-        const famCtx = {
-            person_id: full.person_id,
-            clan_id: pRef[0]?.clan_id ?? nextClanId,
-            gender: pRef[0]?.gender ?? nextGender,
-        };
-
         const hasBl = has('parent_father_id') || has('parent_mother_id');
-        if (hasBl) {
-            const pf = has('parent_father_id') ? parseNullableId(body.parent_father_id) : null;
-            const pm = has('parent_mother_id') ? parseNullableId(body.parent_mother_id) : null;
-            if (pf || pm) {
-                const r = await applyBloodlineForPerson(full.person_id, famCtx.clan_id, pf, pm, db, { forceSaveHistoricalRelation: body.forceSaveHistoricalRelation });
-                if (!r.ok) return res.status(relationHttpStatus(r)).json(relationPayload(r));
-            }
-        }
-
         const hasMarriage =
             has('family_id') ||
             has('spouse_id') ||
@@ -907,11 +873,48 @@ const updateMemberByManager = async(req, res) => {
             has('marriage_date') ||
             has('relationship_status') ||
             has('ended_at') ||
-            has('relation_note');
-        if (hasMarriage) {
-            const r = await applyMarriageRelationsForPerson({ ...famCtx, forceSaveHistoricalRelation: body.forceSaveHistoricalRelation }, body);
-            if (!r.ok) return res.status(relationHttpStatus(r)).json(relationPayload(r));
-        }
+            has('relation_note') ||
+            has('union_type') ||
+            has('wife_rank') ||
+            has('husband_rank');
+
+        // Thông tin người và quan hệ được kiểm tra trên đồ thị dòng họ và ghi trong một transaction.
+        await withRelationTransaction(null, async (conn) => {
+            const draft = await RelationDraft.load(conn, full.clan_id);
+            draft.updatePerson(full.person_id, {
+                display_name: nextDisplay,
+                gender: nextGender,
+                generation: nextGen,
+                birth_date: nextBirth,
+                death_date: nextDeath,
+                is_living: nextLiving,
+            });
+            if (hasBl) {
+                const currentParents = draft.parentLinksOf(full.person_id)
+                    .find((link) => ['biological', 'unknown'].includes(link.child_type));
+                const currentFamily = currentParents ? draft.family(currentParents.family_id) : null;
+                draft.setParents(full.person_id, {
+                    fatherId: has('parent_father_id') ? parseNullableId(body.parent_father_id) : currentFamily?.father_id || null,
+                    motherId: has('parent_mother_id') ? parseNullableId(body.parent_mother_id) : currentFamily?.mother_id || null,
+                });
+            }
+            if (hasMarriage) {
+                applyMarriageToDraft(draft, { person_id: full.person_id }, body);
+            }
+
+            await conn.query(
+                `UPDATE people SET
+            clan_id = ?, display_name = ?, first_name = ?, middle_name = ?, surname = ?,
+            gender = ?, birth_date = ?, death_date = ?, is_living = ?, generation = ?, branch = ?,
+            hometown = ?, address = ?, phone = ?, email = ?, zalo = ?, facebook = ?,
+            avatar_url = ?, bio = ?, note = ?
+          WHERE id = ?`, [
+                    nextClanId, nextDisplay, nextFirst, nextMiddle, nextSurname, nextGender, nextBirth, nextDeath, nextLiving, nextGen, nextBranch,
+                    nextHometown, nextAddress, nextPhone, nextPeopleEmail, nextZalo, nextFacebook, nextAvatar || null, nextBio, nextNote, full.person_id,
+                ]
+            );
+            await evaluateAndCommit(draft, readOverrideOptions(body, req.user, 'all'), 'update_member');
+        });
 
         const updated = await getManagedMemberFullContext(targetAccountId);
         const marriage = await getOwnedFamilyRelations(updated.person_id);
@@ -929,6 +932,9 @@ const updateMemberByManager = async(req, res) => {
             },
         });
     } catch (error) {
+        if (error instanceof RelationError) {
+            return res.status(relationHttpStatus(error.relationResult)).json(relationPayload(error.relationResult));
+        }
         console.error('updateMemberByManager error:', error);
         res.status(500).json({ success: false, message: 'Lỗi cập nhật thành viên' });
     }

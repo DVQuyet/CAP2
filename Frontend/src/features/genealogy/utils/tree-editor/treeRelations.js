@@ -2,7 +2,8 @@ import { CANVAS_PADDING, CARD_WIDTH, X_GAP, Y_GAP } from "./treeConstants";
 import { asArray, fullName, personSort, toInt } from "./treePersonUtils";
 
 export function findParentFamilyForChild(personId, families, childRows) {
-  const child = asArray(childRows).find((row) => Number(row.person_id) === Number(personId));
+  const rows = asArray(childRows).filter((row) => Number(row.person_id) === Number(personId));
+  const child = rows.find((row) => ["biological", "unknown", ""].includes(String(row.child_type || "biological"))) || rows[0];
   if (!child) return null;
   return asArray(families).find((family) => Number(family.id) === Number(child.family_id)) || null;
 }
@@ -84,71 +85,198 @@ export function getChildOrderMapForFamily(familyId, childRows) {
   return map;
 }
 
-export function getNextChildOrderForParent(parentId, families, childRows, people = []) {
-  const { family } = getPreferredChildFamilyForParent(parentId, families, people);
+export const CHILD_TYPE_OPTIONS = ["biological", "adopted", "heir", "step", "foster", "unknown"];
+export const PARENT_LINK_TYPE_OPTIONS = ["biological", "adopted", "heir"];
+export const UNION_TYPE_OPTIONS = ["marriage", "concubine", "cohabitation", "unknown"];
+export const RELATIONSHIP_STATUS_OPTIONS = ["active", "widowed", "divorced", "separated", "annulled", "unknown"];
+
+// Các cuộc hôn nhân của một người để chọn "con với ai". Luôn có lựa chọn "không rõ cha/mẹ còn lại".
+export function getUnionOptionsForPerson(personId, families, people = []) {
+  const id = Number(personId);
+  const options = getFamiliesForPerson(id, families).map((family) => {
+    const spouseId = Number(family.father_id) === id ? Number(family.mother_id) : Number(family.father_id);
+    const spouse = Number.isFinite(spouseId) && spouseId > 0
+      ? asArray(people).find((person) => Number(person.id) === spouseId) || null
+      : null;
+    const rank = Number(Number(family.father_id) === id ? family.wife_rank : family.husband_rank);
+    return {
+      key: `family:${Number(family.id)}`,
+      familyId: Number(family.id),
+      spouseId: spouse ? spouseId : null,
+      spouse,
+      status: String(family.relationship_status || "active"),
+      unionType: String(family.union_type || "marriage"),
+      rank: Number.isFinite(rank) && rank > 0 ? rank : null,
+    };
+  }).sort((a, b) => (a.rank || 99) - (b.rank || 99) || a.familyId - b.familyId);
+  if (!options.some((option) => !option.spouseId)) {
+    options.push({ key: "unknown", familyId: null, spouseId: null, spouse: null, status: "active", unionType: "unknown", rank: null });
+  }
+  return options;
+}
+
+// Chỉ chọn sẵn khi không thể nhầm: đúng một người vợ/chồng, hoặc chưa có vợ/chồng nào.
+export function defaultUnionKey(options = []) {
+  const withSpouse = options.filter((option) => option.spouseId);
+  if (withSpouse.length === 1) return withSpouse[0].key;
+  if (!withSpouse.length) return options.find((option) => !option.spouseId)?.key || "unknown";
+  return "";
+}
+
+export function parentsForUnionChoice(sourcePerson, unionKey, families) {
+  const familyId = String(unionKey || "").startsWith("family:") ? Number(String(unionKey).slice(7)) : null;
+  if (familyId) {
+    const family = asArray(families).find((item) => Number(item.id) === familyId);
+    if (family) {
+      return {
+        fatherId: Number(family.father_id) > 0 ? Number(family.father_id) : null,
+        motherId: Number(family.mother_id) > 0 ? Number(family.mother_id) : null,
+        familyId,
+      };
+    }
+  }
+  const isFemale = Number(sourcePerson?.gender) === 2;
+  return isFemale
+    ? { fatherId: null, motherId: Number(sourcePerson?.id), familyId: null }
+    : { fatherId: Number(sourcePerson?.id), motherId: null, familyId: null };
+}
+
+export function nextChildOrderForParents(parents, families, childRows) {
+  const family = parents.familyId
+    ? asArray(families).find((item) => Number(item.id) === Number(parents.familyId))
+    : asArray(families).find((item) =>
+      (Number(item.father_id) || null) === (parents.fatherId || null)
+      && (Number(item.mother_id) || null) === (parents.motherId || null));
   if (!family) return 1;
   const orders = asArray(childRows)
     .filter((row) => Number(row.family_id) === Number(family.id))
-    .map((row) => toInt(row.sort_order, 0))
-    .filter((value) => value > 0);
-  return orders.length ? Math.max(...orders) + 1 : getChildrenForFamily(family.id, childRows).length + 1;
+    .map((row) => toInt(row.sort_order, 0));
+  return orders.length ? Math.max(0, ...orders) + 1 : 1;
 }
 
-export function findChildOrderForParent(parentId, childId, families, childRows) {
-  const parentFamilyIds = new Set(getFamiliesForPerson(parentId, families).map((family) => Number(family.id)));
-  const row = asArray(childRows).find(
-    (item) => parentFamilyIds.has(Number(item.family_id)) && Number(item.person_id) === Number(childId),
-  );
-  const order = toInt(row?.sort_order, 0);
-  return order > 0 ? order : null;
+const currentParentLink = (personId, families, childRows, childType = "biological") => {
+  const wanted = childType === "biological" ? ["biological", "unknown", ""] : [childType];
+  const row = asArray(childRows).find((item) =>
+    Number(item.person_id) === Number(personId) && wanted.includes(String(item.child_type || "biological")));
+  if (!row) return null;
+  return asArray(families).find((family) => Number(family.id) === Number(row.family_id)) || null;
+};
+
+// Payload liên kết một người ĐÃ CÓ trong cây theo quan hệ được chọn.
+// options: { unionKey, childType, unionType, relationshipStatus, parentType }
+export function buildLinkPayload(relation, sourcePerson, targetId, options = {}, families = [], childRows = []) {
+  const sourceId = Number(sourcePerson?.id);
+  const target = Number(targetId);
+  if (relation === "spouse") {
+    return {
+      person_id: sourceId,
+      spouse_person_id: target,
+      union_type: options.unionType || "marriage",
+      relationship_status: options.relationshipStatus || "active",
+    };
+  }
+  if (relation === "child") {
+    const parents = parentsForUnionChoice(sourcePerson, options.unionKey, families);
+    return {
+      person_id: target,
+      parent_father_id: parents.fatherId,
+      parent_mother_id: parents.motherId,
+      parent_child_type: options.childType || "biological",
+      sort_order: nextChildOrderForParents(parents, families, childRows),
+    };
+  }
+  if (relation === "father" || relation === "mother") {
+    const parentType = options.parentType || "biological";
+    const current = currentParentLink(sourceId, families, childRows, parentType);
+    return {
+      person_id: sourceId,
+      father_person_id: relation === "father" ? target : Number(current?.father_id) || null,
+      mother_person_id: relation === "mother" ? target : Number(current?.mother_id) || null,
+      parent_child_type: parentType,
+    };
+  }
+  return null;
 }
 
-export function getPreferredChildFamilyForParent(parentId, families, people = []) {
-  const parentFamilies = getFamiliesForPerson(parentId, families);
-  if (!parentFamilies.length) return { family: null };
-  if (parentFamilies.length === 1) return { family: parentFamilies[0] };
-
-  const activeFamilies = parentFamilies.filter((family) => isActiveFamilyForPerson(family, parentId, people));
-  if (activeFamilies.length === 1) return { family: activeFamilies[0] };
-
-  const spouseFamilies = parentFamilies.filter((family) => {
-    const id = Number(parentId);
-    const spouseId = Number(family.father_id) === id ? Number(family.mother_id) : Number(family.father_id);
-    return Number.isFinite(spouseId) && spouseId > 0 && String(family.relationship_status || "active") === "active";
-  });
-  if (spouseFamilies.length === 1) return { family: spouseFamilies[0] };
-
-  return { family: null, error: "multipleFamilies" };
+// Trường bổ sung khi TẠO MỚI một người theo quan hệ với người nguồn (server tạo người và quan hệ trong một transaction).
+export function buildCreateRelationFields(relation, sourcePerson, options = {}, families = [], childRows = []) {
+  const sourceId = Number(sourcePerson?.id);
+  if (!sourceId || relation === "person") return {};
+  if (relation === "child") {
+    const parents = parentsForUnionChoice(sourcePerson, options.unionKey, families);
+    return {
+      parent_father_id: parents.fatherId,
+      parent_mother_id: parents.motherId,
+      parent_child_type: options.childType || "biological",
+      sort_order: nextChildOrderForParents(parents, families, childRows),
+    };
+  }
+  if (relation === "spouse") {
+    return {
+      relation: {
+        type: "spouse",
+        source_person_id: sourceId,
+        union: {
+          union_type: options.unionType || "marriage",
+          relationship_status: options.relationshipStatus || "active",
+        },
+      },
+    };
+  }
+  if (relation === "father" || relation === "mother") {
+    return {
+      relation: {
+        type: relation,
+        source_person_id: sourceId,
+        child_type: options.parentType || "biological",
+      },
+    };
+  }
+  return {};
 }
 
+// Cha mẹ sẽ có của người con (để kiểm tra tuổi ở phía giao diện trước khi gửi).
+export function otherParentForChildChoice(sourcePerson, unionKey, families, people = []) {
+  const parents = parentsForUnionChoice(sourcePerson, unionKey, families);
+  const otherId = Number(sourcePerson?.id) === parents.fatherId ? parents.motherId : parents.fatherId;
+  return otherId ? asArray(people).find((person) => Number(person.id) === Number(otherId)) || null : null;
+}
+
+// Tương thích với luồng cũ của editor (chưa có hộp chọn "con với ai"): chỉ chọn sẵn khi không thể nhầm,
+// nhiều cuộc hôn nhân thì trả lỗi để người dùng chọn.
 export function buildChildRelationPayload(parentId, childId, families, childRows, people = [], options = {}) {
-  const sourceId = Number(parentId);
-  const targetId = Number(childId);
-  const { family, error } = getPreferredChildFamilyForParent(sourceId, families, people);
-  if (error) return { error };
-
+  const sourcePerson = asArray(people).find((person) => Number(person.id) === Number(parentId)) || { id: Number(parentId) };
+  const unionKey = options.unionKey || defaultUnionKey(getUnionOptionsForPerson(parentId, families, people));
+  if (!unionKey) return { error: "multipleFamilies" };
+  const parents = parentsForUnionChoice(sourcePerson, unionKey, families);
+  const family = parents.familyId ? asArray(families).find((item) => Number(item.id) === parents.familyId) : null;
   const existingChildren = family ? getChildrenForFamily(family.id, childRows) : [];
   const childOrders = family ? getChildOrderMapForFamily(family.id, childRows) : {};
-  const childrenIds = Array.from(new Set([...existingChildren, targetId])).filter(
-    (id) => Number(id) !== sourceId,
-  );
-  childrenIds.forEach((id, index) => {
-    const requestedOrder = Number(id) === targetId ? toInt(options.sort_order, 0) : 0;
-    if (requestedOrder > 0) {
-      childOrders[id] = requestedOrder;
-    } else if (!childOrders[id]) {
-      childOrders[id] = index + 1;
-    }
-  });
-
+  const targetId = Number(childId);
+  const childrenIds = Array.from(new Set([...existingChildren, targetId])).filter((id) => id > 0 && id !== Number(parentId));
+  childrenIds.forEach((id, index) => { if (!childOrders[id]) childOrders[id] = index + 1; });
   return {
     data: {
-      person_id: sourceId,
-      ...(family ? { family_id: family.id } : {}),
+      person_id: Number(parentId),
+      ...(family ? { family_id: family.id } : { spouse_person_id: null }),
+      father_person_id: parents.fatherId,
+      mother_person_id: parents.motherId,
       children_person_ids: childrenIds,
       child_orders: childOrders,
     },
   };
+}
+
+export function defaultRelationOptions(relation, sourcePerson, families, people) {
+  if (relation === "child") {
+    return {
+      unionKey: defaultUnionKey(getUnionOptionsForPerson(sourcePerson?.id, families, people)),
+      childType: "biological",
+    };
+  }
+  if (relation === "spouse") return { unionType: "marriage", relationshipStatus: "active" };
+  if (relation === "father" || relation === "mother") return { parentType: "biological" };
+  return {};
 }
 
 export function findSpouse(person, families, people) {
@@ -195,17 +323,22 @@ export function relationCandidates(relation, selectedPerson, people, linkedIds =
       if (relation === "father") return Number(person.gender) !== 2;
       if (relation === "mother") return Number(person.gender) !== 1;
       if (relation === "spouse") {
-        const sameGeneration = !selectedPerson?.generation || !person.generation || Number(person.generation) === Number(selectedPerson.generation);
-        const oppositeGender = !selectedPerson?.gender || !person.gender || Number(person.gender) !== Number(selectedPerson.gender);
-        const selectedAvailable = !hasDifferentSpouse(selectedId, personId, families, people);
-        const candidateAvailable = !hasDifferentSpouse(personId, selectedId, families, people);
-        return sameGeneration && oppositeGender && selectedAvailable && candidateAvailable;
+        // Khác đời, đang có vợ/chồng... không bị loại ở đây: máy chủ kiểm tra theo luật và dữ liệu lịch sử
+        // (ví dụ vợ lẽ trong gia phả xưa) rồi yêu cầu xác nhận khi cần.
+        return !selectedPerson?.gender || !person.gender || Number(person.gender) !== Number(selectedPerson.gender);
       }
       return true;
     })
     .sort((a, b) => {
       const linkedDiff = Number(linkedIds.has(Number(b.id))) - Number(linkedIds.has(Number(a.id)));
       if (linkedDiff) return linkedDiff;
+      if (relation === "spouse") {
+        const genDiff = Math.abs(toInt(a.generation, 1) - selectedGeneration) - Math.abs(toInt(b.generation, 1) - selectedGeneration);
+        if (genDiff) return genDiff;
+        const busyDiff = Number(hasDifferentSpouse(Number(a.id), selectedId, families, people))
+          - Number(hasDifferentSpouse(Number(b.id), selectedId, families, people));
+        if (busyDiff) return busyDiff;
+      }
       if (relation === "father" || relation === "mother") {
         const genDiff = Math.abs(toInt(a.generation, 1) - Math.max(1, selectedGeneration - 1)) -
           Math.abs(toInt(b.generation, 1) - Math.max(1, selectedGeneration - 1));

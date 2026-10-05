@@ -5,7 +5,7 @@ const path = require('path');
 // 1 (tôi) -- father --> 2, mother --> 3
 // 2 có em trai 4 (chú), chị gái 5 (cô/bác gái)
 // 3 có anh trai 6 và em trai 7 (đều là cậu), em gái 8 (dì)
-// 4 có con trai 9 (anh/em họ)
+// 4 có con trai 9 (em họ: con nhà chú là em theo vai, không xét tuổi)
 const people = new Map([1, 2, 3, 4, 5, 6, 7, 8, 9].map((id) => [id, { id, display_name: `P${id}` }]));
 const adjacency = new Map([
     [1, [{ to: 2, type: 'father' }, { to: 3, type: 'mother' }]],
@@ -50,9 +50,12 @@ assert.strictEqual(edgeMatches('child', 'son'), true, 'chưa rõ giới tính v�
     assert.strictEqual(di.status, 'resolved');
     assert.strictEqual(di.person.id, 8);
 
+    const emHo = await ask(['Em họ tôi']);
+    assert.strictEqual(emHo.status, 'resolved');
+    assert.strictEqual(emHo.person.id, 9);
+
     const anhHo = await ask(['Anh họ tôi']);
-    assert.strictEqual(anhHo.status, 'resolved');
-    assert.strictEqual(anhHo.person.id, 9);
+    assert.strictEqual(anhHo.status, 'not_found', 'không có con nhà bác (anh/chị của cha mẹ)');
 
     const ongNoi = await ask(['Ông nội tôi']);
     assert.strictEqual(ongNoi.status, 'not_found');

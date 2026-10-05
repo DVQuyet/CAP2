@@ -120,15 +120,22 @@ export default function CoupleCard({
   const orderedHalves = cardOrientation === "vertical" && wifeDirect && !husbandDirect
     ? [halves[1], halves[0]]
     : halves;
+  const status = String(node?.relationshipStatus || "active");
+  const unionType = String(node?.unionType || "marriage");
+  const statusLabel = status !== "active" && status !== "unknown"
+    ? t(`tree.relationOptions.statuses.${status}`)
+    : unionType !== "marriage" && unionType !== "unknown"
+      ? t(`tree.relationOptions.unionTypes.${unionType}`)
+      : "";
   const title = [
     fullName(node?.husband, t("tree.card.fallbackName")),
     fullName(node?.wife, t("tree.card.fallbackName")),
-  ].filter(Boolean).join(" - ");
+  ].filter(Boolean).join(" - ") + (statusLabel ? ` (${statusLabel})` : "");
 
   return (
     <div
       id={`fte-display-${node.id}`}
-      className={`fte-coupleCard is-${cardOrientation} is-${displayMode} ${selectedCouple ? "is-selected" : ""} ${related ? "is-related" : ""} ${dimmed ? "is-dimmed" : ""} ${dragging ? "is-dragging" : ""}`}
+      className={`fte-coupleCard is-${cardOrientation} is-${displayMode} is-union-${status} ${selectedCouple ? "is-selected" : ""} ${related ? "is-related" : ""} ${dimmed ? "is-dimmed" : ""} ${dragging ? "is-dragging" : ""}`}
       style={{
         left: node.x,
         top: node.y,
@@ -158,7 +165,8 @@ export default function CoupleCard({
         showMeta={detail}
       />
       <span className="fte-coupleDivider" aria-hidden="true">
-        <span className="fte2-coupleKnot" title={t("tree.card.spouses")} />
+        <span className="fte2-coupleKnot" title={statusLabel || t("tree.card.spouses")} />
+        {statusLabel ? <span className="fte-coupleStatus">{statusLabel}</span> : null}
       </span>
       <PersonHalf
         person={orderedHalves[1].person}

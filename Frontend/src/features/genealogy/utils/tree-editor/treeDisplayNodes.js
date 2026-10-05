@@ -24,11 +24,18 @@ import {
   TREE_EXPORT_OVERVIEW_CONFIG,
 } from "./treeExportConfig";
 import { asArray, clamp, personSort, siblingSort, snapLine, toInt } from "./treePersonUtils";
+import { buildUnionModel, isAdoptiveChildType, isEndedUnion, isStepChildType } from "./treeUnions";
 
 export const DISPLAY_NODE_TYPE = {
   SINGLE: "single",
   COUPLE: "couple",
+  // Thẻ tham chiếu: người được vẽ ở vị trí chính nơi khác (con nuôi tại nhà cha mẹ đẻ, con gái lấy chồng nhánh khác...).
+  REFERENCE: "reference",
 };
+
+// Khoảng hạ đường nối hôn nhân xuống dưới thẻ khi hai vợ chồng không đứng cạnh nhau.
+const UNION_CONNECTOR_DROP = 22;
+const UNION_CONNECTOR_STEP = 12;
 
 export {
   WEB_CARD_HEIGHT,
@@ -137,6 +144,7 @@ export function buildDisplayTree(people = [], families = [], childRows = [], opt
   const exportMode = Boolean(options.exportMode);
   const cardOrientation = normalizeCardOrientation(options.cardOrientation);
   const nodePositions = options.allowNodePositions === true ? (options.nodePositions || {}) : {};
+  const metrics = cardMetrics(exportMode, cardOrientation);
   const childMetaByPersonId = new Map();
   asArray(childRows)
     .slice()
@@ -161,6 +169,7 @@ export function buildDisplayTree(people = [], families = [], childRows = [], opt
     };
   };
   const peopleById = new Map(asArray(people).map((person) => [Number(person.id), withChildMeta(person)]));
+  const model = buildUnionModel(people, families, childRows, { lineage: options.lineage });
   const childRowsByFamily = new Map();
   asArray(childRows).forEach((row) => {
     const familyId = Number(row.family_id);
@@ -168,63 +177,21 @@ export function buildDisplayTree(people = [], families = [], childRows = [], opt
     childRowsByFamily.get(familyId).push(row);
   });
 
-  const usedPersonIds = new Set();
   const nodes = [];
   const nodeByPersonId = new Map();
   const nodeByFamilyId = new Map();
+  const applySavedPosition = (node) => {
+    const savedPosition = nodePositions[node.id];
+    if (savedPosition) {
+      node.x = toInt(savedPosition.x, node.x);
+      node.y = toInt(savedPosition.y, node.y);
+    }
+    return node;
+  };
 
-  asArray(families)
-    .slice()
-    .sort((a, b) => Number(a.id) - Number(b.id))
-    .forEach((family) => {
-      const husband = peopleById.get(Number(family.father_id));
-      const wife = peopleById.get(Number(family.mother_id));
-      if (!husband || !wife) return;
-      if (usedPersonIds.has(Number(husband.id)) || usedPersonIds.has(Number(wife.id))) return;
-
-      const size = nodeSize(DISPLAY_NODE_TYPE.COUPLE, exportMode, cardOrientation);
-      // Căn thẻ vào giữa hai ô của vợ và chồng (mỗi ô rộng personSlotWidth).
-      const slotWidth = cardMetrics(exportMode, cardOrientation).personSlotWidth;
-      const leftX = Math.min(personX(husband), personX(wife));
-      const rightX = Math.max(personX(husband), personX(wife)) + slotWidth;
-      const x = Math.round((leftX + rightX) / 2 - size.width / 2);
-      const y = Math.min(personY(husband), personY(wife));
-      const node = {
-        id: displayNodeIdForCouple(husband.id, wife.id, family.id),
-        type: DISPLAY_NODE_TYPE.COUPLE,
-        familyId: Number(family.id),
-        husband,
-        wife,
-        generation: Math.min(generationOf(husband), generationOf(wife)),
-        x,
-        y,
-        width: size.width,
-        height: size.height,
-        cardOrientation,
-        personIds: [Number(husband.id), Number(wife.id)],
-        children: asArray(childRowsByFamily.get(Number(family.id)))
-          .map((row) => ({ ...row, person: peopleById.get(Number(row.person_id)) }))
-          .filter((row) => row.person)
-          .sort(siblingSort)
-          .map((row) => row.person),
-      };
-      const savedPosition = nodePositions[node.id];
-      if (savedPosition) {
-        node.x = toInt(savedPosition.x, node.x);
-        node.y = toInt(savedPosition.y, node.y);
-      }
-      nodes.push(node);
-      usedPersonIds.add(Number(husband.id));
-      usedPersonIds.add(Number(wife.id));
-      nodeByPersonId.set(Number(husband.id), node);
-      nodeByPersonId.set(Number(wife.id), node);
-      nodeByFamilyId.set(Number(family.id), node);
-    });
-
-  asArray(people).forEach((person) => {
-    if (usedPersonIds.has(Number(person.id))) return;
+  const singleNode = (person) => {
     const size = nodeSize(DISPLAY_NODE_TYPE.SINGLE, exportMode, cardOrientation);
-    const node = {
+    return applySavedPosition({
       id: `single_${Number(person.id)}`,
       type: DISPLAY_NODE_TYPE.SINGLE,
       person,
@@ -236,22 +203,192 @@ export function buildDisplayTree(people = [], families = [], childRows = [], opt
       cardOrientation,
       personIds: [Number(person.id)],
       children: [],
-    };
-    const savedPosition = nodePositions[node.id];
-    if (savedPosition) {
-      node.x = toInt(savedPosition.x, node.x);
-      node.y = toInt(savedPosition.y, node.y);
+    });
+  };
+
+  model.clusters.forEach((cluster) => {
+    if (cluster.exclusiveCouple) {
+      const family = model.familiesById.get(cluster.coupleFamilyIds[0]);
+      const husband = peopleById.get(Number(family.father_id));
+      const wife = peopleById.get(Number(family.mother_id));
+      if (husband && wife) {
+        const size = nodeSize(DISPLAY_NODE_TYPE.COUPLE, exportMode, cardOrientation);
+        // Căn thẻ vào giữa hai ô của vợ và chồng (mỗi ô rộng personSlotWidth).
+        const leftX = Math.min(personX(husband), personX(wife));
+        const rightX = Math.max(personX(husband), personX(wife)) + metrics.personSlotWidth;
+        const node = applySavedPosition({
+          id: displayNodeIdForCouple(husband.id, wife.id, family.id),
+          type: DISPLAY_NODE_TYPE.COUPLE,
+          familyId: Number(family.id),
+          relationshipStatus: String(family.relationship_status || "active"),
+          unionType: String(family.union_type || "marriage"),
+          husband,
+          wife,
+          generation: Math.min(generationOf(husband), generationOf(wife)),
+          x: Math.round((leftX + rightX) / 2 - size.width / 2),
+          y: Math.min(personY(husband), personY(wife)),
+          width: size.width,
+          height: size.height,
+          cardOrientation,
+          personIds: [Number(husband.id), Number(wife.id)],
+          children: asArray(childRowsByFamily.get(Number(family.id)))
+            .map((row) => ({ ...row, person: peopleById.get(Number(row.person_id)) }))
+            .filter((row) => row.person)
+            .sort(siblingSort)
+            .map((row) => row.person),
+        });
+        nodes.push(node);
+        nodeByPersonId.set(Number(husband.id), node);
+        nodeByPersonId.set(Number(wife.id), node);
+        nodeByFamilyId.set(Number(family.id), node);
+        return;
+      }
     }
-    nodes.push(node);
-    nodeByPersonId.set(Number(person.id), node);
+    cluster.memberIds.forEach((personId) => {
+      const person = peopleById.get(Number(personId));
+      if (!person) return;
+      const node = singleNode(person);
+      nodes.push(node);
+      nodeByPersonId.set(Number(person.id), node);
+    });
   });
 
+  // Điểm nối của từng gia đình: đường con cái xuất phát từ đây.
+  const unionConnectors = [];
+  const unionAnchors = new Map();
+  const slotRect = (node, personId) => {
+    if (node.type !== DISPLAY_NODE_TYPE.COUPLE || normalizeCardOrientation(node.cardOrientation) === TREE_CARD_ORIENTATION.VERTICAL) {
+      return node;
+    }
+    const isHusband = Number(node.husband?.id) === Number(personId);
+    const half = node.width / 2;
+    return { ...node, id: `${node.id}_${isHusband ? "h" : "w"}`, x: node.x + (isHusband ? 0 : half), width: half };
+  };
+  const connectorDepthByNode = new Map();
+  model.familiesById.forEach((family) => {
+    const familyId = Number(family.id);
+    const coupleNode = nodeByFamilyId.get(familyId);
+    if (coupleNode) {
+      unionAnchors.set(familyId, coupleNode);
+      return;
+    }
+    const parentNodes = [family.father_id, family.mother_id]
+      .map((id) => (id ? { personId: Number(id), node: nodeByPersonId.get(Number(id)) } : null))
+      .filter((item) => item?.node);
+    if (!parentNodes.length) return;
+    if (parentNodes.length === 1 || parentNodes[0].node === parentNodes[1].node) {
+      const rect = slotRect(parentNodes[0].node, parentNodes[0].personId);
+      unionAnchors.set(familyId, { ...rect, personIds: [parentNodes[0].personId] });
+      return;
+    }
+    const [first, second] = parentNodes.map((item) => item.node).sort((a, b) => leftX(a) - leftX(b));
+    const between = nodes.some((node) => node !== first && node !== second
+      && Math.abs(topY(node) - topY(first)) < first.height / 2
+      && leftX(node) >= rightX(first) - 1 && rightX(node) <= leftX(second) + 1);
+    const personIds = parentNodes.map((item) => item.personId);
+    const ended = isEndedUnion(family);
+    const concubine = String(family.union_type || "") === "concubine";
+    if (!between && Math.abs(centerY(first) - centerY(second)) < first.height / 2) {
+      // Hai vợ chồng đứng cạnh nhau: đường nối ngang giữa thẻ, con cái thả xuống từ giữa đường nối.
+      const y = Math.round((centerY(first) + centerY(second)) / 2);
+      unionConnectors.push({
+        familyId,
+        personIds,
+        ended,
+        concubine,
+        d: `M ${Math.round(rightX(first))} ${y} L ${Math.round(leftX(second))} ${y}`,
+      });
+      const anchorX = (rightX(first) + leftX(second)) / 2;
+      unionAnchors.set(familyId, {
+        id: `union_${familyId}`,
+        x: anchorX - 1,
+        y: Math.min(topY(first), topY(second)),
+        width: 2,
+        height: Math.max(bottomY(first), bottomY(second)) - Math.min(topY(first), topY(second)),
+        personIds,
+      });
+      return;
+    }
+    // Không đứng cạnh nhau (vợ/chồng thứ ba trở đi...): đường nối đi vòng phía dưới thẻ.
+    const depthKey = `${first.id}:${second.id}`;
+    const depthIndex = connectorDepthByNode.get(first.id) || 0;
+    connectorDepthByNode.set(first.id, depthIndex + 1);
+    connectorDepthByNode.set(second.id, (connectorDepthByNode.get(second.id) || 0) + 1);
+    const bottom = Math.max(bottomY(first), bottomY(second));
+    const lineY = Math.round(bottom + UNION_CONNECTOR_DROP + depthIndex * UNION_CONNECTOR_STEP);
+    const x1 = Math.round(centerX(first));
+    const x2 = Math.round(centerX(second));
+    unionConnectors.push({
+      familyId,
+      personIds,
+      ended,
+      concubine,
+      key: depthKey,
+      d: `M ${x1} ${Math.round(bottomY(first))} L ${x1} ${lineY} L ${x2} ${lineY} L ${x2} ${Math.round(bottomY(second))}`,
+    });
+    unionAnchors.set(familyId, {
+      id: `union_${familyId}`,
+      x: Math.round((x1 + x2) / 2) - 1,
+      y: lineY - 2,
+      width: 2,
+      height: 2,
+      personIds,
+    });
+  });
+
+  // Thẻ tham chiếu cho các liên kết cha mẹ - con không phải vị trí chính của người đó.
+  const placements = new Map(asArray(options.referencePlacements).map((item) => [`${item.familyId}:${item.personId}`, item]));
+  const referenceNodes = new Map();
+  const fallbackIndex = new Map();
+  model.linksByFamily.forEach((links, familyId) => {
+    const anchor = unionAnchors.get(Number(familyId));
+    if (!anchor) return;
+    links.forEach((link) => {
+      if (model.isHomeLink(link.familyId, link.personId)) return;
+      const person = peopleById.get(Number(link.personId));
+      if (!person) return;
+      const size = nodeSize(DISPLAY_NODE_TYPE.SINGLE, exportMode, cardOrientation);
+      const key = `${link.familyId}:${link.personId}`;
+      const placement = placements.get(key);
+      const index = fallbackIndex.get(familyId) || 0;
+      fallbackIndex.set(familyId, index + 1);
+      const anchorCenterX = centerX(anchor);
+      const anchorBottom = bottomY(anchor);
+      const dx = placement ? toInt(placement.dx, 0) : (index - 0.5) * (size.width + SIBLING_GAP);
+      const dy = placement ? toInt(placement.dy, GENERATION_GAP) : GENERATION_GAP;
+      const node = applySavedPosition({
+        id: `ref_${link.familyId}_${link.personId}`,
+        type: DISPLAY_NODE_TYPE.REFERENCE,
+        person,
+        familyId: Number(link.familyId),
+        refPersonId: Number(link.personId),
+        childType: link.childType,
+        generation: generationOf(person),
+        x: Math.round(anchorCenterX + dx - size.width / 2),
+        y: Math.round(anchorBottom + dy),
+        width: size.width,
+        height: size.height,
+        cardOrientation,
+        personIds: [],
+        children: [],
+      });
+      nodes.push(node);
+      referenceNodes.set(key, node);
+    });
+  });
+
+  const result = {
+    nodes,
+    nodeByPersonId,
+    nodeByFamilyId,
+    unionAnchors,
+    unionConnectors,
+    referenceNodes,
+    unionModel: model,
+  };
+
   if (!options.packRows) {
-    return {
-      nodes: nodes.slice().sort((a, b) => a.y - b.y || a.x - b.x),
-      nodeByPersonId,
-      nodeByFamilyId,
-    };
+    return { ...result, nodes: nodes.slice().sort((a, b) => a.y - b.y || a.x - b.x) };
   }
 
   const grouped = new Map();
@@ -270,6 +407,9 @@ export function buildDisplayTree(people = [], families = [], childRows = [], opt
   const maxRowWidth = Math.max(1, ...rowWidths);
 
   const positionedNodes = [];
+  const packedByPersonId = new Map();
+  const packedByFamilyId = new Map();
+  const packedReferences = new Map();
   generations.forEach((generation) => {
     const row = (grouped.get(generation) || [])
       .slice()
@@ -284,18 +424,55 @@ export function buildDisplayTree(people = [], families = [], childRows = [], opt
         y: Math.round(y),
       };
       positionedNodes.push(nextNode);
-      nextNode.personIds.forEach((personId) => nodeByPersonId.set(Number(personId), nextNode));
-      if (nextNode.familyId) nodeByFamilyId.set(Number(nextNode.familyId), nextNode);
+      nextNode.personIds.forEach((personId) => packedByPersonId.set(Number(personId), nextNode));
+      if (nextNode.type === DISPLAY_NODE_TYPE.COUPLE && nextNode.familyId) packedByFamilyId.set(Number(nextNode.familyId), nextNode);
+      if (nextNode.type === DISPLAY_NODE_TYPE.REFERENCE) packedReferences.set(`${nextNode.familyId}:${nextNode.refPersonId}`, nextNode);
       cursorX += node.width + spacing.siblingGap;
     });
   });
 
-  return {
-    nodes: positionedNodes,
-    nodeByPersonId,
-    nodeByFamilyId,
-  };
+  // Sau khi xếp lại theo hàng, tính lại điểm nối hôn nhân theo vị trí mới.
+  const packed = buildDisplayTree.recomputeAnchors(
+    { nodes: positionedNodes, nodeByPersonId: packedByPersonId, nodeByFamilyId: packedByFamilyId, referenceNodes: packedReferences, unionModel: model },
+  );
+  return packed;
 }
+
+// Tính lại điểm nối (dùng sau khi các thẻ bị xếp lại vị trí, ví dụ khi xuất ảnh dạng tổng quan).
+buildDisplayTree.recomputeAnchors = (tree) => {
+  const unionAnchors = new Map();
+  const unionConnectors = [];
+  tree.unionModel.familiesById.forEach((family) => {
+    const familyId = Number(family.id);
+    const coupleNode = tree.nodeByFamilyId.get(familyId);
+    if (coupleNode) {
+      unionAnchors.set(familyId, coupleNode);
+      return;
+    }
+    const parentNodes = [family.father_id, family.mother_id]
+      .map((id) => (id ? { personId: Number(id), node: tree.nodeByPersonId.get(Number(id)) } : null))
+      .filter((item) => item?.node);
+    if (!parentNodes.length) return;
+    if (parentNodes.length === 1 || parentNodes[0].node === parentNodes[1].node) {
+      unionAnchors.set(familyId, { ...parentNodes[0].node, personIds: [parentNodes[0].personId] });
+      return;
+    }
+    const [first, second] = parentNodes.map((item) => item.node).sort((a, b) => leftX(a) - leftX(b));
+    const bottom = Math.max(bottomY(first), bottomY(second));
+    const lineY = Math.round(bottom + UNION_CONNECTOR_DROP);
+    const x1 = Math.round(centerX(first));
+    const x2 = Math.round(centerX(second));
+    unionConnectors.push({
+      familyId,
+      personIds: parentNodes.map((item) => item.personId),
+      ended: isEndedUnion(family),
+      concubine: String(family.union_type || "") === "concubine",
+      d: `M ${x1} ${Math.round(bottomY(first))} L ${x1} ${lineY} L ${x2} ${lineY} L ${x2} ${Math.round(bottomY(second))}`,
+    });
+    unionAnchors.set(familyId, { id: `union_${familyId}`, x: Math.round((x1 + x2) / 2) - 1, y: lineY - 2, width: 2, height: 2, personIds: parentNodes.map((item) => item.personId) });
+  });
+  return { ...tree, unionAnchors, unionConnectors };
+};
 
 function centerX(node) {
   return node.x + node.width / 2;
@@ -434,6 +611,8 @@ function relatedIdsFor(parentNode, childNode) {
 export function buildDisplayTreeLines(displayTree, families = [], childRows = [], lineRoutes = {}) {
   const nodeByPersonId = displayTree?.nodeByPersonId || new Map();
   const nodeByFamilyId = displayTree?.nodeByFamilyId || new Map();
+  const unionAnchors = displayTree?.unionAnchors || new Map();
+  const referenceNodes = displayTree?.referenceNodes || new Map();
   const childrenByFamily = new Map();
   asArray(childRows).forEach((row) => {
     const familyId = Number(row.family_id);
@@ -442,20 +621,39 @@ export function buildDisplayTreeLines(displayTree, families = [], childRows = []
   });
 
   const lines = [];
+  // Đường nối hôn nhân giữa các thẻ riêng (người có nhiều vợ/chồng). Nét đứt: đã ly hôn/ly thân; chấm: vợ lẽ.
+  asArray(displayTree?.unionConnectors).forEach((connector) => {
+    lines.push({
+      id: `display-union-${connector.familyId}`,
+      edgeId: `display-union-${connector.familyId}`,
+      familyId: connector.familyId,
+      type: "spouse",
+      variant: connector.ended ? "ended" : connector.concubine ? "concubine" : null,
+      relatedPersonIds: connector.personIds,
+      d: connector.d,
+    });
+  });
+
   asArray(families).forEach((family) => {
     const familyId = Number(family.id);
-    const parentNode = nodeByFamilyId.get(familyId)
+    // Đường con cái xuất phát từ đúng cuộc hôn nhân (hoặc đúng người cha/mẹ khi khuyết người kia).
+    const parentNode = unionAnchors.get(familyId)
+      || nodeByFamilyId.get(familyId)
       || nodeByPersonId.get(Number(family.father_id))
       || nodeByPersonId.get(Number(family.mother_id));
     if (!parentNode) return;
 
     const childNodes = [];
+    const childVariantByNodeId = new Map();
     const seenChildNodeIds = new Set();
     asArray(childrenByFamily.get(familyId)).forEach((row) => {
-      const childNode = nodeByPersonId.get(Number(row.person_id));
+      const childNode = referenceNodes.get(`${familyId}:${Number(row.person_id)}`) || nodeByPersonId.get(Number(row.person_id));
       if (!childNode || childNode.id === parentNode.id || seenChildNodeIds.has(childNode.id)) return;
+      if (asArray(parentNode.personIds).some((id) => asArray(childNode.personIds).includes(id))) return;
       seenChildNodeIds.add(childNode.id);
       childNodes.push(childNode);
+      const variant = isAdoptiveChildType(row.child_type) ? "adoptive" : isStepChildType(row.child_type) ? "step" : null;
+      if (variant) childVariantByNodeId.set(childNode.id, variant);
     });
     childNodes.sort((a, b) => centerX(a) - centerX(b) || topY(a) - topY(b));
     if (!childNodes.length) return;
@@ -594,6 +792,7 @@ export function buildDisplayTreeLines(displayTree, families = [], childRows = []
           type: "blood",
           color: CHILD_LINE_COLOR,
           relatedPersonIds: relatedIdsFor(parentNode, childNode),
+          variant: childVariantByNodeId.get(childNode.id) || null,
           x: controlX,
           y: branchY,
           minY,
@@ -731,6 +930,7 @@ export function buildDisplayTreeLines(displayTree, families = [], childRows = []
         type: "blood",
         color: CHILD_LINE_COLOR,
         relatedPersonIds: relatedIdsFor(parentNode, childNode),
+        variant: childVariantByNodeId.get(childNode.id) || null,
         x: branchX,
         y: Math.round((busY + anchor.y) / 2),
         minX,

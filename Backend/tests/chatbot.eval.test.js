@@ -33,7 +33,7 @@ function spouses(a, b) {
     edge(b, a, 'spouse');
 }
 
-[[1, MALE], [2, MALE], [3, FEMALE], [4, MALE], [5, FEMALE], [6, MALE], [7, MALE], [8, FEMALE], [9, MALE],
+[[1, MALE], [2, MALE], [3, FEMALE], [4, MALE], [5, FEMALE], [6, MALE], [7, MALE], [8, FEMALE], [9, MALE], [18, MALE],
     [10, MALE], [11, FEMALE], [12, FEMALE], [13, MALE], [14, FEMALE], [15, MALE], [16, MALE], [17, MALE],
     [20, MALE], [21, FEMALE], [22, MALE], [23, FEMALE], [24, FEMALE], [30, MALE], [31, FEMALE], [32, FEMALE], [33, FEMALE],
 ].forEach(([id, gender]) => person(id, gender));
@@ -47,6 +47,7 @@ spouses(2, 3); spouses(20, 21); spouses(30, 31); spouses(1, 12); spouses(4, 24);
 [[6, 3], [6, 7], [6, 8], [3, 7], [3, 8], [7, 8]].forEach(([a, b]) => siblings(a, b));
 [[10, 1], [10, 11], [1, 11]].forEach(([a, b]) => siblings(a, b));
 parentChild(4, 9); parentChild(24, 9);
+parentChild(22, 18); // con nhà bác cả: anh họ theo vai dù chưa biết tuổi
 parentChild(6, 33); parentChild(32, 33);
 parentChild(10, 15);
 parentChild(1, 13); parentChild(12, 13); parentChild(1, 14); parentChild(12, 14);
@@ -91,7 +92,9 @@ const KINSHIP_CASES = [
     ['Con của tôi gồm những ai?', [13, 14]],
     ['Cháu nội của tôi', [16]],
     ['Cháu ngoại tôi', [17]],
-    ['Anh họ tôi là ai?', [9]],
+    // Vai vế: 18 là con nhà bác (anh của cha) -> anh họ; 9 là con nhà chú -> em họ.
+    ['Anh họ tôi là ai?', [18]],
+    ['Em họ tôi là ai?', [9]],
     ['Chị họ của tôi', [33]],
     ['Con trai của chú tôi', [9]],
     ['Con của cậu tôi', [33]],

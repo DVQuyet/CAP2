@@ -1,5 +1,6 @@
 import { formatDateVN, isoToVietnamDate, vietnamDateToIso } from "../../../../shared/utils/dateFormat";
 import { LINE_SNAP_SIZE, SNAP_SIZE } from "./treeConstants";
+import { historicalFieldsFromPerson } from "./historicalDates";
 
 export const toInt = (value, fallback = 0) => {
   const n = Number(value);
@@ -84,9 +85,8 @@ export function personToForm(person) {
     middle_name: person?.middle_name || "",
     first_name: person?.first_name || "",
     gender: person?.gender == null ? "" : String(person.gender),
-    birth_date: dateInput(person?.birth_date),
-    death_date: dateInput(person?.death_date),
-    is_living: Number(person?.is_living) === 0 ? "0" : "1",
+    // Ngày sinh/mất (độ chính xác, âm/dương lịch), tình trạng còn sống/không rõ, ngày giỗ, nguồn dữ liệu.
+    ...historicalFieldsFromPerson(person),
     role_id: person?.role_id == null ? "" : String(person.role_id),
     generation: person?.generation != null ? String(person.generation) : "1",
     child_order: person?.child_order || person?.child_sort_order || "",

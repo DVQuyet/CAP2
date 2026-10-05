@@ -8,7 +8,17 @@ const {
 const { createNotification, ensureNotificationSchema } = require("../../shared/utils/notifications");
 const { getTreeLayoutSettings } = require("../../shared/utils/treeLayoutSettings");
 const { normalizeMediaId, extractMediaIdFromUrl } = require("../../shared/utils/media");
-const { ensureFamilyRelationshipColumns } = require("../genealogy/familyRelation.service");
+const { applyMarriageToDraft, ensureFamilyRelationshipColumns } = require("../genealogy/familyRelation.service");
+const { TREE_CHILD_COLUMNS, TREE_FAMILY_COLUMNS, TREE_PERSON_EXTRA_COLUMNS } = require("../genealogy/treeQueries");
+const { applyFamilyVisibility } = require("../genealogy/treeVisibility");
+const {
+  RelationDraft,
+  RelationError,
+  evaluateAndCommit,
+  readOverrideOptions,
+  relationResultPayload,
+  withRelationTransaction,
+} = require("../genealogy/relationCommand.service");
 const { ensureArchivedMembersTable } = require("../manager/archive.service");
 const { ensureProfileCompletedColumn } = require("../../shared/utils/profileCompletion");
 const {
@@ -92,6 +102,53 @@ const normalizePostStats = (post) => ({
   comment_count: Number(post.comment_count || 0),
   liked_by_me: post.liked_by_me === true || post.liked_by_me === 1 || post.liked_by_me === "1",
 });
+
+// Bảng thích/bình luận có thể chưa được tạo trên một số database (chỉ chạy migration bài viết cũ).
+let postInteractionTablesReady = false;
+const ensurePostInteractionTables = async () => {
+  if (postInteractionTablesReady) return;
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS post_likes (
+      id INT NOT NULL AUTO_INCREMENT,
+      post_id INT NOT NULL,
+      person_id INT NOT NULL,
+      created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      UNIQUE KEY UK_post_person (post_id, person_id),
+      KEY FK_PostLikes_Person (person_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS post_comments (
+      id INT NOT NULL AUTO_INCREMENT,
+      post_id INT NOT NULL,
+      person_id INT NOT NULL,
+      parent_id INT DEFAULT NULL,
+      content TEXT COLLATE utf8mb4_unicode_ci NOT NULL,
+      created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      KEY idx_comment_post (post_id),
+      KEY FK_Comments_Person (person_id),
+      KEY FK_Comments_Parent (parent_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+  postInteractionTablesReady = true;
+};
+
+// Lỗi dữ liệu thường gặp khi thích/bình luận -> thông báo dễ hiểu thay vì 500 chung chung.
+const postInteractionErrorResponse = (res, error, fallbackMessage) => {
+  if (error?.code === "ER_NO_REFERENCED_ROW_2" || error?.code === "ER_NO_REFERENCED_ROW") {
+    return res.status(409).json({
+      success: false,
+      code: "PROFILE_OR_POST_MISSING",
+      message: "Hồ sơ thành viên của tài khoản hoặc bài viết không còn tồn tại. Hãy liên hệ quản lý để liên kết lại hồ sơ.",
+    });
+  }
+  if (error?.code === "ER_BAD_FIELD_ERROR" || error?.code === "ER_NO_SUCH_TABLE") {
+    postInteractionTablesReady = false;
+  }
+  return res.status(500).json({ success: false, code: error?.code || null, message: fallbackMessage });
+};
 
 const getApprovedClanPost = async (postId, clanId) => {
   const numericPostId = Number(postId);
@@ -518,7 +575,7 @@ exports.loadClanTreeForAdmin = async (clanId) => {
            COALESCE(p.pending_avatar_media_id, p.avatar_media_id) AS avatar_media_id,
            p.pending_avatar_url,
            p.pending_avatar_media_id,
-           p.bio, p.note, p.tree_x, p.tree_y, p.display_order,
+           p.bio, p.note, p.tree_x, p.tree_y, p.display_order, ${TREE_PERSON_EXTRA_COLUMNS},
            a.id AS account_id,
            a.role_id
     FROM people p
@@ -532,14 +589,13 @@ exports.loadClanTreeForAdmin = async (clanId) => {
   );
 
   const [familyRows] = await db.query(
-    `SELECT id, clan_id, father_id, mother_id, marriage_date,
-            relationship_status, ended_at, relation_note
+    `SELECT ${TREE_FAMILY_COLUMNS}
      FROM families WHERE clan_id = ? ORDER BY id ASC`,
     [cid]
   );
   const [childRows] = await db.query(
     `
-    SELECT c.family_id, c.person_id, c.sort_order
+    SELECT ${TREE_CHILD_COLUMNS}
     FROM families f
     STRAIGHT_JOIN children c ON c.family_id = f.id
     WHERE f.clan_id = ?
@@ -600,7 +656,7 @@ exports.getDashboard = async (req, res) => {
                  COALESCE(p.pending_avatar_media_id, p.avatar_media_id) AS avatar_media_id,
                  p.pending_avatar_url,
                  p.pending_avatar_media_id,
-                 p.bio, p.note, p.tree_x, p.tree_y, p.display_order,
+                 p.bio, p.note, p.tree_x, p.tree_y, p.display_order, ${TREE_PERSON_EXTRA_COLUMNS},
                  a.id AS account_id,
                  a.role_id
           FROM people p
@@ -619,14 +675,13 @@ exports.getDashboard = async (req, res) => {
       }));
 
       const [familyRows] = await db.query(
-        `SELECT id, clan_id, father_id, mother_id, marriage_date,
-                relationship_status, ended_at, relation_note
+        `SELECT ${TREE_FAMILY_COLUMNS}
          FROM families WHERE clan_id = ? ORDER BY id ASC`,
         [clanId]
       );
       const [childRows] = await db.query(
         `
-          SELECT c.family_id, c.person_id, c.sort_order
+          SELECT ${TREE_CHILD_COLUMNS}
           FROM families f
           STRAIGHT_JOIN children c ON c.family_id = f.id
           WHERE f.clan_id = ?
@@ -634,7 +689,12 @@ exports.getDashboard = async (req, res) => {
         `,
         [clanId]
       );
-      const visibleTree = filterTreeRelationsForVisiblePeople(familyRows, childRows, peopleRows);
+      const scoped = applyFamilyVisibility({ people: peopleRows, families: familyRows, children: childRows }, req.user);
+      if (scoped.people.length !== peopleRows.length) {
+        const visibleIds = new Set(scoped.people.map((person) => Number(person.id)));
+        treeMembers = treeMembers.filter((person) => visibleIds.has(Number(person.id)));
+      }
+      const visibleTree = filterTreeRelationsForVisiblePeople(scoped.families, scoped.children, scoped.people);
       families = visibleTree.familyRows.map((family) => ({
         ...family,
         marriage_date: family.marriage_date ? String(family.marriage_date).slice(0, 10) : null,
@@ -642,7 +702,7 @@ exports.getDashboard = async (req, res) => {
       }));
       children = visibleTree.childRows;
       layoutSettings = await getTreeLayoutSettings(clanId);
-      familyTree = buildFamilyTree(peopleRows, visibleTree.familyRows, visibleTree.childRows);
+      familyTree = buildFamilyTree(scoped.people, visibleTree.familyRows, visibleTree.childRows);
 
       const [eventRows] = await db.query(
         `
@@ -963,74 +1023,23 @@ exports.updateProfile = async (req, res) => {
         context.person_id,
       ]
     );
-        const [selfFamilyRows] = await db.query(
-      "SELECT id FROM families WHERE father_id = ? OR mother_id = ? ORDER BY id ASC LIMIT 1",
-      [context.person_id, context.person_id]
-    );
-    let selfFamilyId = selfFamilyRows[0]?.id || null;
-    const isMale = Number(context.gender) === 1;
-
-    if (hasFamilyField && familyIdInput !== null) {
-      const [existingFamily] = await db.query(
-        "SELECT id, father_id, mother_id, clan_id FROM families WHERE id = ? LIMIT 1",
-        [familyIdInput]
-      );
-      if (existingFamily.length === 0) {
-        if (!context.clan_id) {
-          return res.status(400).json({
-            success: false,
-            message: "Tài khoản chưa liên kết dòng họ nên không thể tạo families mới",
-          });
-        }
-        await db.query(
-          "INSERT INTO families (id, clan_id, father_id, mother_id) VALUES (?, ?, ?, ?)",
-          [familyIdInput, context.clan_id, isMale ? context.person_id : spouseId, isMale ? spouseId : context.person_id]
-        );
-        selfFamilyId = familyIdInput;
-      } else {
-        const fam = existingFamily[0];
-        if (fam.father_id !== context.person_id && fam.mother_id !== context.person_id) {
-          return res.status(403).json({
-            success: false,
-            message: "Family ID đã tồn tại nhưng tài khoản hiện tại không phải bố/mẹ của family này",
-          });
-        }
-        selfFamilyId = fam.id;
+    // Quan hệ gia đình đi qua cùng bộ kiểm tra và transaction như cây gia phả.
+    if (hasFamilyField || hasSpouseField || hasChildrenField) {
+      if (!context.clan_id) {
+        return res.status(400).json({
+          success: false,
+          message: "Tài khoản chưa liên kết dòng họ nên chưa thể khai báo quan hệ vợ/chồng/con",
+        });
       }
-    }
-
-    const needsNewOrUpdateFamilyRow =
-      hasSpouseField || (hasChildrenField && childrenIds.length > 0);
-    if (needsNewOrUpdateFamilyRow) {
-      if (!selfFamilyId) {
-        if (!context.clan_id) {
-          return res.status(400).json({
-            success: false,
-            message: "Tài khoản chưa liên kết dòng họ nên chưa thể khai báo quan hệ vợ/chồng/con",
-          });
-        }
-        const [createdFamily] = await db.query(
-          "INSERT INTO families (clan_id, father_id, mother_id) VALUES (?, ?, ?)",
-          [context.clan_id, isMale ? context.person_id : spouseId, isMale ? spouseId : context.person_id]
-        );
-        selfFamilyId = createdFamily.insertId;
-      } else {
-        await db.query("UPDATE families SET father_id = ?, mother_id = ? WHERE id = ?", [
-          isMale ? context.person_id : spouseId,
-          isMale ? spouseId : context.person_id,
-          selfFamilyId,
-        ]);
-      }
-    }
-
-    if (selfFamilyId && hasChildrenField) {
-      await db.query("DELETE FROM children WHERE family_id = ?", [selfFamilyId]);
-      for (const childId of childrenIds) {
-        await db.query("INSERT INTO children (family_id, person_id, sort_order) VALUES (?, ?, 0)", [
-          selfFamilyId,
-          childId,
-        ]);
-      }
+      const relationBody = {};
+      if (hasFamilyField) relationBody.family_id = familyIdInput;
+      if (hasSpouseField) relationBody.spouse_id = spouseId;
+      if (hasChildrenField) relationBody.children_ids = childrenIds;
+      await withRelationTransaction(null, async (conn) => {
+        const draft = await RelationDraft.load(conn, context.clan_id);
+        applyMarriageToDraft(draft, { person_id: context.person_id }, relationBody);
+        await evaluateAndCommit(draft, readOverrideOptions(req.body, req.user, "all"), "update_profile");
+      });
     }
 
     const fresh = await getAccountContext(accountId);
@@ -1057,6 +1066,9 @@ exports.updateProfile = async (req, res) => {
       },
     });
   } catch (error) {
+    if (error instanceof RelationError) {
+      return res.status(error.status).json(relationResultPayload(error.relationResult));
+    }
     console.error("updateProfile error:", error);
     return res.status(500).json({ success: false, message: "Lỗi cập nhật thông tin" });
   }
@@ -1455,6 +1467,10 @@ exports.addPostComment = async (req, res) => {
     if (!commentContent) {
       return res.status(400).json({ success: false, message: "Vui lòng nhập bình luận." });
     }
+    if (commentContent.length > 5000) {
+      return res.status(400).json({ success: false, message: "Bình luận quá dài (tối đa 5000 ký tự)." });
+    }
+    await ensurePostInteractionTables();
 
     if (parentId) {
       const [parentRows] = await db.query("SELECT id FROM post_comments WHERE id = ? AND post_id = ? LIMIT 1", [parentId, post.id]);
@@ -1495,7 +1511,7 @@ if (io) {
     return res.status(201).json({ success: true, comment: rows[0] });
   } catch (error) {
     console.error("addPostComment error:", error);
-    return res.status(500).json({ success: false, message: "Lỗi thêm bình luận." });
+    return postInteractionErrorResponse(res, error, "Lỗi thêm bình luận.");
   }
 };
 
@@ -1512,6 +1528,7 @@ exports.togglePostLike = async (req, res) => {
       return res.status(404).json({ success: false, message: "Không tìm thấy bài viết." });
     }
 
+    await ensurePostInteractionTables();
     const [existing] = await db.query(
       "SELECT id FROM post_likes WHERE post_id = ? AND person_id = ? LIMIT 1",
       [post.id, context.person_id]
@@ -1521,7 +1538,8 @@ exports.togglePostLike = async (req, res) => {
     if (existing.length) {
       await db.query("DELETE FROM post_likes WHERE id = ?", [existing[0].id]);
     } else {
-      await db.query("INSERT INTO post_likes (post_id, person_id) VALUES (?, ?)", [post.id, context.person_id]);
+      // INSERT IGNORE: bấm thích hai lần liên tiếp không gây lỗi trùng khóa.
+      await db.query("INSERT IGNORE INTO post_likes (post_id, person_id) VALUES (?, ?)", [post.id, context.person_id]);
       liked = true;
     }
 
@@ -1546,7 +1564,7 @@ if (io) {
 return res.json({ success: true, liked, like_count: likeCount });
   } catch (error) {
     console.error("togglePostLike error:", error);
-    return res.status(500).json({ success: false, message: "Lỗi cập nhật lượt thích." });
+    return postInteractionErrorResponse(res, error, "Lỗi cập nhật lượt thích.");
   }
 };
 
