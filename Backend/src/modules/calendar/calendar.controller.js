@@ -1043,3 +1043,5 @@ exports.startCalendarReminderScheduler = (app) => {
 
 exports.ensureCalendarSchema = ensureCalendarSchema;
 exports.processDueReminders = processDueReminders;
+
+exports.buildYearlyPersonEvents = buildYearlyPersonEvents;

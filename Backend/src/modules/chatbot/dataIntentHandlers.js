@@ -325,26 +325,55 @@ async function handleStatsIntent({ clanId, message, parsed, context, planner }) 
     };
 }
 
+const isoDay = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+// Ngày giỗ sắp tới được tính từ gia phả (ngày giỗ âm lịch hoặc ngày mất), không nằm trong bảng events.
+async function loadUpcomingAnniversaries(clanId, days = 60) {
+    try {
+        const { buildYearlyPersonEvents } = require('../calendar/calendar.controller');
+        const today = new Date();
+        const until = new Date(today.getTime() + days * 86400000);
+        const items = await buildYearlyPersonEvents({ clanId, from: isoDay(today), to: isoDay(until) });
+        return items
+            .filter((item) => item.type === 'death_anniversary')
+            .sort((a, b) => String(a.date).localeCompare(String(b.date)))
+            .slice(0, 8);
+    } catch (error) {
+        console.error('loadUpcomingAnniversaries error:', error?.message || error);
+        return [];
+    }
+}
+
 async function handleEventsIntent({ clanId, message, parsed, context, planner }) {
     const events = await queryOptional(
         `SELECT title, event_date, start_date, end_date, description
          FROM events
          WHERE clan_id = ?
-           AND (event_date >= CURDATE() OR start_date >= CURDATE())
-         ORDER BY COALESCE(event_date, start_date) ASC
+           AND (COALESCE(end_date, event_date, start_date) >= CURDATE())
+         ORDER BY COALESCE(start_date, event_date) ASC
          LIMIT 5`,
         [clanId]
     );
-    const resolvedData = { type: 'events_upcoming', data: events };
+    const anniversaries = await loadUpcomingAnniversaries(clanId);
+    const asksAnniversary = /gi[oỗ]|giỗ|ky nhat|kỵ nhật/i.test(String(message || '').normalize('NFC'));
+    const resolvedData = { type: 'events_upcoming', data: events, anniversaries };
     const ai = await explainResolvedIntent({ intent: parsed.intent, message, resolvedData, context });
-    const fallback = events.length
-        ? events.map((event) => `${event.title} (${formatDateOnly(event.event_date || event.start_date) || 'chưa rõ ngày'})`).join(', ')
-        : 'Hiện chưa có sự kiện sắp tới được ghi nhận.';
+    const eventText = events.length
+        ? `Sự kiện sắp tới: ${events.map((event) => `${event.title} (${formatDateOnly(event.start_date || event.event_date) || 'chưa rõ ngày'}${event.end_date && formatDateOnly(event.end_date) !== formatDateOnly(event.start_date || event.event_date) ? ` - ${formatDateOnly(event.end_date)}` : ''})`).join(', ')}.`
+        : '';
+    const anniversaryText = anniversaries.length
+        ? `Ngày giỗ trong 60 ngày tới: ${anniversaries.map((item) => `${item.title.replace(/^Ngày giỗ\s+/, '')} (${formatDateOnly(item.date)}${item.anniversary_lunar_date ? `, âm lịch ${item.anniversary_lunar_date}` : ''})`).join('; ')}.`
+        : '';
+    const parts = asksAnniversary ? [anniversaryText, eventText] : [eventText, anniversaryText];
+    const fallback = parts.filter(Boolean).join(' ') || (asksAnniversary
+        ? 'Trong 60 ngày tới chưa có ngày giỗ nào được ghi trong gia phả (cần có ngày mất hoặc ngày giỗ âm lịch trong hồ sơ).'
+        : 'Hiện chưa có sự kiện sắp tới được ghi nhận.');
+    const hasData = events.length || anniversaries.length;
     return {
         success: true,
         intent: parsed.intent,
         answer: ai.explanation || fallback,
-        confidence: events.length ? (parsed.confidence || 0.75) : 0.4,
+        confidence: hasData ? (parsed.confidence || 0.75) : 0.4,
         source: 'database',
         planner,
         resolvedData,
