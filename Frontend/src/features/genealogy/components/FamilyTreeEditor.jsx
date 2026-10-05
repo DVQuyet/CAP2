@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { TransformComponent, TransformWrapper } from "react-zoom-pan-pinch";
 import { createPortal } from "react-dom";
-import { createPersonAPI, deletePersonAPI, linkRelationsAPI, saveTreeLayoutBatchAPI, saveTreeLayoutAPI, updatePersonAPI } from "../../../api/managerService";
+import { createPersonAPI, deletePersonAPI, linkRelationsAPI, previewRelationsAPI, saveTreeLayoutBatchAPI, saveTreeLayoutAPI, updatePersonAPI } from "../../../api/managerService";
 import { extractGenealogyAI } from "../../../api/aiServerService";
 import { onSocketEvent } from "../../../services/socket";
 import { vietnamDateToIso } from "../../../shared/utils/dateFormat";
@@ -23,11 +23,12 @@ import { asArray, extractCreatedPersonId, formatDisplayDate, fullName, normalize
 import { clearCardSizes, clearLineRoutes, getCardSize, loadCardSizes, loadLineRoutes, normalizeCardSize, normalizeLayoutObject, normalizeLayoutSettings, saveCardSizes, saveLineRoutes } from "../utils/tree-editor/treeStorage";
 import { dedupePeopleByAccount, remapChildrenByPeople, remapFamiliesByPeople } from "../utils/tree-editor/treeNormalize";
 import { autoLayoutPeople, findFounderIds, generationY, mergeManualAndAutoLayout } from "../utils/tree-editor/treeLayout";
-import { blankCreateForm, buildChildRelationPayload, findParentFamilyForChild, findSpouse, findSpouseFamily, getChildOrderMapForFamily, getChildrenForFamily, getFamiliesForPerson, relationCandidates, relationLinkedIds } from "../utils/tree-editor/treeRelations";
+import { blankCreateForm, buildCreateRelationFields, buildLinkPayload, defaultRelationOptions, findParentFamilyForChild, findSpouse, findSpouseFamily, getChildOrderMapForFamily, getChildrenForFamily, getFamiliesForPerson, relationCandidates, relationLinkedIds } from "../utils/tree-editor/treeRelations";
 import { downloadBlob, exportFileName, exportPreparedTree, prepareTreeExportPayload } from "../utils/tree-editor/treeExport";
 import { DEFAULT_TREE_EXPORT_OPTIONS, TREE_EXPORT_FORMAT, TREE_EXPORT_MODE } from "../utils/tree-editor/treeExportConfig";
 import { TREE_CARD_ORIENTATION, TREE_DISPLAY_MODE, TREE_THEME, TREE_THEMES, TREE_THEME_BACKGROUNDS } from "../utils/tree-editor/treeDisplayConfig";
 import { DISPLAY_NODE_TYPE, buildDisplayTree, buildDisplayTreeLines } from "../utils/tree-editor/treeDisplayNodes";
+import { FORM_ONLY_FIELDS, historicalPayloadFromForm } from "../utils/tree-editor/historicalDates";
 import { CenterNoticeDialog, CreatePersonDialog, PersonInspector, QuickCreateRelationDialog, RelationSelectDialog, ArchivedMembersDialog } from "./FamilyTreeEditorParts/index.js";
 import "./FamilyTreeEditor.css";
 import "./FamilyTreeEditor.v2.css";
@@ -2031,58 +2032,12 @@ const coupleActionPerson = useMemo(
     }
   }, [canEditAll, onReload, t]);
 
-  const linkRelationTarget = useCallback(async (relation, sourcePerson, targetId) => {
-    if (!canEditAll || !sourcePerson || !targetId) return false;
-    const sourceId = Number(sourcePerson.id);
-    const nextTargetId = Number(targetId);
-    if (!Number.isFinite(sourceId) || !Number.isFinite(nextTargetId) || sourceId === nextTargetId) {
-      setConstraintNotice(t("tree.messages.linkTargetError"));
-      return false;
-    }
 
-    setDialogSaving(true);
-    setStatus("");
-    try {
-      if (relation === "spouse") {
-        await linkRelationsAPI({ person_id: sourceId, spouse_person_id: nextTargetId });
-      }
-
-      if (relation === "child") {
-        const childPayload = buildChildRelationPayload(
-          sourceId,
-          nextTargetId,
-          canonicalTree.families,
-          canonicalTree.childRows,
-          people,
-        );
-        if (childPayload.error) {
-          setConstraintNotice(t("tree.messages.multipleFamiliesError"));
-          return false;
-        }
-        await linkRelationsAPI(childPayload.data);
-      }
-
-      if (relation === "father" || relation === "mother") {
-        const currentParents = findParentFamilyForChild(sourceId, canonicalTree.families, canonicalTree.childRows);
-        await linkRelationsAPI({
-          person_id: sourceId,
-          father_person_id: relation === "father" ? nextTargetId : currentParents?.father_id || null,
-          mother_person_id: relation === "mother" ? nextTargetId : currentParents?.mother_id || null,
-        });
-      }
-
-      setRelationDialog(null);
-      setTreeRelationPicker(null);
-      setStatus(t("tree.messages.linkSuccess", { relation: t(`tree.relations.${relation}`) }));
-      await onReload?.();
-      return true;
-    } catch (error) {
-      if (!shouldSuppressInlineRelationError(error)) setConstraintNotice(error?.message || t("tree.messages.linkError"));
-      return false;
-    } finally {
-      setDialogSaving(false);
-    }
-  }, [canEditAll, canonicalTree.families, canonicalTree.childRows, onReload, people, t]);
+  const requestRelationPreview = useCallback((targetId, options) => {
+    if (!selectedPerson || !relationDialog?.relation) return Promise.resolve(null);
+    const payload = buildLinkPayload(relationDialog.relation, selectedPerson, targetId, options || {}, canonicalTree.families, canonicalTree.childRows);
+    return payload ? previewRelationsAPI(payload) : Promise.resolve(null);
+  }, [canonicalTree.childRows, canonicalTree.families, relationDialog?.relation, selectedPerson]);
 
   const submitTreeRelationPick = useCallback((targetPerson) => {
     if (!treeRelationPicker || !targetPerson) return;
@@ -2104,8 +2059,17 @@ const coupleActionPerson = useMemo(
       setConstraintNotice(t("tree.messages.linkNotAllowed"));
       return;
     }
-    linkRelationTarget(relation, sourcePerson, targetPerson.id);
-  }, [canonicalTree.families, canonicalTree.childRows, linkRelationTarget, people, treeRelationPicker]);
+    // Mở lại hộp thoại với người vừa chọn để người dùng thấy kết quả kiểm tra và chọn "con với ai" trước khi lưu.
+    setTreeRelationPicker(null);
+    setSelectedType("person");
+    setSelectedCoupleId(null);
+    setSelectedId(sourcePerson.id);
+    setRelationDialog({
+      relation,
+      personId: targetPerson.id,
+      options: treeRelationPicker.options || defaultRelationOptions(relation, sourcePerson, canonicalTree.families, people),
+    });
+  }, [canonicalTree.families, canonicalTree.childRows, people, t, treeRelationPicker]);
 
   const handleCardPointerDown = useCallback(
     (event, person) => {
@@ -2434,8 +2398,12 @@ const coupleActionPerson = useMemo(
     setSaving(true);
     setStatus("");
     try {
-      const birthDateIso = vietnamDateToIso(form.birth_date) || null;
-      const deathDateIso = form.is_living === "1" ? null : vietnamDateToIso(form.death_date) || null;
+      // Ngày theo độ chính xác (đủ ngày / chỉ năm / ước lượng / không rõ), âm hoặc dương lịch, ngày giỗ, nguồn.
+      const historical = historicalPayloadFromForm(form);
+      if (historical.error) {
+        setConstraintNotice(t(`tree.historical.errors.${historical.error}`));
+        return;
+      }
       const wantsCreateAccount = canEditAll && !selectedPerson.account_id && form.role_id === "3";
       const accountEmail = String(form.account_email || "").trim();
       const accountPassword = String(form.account_password || "");
@@ -2452,13 +2420,12 @@ const coupleActionPerson = useMemo(
 
       const payload = {
         ...form,
+        ...historical.payload,
         gender: form.gender === "" ? null : Number(form.gender),
-        is_living: form.is_living === "1" ? 1 : 0,
         generation: Number(form.generation) || 1,
         branch: String(form.branch || "").trim() === "" ? null : Number(form.branch),
-        birth_date: birthDateIso,
-        death_date: deathDateIso,
       };
+      FORM_ONLY_FIELDS.forEach((key) => delete payload[key]);
 
       // Người đã mất/người được thêm thủ công có thể chưa có tài khoản.
       // Không gửi role_id rỗng lên backend, nếu không backend sẽ hiểu là đang đổi vai trò
@@ -2569,6 +2536,7 @@ const openCreateDialogFromQuickRelation = (relation) => {
     relation,
     sourcePersonId: sourcePerson.id,
     form: blankCreateForm(relation, sourcePerson, spouse),
+    relationOptions: defaultRelationOptions(relation, sourcePerson, canonicalTree.families, people),
   });
 
   setQuickCreateDialog(null);
@@ -2602,6 +2570,7 @@ const openCreateDialogForPerson = (person, relation) => {
     relation,
     sourcePersonId: person.id,
     form: blankCreateForm(relation, person, spouse),
+    relationOptions: defaultRelationOptions(relation, person, canonicalTree.families, people),
   });
   setCouplePersonAction(null);
   setSelectedCoupleId(null);
@@ -2621,7 +2590,11 @@ const openCreateDialogForPerson = (person, relation) => {
     }
     if (relation !== "person") {
       const currentIds = relationLinkedIds(relation, selectedPerson, canonicalTree.families, canonicalTree.childRows);
-      setRelationDialog({ relation, personId: [...currentIds][0] || "" });
+      setRelationDialog({
+        relation,
+        personId: [...currentIds][0] || "",
+        options: defaultRelationOptions(relation, selectedPerson, canonicalTree.families, people),
+      });
       setTreeRelationPicker(null);
       return;
     }
@@ -2666,64 +2639,48 @@ const submitCreateDialog = async () => {
     return;
   }
 
-  if (sourcePersonId && relation !== "person") {
-    const sourcePerson = people.find((person) => Number(person.id) === Number(sourcePersonId));
-    let ageConstraintMessage = "";
-
-    if (relation === "father" || relation === "mother") {
-      ageConstraintMessage = parentChildAgeConstraintMessage(personBirthValue(sourcePerson), form.birth_date);
-    }
-
-    if (relation === "child") {
-      ageConstraintMessage = parentChildAgeConstraintMessage(form.birth_date, personBirthValue(sourcePerson));
-      const childPayload = buildChildRelationPayload(
-        sourcePersonId,
-        -1,
-        canonicalTree.families,
-        canonicalTree.childRows,
-        people,
-      );
-      const otherParentId = childPayload?.data?.father_person_id && Number(childPayload.data.father_person_id) !== Number(sourcePersonId)
-        ? childPayload.data.father_person_id
-        : childPayload?.data?.mother_person_id && Number(childPayload.data.mother_person_id) !== Number(sourcePersonId)
-          ? childPayload.data.mother_person_id
-          : null;
-      if (!ageConstraintMessage && otherParentId) {
-        const otherParent = people.find((person) => Number(person.id) === Number(otherParentId));
-        ageConstraintMessage = parentChildAgeConstraintMessage(form.birth_date, personBirthValue(otherParent));
-      }
-    }
-
-    if (ageConstraintMessage) {
-      setConstraintNotice(ageConstraintMessage);
-      return;
-    }
+  if (relation === "child" && sourcePersonId && !dialog.relationOptions?.unionKey) {
+    setConstraintNotice(t("tree.relationOptions.chooseUnionHint"));
+    return;
   }
 
   setDialogSaving(true);
   setStatus("");
 
   try {
-    const birthDateIso = vietnamDateToIso(form.birth_date) || null;
-    const deathDateIso = form.is_living === "1" ? null : vietnamDateToIso(form.death_date) || null;
+    const historical = historicalPayloadFromForm(form);
+    if (historical.error) {
+      setConstraintNotice(t(`tree.historical.errors.${historical.error}`));
+      return;
+    }
     const accountEmail = String(form.account_email || "").trim();
     const accountPassword = String(form.account_password || "");
     const shouldCreateAccount = form.is_living === "1" && Boolean(accountEmail && accountPassword.length >= 6);
-    const createdResponse = await createPersonAPI({
+    const createBody = {
       ...form,
+      ...historical.payload,
       clan_id: clan?.id,
       gender: form.gender === "" ? null : Number(form.gender),
-      is_living: form.is_living === "1" ? 1 : 0,
       generation: Number(form.generation) || 1,
       branch: String(form.branch || "").trim() === "" ? null : Number(form.branch),
-      birth_date: birthDateIso,
-      death_date: deathDateIso,
       tree_x: Number(form.tree_x) || 0,
       tree_y: Number(form.tree_y) || 0,
       email: accountEmail || null,
       account_email: shouldCreateAccount ? accountEmail : null,
       account_password: shouldCreateAccount ? accountPassword : null,
-    });
+    };
+    FORM_ONLY_FIELDS.forEach((key) => delete createBody[key]);
+    const relationSource = sourcePersonId ? people.find((person) => Number(person.id) === Number(sourcePersonId)) : null;
+    if (relationSource && relation !== "person") {
+      Object.assign(createBody, buildCreateRelationFields(
+        relation,
+        relationSource,
+        dialog.relationOptions || defaultRelationOptions(relation, relationSource, canonicalTree.families, people),
+        canonicalTree.families,
+        canonicalTree.childRows,
+      ));
+    }
+    const createdResponse = await createPersonAPI(createBody);
 
     const newPersonId = extractCreatedPersonId(createdResponse);
     if (createdResponse?.person?.id) {
@@ -2735,47 +2692,8 @@ const submitCreateDialog = async () => {
       );
     }
 
-    if (sourcePersonId && relation !== "person") {
-      if (!newPersonId) {
-        throw new Error(t("tree.messages.linkError"));
-      }
-
-      if (relation === "spouse") {
-        await linkRelationsAPI({
-          person_id: sourcePersonId,
-          spouse_person_id: newPersonId,
-        });
-      }
-
-      if (relation === "child") {
-        const childPayload = buildChildRelationPayload(
-          sourcePersonId,
-          newPersonId,
-          canonicalTree.families,
-          canonicalTree.childRows,
-          people,
-        );
-        if (childPayload.error) {
-          throw new Error(t("tree.messages.multipleFamiliesError"));
-        }
-        await linkRelationsAPI(childPayload.data);
-      }
-
-      if (relation === "father" || relation === "mother") {
-        const currentParents = findParentFamilyForChild(
-          sourcePersonId,
-          canonicalTree.families,
-          canonicalTree.childRows
-        );
-
-        await linkRelationsAPI({
-          person_id: sourcePersonId,
-          father_person_id:
-            relation === "father" ? newPersonId : currentParents?.father_id || null,
-          mother_person_id:
-            relation === "mother" ? newPersonId : currentParents?.mother_id || null,
-        });
-      }
+    if (sourcePersonId && relation !== "person" && !newPersonId) {
+      throw new Error(t("tree.messages.linkError"));
     }
 
     setDialog(null);
@@ -2822,49 +2740,17 @@ const submitCreateDialog = async () => {
     if (!canEditAll || !relationDialog || !selectedPerson || !relationDialog.personId) return;
     const relation = relationDialog.relation;
     const targetId = Number(relationDialog.personId);
-    const targetPerson = people.find((person) => Number(person.id) === Number(targetId));
-
-    let ageConstraintMessage = "";
-    if (relation === "father" || relation === "mother") {
-      ageConstraintMessage = parentChildAgeConstraintMessage(personBirthValue(selectedPerson), personBirthValue(targetPerson));
-    } else if (relation === "child") {
-      ageConstraintMessage = parentChildAgeConstraintMessage(personBirthValue(targetPerson), personBirthValue(selectedPerson));
-    }
-    if (ageConstraintMessage) {
-      setConstraintNotice(ageConstraintMessage);
-      return;
-    }
+    // Tuổi cha mẹ - con do máy chủ kiểm tra theo độ chính xác của ngày (hộp thoại đã hiện kết quả xem trước).
 
     setDialogSaving(true);
     setStatus("");
     try {
-      if (relation === "spouse") {
-        await linkRelationsAPI({ person_id: selectedPerson.id, spouse_person_id: targetId });
+      const relationOptions = relationDialog.options || defaultRelationOptions(relation, selectedPerson, canonicalTree.families, people);
+      if (relation === "child" && !relationOptions.unionKey) {
+        setConstraintNotice(t("tree.relationOptions.chooseUnionHint"));
+        return;
       }
-
-      if (relation === "child") {
-        const childPayload = buildChildRelationPayload(
-          selectedPerson.id,
-          targetId,
-          canonicalTree.families,
-          canonicalTree.childRows,
-          people,
-        );
-        if (childPayload.error) {
-          setConstraintNotice(t("tree.messages.multipleFamiliesError"));
-          return;
-        }
-        await linkRelationsAPI(childPayload.data);
-      }
-
-      if (relation === "father" || relation === "mother") {
-        const currentParents = findParentFamilyForChild(selectedPerson.id, canonicalTree.families, canonicalTree.childRows);
-        await linkRelationsAPI({
-          person_id: selectedPerson.id,
-          father_person_id: relation === "father" ? targetId : currentParents?.father_id || null,
-          mother_person_id: relation === "mother" ? targetId : currentParents?.mother_id || null,
-        });
-      }
+      await linkRelationsAPI(buildLinkPayload(relation, selectedPerson, targetId, relationOptions, canonicalTree.families, canonicalTree.childRows));
 
       setRelationDialog(null);
       setStatus(t("tree.messages.linkSuccess", { relation: t(`tree.relations.${relation}`) }));
@@ -4132,6 +4018,9 @@ const submitCreateDialog = async () => {
         childRows={canonicalTree.childRows}
         value={relationDialog?.personId}
         saving={dialogSaving}
+        relationOptions={relationDialog?.options || {}}
+        onRelationOptionsChange={(options) => setRelationDialog((current) => (current ? { ...current, options } : current))}
+        requestPreview={requestRelationPreview}
         onChange={(personId) => setRelationDialog((current) => (current ? { ...current, personId } : current))}
         onCancel={() => !dialogSaving && setRelationDialog(null)}
         onSubmit={submitRelationDialog}
@@ -4139,7 +4028,7 @@ const submitCreateDialog = async () => {
         onPickOnTree={() => {
           if (!selectedPerson) return;
           const relation = relationDialog?.relation;
-          setTreeRelationPicker({ relation, sourcePersonId: selectedPerson.id });
+          setTreeRelationPicker({ relation, sourcePersonId: selectedPerson.id, options: relationDialog?.options });
           setRelationDialog(null);
           setSelectedId(null);
           setStatus("");
@@ -4157,6 +4046,10 @@ const submitCreateDialog = async () => {
             form={dialog?.form}
             selectedPerson={dialogSourcePerson}
             saving={dialogSaving}
+            families={canonicalTree.families}
+            people={people}
+            relationOptions={dialog?.relationOptions || {}}
+            onRelationOptionsChange={(relationOptions) => setDialog((current) => (current ? { ...current, relationOptions } : current))}
             onChange={(form) => setDialog((current) => (current ? { ...current, form } : current))}
             onCancel={() => !dialogSaving && setDialog(null)}
             onSubmit={submitCreateDialog}
