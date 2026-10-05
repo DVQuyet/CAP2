@@ -1,6 +1,7 @@
 const db = require('../../config/db');
 const { createNotification } = require('../../shared/utils/notifications');
 const { sendMail, isSmtpConfigured } = require('../../shared/utils/email');
+const { ensureGenealogySchema } = require('../genealogy/genealogySchema.service');
 
 let schemaReady = false;
 let schedulerStarted = false;
@@ -529,14 +530,19 @@ const buildYearlyPersonEvents = async ({ clanId, from, to }) => {
   const fromYear = fromDate.getFullYear();
   const toYear = toDate.getFullYear();
 
+  await ensureGenealogySchema();
+  // Ngày giỗ âm lịch (death_anniversary_lunar) được ưu tiên: gia phả xưa thường chỉ ghi ngày giỗ, không ghi ngày mất dương lịch.
+  // Ngày chỉ biết năm/ước lượng (lưu dạng 01-01) không được dùng để sinh sinh nhật/ngày giỗ giả.
   const [people] = await db.query(
     `
-    SELECT id, display_name, surname, middle_name, first_name, birth_date, death_date, is_living
+    SELECT id, display_name, surname, middle_name, first_name, birth_date, death_date, is_living,
+           birth_date_precision, death_date_precision, death_anniversary_lunar
     FROM people
     WHERE clan_id = ?
       AND (
-        (is_living = 1 AND birth_date IS NOT NULL)
-        OR (is_living = 0 AND death_date IS NOT NULL)
+        (is_living = 1 AND birth_date IS NOT NULL AND birth_date_precision = 'exact')
+        OR ((is_living = 0 OR is_living IS NULL OR death_date IS NOT NULL)
+            AND ((death_date IS NOT NULL AND death_date_precision = 'exact') OR death_anniversary_lunar IS NOT NULL))
       )
     ORDER BY display_name ASC, id ASC
     `,
@@ -621,7 +627,10 @@ const buildYearlyPersonEvents = async ({ clanId, from, to }) => {
     // Hệ thống lấy ngày dương đã nhập trong hồ sơ, quy đổi ra ngày âm gốc,
     // rồi mỗi năm âm lịch sẽ quy đổi ngược lại sang ngày dương tương ứng để hiện trên lịch.
     const deathDate = toIsoDate(person.death_date);
-    const deathLunar = solarIsoToLunar(deathDate);
+    const recordedAnniversary = String(person.death_anniversary_lunar || '').match(/^(\d{1,2})-(\d{1,2})$/);
+    const deathLunar = recordedAnniversary
+      ? { day: Number(recordedAnniversary[2]), month: Number(recordedAnniversary[1]), leap: 0 }
+      : person.death_date_precision === 'exact' ? solarIsoToLunar(deathDate) : null;
     if (!deathLunar) continue;
 
     for (let lunarYear = fromYear - 1; lunarYear <= toYear + 1; lunarYear += 1) {
@@ -629,7 +638,9 @@ const buildYearlyPersonEvents = async ({ clanId, from, to }) => {
       if (!eventDate) continue;
 
       const anniversaryLunar = solarIsoToLunar(eventDate);
-      const originalDeathLunarText = formatLunarDisplay(deathLunar);
+      const originalDeathLunarText = recordedAnniversary
+        ? `${pad2(deathLunar.day)}/${pad2(deathLunar.month)} âm lịch`
+        : formatLunarDisplay(deathLunar);
       const anniversaryLunarText = formatLunarDisplay(anniversaryLunar);
 
       pushPersonEvent({
@@ -641,7 +652,9 @@ const buildYearlyPersonEvents = async ({ clanId, from, to }) => {
         lunarDate: anniversaryLunarText,
         originalLunarDate: originalDeathLunarText,
         anniversaryLunarDate: anniversaryLunarText,
-        note: `Tự động từ ngày mất của ${name}. Ngày mất dương lịch: ${toDisplayDate(deathDate)}. Ngày mất âm lịch gốc: ${originalDeathLunarText}. Ngày giỗ âm lịch năm này: ${anniversaryLunarText}.`,
+        note: recordedAnniversary
+          ? `Tự động từ ngày giỗ âm lịch đã ghi của ${name} (${originalDeathLunarText}). Ngày giỗ năm này: ${anniversaryLunarText}.`
+          : `Tự động từ ngày mất của ${name}. Ngày mất dương lịch: ${toDisplayDate(deathDate)}. Ngày mất âm lịch gốc: ${originalDeathLunarText}. Ngày giỗ âm lịch năm này: ${anniversaryLunarText}.`,
       });
     }
   }
