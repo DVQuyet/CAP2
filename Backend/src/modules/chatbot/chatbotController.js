@@ -11,6 +11,7 @@ const chatbotAI = require('./chatbotAI');
 const { sanitizeMessage, looksLikePromptInjection } = require('./chatbotSecurity');
 const { parseRelationshipExpression, parseNamedRelationshipExpression } = require('./relationshipQueryParser');
 const { resolveKinshipReference } = require('./kinshipReferenceService');
+const { parseEventCommand } = require('./eventCommandService');
 const { resolveRelationshipExpression } = require('./relationshipExpressionResolver');
 const { toPositiveId, queryOptional } = require('./chatbotUtils');
 const {
@@ -600,6 +601,47 @@ async function handleSelfIdentity({ clanId, currentMemberId, parsed }) {
     };
 }
 
+const formatIsoVN = (iso) => {
+    const match = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return match ? `${match[3]}/${match[2]}/${match[1]}` : String(iso || '');
+};
+
+// Bản nháp sự kiện từ câu tự nhiên. AI không tự ghi vào lịch: trả nút "Thêm vào lịch" để người dùng xác nhận.
+function buildEventDraftPayload(message) {
+    const { convertLunar2SolarDate } = require('../calendar/calendar.controller');
+    const draft = parseEventCommand(message, {
+        lunarToSolar: (day, month, year) => convertLunar2SolarDate(day, month, year, 0, 7),
+    });
+    if (!draft) return null;
+    if (draft.needsDate) {
+        return {
+            success: true,
+            intent: 'create_event_draft',
+            answer: `Bạn muốn đặt "${draft.title}" vào ngày nào? Ví dụ: "${draft.title} ngày 20/10 lúc 8h" hoặc "ngày 15/3 âm lịch".`,
+            confidence: 0.6,
+            needsClarification: true,
+            eventDraft: draft,
+        };
+    }
+    const event = {
+        title: draft.title,
+        date: draft.date,
+        time: draft.time,
+        type: draft.type,
+        reminder_days: draft.reminderDays,
+        visibility: 'personal',
+        note: draft.lunar ? `Ngày âm lịch: ${draft.lunarText}. Tạo từ trợ lý AI.` : 'Tạo từ trợ lý AI.',
+    };
+    return {
+        success: true,
+        intent: 'create_event_draft',
+        answer: `Tôi đã chuẩn bị lịch "${draft.title}" vào ngày ${formatIsoVN(draft.date)}${draft.lunar ? ` (${draft.lunarText})` : ''}${draft.time ? ` lúc ${draft.time}` : ''}, nhắc trước ${draft.reminderDays} ngày. Bấm "Thêm vào lịch" để lưu, hoặc sửa lại câu nếu chưa đúng.`,
+        confidence: 0.85,
+        eventDraft: event,
+        actions: [{ type: 'create_calendar_event', label: 'Thêm vào lịch', payload: event }],
+    };
+}
+
 // "<quan hệ> của <tên người>": tìm người theo tên rồi đi theo chuỗi quan hệ từ người đó.
 // Trả null để luồng cũ xử lý khi câu không có dạng này hoặc không tìm thấy tên.
 async function handleNamedRelationshipExpression({ clanId, message }) {
@@ -1098,9 +1140,12 @@ exports.ask = async (req, res) => {
         // Quan hệ của một người có tên ("cha của Đinh Viết Lâm", "vợ của X", "mẹ của vợ của X"):
         // trả lời thẳng từ đồ thị gia phả, không cần gọi AI lập kế hoạch.
         const namedRelationshipPayload = await handleNamedRelationshipExpression({ clanId, message });
-        const planning = namedRelationshipPayload ? {
-            plan: { intent: 'relationship_expression', confidence: namedRelationshipPayload.confidence, entities: {} },
-            planner: { source: 'rule_named_relationship', accepted: true, aiServerSkipped: true },
+        // Yêu cầu tạo sự kiện/lời nhắc ("nhắc tôi giỗ ông nội 15/3 âm lịch"): dựng bản nháp để người dùng bấm lưu.
+        const eventDraftPayload = namedRelationshipPayload ? null : buildEventDraftPayload(message);
+        const ruleFastPath = namedRelationshipPayload || eventDraftPayload;
+        const planning = ruleFastPath ? {
+            plan: { intent: ruleFastPath.intent, confidence: ruleFastPath.confidence, entities: {} },
+            planner: { source: namedRelationshipPayload ? 'rule_named_relationship' : 'rule_event_command', accepted: true, aiServerSkipped: true },
         } : await queryPlanner.planQuery({
             message,
             memory: conversationMemory,
@@ -1136,6 +1181,8 @@ exports.ask = async (req, res) => {
 
         if (namedRelationshipPayload) {
             responsePayload = { ...namedRelationshipPayload, planner };
+        } else if (eventDraftPayload) {
+            responsePayload = { ...eventDraftPayload, planner };
         } else if (parsed.intent === 'find_relationship') {
             responsePayload = await handleFindRelationship({ res, clanId, currentMemberId, parsed });
         } else if (parsed.intent === 'compare_relationship') {

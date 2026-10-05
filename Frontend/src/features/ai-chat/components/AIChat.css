@@ -423,3 +423,33 @@
     min-height: min(420px, calc(100dvh - 188px));
   }
 }
+
+/* Nút hành động trợ lý đề xuất (vd. "Thêm vào lịch"). */
+.ai-message-action {
+  display: grid;
+  gap: 4px;
+  margin-top: 10px;
+}
+
+.ai-message-action button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: #7c2d12;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ai-message-action button:disabled {
+  background: #2f6b47;
+  cursor: default;
+}
+
+.ai-message-action small {
+  color: #b42318;
+}

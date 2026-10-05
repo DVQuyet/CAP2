@@ -1045,3 +1045,5 @@ exports.ensureCalendarSchema = ensureCalendarSchema;
 exports.processDueReminders = processDueReminders;
 
 exports.buildYearlyPersonEvents = buildYearlyPersonEvents;
+exports.convertLunar2SolarDate = convertLunar2SolarDate;
+exports.solarIsoToLunar = solarIsoToLunar;
