@@ -24,6 +24,7 @@ import { clearCardSizes, clearLineRoutes, getCardSize, loadCardSizes, loadLineRo
 import { dedupePeopleByAccount, remapChildrenByPeople, remapFamiliesByPeople } from "../utils/tree-editor/treeNormalize";
 import { autoLayoutPeople, computeReferencePlacements, findFounderIds, generationY, mergeManualAndAutoLayout } from "../utils/tree-editor/treeLayout";
 import ReferenceCard from "./ReferenceCard";
+import GenealogyAuditDialog from "./FamilyTreeEditorParts/GenealogyAuditDialog";
 import { blankCreateForm, buildCreateRelationFields, buildLinkPayload, defaultRelationOptions, findParentFamilyForChild, findSpouse, findSpouseFamily, getChildOrderMapForFamily, getChildrenForFamily, getFamiliesForPerson, relationCandidates, relationLinkedIds } from "../utils/tree-editor/treeRelations";
 import { downloadBlob, exportFileName, exportPreparedTree, prepareTreeExportPayload } from "../utils/tree-editor/treeExport";
 import { DEFAULT_TREE_EXPORT_OPTIONS, TREE_EXPORT_FORMAT, TREE_EXPORT_MODE } from "../utils/tree-editor/treeExportConfig";
@@ -556,6 +557,7 @@ export default function FamilyTreeEditor({
   const [quickCreateDialog, setQuickCreateDialog] = useState(null);
   const [treeRelationPicker, setTreeRelationPicker] = useState(null);
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
+  const [auditOpen, setAuditOpen] = useState(false);
   const [genealogyAiOpen, setGenealogyAiOpen] = useState(false);
   const [genealogyAiPrompt, setGenealogyAiPrompt] = useState("");
   const [genealogyAiResult, setGenealogyAiResult] = useState(null);
@@ -1309,7 +1311,24 @@ const coupleActionPerson = useMemo(
     const errors = validateTreeData(people, canonicalTree.families, canonicalTree.childRows);
     setValidationErrors(errors);
     setStatus(errors.size ? t("tree.messages.validationErrorCount", { count: errors.size }) : t("tree.messages.validationSuccess"));
-  }, [canonicalTree.childRows, canonicalTree.families, people, t]);
+    // Kiểm tra quan hệ toàn cây dùng API quản lý: chỉ mở với người có quyền sửa toàn cây.
+    if (clan?.id && canEditAll) setAuditOpen(true);
+  }, [canEditAll, canonicalTree.childRows, canonicalTree.families, clan?.id, people, t]);
+
+  // Gộp vấn đề quan hệ chưa xác nhận từ máy chủ vào phần tô đỏ thẻ trên cây.
+  const applyAuditResult = useCallback((result) => {
+    const merged = validateTreeData(people, canonicalTree.families, canonicalTree.childRows);
+    (result?.issues || [])
+      .filter((issue) => !issue.confirmed && issue.severity !== "notice")
+      .forEach((issue) => {
+        (issue.person_ids || []).forEach((personId) => {
+          const id = Number(personId);
+          if (!merged.has(id)) merged.set(id, []);
+          if (!merged.get(id).includes(issue.message)) merged.get(id).push(issue.message);
+        });
+      });
+    setValidationErrors(merged);
+  }, [canonicalTree.childRows, canonicalTree.families, people]);
 
   const openGenealogyAiDialog = useCallback(() => {
     if (!canEditAll) return;
@@ -4072,6 +4091,21 @@ const submitCreateDialog = async () => {
             onCancel={() => !dialogSaving && setDialog(null)}
             onSubmit={submitCreateDialog}
           />
+        <GenealogyAuditDialog
+          open={auditOpen}
+          clanId={clan?.id}
+          people={people}
+          canManage={canEditAll}
+          onClose={() => setAuditOpen(false)}
+          onFocusPerson={(personId) => {
+            setAuditOpen(false);
+            focusPerson(personId, { scale: 1.2 });
+          }}
+          onAudit={applyAuditResult}
+          onChanged={async () => {
+            await onReload?.();
+          }}
+        />
         {archiveDialogOpen && (
           <ArchivedMembersDialog
             people={people}
