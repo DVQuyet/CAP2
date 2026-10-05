@@ -203,7 +203,6 @@ export default function FamilyTreePage() {
             <span>{t("tree.page.clanInfo")}</span>
             <h2>{clanName}</h2>
             <p>{t("tree.page.memberClanInfoHelp")}</p>
-            <p className="member-clan-dbId">{t("tree.page.clanDbId")}: <strong>{clan?.id ?? clan?.clan_id ?? t("common.noInfo")}</strong></p>
           </div>
           <button type="button" onClick={() => setIsClanInfoOpen(false)} aria-label={t("common.close")}>×</button>
         </div>

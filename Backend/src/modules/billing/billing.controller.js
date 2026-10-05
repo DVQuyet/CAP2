@@ -1,4 +1,5 @@
 const db = require('../../config/db');
+const { getManagerClanId } = require('../manager/managerClan.service');
 const {
   getClanBillingStatus,
   ensurePaymentPurchaseColumns,
@@ -67,18 +68,8 @@ async function assertCanViewClanBilling(req, clanId) {
   }
 
   if (Number(req.user?.role_id) === 2) {
-    const [rows] = await db.query(
-      `
-      SELECT p.clan_id
-      FROM accounts a
-      INNER JOIN people p ON p.id = a.person_id
-      WHERE a.id = ?
-      LIMIT 1
-      `,
-      [req.user.id]
-    );
-
-    const managerClanId = rows[0]?.clan_id;
+    // Cùng cách xác định dòng họ với các trang quản lý khác (hồ sơ người, rồi account_clans).
+    const managerClanId = await getManagerClanId(req.user.id);
 
     if (!managerClanId) {
       return {

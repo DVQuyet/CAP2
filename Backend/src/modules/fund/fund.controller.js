@@ -1,5 +1,6 @@
 const db = require('../../config/db');
 const XLSX = require('xlsx');
+const { getManagerClanId } = require('../manager/managerClan.service');
 
 const ensureEventCostRecipientColumns = async () => {
     const [columns] = await db.query(`
@@ -46,13 +47,9 @@ const ensureEventCostRecipientColumns = async () => {
     }
 };
 
-const getUserClanId = async (accountId) => {
-    const [rows] = await db.query(
-        'SELECT clan_id FROM people WHERE id = (SELECT person_id FROM accounts WHERE id = ?)',
-        [accountId]
-    );
-    return rows.length ? rows[0].clan_id : null;
-};
+// Dòng họ của tài khoản: qua hồ sơ người, nếu chưa liên kết hồ sơ thì qua account_clans
+// (tài khoản quản lý có thể chưa gắn với một người trong cây).
+const getUserClanId = async (accountId) => getManagerClanId(accountId);
 
 // Dòng họ được phép xem quỹ: admin xem theo ?clan_id, người khác chỉ xem dòng họ của mình.
 // Trả về { clanId } hoặc { status, message } khi không hợp lệ.
@@ -365,6 +362,37 @@ exports.addExpense = async (req, res) => {
     }
 };
 
+const notifyCampaignCreated = async (req, clanId, campaignName) => {
+    const [members] = await db.query(
+        `SELECT DISTINCT a.id
+         FROM accounts a
+         LEFT JOIN people p ON a.person_id = p.id
+         LEFT JOIN account_clans ac ON ac.account_id = a.id AND ac.status = 'active'
+         WHERE (p.clan_id = ? OR ac.clan_id = ?) AND a.status = 'active'`,
+        [clanId, clanId]
+    );
+    if (!members.length) return;
+    const title = 'Đợt thu mới';
+    const message = `Mở đợt thu: ${campaignName}`;
+    const [inserted] = await db.query(
+        `INSERT INTO notifications (receiver_account_id, type, title, message, link_url) VALUES ${members.map(() => '(?, ?, ?, ?, ?)').join(', ')}`,
+        members.flatMap((member) => [member.id, 'new_campaign', title, message, '/manager/fund'])
+    );
+    const io = req.app.locals.io;
+    if (!io) return;
+    members.forEach((member, index) => {
+        io.to(`account_${member.id}`).emit('new_notification', {
+            id: inserted.insertId + index,
+            type: 'new_campaign',
+            title,
+            message,
+            link_url: '/manager/fund',
+            is_read: 0,
+            created_at: new Date().toISOString(),
+        });
+    });
+};
+
 exports.createCampaign = async (req, res) => {
     try {
         const {
@@ -386,12 +414,27 @@ exports.createCampaign = async (req, res) => {
         if (!clanId) {
             return res.status(403).json({
                 success: false,
-                message: 'Unauthorized'
+                message: 'Không xác định được dòng họ của tài khoản.'
             });
         }
 
+        const campaignName = String(name || '').trim();
+        const campaignYear = Number(year);
+        if (!campaignName) {
+            return res.status(400).json({ success: false, message: 'Vui lòng nhập tên đợt thu.' });
+        }
+        if (!Number.isInteger(campaignYear) || campaignYear < 1900 || campaignYear > 2200) {
+            return res.status(400).json({ success: false, message: 'Năm của đợt thu không hợp lệ.' });
+        }
+        if (deadline && !/^\d{4}-\d{2}-\d{2}$/.test(String(deadline))) {
+            return res.status(400).json({ success: false, message: 'Hạn chốt không hợp lệ (dd/mm/yyyy).' });
+        }
+        if (Number(amount_per_member) < 0 || Number(target_goal) < 0) {
+            return res.status(400).json({ success: false, message: 'Số tiền không được âm.' });
+        }
+
         const [result] = await db.query(
-            `INSERT INTO fund_campaigns 
+            `INSERT INTO fund_campaigns
                 (
                     clan_id,
                     name,
@@ -424,52 +467,21 @@ exports.createCampaign = async (req, res) => {
             ]
         );
 
-        const [members] = await db.query(
-            "SELECT a.id FROM accounts a JOIN people p ON a.person_id = p.id WHERE p.clan_id = ?",
-            [clanId]
-        );
-
-        const io = req.app.locals.io;
-        const onlineUsers = req.app.locals.onlineUsers;
-
-        for (const m of members) {
-            const title = 'Đợt thu mới';
-            const message = `Mở đợt thu: ${name}`;
-
-            const [notificationResult] = await db.query(
-                "INSERT INTO notifications (receiver_account_id, type, title, message, link_url) VALUES (?, ?, ?, ?, ?)",
-                [
-                    m.id,
-                    'new_campaign',
-                    title,
-                    message,
-                    '/manager/fund'
-                ]
-            );
-
-            if (io) {
-                io.to(`account_${m.id}`).emit('new_notification', {
-                    id: notificationResult.insertId,
-                    type: 'new_campaign',
-                    title,
-                    message,
-                    link_url: '/manager/fund',
-                    is_read: 0,
-                    created_at: new Date().toISOString(),
-                });
-
-                console.log(`✅ Đã gửi realtime campaign notification tới account_${m.id}`);
-            }
-        }
+        // Trả kết quả ngay; thông báo cho thành viên gửi sau (một câu INSERT cho cả dòng họ),
+        // lỗi thông báo không làm hỏng việc tạo đợt thu.
         res.json({
             success: true,
             campaignId: result.insertId
+        });
+
+        notifyCampaignCreated(req, clanId, campaignName).catch((notifyError) => {
+            console.error('createCampaign notify error:', notifyError);
         });
     } catch (error) {
         console.error('createCampaign error:', error);
         res.status(500).json({
             success: false,
-            message: 'Internal server error'
+            message: error?.code === 'ER_NO_REFERENCED_ROW_2' ? 'Dữ liệu dòng họ hoặc mã QR không hợp lệ.' : 'Không tạo được đợt thu.'
         });
     }
 };

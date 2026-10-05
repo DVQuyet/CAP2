@@ -207,6 +207,20 @@
   cursor: pointer;
 }
 
+.feed-post-title {
+  margin: 0;
+  padding: 0.65rem 1rem 0;
+  color: #3a1f12;
+  font-size: 1.12rem;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.feed-post-title + .feed-post-text {
+  padding-top: 0.35rem;
+  font-weight: 500;
+}
+
 .feed-post-text {
   margin: 0;
   padding: 0.65rem 1rem 0.9rem;

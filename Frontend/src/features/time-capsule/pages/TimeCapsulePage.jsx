@@ -270,6 +270,8 @@ export default function TimeCapsulePage({ role = "member" }) {
     { value: "image", label: "Ảnh", icon: "photo_library" },
     { value: "video", label: "Video", icon: "video_library" },
     { value: "audio", label: "Ghi âm", icon: "graphic_eq" },
+    // Kỉ niệm chỉ có chữ (không ảnh/video/ghi âm) trước đây được đếm nhưng không hiện ở thẻ nào.
+    { value: "text", label: "Văn bản", icon: "article" },
   ]), []);
 
   const statusFilteredMemories = useMemo(() => {
@@ -279,9 +281,9 @@ export default function TimeCapsulePage({ role = "member" }) {
 
   const albumCounts = useMemo(() => statusFilteredMemories.reduce((acc, item) => {
     const kind = getMediaKind(item);
-    if (kind === "image" || kind === "video" || kind === "audio") acc[kind] += 1;
+    acc[kind] = (acc[kind] || 0) + 1;
     return acc;
-  }, { image: 0, video: 0, audio: 0 }), [statusFilteredMemories]);
+  }, { image: 0, video: 0, audio: 0, text: 0 }), [statusFilteredMemories]);
 
   const visibleMemories = useMemo(() => (
     statusFilteredMemories.filter((item) => getMediaKind(item) === albumCategory)

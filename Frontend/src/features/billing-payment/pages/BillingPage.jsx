@@ -322,15 +322,18 @@ const getStatusText = (status) =>
       setBillingLoading(true);
       setMessage("");
 
-      const [plansResult, billingResult, paymentsResult] = await Promise.all([
+      // Tải độc lập: lỗi billing/thanh toán không làm trống danh sách gói (vẫn chọn được gói để nâng cấp).
+      const [plansResult, billingResult, paymentsResult] = await Promise.allSettled([
         getBillingPlans(),
         getClanBilling(targetClanId),
         getClanPayments(targetClanId),
       ]);
 
-      setPlans(plansResult?.plans || []);
-      setBilling(billingResult?.billing || null);
-      setPayments(paymentsResult?.payments || []);
+      setPlans(plansResult.status === "fulfilled" ? plansResult.value?.plans || [] : []);
+      setBilling(billingResult.status === "fulfilled" ? billingResult.value?.billing || null : null);
+      setPayments(paymentsResult.status === "fulfilled" ? paymentsResult.value?.payments || [] : []);
+      const firstError = [billingResult, plansResult, paymentsResult].find((result) => result.status === "rejected");
+      if (firstError) setMessage(firstError.reason?.message || t("billingPayment.messages.loadError"));
     } catch (error) {
       console.error("loadBillingForClan error:", error);
       setBilling(null);

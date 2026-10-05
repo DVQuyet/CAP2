@@ -148,7 +148,10 @@
       "calendar": "Lịch Việt Nam",
       "billing": "Gói sử dụng",
       "profile": "Hồ sơ cá nhân"
-    }
+    },
+    "collapse": "Thu gọn",
+    "expand": "Mở rộng",
+    "memberTitle": "Cổng thành viên"
   },
   "manager": {
     "title": "Hệ thống quản trị Gia Phả",
@@ -221,7 +224,8 @@
         "currentBio": "Bio hiện tại:",
         "noCurrentBio": "Chưa có bio hiện tại",
         "noCurrentPhoto": "Chưa có ảnh hiện tại"
-      }
+      },
+      "loadingDataError": "Không tải được danh sách chờ duyệt."
     },
     "dashboard": {
       "welcome": "Chào mừng trở lại, {{name}}!",
@@ -363,7 +367,9 @@
         "editError": "Không thể lưu thành viên",
         "linkPrompt": "Vui lòng chọn thành viên cần liên kết.",
         "noRelationData": "Chưa có thông tin quan hệ để lưu.",
-        "selectFamilyPrompt": "Vui lòng chọn gia đình cụ thể để thêm con."
+        "selectFamilyPrompt": "Vui lòng chọn gia đình cụ thể để thêm con.",
+        "loadRelationSuccess": "Đã tải quan hệ gia đình.",
+        "empty": "Không có tài khoản phù hợp."
       }
     }
   },
@@ -1007,7 +1013,9 @@
       "expenseCategories": "Hạng mục Chi ({{prevYear}} vs {{curYear}})",
       "income": "Thu vào",
       "expense": "Chi ra",
-      "yearLabel": "Năm {{year}}"
+      "yearLabel": "Năm {{year}}",
+      "loadError": "Không tải được số liệu quỹ. Vui lòng thử lại.",
+      "empty": "Chưa có khoản thu chi nào được duyệt để thống kê."
     },
     "campaigns": {
       "title": "Danh sách đợt thu",
@@ -1159,6 +1167,11 @@
         "noPending": "Không có giao dịch nào đang chờ duyệt.",
         "income": "Khoản thu",
         "expense": "Khoản chi"
+      },
+      "placeholders": {
+        "campaignName": "Ví dụ: Quỹ giỗ tổ năm 2026",
+        "targetGoal": "Ví dụ: 50.000.000",
+        "amountPerMember": "Ví dụ: 200.000"
       }
     }
   },
@@ -1593,7 +1606,8 @@
           "cancel": "Hủy",
           "save": "Lưu tài khoản",
           "saving": "Đang lưu..."
-        }
+        },
+        "deleteTitle": "Xóa tài khoản"
       },
       "roles": {
         "admin": "Admin",
@@ -1606,7 +1620,10 @@
         "saveError": "Lưu tài khoản thất bại",
         "deleteConfirm": "Bạn có chắc muốn xóa tài khoản đăng nhập {{email}}?",
         "deleteError": "Xóa tài khoản thất bại",
-        "defaultAccountName": "Tài khoản"
+        "defaultAccountName": "Tài khoản",
+        "updated": "Đã cập nhật tài khoản.",
+        "created": "Đã tạo tài khoản.",
+        "deleted": "Đã xóa tài khoản."
       }
     },
     "posts": {
@@ -1652,7 +1669,8 @@
         "statusUpdateSuccess": "Đã chuyển bài viết sang \"{{status}}\" thành công!",
         "statusUpdateError": "Lỗi khi cập nhật bài viết: {{error}}",
         "deleteSuccess": "Đã xóa vĩnh viễn bài viết hoàn tất!",
-        "deleteError": "Lỗi khi xóa bài viết: {{error}}"
+        "deleteError": "Lỗi khi xóa bài viết: {{error}}",
+        "loadError": "Không tải được danh sách bài viết."
       },
       "confirmDelete": {
         "title": "Xác nhận xóa bài viết?",
@@ -1810,7 +1828,7 @@
       "childLinks": "Liên kết con",
       "saving": "Đang lưu...",
       "saveClanInfo": "Lưu thông tin dòng họ",
-      "temporaryEditKey": "Temporary edit key",
+      "temporaryEditKey": "Khóa sửa tạm thời",
       "temporaryEditKeyHelp": "Hiệu lực 1 giờ từ lúc tạo key",
       "searchMemberByName": "Tìm member theo tên",
       "searchMemberPlaceholder": "Nhập tên, email hoặc account id",
@@ -1851,7 +1869,7 @@
       "messages": {
         "saveClanSuccess": "Đã lưu thông tin dòng họ.",
         "temporaryEditEnabled": "Bạn có quyền chỉnh sửa tạm thời đến khi temporary edit key hết hạn. Phạm vi: đời hiện tại, trên 1 đời và dưới 1 đời.",
-        "temporaryEditExpired": "Temporary edit key đã hết hạn. Cây gia phả đã quay về chế độ chỉ xem.",
+        "temporaryEditExpired": "Khóa sửa tạm thời đã hết hạn. Cây gia phả đã quay về chế độ chỉ xem.",
         "temporaryEditDisabled": "Đã tắt quyền chỉnh sửa tạm thời."
       },
       "errors": {
@@ -1863,8 +1881,8 @@
         "copyKeyList": "Không thể copy danh sách key tự động. Hãy copy thủ công.",
         "saveClan": "Không thể lưu thông tin dòng họ.",
         "enterTemporaryKey": "Vui lòng nhập temporary edit key.",
-        "keyExpiredAskManager": "Temporary edit key đã hết hạn. Vui lòng xin manager tạo key mới.",
-        "invalidTemporaryKey": "Temporary edit key không hợp lệ hoặc đã hết hạn."
+        "keyExpiredAskManager": "Khóa sửa tạm thời đã hết hạn. Vui lòng xin manager tạo key mới.",
+        "invalidTemporaryKey": "Khóa sửa tạm thời không hợp lệ hoặc đã hết hạn."
       }
     },
     "title": "Gia phả",
@@ -2084,7 +2102,8 @@
         "email": "Email",
         "avatarUrl": "Ảnh đại diện URL",
         "bio": "Giới thiệu",
-        "note": "Ghi chú"
+        "note": "Ghi chú",
+        "childOrder": "Con thứ mấy trong nhà"
       },
       "actions": {
         "addSpouse": "Chọn vợ/chồng",
@@ -2172,7 +2191,7 @@
       "linkSourceNotFound": "Không tìm thấy thành viên gốc để liên kết.",
       "linkAlreadyExists": "Thành viên này đã được liên kết với quan hệ đang chọn.",
       "linkNotAllowed": "Thành viên này không phù hợp hoặc đã được liên kết. Hãy chọn thành viên khác trên cây.",
-      "noAccountLinked": "Tài khoản hiện tại chưa liên kết person_id trong cây gia phả.",
+      "noAccountLinked": "Tài khoản của bạn chưa được gắn với một người trong cây. Hãy nhờ quản lý dòng họ liên kết hồ sơ.",
       "validationTitle": "Lỗi dữ liệu trong cây",
       "validationSummary": "{{count}} node cần sửa",
       "validationSuccess": "Kiểm tra cây: chưa phát hiện lỗi dữ liệu.",
@@ -2230,6 +2249,161 @@
       "editHusband": "Sửa thông tin chồng",
       "editWife": "Sửa thông tin vợ",
       "addChild": "Thêm con"
+    },
+    "relationOptions": {
+      "childWith": "Con với",
+      "chooseUnion": "— Chọn cuộc hôn nhân —",
+      "chooseUnionHint": "Hãy chọn người con này là con với ai (không tự gán vợ/chồng hiện tại).",
+      "withSpouse": "Với {{name}} ({{status}}){{rank}}",
+      "rankSuffix": " · thứ {{count}}",
+      "unknownMother": "Không rõ mẹ",
+      "unknownFather": "Không rõ cha",
+      "childType": "Loại con",
+      "childTypes": {
+        "biological": "Con ruột",
+        "adopted": "Con nuôi",
+        "heir": "Con thừa tự",
+        "step": "Con riêng",
+        "foster": "Con nuôi dưỡng",
+        "unknown": "Không rõ"
+      },
+      "unionType": "Loại quan hệ",
+      "unionTypes": {
+        "marriage": "Hôn nhân",
+        "concubine": "Vợ lẽ / thiếp",
+        "cohabitation": "Chung sống không đăng ký",
+        "unknown": "Không rõ"
+      },
+      "relationshipStatus": "Trạng thái",
+      "statuses": {
+        "active": "đang chung sống",
+        "widowed": "góa",
+        "divorced": "đã ly hôn",
+        "separated": "ly thân",
+        "annulled": "đã hủy",
+        "unknown": "không rõ"
+      },
+      "parentType": "Loại cha/mẹ",
+      "parentTypes": {
+        "biological": "Cha/mẹ ruột",
+        "adopted": "Cha/mẹ nuôi",
+        "heir": "Nhận làm con thừa tự"
+      }
+    },
+    "relationPreview": {
+      "checking": "Đang kiểm tra quan hệ...",
+      "ok": "Quan hệ hợp lệ.",
+      "needsReason": " (cần lý do và nguồn khi lưu)",
+      "generationChanges": "Đời sẽ được cập nhật cho {{count}} người: {{list}}"
+    },
+    "historical": {
+      "precision": "Độ chính xác",
+      "precisions": {
+        "exact": "Đủ ngày",
+        "month": "Tháng/năm",
+        "year": "Chỉ năm",
+        "approximate": "Ước lượng",
+        "unknown": "Không rõ"
+      },
+      "calendar": "Lịch",
+      "calendars": {
+        "solar": "Dương lịch",
+        "lunar": "Âm lịch"
+      },
+      "leapMonth": "Tháng nhuận",
+      "yearPlaceholder": "Năm",
+      "approximateHint": "Ước lượng ±5 năm; mâu thuẫn ngày tháng chỉ yêu cầu xác nhận.",
+      "livingUnknown": "Không rõ",
+      "deathAnniversary": "Ngày giỗ (âm lịch, dd/mm)",
+      "useSuggestedAnniversary": "Dùng {{value}} theo ngày mất",
+      "source": "Nguồn dữ liệu",
+      "sourceNote": "Ghi chú nguồn",
+      "sourceNotePlaceholder": "Ví dụ: Gia phả chữ Hán, trang 12",
+      "sources": {
+        "none": "Chưa ghi",
+        "direct": "Gia đình xác nhận",
+        "paper_genealogy": "Gia phả giấy",
+        "document": "Giấy tờ",
+        "oral": "Lời kể",
+        "unknown": "Không rõ"
+      },
+      "errors": {
+        "invalidYear": "Năm không hợp lệ.",
+        "invalidLunarDate": "Ngày âm lịch không hợp lệ.",
+        "invalidLeapMonth": "Năm này không có tháng nhuận đó.",
+        "invalidDate": "Ngày không hợp lệ."
+      }
+    },
+    "reference": {
+      "goTo": "Đến vị trí chính của {{name}}",
+      "types": {
+        "adopted": "Con nuôi · xem vị trí chính",
+        "heir": "Con thừa tự · xem vị trí chính",
+        "step": "Con riêng · xem vị trí chính",
+        "foster": "Con nuôi dưỡng · xem vị trí chính",
+        "elsewhere": "Ở nhánh khác · xem vị trí chính"
+      }
+    },
+    "audit": {
+      "title": "Kiểm tra gia phả",
+      "tabs": {
+        "issues": "Vấn đề",
+        "overrides": "Lịch sử xác nhận",
+        "policy": "Quy tắc dòng họ"
+      },
+      "loading": "Đang kiểm tra...",
+      "loadError": "Không thể kiểm tra gia phả.",
+      "saveError": "Không thể lưu.",
+      "allGood": "Không phát hiện vấn đề.",
+      "rerun": "Kiểm tra lại",
+      "severity": {
+        "error": "Vô lý",
+        "legal": "Trái luật",
+        "warning": "Bất thường",
+        "notice": "Gợi ý"
+      },
+      "confirmed": "đã xác nhận",
+      "historicalUnconfirmed": "dữ liệu lịch sử, chưa xác nhận",
+      "strict": "người còn sống",
+      "generationMismatch": "{{count}} người có đời chưa khớp với cha mẹ.",
+      "fixGenerations": "Sửa đời theo cha mẹ",
+      "fixGenerationsConfirm": "Cập nhật đời cho {{count}} người theo cha mẹ?",
+      "fixGenerationsDone": "Đã cập nhật đời.",
+      "noOverrides": "Chưa có lần xác nhận nào.",
+      "confirmedBy": "xác nhận bởi {{name}}",
+      "reason": "Lý do: {{reason}}",
+      "savePolicy": "Lưu quy tắc",
+      "policySaved": "Đã lưu quy tắc.",
+      "policy": {
+        "lineage": "Tính đời theo",
+        "lineages": {
+          "patrilineal": "Dòng cha (họ nội)",
+          "matrilineal": "Dòng mẹ"
+        },
+        "region": "Cách xưng hô",
+        "regions": {
+          "north": "Miền Bắc",
+          "central": "Miền Trung",
+          "south": "Miền Nam"
+        },
+        "sameAncestorWarnGenerations": "Cảnh báo cùng tổ tiên trong (đời)",
+        "marriageLawYear": "Năm áp dụng luật hôn nhân",
+        "minParentAge": "Tuổi tối thiểu làm cha mẹ",
+        "warnParentAge": "Cảnh báo khi cha mẹ dưới (tuổi)",
+        "maxMotherAge": "Cảnh báo mẹ trên (tuổi)",
+        "maxFatherAge": "Cảnh báo cha trên (tuổi)",
+        "sensitiveRelationVisibility": "Quan hệ nhạy cảm của người còn sống",
+        "visibility": {
+          "managers": "Chỉ quản lý xem",
+          "public": "Mọi thành viên xem"
+        },
+        "hint": "Luật cấm kết hôn trong 3 đời luôn áp dụng; các mục khác là phong tục và cảnh báo."
+      }
+    },
+    "formErrors": {
+      "nameRequired": "Vui lòng nhập họ tên thành viên.",
+      "invalidDate": "{{field}} không hợp lệ (định dạng dd/mm/yyyy).",
+      "invalidPhone": "Số điện thoại không hợp lệ (chỉ gồm số, 8–15 ký tự)."
     }
   },
   "calendar": {

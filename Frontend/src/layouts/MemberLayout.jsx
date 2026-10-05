@@ -93,7 +93,7 @@ export default function MemberLayout() {
 
   return (
     <div className={`member-portal-container ${sidebarOpen ? "" : "sidebar-collapsed"}`}>
-      <aside className="member-sidebar glass-effect" aria-label={t("layout.member.title")}>
+      <aside className="member-sidebar glass-effect" aria-label={t("layout.memberTitle")}>
         <button
           type="button"
           className="member-sidebar-toggle"

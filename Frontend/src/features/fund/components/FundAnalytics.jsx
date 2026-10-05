@@ -7,6 +7,7 @@ export default function FundAnalytics() {
   const { t } = useTranslation();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
     async function loadStats() {
@@ -15,19 +16,31 @@ export default function FundAnalytics() {
         setStats(data);
       } catch (error) {
         console.error("Error loading stats:", error);
+        setLoadError(error?.message || t("fund.analytics.loadError"));
       } finally {
         setLoading(false);
       }
     }
     loadStats();
-  }, []);
+  }, [t]);
 
   const formatCurrency = (val) => new Intl.NumberFormat('vi-VN').format(val);
 
-  if (loading || !stats) return <div style={{textAlign: 'center', padding: '2rem'}}>{t("fund.analytics.loading")}</div>;
+  if (loading) return <div style={{textAlign: 'center', padding: '2rem'}}>{t("fund.analytics.loading")}</div>;
+  if (loadError || !stats) {
+    return <div style={{textAlign: 'center', padding: '2rem', color: '#b42318'}}>{loadError || t("fund.analytics.loadError")}</div>;
+  }
 
-  const yearlyData = stats.yearly.income.map(i => {
-    const exp = stats.yearly.expense.find(e => e.year === i.year);
+  const yearlyIncome = Array.isArray(stats.yearly?.income) ? stats.yearly.income : [];
+  const yearlyExpense = Array.isArray(stats.yearly?.expense) ? stats.yearly.expense : [];
+  if (!yearlyIncome.length && !yearlyExpense.length && !(stats.categories || []).length) {
+    return <div style={{textAlign: 'center', padding: '2rem'}}>{t("fund.analytics.empty")}</div>;
+  }
+
+  // Gộp năm có thu hoặc có chi (trước đây năm chỉ có chi bị bỏ sót).
+  const years = [...new Set([...yearlyIncome, ...yearlyExpense].map((row) => row.year))].sort((a, b) => a - b);
+  const yearlyData = years.map((year) => ({ year, total: yearlyIncome.find((row) => row.year === year)?.total || 0 })).map(i => {
+    const exp = yearlyExpense.find(e => e.year === i.year);
     return {
       year: i.year,
       income: i.total,
@@ -37,11 +50,12 @@ export default function FundAnalytics() {
 
   const curYear = new Date().getFullYear();
   const prevYear = curYear - 1;
-  const categories = [...new Set(stats.categories.map(c => c.category))];
+  const statCategories = Array.isArray(stats.categories) ? stats.categories : [];
+  const categories = [...new Set(statCategories.map(c => c.category))];
   const categoryData = categories.map(cat => ({
     name: cat,
-    current: stats.categories.find(c => c.category === cat && c.year === curYear)?.total || 0,
-    previous: stats.categories.find(c => c.category === cat && c.year === prevYear)?.total || 0
+    current: statCategories.find(c => c.category === cat && c.year === curYear)?.total || 0,
+    previous: statCategories.find(c => c.category === cat && c.year === prevYear)?.total || 0
   }));
 
   return (

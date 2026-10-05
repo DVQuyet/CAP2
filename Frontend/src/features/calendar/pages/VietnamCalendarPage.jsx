@@ -166,7 +166,8 @@ export default function VietnamCalendarPage() {
       type: "holiday",
       time: "",
       note: "",
-      visibility: canCreateGlobal ? "global" : "personal",
+      // Lịch mới mặc định là lịch cá nhân; quản lý tự chọn "cả dòng họ" khi cần (tránh gửi nhắc tới cả họ ngoài ý muốn).
+      visibility: "personal",
       reminder_days: "1",
     }),
     [canCreateGlobal]
@@ -176,7 +177,7 @@ export default function VietnamCalendarPage() {
   useEffect(() => {
     setEventForm((current) => ({
       ...current,
-      visibility: canCreateGlobal ? current.visibility || "global" : "personal",
+      visibility: canCreateGlobal ? current.visibility || "personal" : "personal",
     }));
   }, [canCreateGlobal]);
 

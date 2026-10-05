@@ -42,6 +42,21 @@ const todayIsoDate = () => {
   return `${year}-${month}-${day}`;
 };
 
+// Kiểm tra form người: ngày nhập sai (vd 99/99/2000) không được lưu im lặng thành rỗng; số điện thoại hợp lệ.
+const PHONE_PATTERN = /^\+?[0-9 .-]{8,15}$/;
+const personFormError = (form, t) => {
+  for (const [field, label] of [["birth_date", "birthDate"], ["death_date", "deathDate"]]) {
+    const text = String(form?.[field] || "").trim();
+    const yearOnly = ["year", "approximate", "unknown"].includes(form?.[`${field.replace("_date", "")}_date_precision`]);
+    if (text && !yearOnly && !vietnamDateToIso(text)) {
+      return t("tree.formErrors.invalidDate", { field: t(`tree.inspector.fields.${label}`) });
+    }
+  }
+  const phone = String(form?.phone || "").trim();
+  if (phone && !PHONE_PATTERN.test(phone)) return t("tree.formErrors.invalidPhone");
+  return "";
+};
+
 const isBirthDateInFuture = (birthDate) => {
   const birthIso = vietnamDateToIso(birthDate);
   return Boolean(birthIso && birthIso > todayIsoDate());
@@ -2410,6 +2425,11 @@ const coupleActionPerson = useMemo(
       setConstraintNotice("Ngày sinh không được lớn hơn ngày hiện tại.");
       return;
     }
+    const saveFormError = personFormError(form, t);
+    if (saveFormError) {
+      setConstraintNotice(saveFormError);
+      return;
+    }
 
     setSaving(true);
     setStatus("");
@@ -2622,7 +2642,12 @@ const submitCreateDialog = async () => {
   const parts = [form.surname, form.middle_name, form.first_name].filter(Boolean).join(" ").trim();
 
   if (!display && !parts) {
-    setStatus(t("tree.messages.genericError"));
+    setConstraintNotice(t("tree.formErrors.nameRequired"));
+    return;
+  }
+  const createFormError = personFormError(form, t);
+  if (createFormError) {
+    setConstraintNotice(createFormError);
     return;
   }
 

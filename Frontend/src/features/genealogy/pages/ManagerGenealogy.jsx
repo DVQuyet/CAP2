@@ -296,7 +296,6 @@ export default function GenealogySection() {
             <span>{t("tree.page.clanInfo")}</span>
             <h2>{clan?.clan_name || t("tree.page.clanFallback")}</h2>
             <p>{t("tree.page.managerClanInfoHelp")}</p>
-            <p className="clan-info-dbId">{t("tree.page.clanDbId")}: <strong>{clan?.id ?? clan?.clan_id ?? t("common.noInfo")}</strong></p>
           </div>
           <button className="clan-info-close" type="button" onClick={() => setIsClanInfoOpen(false)} aria-label={t("common.close")}>
             ×

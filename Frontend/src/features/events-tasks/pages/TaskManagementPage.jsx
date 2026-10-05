@@ -1251,6 +1251,8 @@ const openEvent = (eventId) => {
             </div>
             <h1>{selectedEvent.title}</h1>
         </header>
+        {message && <div className="task-alert is-success">{message}</div>}
+        {error && <div className="task-alert is-error" role="alert">{error}</div>}
 
         <div className="event-action-strip premium-dark-glass" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem' }}>
           <div>
@@ -1547,6 +1549,8 @@ const openEvent = (eventId) => {
         )}
         <h1>{isAdmin ? t("eventsTasks.admin.clanTasks", { clanName: clan?.clan_name || "" }) : t("eventsTasks.manager.title")}</h1>
       </header>
+      {message && <div className="task-alert is-success">{message}</div>}
+      {error && <div className="task-alert is-error" role="alert">{error}</div>}
 
       <div className="event-toolbar event-toolbar-compact premium-dark-glass" style={{ marginBottom: '1.5rem', padding: '1.25rem' }}>
         <div className="event-search event-search-compact">
@@ -1728,6 +1732,7 @@ const openEvent = (eventId) => {
               />
               <small>{t("eventsTasks.placeholders.aiMaxNotice")}</small>
             </label>
+            {error && <div className="task-alert is-error" role="alert">{error}</div>}
             <div className="task-form-actions task-modal-actions">
               <button className="task-btn task-btn-primary" type="button" onClick={() => requestAiEventCreate()} disabled={aiLoading || !aiPrompt.trim()}>
                 <span className="material-symbols-outlined">auto_awesome</span>

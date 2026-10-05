@@ -69,7 +69,10 @@ function PostMedia({ url, mediaType = "", detail = false, t }) {
 }
 
 function PostCard({ post, onOpen, onLike, liking, onDelete, onEdit, canModify, t }) {
-  const text = post.content || post.description || t("posts.card.imagePost");
+  const title = String(post.description || "").trim();
+  const body = String(post.content || "").trim();
+  // Nội dung trùng tiêu đề (bài chỉ có tiêu đề) thì không lặp lại.
+  const text = body && body !== title ? body : title ? "" : t("posts.card.imagePost");
   const mediaUrl = getPostMediaUrl(post);
 
   return (
@@ -93,7 +96,8 @@ function PostCard({ post, onOpen, onLike, liking, onDelete, onEdit, canModify, t
       </header>
 
       <button type="button" className="feed-post-content-button" onClick={() => onOpen(post)}>
-        <p className="feed-post-text">{text}</p>
+        {title ? <h3 className="feed-post-title">{title}</h3> : null}
+        {text ? <p className="feed-post-text">{text}</p> : null}
       </button>
 
       {mediaUrl ? (
@@ -533,7 +537,10 @@ export default function GeneralPosts() {
         like_count: result.like_count,
       });
     } catch (err) {
-      setCommentError(err?.message || t("posts.messages.likeError"));
+      const message = err?.message || t("posts.messages.likeError");
+      // Hiện cả trong cửa sổ chi tiết và ngoài danh sách bài (bấm thích ở feed trước đây lỗi im lặng).
+      setCommentError(message);
+      setError(message);
     } finally {
       setLikingPostId(null);
     }

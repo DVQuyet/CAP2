@@ -5,6 +5,7 @@ const {
   normalizePurchaseQuantity,
   buildPurchaseSummary,
 } = require('../billing/billing.service');
+const { getManagerClanId } = require('../manager/managerClan.service');
 const PAYMENT_PREFIX = 'DH';
 
 function buildOrderCode(clanId) {
@@ -39,21 +40,6 @@ function isPaymentOlderThan24Hours(payment) {
   }
 
   return Date.now() - createdAt > 24 * 60 * 60 * 1000;
-}
-
-function getManagerClanId(accountId) {
-  return db
-    .query(
-      `
-      SELECT p.clan_id
-      FROM accounts a
-      INNER JOIN people p ON p.id = a.person_id
-      WHERE a.id = ?
-      LIMIT 1
-      `,
-      [accountId]
-    )
-    .then(([rows]) => rows[0]?.clan_id || null);
 }
 
 function isValidWebhookSecret(configuredSecret, receivedSecret) {
