@@ -9,7 +9,7 @@ const relationshipExplanationAI = require('./relationshipExplanationAI');
 const relationshipSuggestionService = require('./relationshipSuggestionService');
 const chatbotAI = require('./chatbotAI');
 const { sanitizeMessage, looksLikePromptInjection } = require('./chatbotSecurity');
-const { parseRelationshipExpression } = require('./relationshipQueryParser');
+const { parseRelationshipExpression, parseNamedRelationshipExpression } = require('./relationshipQueryParser');
 const { resolveKinshipReference } = require('./kinshipReferenceService');
 const { resolveRelationshipExpression } = require('./relationshipExpressionResolver');
 const { toPositiveId, queryOptional } = require('./chatbotUtils');
@@ -600,6 +600,52 @@ async function handleSelfIdentity({ clanId, currentMemberId, parsed }) {
     };
 }
 
+// "<quan hệ> của <tên người>": tìm người theo tên rồi đi theo chuỗi quan hệ từ người đó.
+// Trả null để luồng cũ xử lý khi câu không có dạng này hoặc không tìm thấy tên.
+async function handleNamedRelationshipExpression({ clanId, message }) {
+    const ast = parseNamedRelationshipExpression(message);
+    if (!ast) return null;
+    const search = await memberSearch.resolvePerson({ clanId, names: [ast.personName] });
+    if (search.status === 'not_found') return null;
+    const label = String(ast.originalTerms || ast.terms.join(' của ')).toLocaleLowerCase('vi-VN');
+    if (search.status === 'ambiguous') {
+        return {
+            success: true,
+            intent: 'relationship_expression',
+            answer: `Có nhiều người tên "${ast.personName}" trong gia phả: ${formatPeopleList(search.candidates)}. Bạn muốn hỏi ${label} của người nào?`,
+            confidence: 0.5,
+            needsClarification: true,
+            people: search.candidates.map((person) => ({ id: person.id, name: relationshipEngine.personName(person) })),
+        };
+    }
+    const base = search.person;
+    const graph = await relationshipEngine.loadClanGraph(clanId);
+    const resolved = resolveRelationshipExpression({ ...ast, base: 'me' }, { sourcePersonId: base.id, graph });
+    const baseName = relationshipEngine.personName(graph.people.get(Number(base.id)) || base);
+    const people = (resolved.candidatePersonIds || [])
+        .map((id) => graph.people.get(Number(id)))
+        .filter(Boolean);
+    if (!resolved.ok || !people.length) {
+        return {
+            success: true,
+            intent: 'relationship_expression',
+            answer: `Theo dữ liệu gia phả hiện tại, chưa có thông tin ${label} của ${baseName}.`,
+            confidence: 0.6,
+            sourcePerson: { id: base.id, name: baseName },
+            people: [],
+        };
+    }
+    return {
+        success: true,
+        intent: 'relationship_expression',
+        answer: `Theo dữ liệu gia phả hiện tại, ${label} của ${baseName} ${people.length > 1 ? 'gồm' : 'là'}: ${formatPeopleList(people)}.`,
+        confidence: ast.confidence,
+        sourcePerson: { id: base.id, name: baseName },
+        people: people.map((person) => ({ id: person.id, name: relationshipEngine.personName(person) })),
+        relationshipExpression: ast,
+    };
+}
+
 async function handleRelationshipExpression({ clanId, currentMemberId, message }) {
     const ast = parseRelationshipExpression(message);
     if (ast.needsClarification) return null;
@@ -1049,7 +1095,13 @@ exports.ask = async (req, res) => {
             return res.json(responsePayload);
         }
 
-        const planning = await queryPlanner.planQuery({
+        // Quan hệ của một người có tên ("cha của Đinh Viết Lâm", "vợ của X", "mẹ của vợ của X"):
+        // trả lời thẳng từ đồ thị gia phả, không cần gọi AI lập kế hoạch.
+        const namedRelationshipPayload = await handleNamedRelationshipExpression({ clanId, message });
+        const planning = namedRelationshipPayload ? {
+            plan: { intent: 'relationship_expression', confidence: namedRelationshipPayload.confidence, entities: {} },
+            planner: { source: 'rule_named_relationship', accepted: true, aiServerSkipped: true },
+        } : await queryPlanner.planQuery({
             message,
             memory: conversationMemory,
             userId: accountId || currentMemberId,
@@ -1082,7 +1134,9 @@ exports.ask = async (req, res) => {
             metadata: { entities: parsed.entities, planner, ast: parsed.ast || null },
         });
 
-        if (parsed.intent === 'find_relationship') {
+        if (namedRelationshipPayload) {
+            responsePayload = { ...namedRelationshipPayload, planner };
+        } else if (parsed.intent === 'find_relationship') {
             responsePayload = await handleFindRelationship({ res, clanId, currentMemberId, parsed });
         } else if (parsed.intent === 'compare_relationship') {
             responsePayload = await handleCompareRelationship({ res, clanId, currentMemberId, parsed });

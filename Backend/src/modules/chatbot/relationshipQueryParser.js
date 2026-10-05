@@ -146,6 +146,54 @@ function unsupported(originalText, normalizedText, reason = 'unsupported_relatio
     };
 }
 
+// Tiền tố xưng hô trước tên người ("ông Lâm", "anh Nam"). Không bỏ bác/chú/cô/cậu/dì vì đó là quan hệ với "tôi".
+const NAME_HONORIFIC_PATTERN = /^(ông|ong|bà|ba|anh|chị|chi|cụ|cu)\s+(?=\S)/i;
+const KINSHIP_PREFIX_PATTERN = /^(bác|bac|chú|chu|cô|co|cậu|cau|dì|di|mợ|mo|thím|thim|dượng|duong)\s/i;
+
+// "<quan hệ> của <tên người>" ("cha của Đinh Viết Lâm", "mẹ của vợ của Nguyễn Văn An", "con trai của ông Lâm").
+// Trả null nếu câu không có dạng này hoặc người cuối là "tôi" (luồng parseRelationshipExpression xử lý).
+function parseNamedRelationshipExpression(text) {
+    const originalText = String(text || '').trim();
+    const stripped = originalText
+        .replace(/[?!.,;:]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .replace(/^(cho\s+(tôi|toi|mình|minh)\s+hỏi|cho\s+hoi|ai\s+là|ai\s+la|hãy\s+cho\s+biết|hay\s+cho\s+biet)\s+/i, '')
+        .replace(/\s+(là\s+ai|la\s+ai|tên\s+(là\s+)?gì|ten\s+(la\s+)?gi|là\s+những\s+ai|la\s+nhung\s+ai|gồm\s+(những\s+)?ai|gom\s+(nhung\s+)?ai|có\s+những\s+ai|co\s+nhung\s+ai|là\s+người\s+nào|la\s+nguoi\s+nao)$/i, '')
+        .trim();
+    const match = stripped.match(/^(.*\S)\s+(?:của|cua)\s+(.+)$/i);
+    if (!match) return null;
+
+    let personName = match[2].trim();
+    if (KINSHIP_PREFIX_PATTERN.test(`${personName} `) && personName.split(/\s+/).length <= 2) return null;
+    personName = personName.replace(NAME_HONORIFIC_PATTERN, '').trim();
+    const normalizedName = normalizeRelationshipQuery(personName);
+    if (!personName || BASE_TERMS.has(normalizedName) || normalizedName.split(' ').every((token) => BASE_TERMS.has(token))) {
+        return null;
+    }
+
+    const relationText = stripQuestionIntent(normalizeRelationshipQuery(match[1]));
+    const parsedTerms = parseRelationshipTerms(relationText);
+    if (!parsedTerms.ok || !parsedTerms.terms.length) return null;
+    const chain = parsedTerms.terms
+        .slice()
+        .reverse()
+        .flatMap((term) => relationshipTermToEdges(term) || []);
+    if (!chain.length) return null;
+
+    return {
+        type: 'named_relationship_expression',
+        originalText,
+        personName,
+        originalTerms: match[1].trim().replace(/^(ai\s+là|ai\s+la)\s+/i, ''),
+        base: 'named',
+        chain,
+        terms: parsedTerms.terms,
+        needsClarification: false,
+        confidence: 0.84,
+    };
+}
+
 function parseRelationshipExpression(text) {
     const originalText = String(text || '');
     const normalizedText = normalizeRelationshipQuery(originalText);
@@ -188,4 +236,5 @@ module.exports = {
     relationshipTermToEdges,
     parseRelationshipTerms,
     parseRelationshipExpression,
+    parseNamedRelationshipExpression,
 };

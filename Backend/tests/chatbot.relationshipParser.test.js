@@ -73,4 +73,15 @@ const noMatchResult = resolveRelationshipExpression(noMatchAst, { sourcePersonId
 assert.strictEqual(noMatchResult.ok, false);
 assert.strictEqual(noMatchResult.reason, 'no_matching_person');
 
+// "<quan hệ> của <tên người>": hỏi về người khác theo tên (trước đây chỉ hiểu khi gốc là "tôi").
+const { parseNamedRelationshipExpression } = require('../src/modules/chatbot/relationshipQueryParser');
+const namedFather = parseNamedRelationshipExpression('Cha của Đinh Viết Lâm?');
+assert.strictEqual(namedFather.personName, 'Đinh Viết Lâm');
+assert.deepStrictEqual(namedFather.chain, ['father']);
+assert.deepStrictEqual(parseNamedRelationshipExpression('Ai là mẹ của vợ của Nguyễn Văn An?').chain, ['spouse', 'mother']);
+assert.strictEqual(parseNamedRelationshipExpression('Con trai của ông Lâm').personName, 'Lâm');
+assert.strictEqual(parseNamedRelationshipExpression('Cha của tôi là ai?'), null);
+assert.strictEqual(parseNamedRelationshipExpression('Con của bác Hai là ai?'), null);
+assert.strictEqual(parseNamedRelationshipExpression('Lịch sử của dòng họ'), null);
+
 console.log('chatbot.relationshipParser.test.js passed');
