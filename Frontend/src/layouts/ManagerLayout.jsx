@@ -10,6 +10,7 @@ import { useResponsiveSidebar } from "../shared/hooks/useResponsiveSidebar";
 import NotificationBell from "./NotificationBell";
 import LanguageToggle from "../shared/components/LanguageToggle";
 import ProfileDrawer from "../shared/components/ProfileDrawer";
+import HelpDialog from "../shared/components/HelpDialog";
 import AIChatGateway from "../features/ai-chat/components/AIChatGateway";
 import "./ManagerLayout.css";
 
@@ -33,6 +34,7 @@ export default function ManagerLayout() {
   const [currentUser, setCurrentUser] = useState(() => getStoredUser());
   const [sidebarOpen, setSidebarOpen] = useResponsiveSidebar(true);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [accountLoading, setAccountLoading] = useState(false);
   const [accountSaving, setAccountSaving] = useState(false);
   const [passwordSaving, setPasswordSaving] = useState(false);
@@ -359,7 +361,7 @@ export default function ManagerLayout() {
             <button className="util-btn" title={t("layout.editAccount")} onClick={openAccountModal}>
               <span className="material-symbols-outlined">account_circle</span>
             </button>
-            <button className="util-btn" title={t("common.help")}>
+            <button className="util-btn" title={t("common.help")} aria-label={t("common.help")} onClick={() => setHelpOpen(true)}>
               <span className="material-symbols-outlined">help</span>
             </button>
           </div>
@@ -377,6 +379,7 @@ export default function ManagerLayout() {
         roleLabel={t("layout.clanManager")}
         title={t("common.editProfile")}
       />
+      <HelpDialog open={helpOpen} onClose={() => setHelpOpen(false)} />
       <AIChatGateway />
     </div>
   );

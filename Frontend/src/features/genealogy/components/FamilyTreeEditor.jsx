@@ -5,6 +5,7 @@ import { createPersonAPI, deletePersonAPI, linkRelationsAPI, previewRelationsAPI
 import { extractGenealogyAI } from "../../../api/aiServerService";
 import { onSocketEvent } from "../../../services/socket";
 import { vietnamDateToIso } from "../../../shared/utils/dateFormat";
+import { notify } from "../../../shared/utils/toast";
 import TreeToolbar from "./TreeToolbarParts/TreeToolbar";
 import TreeMobileControls from "./TreeToolbarParts/TreeMobileControls";
 import TreeZoomControls from "./TreeToolbarParts/TreeZoomControls";
@@ -529,6 +530,8 @@ export default function FamilyTreeEditor({
   const [selectedId, setSelectedId] = useState(null);
   const [selectedType, setSelectedType] = useState("person");
   const [selectedCoupleId, setSelectedCoupleId] = useState(null);
+  // Người vừa được tìm thấy/định vị: chỉ căn giữa và tô sáng, không mở form hồ sơ.
+  const [focusedPersonId, setFocusedPersonId] = useState(null);
   const [couplePersonAction, setCouplePersonAction] = useState(null);
   const [treeDisplayMode, setTreeDisplayMode] = useState(TREE_DISPLAY_MODE.DETAIL);
   const [treeStyle, setTreeStyle] = useState(() => databaseTreeStyle);
@@ -1262,7 +1265,12 @@ const coupleActionPerson = useMemo(
     treeViewMode.expandPathToPerson(id);
     setSelectedType("person");
     setSelectedCoupleId(null);
-    setSelectedId(id);
+    if (options.select) {
+      setSelectedId(id);
+    } else {
+      setSelectedId(null);
+      setFocusedPersonId(id);
+    }
     if (options.search) treeSearch.markResult(id);
     if (options.self) setSelfPersonId(id);
 
@@ -1296,7 +1304,8 @@ const coupleActionPerson = useMemo(
       : people.find((person) => Number(person.account_id) === accountId);
 
     if (!matched) {
-      setStatus(t("tree.messages.noAccountLinked"));
+      // Toast tự tắt (banner trạng thái không tự mất nên người dùng tưởng là lỗi treo).
+      notify(t("tree.messages.noAccountLinked"), "info");
       return;
     }
     setStatus("");
@@ -2495,6 +2504,9 @@ const coupleActionPerson = useMemo(
       } else {
         setStatus(t("tree.messages.saveSuccess"));
       }
+      // Lưu xong thì đóng hồ sơ; toast nổi trên mọi lớp nên không bị modal che.
+      notify(t("tree.messages.saveSuccess"), "success");
+      setSelectedId(null);
       await onReload?.();
     } catch (error) {
       if (!shouldSuppressInlineRelationError(error)) setConstraintNotice(error?.message || t("tree.messages.saveError"));
@@ -3339,7 +3351,7 @@ const submitCreateDialog = async () => {
                             <CoupleCard
                               key={node.id}
                               node={node}
-                              selectedPersonId={selectedType === "person" ? selectedId : null}
+                              selectedPersonId={selectedType === "person" ? (selectedId ?? focusedPersonId) : null}
                               selectedCouple={(selectedType === "couple" && selectedCoupleId === node.id) || selectedDisplayNodeIds.has(node.id)}
                               related={related}
                               dimmed={dimmed}
@@ -3369,7 +3381,7 @@ const submitCreateDialog = async () => {
                           <TreeNodeCard
                             key={node.id}
                             person={renderPerson}
-                            selected={(selectedType === "person" && selectedId === person.id) || selectedDisplayNodeIds.has(node.id)}
+                            selected={(selectedType === "person" && (selectedId === person.id || (selectedId == null && focusedPersonId === person.id))) || selectedDisplayNodeIds.has(node.id)}
                             dragging={draggingId === person.id}
                             canDrag={canEditPerson(person.id)}
                             canEdit={canEditPerson(person.id)}
@@ -4041,6 +4053,7 @@ const submitCreateDialog = async () => {
         onClose={() => {
           if (selectedPerson && selectedCanEdit) treeRealtime.stopEditing(selectedPerson.id);
           setSelectedId(null);
+          setFocusedPersonId(null);
         }}
         onSave={handleSavePerson}
         onDelete={handleDeletePerson}

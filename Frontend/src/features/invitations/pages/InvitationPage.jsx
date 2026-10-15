@@ -4,6 +4,8 @@ import { createInvitation, listInvitations } from "../../../api/invitationServic
 import { getStoredUser } from "../../../shared/utils/auth";
 import "../../auth/pages/invite.css";
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
 const initialForm = {
   email: "",
   role: "member",
@@ -72,6 +74,11 @@ export default function InvitationPage() {
       setError("Vui lòng nhập email cần mời.");
       return;
     }
+    // Tự kiểm tra (form có noValidate) để thông báo luôn bằng tiếng Việt, không phụ thuộc ngôn ngữ trình duyệt.
+    if (!EMAIL_PATTERN.test(form.email.trim())) {
+      setError("Email không hợp lệ. Ví dụ: ten@example.com");
+      return;
+    }
     if (isAdmin && !form.clan_id) {
       setError("Vui lòng chọn dòng họ cho lời mời.");
       return;
@@ -118,7 +125,7 @@ export default function InvitationPage() {
       </div>
 
       <div className="invite-management-grid">
-        <form className="invite-management-card invite-form" onSubmit={handleSubmit}>
+        <form className="invite-management-card invite-form" onSubmit={handleSubmit} noValidate>
           <h3>Tạo lời mời</h3>
 
           {message ? <div className="invite-alert is-success">{message}</div> : null}

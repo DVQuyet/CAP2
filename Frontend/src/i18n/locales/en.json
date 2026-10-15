@@ -469,6 +469,7 @@
       "deleteError": "Could not delete event.",
       "saveSuccessGlobal": "Clan-wide event saved. Visible to all clan members.",
       "saveSuccessPersonal": "Personal event saved. Visible only to you.",
+      "titleRequired": "Please enter an event name before saving.",
       "saveError": "Could not save event.",
       "loadError": "Could not load calendar data.",
       "updating": "Updating calendar...",
@@ -2692,6 +2693,26 @@
       "members": "Members connected",
       "documents": "Documents digitized",
       "provinces": "Provinces covered"
+    }
+  },
+  "help": {
+    "title": "Quick help",
+    "intro": "A few common actions in the family-tree system.",
+    "tree": {
+      "title": "Family tree",
+      "text": "Select a person to open their profile; use the + on a card to add a parent, spouse or child. Use \"Check genealogy\" to review unusual relationships and fix generations."
+    },
+    "events": {
+      "title": "Events and tasks",
+      "text": "Create events, assign tasks to members and track progress under Events. The solar/lunar calendar is under Calendar; new entries are personal by default."
+    },
+    "ai": {
+      "title": "AI assistant",
+      "text": "Ask about relationships (\"Who is the father of ...?\"), upcoming death anniversaries, or say \"Remind me of grandfather's anniversary on 15/3 lunar\" and press \"Add to calendar\"."
+    },
+    "shortcuts": {
+      "title": "Shortcuts",
+      "text": "Esc: close the open dialog."
     }
   }
 }

@@ -243,8 +243,19 @@ export default function TaskManagementPage({ role = "member" }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingTaskId, setSavingTaskId] = useState(null);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
+  const [message, setMessageState] = useState("");
+  const [error, setErrorState] = useState("");
+  // Đếm số lần báo để cùng một thông báo lặp lại (vd. gửi form trống hai lần) vẫn hiện toast.
+  const [messageStamp, setMessageStamp] = useState(0);
+  const [errorStamp, setErrorStamp] = useState(0);
+  const setMessage = useCallback((value) => {
+    setMessageState(value);
+    if (value) setMessageStamp((count) => count + 1);
+  }, []);
+  const setError = useCallback((value) => {
+    setErrorState(value);
+    if (value) setErrorStamp((count) => count + 1);
+  }, []);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedEventId, setSelectedEventId] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -281,13 +292,13 @@ export default function TaskManagementPage({ role = "member" }) {
     if (error) {
       setToast({ show: true, message: error, type: "error" });
     }
-  }, [error]);
+  }, [error, errorStamp]);
 
   useEffect(() => {
     if (message) {
       setToast({ show: true, message: message, type: "success" });
     }
-  }, [message]);
+  }, [message, messageStamp]);
 
 
   const handleAiTaskCountChange = (event) => {
@@ -629,6 +640,7 @@ recognition.onerror = (event) => {
       const result = await assignTaskAPI(payload);
       setMessage(t("eventsTasks.messages.taskAssigned", { count: result.assigned_count || memberIds.length }));
       setForm({ event_id: String(selectedEventId), member_ids: [], title: "", description: "", due_date: "" });
+      setShowAssignTaskModal(false);
       await loadData();
     } catch (err) {
       setError(err?.message || t("eventsTasks.errors.assignFailed"));
@@ -712,6 +724,7 @@ recognition.onerror = (event) => {
         ...(isAdmin && clanId ? { clan_id: Number(clanId) } : {}),
       });
       setMessage(t("eventsTasks.messages.eventUpdated"));
+      setShowEditEventModal(false);
       await loadData();
     } catch (err) {
       setError(err?.message || t("eventsTasks.errors.updateEventFailed"));
@@ -1341,7 +1354,7 @@ const openEvent = (eventId) => {
                 <span className="material-symbols-outlined">auto_awesome</span>
                 {t("common.createMore")}
               </button>
-              <VoiceRecorder disabled={aiLoading} onTranscript={appendAiPromptText} />
+              {!speechSupported && <VoiceRecorder disabled={aiLoading} onTranscript={appendAiPromptText} />}
             </div>
 
             {aiTaskSuggestions.length ? (
@@ -1718,7 +1731,7 @@ const openEvent = (eventId) => {
                   <span className="material-symbols-outlined">{voiceListening ? "mic_off" : "mic"}</span>
                 </button>
               </div>
-              <VoiceRecorder disabled={aiLoading} onTranscript={appendAiPromptText} />
+              {!speechSupported && <VoiceRecorder disabled={aiLoading} onTranscript={appendAiPromptText} />}
               {voiceListening && <small className="ai-voice-status">{t("eventsTasks.placeholders.listening")}</small>}
             </label>
             <label className="ai-count-control ai-count-control-wide">

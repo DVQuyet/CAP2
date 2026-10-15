@@ -4,6 +4,7 @@ import { apiRequest } from "../../../services/api";
 import { getStoredUser } from "../../../shared/utils/auth";
 import { getSocket } from "../../../services/socket";
 import { useLanguage } from "../../../i18n/LanguageContext";
+import { notify } from "../../../shared/utils/toast";
 import { getLunarInfoFromSolar as getLunarInfo } from "../../../shared/utils/lunarCalendar";
 import "./VietnamCalendarPage.css";
 
@@ -120,9 +121,7 @@ function getDayEvents(date, savedEvents, t) {
 }
 
 export default function VietnamCalendarPage() {
-  const { t, i18n } = useTranslation();
-  console.log("i18n current language:", i18n.language);
-  console.log("Test translation vnCalendar.hero.title:", t("vnCalendar.hero.title"));
+  const { t } = useTranslation();
 
   const MONTH_NAMES = useMemo(() => {
     const months = t("vnCalendar.labels.months", { returnObjects: true });
@@ -182,15 +181,20 @@ export default function VietnamCalendarPage() {
   }, [canCreateGlobal]);
 
   const visibleDays = useMemo(() => {
+    if (viewMode === "day") return [selectedDate];
     if (viewMode === "week") return getWeekDates(selectedDate);
     return getMonthMatrix(selectedDate.getFullYear(), selectedDate.getMonth());
   }, [selectedDate, viewMode]);
 
   const range = useMemo(() => {
-    const first = visibleDays[0] || selectedDate;
-    const last = visibleDays[visibleDays.length - 1] || selectedDate;
+    // Xem theo ngày vẫn tải cả tháng để chuyển ngày không phải gọi lại máy chủ.
+    const days = viewMode === "day"
+      ? getMonthMatrix(selectedDate.getFullYear(), selectedDate.getMonth())
+      : visibleDays;
+    const first = days[0] || selectedDate;
+    const last = days[days.length - 1] || selectedDate;
     return { from: toDateKey(first), to: toDateKey(last) };
-  }, [selectedDate, visibleDays]);
+  }, [selectedDate, visibleDays, viewMode]);
 
   const loadCalendarEvents = useCallback(async () => {
     try {
@@ -267,7 +271,8 @@ export default function VietnamCalendarPage() {
   };
 
   const shiftPeriod = (amount) => {
-    if (viewMode === "week") setSelectedDate(addDays(selectedDate, amount * 7));
+    if (viewMode === "day") setSelectedDate(addDays(selectedDate, amount));
+    else if (viewMode === "week") setSelectedDate(addDays(selectedDate, amount * 7));
     else setSelectedDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth() + amount, 1));
   };
 
@@ -308,7 +313,11 @@ export default function VietnamCalendarPage() {
   const saveEvent = async (event) => {
     event.preventDefault();
     const title = eventForm.title.trim();
-    if (!title) return;
+    if (!title) {
+      setCalendarStatus(t("vnCalendar.messages.titleRequired"));
+      notify(t("vnCalendar.messages.titleRequired"), "error");
+      return;
+    }
 
     const payload = {
       date: editingEvent?.date || editingEvent?.event_date || toDateKey(selectedDate),
@@ -342,9 +351,12 @@ export default function VietnamCalendarPage() {
           ? t("vnCalendar.messages.saveSuccessGlobal")
           : t("vnCalendar.messages.saveSuccessPersonal")
       );
+      notify(payload.visibility === "global" ? t("vnCalendar.messages.saveSuccessGlobal") : t("vnCalendar.messages.saveSuccessPersonal"), "success");
       await loadCalendarEvents();
     } catch (error) {
-      setCalendarStatus(error?.message || t("vnCalendar.messages.saveError"));
+      const failure = error?.message || t("vnCalendar.messages.saveError");
+      setCalendarStatus(failure);
+      notify(failure, "error");
     }
   };
 
@@ -391,7 +403,11 @@ export default function VietnamCalendarPage() {
               <span className="material-symbols-outlined">chevron_left</span>
             </button>
             <div>
-              <h2>{viewMode === "week" ? getWeekRangeText(selectedDate) : `${MONTH_NAMES[selectedDate.getMonth()]} ${selectedDate.getFullYear()}`}</h2>
+              <h2>{viewMode === "day"
+                ? `${WEEKDAY_LABELS[selectedDate.getDay()]}, ${formatVietnamDate(selectedDate)}`
+                : viewMode === "week"
+                  ? getWeekRangeText(selectedDate)
+                  : `${MONTH_NAMES[selectedDate.getMonth()]} ${selectedDate.getFullYear()}`}</h2>
               <p>{t("vnCalendar.today")}: {formatVietnamDate(today)}</p>
             </div>
             <button type="button" onClick={() => shiftPeriod(1)} aria-label={t("common.next") || "Next"}>
@@ -402,6 +418,7 @@ export default function VietnamCalendarPage() {
           <div className="vn-toolbar-actions">
             <button type="button" className="vn-today-btn" onClick={() => setSelectedDate(today)}>{t("vnCalendar.today")}</button>
             <div className="vn-view-toggle" role="group" aria-label={t("vnCalendar.viewToggleAria")}>
+              <button type="button" className={viewMode === "day" ? "active" : ""} onClick={() => setViewMode("day")}>{t("vnCalendar.day")}</button>
               <button type="button" className={viewMode === "week" ? "active" : ""} onClick={() => setViewMode("week")}>{t("vnCalendar.week")}</button>
               <button type="button" className={viewMode === "month" ? "active" : ""} onClick={() => setViewMode("month")}>{t("vnCalendar.month")}</button>
             </div>
@@ -434,14 +451,19 @@ export default function VietnamCalendarPage() {
         {calendarStatus ? <div className="vn-calendar-status">{calendarStatus}</div> : null}
         {loadingEvents ? <div className="vn-calendar-status is-loading">{t("vnCalendar.syncing")}</div> : null}
 
-        <div className={`vn-calendar-grid ${viewMode === "week" ? "is-week" : ""}`}>
-          {WEEKDAY_LABELS.map((label) => <div key={label} className="vn-weekday">{label}</div>)}
+        <div className={`vn-calendar-grid ${viewMode === "week" ? "is-week" : ""} ${viewMode === "day" ? "is-day" : ""}`}>
+          {viewMode !== "day" ? WEEKDAY_LABELS.map((label) => <div key={label} className="vn-weekday">{label}</div>) : null}
           {visibleDays.map((date) => {
             const lunar = getLunarInfo(date);
-            const isOutsideMonth = date.getMonth() !== selectedDate.getMonth();
+            const isOutsideMonth = viewMode !== "day" && date.getMonth() !== selectedDate.getMonth();
             const isToday = toDateKey(date) === toDateKey(today);
             const isSelected = toDateKey(date) === toDateKey(selectedDate);
-            const dayEvents = getDayEvents(date, savedEvents, t);
+            const allDayEvents = getDayEvents(date, savedEvents, t);
+            // Ngày lễ hệ thống xếp sau: sự kiện nhiều ngày không bị che bởi tên ngày lễ trùng ngày (vd. 20/10).
+            const dayEvents = [
+              ...allDayEvents.filter((event) => event.source !== "system"),
+              ...allDayEvents.filter((event) => event.source === "system"),
+            ];
             return (
               <button
                 key={toDateKey(date)}
@@ -455,7 +477,15 @@ export default function VietnamCalendarPage() {
                 <span className="event-dots">
                   {dayEvents.slice(0, 3).map((event) => <i key={event.id} className={`dot-${event.type}`} />)}
                 </span>
-                {dayEvents[0] ? <small>{dayEvents[0].title}</small> : null}
+                {viewMode === "day" ? (
+                  <ul className="vn-day-event-list">
+                    {dayEvents.map((event) => (
+                      <li key={event.id}><i className={`dot-${event.type}`} />{event.time ? `${event.time} · ` : ""}{event.title}</li>
+                    ))}
+                  </ul>
+                ) : dayEvents[0] ? (
+                  <small>{dayEvents[0].title}{dayEvents.length > 1 ? ` +${dayEvents.length - 1}` : ""}</small>
+                ) : null}
               </button>
             );
           })}

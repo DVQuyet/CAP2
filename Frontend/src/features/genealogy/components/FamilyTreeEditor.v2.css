@@ -1573,3 +1573,24 @@
   gap: 6px;
   font-weight: 500 !important;
 }
+
+/* ===== Màn hình hẹp (~900px): thanh công cụ xuống dòng thay vì tràn, menu không vượt khỏi khung nhìn ===== */
+.fte2-toolbar {
+    flex-wrap: wrap;
+    row-gap: 8px;
+}
+
+.fte2-toolbarSearch {
+    flex: 1 1 220px;
+    min-width: 160px;
+    max-width: 360px;
+}
+
+.fte2-toolbarActions {
+    flex-wrap: wrap;
+}
+
+.fte2-menu,
+.fte2-menu--root {
+    max-width: calc(100vw - 24px);
+}

@@ -226,7 +226,7 @@ function buildSuggestedQuestions(userProfile = {}, clanInfo = {}) {
         'Gia phả có bao nhiêu người?',
         'Dòng họ này có mấy đời?',
         'Giới thiệu về dòng họ',
-        displayName ? `Trong gia phả có ${displayName} không?` : 'Trong gia phả có [Tên người] không?',
+        displayName ? `Trong gia phả có ${displayName} không?` : 'Sắp tới có sự kiện hoặc ngày giỗ nào?',
     ];
 }
 
@@ -1369,7 +1369,14 @@ exports.history = async (req, res) => {
 
 exports.suggestions = async (req, res) => {
     try {
-        const suggestions = await suggestionService.getSuggestions(req);
+        const clanId = toPositiveId(req.query.clanId || req.query.clan_id || req.user?.clan_id);
+        const currentMemberId = toPositiveId(req.query.currentMemberId || req.query.current_member_id || req.user?.person_id);
+        // Chỉ dùng tên người thật khi người hỏi có quyền với dòng họ; ngược lại trả các câu chung.
+        const allowed = clanId && await canAccessClan(req, clanId, currentMemberId);
+        const suggestions = await suggestionService.getSuggestions({
+            clanId: allowed ? clanId : null,
+            currentMemberId: allowed ? currentMemberId : null,
+        });
         return res.json({ success: true, suggestions });
     } catch (error) {
         console.error('chatbot suggestions error:', error);

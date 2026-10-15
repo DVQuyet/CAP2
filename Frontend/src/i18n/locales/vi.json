@@ -467,6 +467,7 @@
       "deleteError": "Không thể xóa lịch.",
       "saveSuccessGlobal": "Đã lưu lịch tổng thể. Cả dòng họ sẽ thấy lịch này.",
       "saveSuccessPersonal": "Đã lưu lịch cá nhân. Chỉ tài khoản tạo lịch nhìn thấy lịch này.",
+      "titleRequired": "Vui lòng nhập tên lịch trước khi lưu.",
       "saveError": "Không thể lưu lịch.",
       "loadError": "Không thể tải lịch từ hệ thống.",
       "updating": "Đang cập nhật lịch...",
@@ -2687,6 +2688,26 @@
       "members": "Thành viên kết nối",
       "documents": "Tư liệu số hóa",
       "provinces": "Tỉnh thành phủ sóng"
+    }
+  },
+  "help": {
+    "title": "Trợ giúp nhanh",
+    "intro": "Một số thao tác thường dùng trong hệ thống gia phả.",
+    "tree": {
+      "title": "Cây gia phả",
+      "text": "Chọn một người để xem hồ sơ; bấm dấu + trên thẻ để thêm cha mẹ, vợ chồng hoặc con. Dùng \"Kiểm tra gia phả\" để rà soát các quan hệ bất thường và sửa đời."
+    },
+    "events": {
+      "title": "Sự kiện và công việc",
+      "text": "Tạo sự kiện, giao việc cho thành viên và theo dõi tiến độ ở mục Sự kiện. Lịch âm dương nằm ở mục Lịch; mặc định lịch mới là lịch cá nhân."
+    },
+    "ai": {
+      "title": "Trợ lý AI",
+      "text": "Hỏi quan hệ (\"Cha của Đinh Viết Lâm là ai?\"), ngày giỗ sắp tới, hoặc nhờ \"Nhắc tôi giỗ ông nội ngày 15/3 âm lịch\" rồi bấm \"Thêm vào lịch\"."
+    },
+    "shortcuts": {
+      "title": "Phím tắt",
+      "text": "Esc: đóng hộp thoại đang mở."
     }
   }
 }
