@@ -187,9 +187,17 @@ export const submitMaterial = async (payload) =>
     "Không thể gửi tư liệu đóng góp",
   );
 
-export const getGeneralPosts = async () =>
+export const getGeneralPosts = async ({ beforeId, limit } = {}) => {
+  const params = new URLSearchParams();
+  if (limit) params.set("limit", String(limit));
+  if (beforeId) params.set("before_id", String(beforeId));
+  const query = params.toString();
+  return requestGeneralPosts(query ? `/posts/general?${query}` : "/posts/general");
+};
+
+const requestGeneralPosts = (path) =>
   requestJson(
-    "/posts/general",
+    path,
     {
       headers: getAuthHeaders(),
     },

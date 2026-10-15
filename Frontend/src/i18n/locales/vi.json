@@ -1796,7 +1796,8 @@
       "likeError": "Không thể cập nhật lượt thích.",
       "commentRequired": "Vui lòng nhập bình luận.",
       "commentError": "Không thể gửi bình luận.",
-      "noPosts": "Chưa có bài viết nào được phê duyệt."
+      "noPosts": "Chưa có bài viết nào được phê duyệt.",
+      "loadMore": "Tải thêm bài viết"
     },
     "sidebar": {
       "title": "Bảng tin",

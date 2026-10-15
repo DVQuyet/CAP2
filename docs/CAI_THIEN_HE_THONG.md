@@ -61,11 +61,19 @@ Kiểm tra lại các thay đổi và phát hiện thêm:
 
 Hai luồng đầu dùng helper mới `getAccountAccess` (export từ `authMiddleware.js`, dùng chung cache với `verifyToken`). Thêm test tương ứng trong `auth.middleware.test.js`.
 
+## Làm tiếp sau rà soát
+
+- `db.allowDdl(fn)` (AsyncLocalStorage): migrate chỉ mở DDL trong ngữ cảnh của nó. `RUN_MIGRATIONS_ON_START` và `npm run migrate` không còn đổi biến môi trường toàn tiến trình, nên request đến cùng lúc vẫn bị `DISABLE_RUNTIME_DDL` chặn. Có test.
+- Webhook SePay không còn trả `error.message` thô cho bên gọi khi lỗi 500 (chỉ ghi log).
+- Bảng tin bài viết có nút "Tải thêm" (`GeneralPosts.jsx`, `getGeneralPosts({ beforeId })`, khóa i18n `posts.messages.loadMore`). Khi có cập nhật realtime thì danh sách quay về trang đầu.
+- Rà quyền ở `tree.controller.js` (tạo/xóa/di chuyển người, gia đình): đã đi qua `assertTreeMutationPermission` và `assertCanManagePersonId`, không cần sửa.
+- `window.confirm` (17 chỗ) giữ nguyên có chủ đích: hộp thoại gốc hoạt động đúng và đổi sang dialog tùy biến cần chuyển nhiều handler sang async mà không có test giao diện.
+
 ## Kết quả kiểm tra
 
 | Kiểm tra | Kết quả |
 |---|---|
-| Backend `npm test` | 41/41 pass |
+| Backend `npm test` | 42/42 pass |
 | Frontend `npm test` | 6/6 pass |
 | Frontend `npm run lint` | 0 lỗi, 145 cảnh báo |
 | Frontend `vite build` | thành công |
@@ -81,12 +89,10 @@ Hai luồng đầu dùng helper mới `getAccountAccess` (export từ `authMiddl
 
 - Chia nhỏ `FamilyTreeEditor.jsx` (4.1k dòng), `ClanFundPage.jsx`, `member.controller.js` (cần test giao diện/tích hợp trước).
 - Validation đầu vào bằng zod/joi; test tích hợp có MySQL.
-- `window.confirm` và chuỗi tiếng Việt cứng trong JSX chưa rà.
-- Nút "tải thêm" ở frontend cho danh sách đã phân trang (hiện bị trần 200 bản ghi mới nhất).
+- Chuỗi tiếng Việt cứng trong JSX (ví dụ `ArchivedMembersDialog`, `GeneralPosts`, `TimeCapsulePage`) chưa đưa vào i18n.
+- Nút "tải thêm" cho danh sách kỷ niệm và thông báo (bảng tin bài viết đã có; kỷ niệm/thông báo vẫn bị trần 200/50 bản ghi mới nhất).
 - Chuyển media từ MySQL LONGBLOB sang object storage (cần chọn dịch vụ và cấp key); bỏ `?token=` trong URL media đi kèm mục này.
 - Tải cây theo nhánh/độ sâu (cần đổi API và editor; nên đo bằng `scripts/load-test-family-tree.js` trước).
 - Anh chị em ruột trong gia đình trên 300 con vẫn chưa ghép cạnh (TODO còn trong `relationshipEngine.js`).
 - Giai đoạn 5: GEDCOM, hoàn tác thay đổi cây, báo cáo PDF, đối soát quỹ qua SePay, web push.
-- Webhook SePay trả `error.message` thô cho bên gọi khi lỗi 500; nên chỉ ghi log.
-- `RUN_MIGRATIONS_ON_START` tạm bật DDL cho cả tiến trình trong lúc migrate; request đến trong khoảng đó vẫn có thể chạy DDL. Với nhiều instance nên dùng `npm run migrate` riêng.
 - Đổi role/khóa tài khoản chỉ xóa cache trên instance hiện tại; instance khác chậm tối đa 30 giây (`AUTH_ACCOUNT_CACHE_TTL_MS`).

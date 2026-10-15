@@ -636,7 +636,6 @@ if (isPaymentOlderThan24Hours(payment)) {
     return res.status(500).json({
       success: false,
       message: 'Lỗi xử lý webhook SePay.',
-      error: error.message,
     });
   }
 }

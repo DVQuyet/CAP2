@@ -34,3 +34,20 @@ test('DISABLE_RUNTIME_DDL bỏ qua DDL nhưng không chạm truy vấn thường
         else process.env.DISABLE_RUNTIME_DDL = previous;
     }
 });
+
+test('allowDdl chỉ mở DDL trong ngữ cảnh migrate, request khác vẫn bị chặn', async () => {
+    const previous = process.env.DISABLE_RUNTIME_DDL;
+    process.env.DISABLE_RUNTIME_DDL = 'true';
+    const db = require('../src/config/db');
+    try {
+        // Trong allowDdl câu ALTER không bị bỏ qua nên phải đi tới pool (không có DB ở đây => lỗi kết nối).
+        await assert.rejects(db.allowDdl(() => db.query('ALTER TABLE t ADD COLUMN c INT')));
+
+        // Cùng lúc, một request bên ngoài ngữ cảnh vẫn bị bỏ qua.
+        const [skipped] = await db.query('ALTER TABLE t ADD COLUMN c INT');
+        assert.strictEqual(skipped.affectedRows, 0);
+    } finally {
+        if (previous === undefined) delete process.env.DISABLE_RUNTIME_DDL;
+        else process.env.DISABLE_RUNTIME_DDL = previous;
+    }
+});

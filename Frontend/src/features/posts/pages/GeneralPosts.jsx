@@ -344,6 +344,8 @@ export default function GeneralPosts() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [posts, setPosts] = useState([]);
+  const [nextBeforeId, setNextBeforeId] = useState(null);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
@@ -377,6 +379,7 @@ export default function GeneralPosts() {
     try {
       const data = await getGeneralPosts();
       setPosts(data.posts || []);
+      setNextBeforeId(data.has_more ? data.next_before_id || null : null);
     } catch (err) {
       setError(err?.message || t("posts.messages.loadError"));
       setPosts([]);
@@ -384,6 +387,23 @@ export default function GeneralPosts() {
       setLoading(false);
     }
   }, []);
+
+  const loadMorePosts = useCallback(async () => {
+    if (!nextBeforeId || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const data = await getGeneralPosts({ beforeId: nextBeforeId });
+      setPosts((current) => {
+        const known = new Set(current.map((post) => post.id));
+        return [...current, ...(data.posts || []).filter((post) => !known.has(post.id))];
+      });
+      setNextBeforeId(data.has_more ? data.next_before_id || null : null);
+    } catch (err) {
+      setError(err?.message || t("posts.messages.loadError"));
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [nextBeforeId, loadingMore, t]);
 
   const loadComments = useCallback(async (postId) => {
     setCommentsLoading(true);
@@ -639,6 +659,17 @@ export default function GeneralPosts() {
                   t={t}
                 />
               ))}
+              {nextBeforeId && (
+                <button
+                  type="button"
+                  className="feed-load-more"
+                  onClick={loadMorePosts}
+                  disabled={loadingMore}
+                  style={{ margin: "12px auto", padding: "10px 20px", cursor: "pointer" }}
+                >
+                  {loadingMore ? t("common.loading") : t("posts.messages.loadMore")}
+                </button>
+              )}
             </div>
           )}
         </main>

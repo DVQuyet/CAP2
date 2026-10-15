@@ -1801,7 +1801,8 @@
       "likeError": "Cannot update likes.",
       "commentRequired": "Please enter a comment.",
       "commentError": "Cannot send comment.",
-      "noPosts": "No approved posts yet."
+      "noPosts": "No approved posts yet.",
+      "loadMore": "Load more posts"
     },
     "sidebar": {
       "title": "Newsfeed",

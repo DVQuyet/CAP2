@@ -70,7 +70,11 @@ const db = pool.promise();
 // Khi đã chạy `npm run migrate`, đặt DISABLE_RUNTIME_DDL=true để các hàm ensure*() rải rác trong
 // controller không tự ALTER/CREATE trên đường xử lý request (tốn thời gian, khóa bảng, khó kiểm soát).
 const DDL_PATTERN = /^\s*(ALTER\s+TABLE|CREATE\s+TABLE|CREATE\s+(UNIQUE\s+)?INDEX|DROP\s+INDEX)\b/i;
-const isRuntimeDdlDisabled = () => String(process.env.DISABLE_RUNTIME_DDL || '').toLowerCase() === 'true';
+const { AsyncLocalStorage } = require('async_hooks');
+// Migrate chạy trong ngữ cảnh này nên được phép DDL, còn request khác trong cùng tiến trình vẫn bị chặn.
+const ddlAllowedStore = new AsyncLocalStorage();
+const isRuntimeDdlDisabled = () =>
+    String(process.env.DISABLE_RUNTIME_DDL || '').toLowerCase() === 'true' && !ddlAllowedStore.getStore();
 const skippedDdl = new Set();
 
 const shouldSkipDdl = (sql) => {
@@ -103,5 +107,7 @@ guardMethods(db);
 
 const originalGetConnection = db.getConnection.bind(db);
 db.getConnection = async (...args) => guardMethods(await originalGetConnection(...args));
+
+db.allowDdl = (callback) => ddlAllowedStore.run(true, callback);
 
 module.exports = db;
