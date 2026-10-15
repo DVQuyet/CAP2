@@ -6,6 +6,7 @@ import DateInput from "../../../shared/components/DateInput";
 import { vietnamDateToIso } from "../../../shared/utils/dateFormat";
 import termsText from "./terms.txt?raw";
 import privacyText from "./privacy.txt?raw";
+import { notify } from "../../../shared/utils/toast";
 
 const ClanRegister = () => {
   const navigate = useNavigate();
@@ -118,7 +119,7 @@ const ClanRegister = () => {
       });
 
       if (res.success) {
-        alert("Đăng ký dòng họ và tài khoản Trưởng họ thành công!");
+        notify("Đăng ký dòng họ và tài khoản Trưởng họ thành công!");
         navigate("/login");
       }
     } catch (err) {

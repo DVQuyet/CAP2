@@ -52,6 +52,7 @@ exports.verifyToken = async (req, res, next) => {
     if (!token) {
         return res.status(401).json({
             success: false,
+            code: 'NO_TOKEN',
             message: "Truy cập bị từ chối. Vui lòng đăng nhập!"
         });
     }
@@ -62,6 +63,7 @@ exports.verifyToken = async (req, res, next) => {
     } catch (err) {
         return res.status(403).json({
             success: false,
+            code: 'TOKEN_INVALID',
             message: "Token không hợp lệ hoặc đã hết hạn!"
         });
     }
@@ -78,6 +80,7 @@ exports.verifyToken = async (req, res, next) => {
         if (!state) {
             return res.status(401).json({
                 success: false,
+                code: 'ACCOUNT_NOT_FOUND',
                 message: "Tài khoản không còn tồn tại. Vui lòng đăng nhập lại!"
             });
         }

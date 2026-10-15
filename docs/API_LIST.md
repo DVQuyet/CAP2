@@ -5,12 +5,9 @@ Tài liệu này được tổng hợp từ các file route trong dự án tại
 - `Backend/server.js`
 - `Backend/src/modules/**/*.routes.js`
 - `voice/backend/backendRoutes.js`
-- `AI-server/app.py`
 - Đối chiếu thêm với `Frontend/src/api/*` và `Frontend/src/services/*`
 
 Base URL backend chính: `http://localhost:3000`
-
-Base URL AI-server độc lập: `http://localhost:8001`
 
 ## Ghi chú xác thực
 
@@ -89,16 +86,7 @@ Prefix: `/api/ai`
 
 | Method | Endpoint | Quyền | Mô tả ngắn |
 |---|---|---|---|
-| POST | `/api/ai/event-form/generate` | admin, manager | Gọi AI-server để sinh form sự kiện và danh sách task |
-
-## AI-server độc lập
-
-Base URL mặc định: `http://localhost:8001`
-
-| Method | Endpoint | Quyền | Mô tả ngắn |
-|---|---|---|---|
-| GET | `/health` | Public | Kiểm tra AI-server và cấu hình Groq |
-| POST | `/event-form/generate` | Gọi nội bộ từ backend | Sinh dữ liệu form sự kiện/task bằng AI hoặc fallback |
+| POST | `/api/ai/event-form/generate` | admin, manager | Gọi Groq (qua backend) để sinh form sự kiện và danh sách task |
 
 ## Admin
 

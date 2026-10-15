@@ -5,9 +5,9 @@ import UserLayout from "../layouts/PublicLayout";
 import AdminLayout from "../layouts/AdminLayout";
 import ManagerLayout from "../layouts/ManagerLayout";
 import MemberLayout from "../layouts/MemberLayout";
-import Login from "../features/auth/pages/Login";
-import Register from "../features/auth/pages/Register";
 
+const Login = lazy(() => import("../features/auth/pages/Login"));
+const Register = lazy(() => import("../features/auth/pages/Register"));
 const Home = lazy(() => import("../features/public/pages/Home"));
 const NotFound = lazy(() => import("../features/public/pages/NotFound"));
 const FeatureDetailPage = lazy(() => import("../features/public/pages/FeatureDetailPage"));
@@ -46,7 +46,26 @@ const GeneralPosts = lazy(() => import("../features/posts/pages/GeneralPosts"));
 const TimeCapsulePage = lazy(() => import("../features/time-capsule/pages/TimeCapsulePage"));
 const VietnamCalendarPage = lazy(() => import("../features/calendar/pages/VietnamCalendarPage"));
 
-const routeFallback = <div>Loading...</div>;
+const routeFallback = (
+  <div
+    role="status"
+    aria-busy="true"
+    aria-label="Đang tải"
+    style={{ display: "grid", placeItems: "center", minHeight: "40vh", color: "#9a3412" }}
+  >
+    <div
+      style={{
+        width: 36,
+        height: 36,
+        borderRadius: "50%",
+        border: "4px solid rgba(124, 45, 18, 0.15)",
+        borderTopColor: "#7c2d12",
+        animation: "route-spin 0.8s linear infinite",
+      }}
+    />
+    <style>{"@keyframes route-spin{to{transform:rotate(360deg)}}"}</style>
+  </div>
+);
 
 export default function AppRoutes() {
   return (

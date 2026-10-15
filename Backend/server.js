@@ -130,7 +130,7 @@ const upload = multer({
     }
 });
 
-// 4.1. Đăng ký route thanh toán VNPAY
+// 4.1. Đăng ký route thanh toán SePay (chuyển khoản QR)
 const paymentRoutes = require('./src/modules/payment/payment.routes');
 // 5. Socket.IO
 const getSocketAuthToken = (socket) => {

@@ -10,6 +10,7 @@ import {
 import FamilyTreeEditor from "../../genealogy/components/FamilyTreeEditor.jsx";
 import { onSocketEvent } from "../../../services/socket";
 import "./GenealogyManagement.css";
+import { notify } from "../../../shared/utils/toast";
 
 const emptyClanForm = {
     clan_name: "",
@@ -52,7 +53,7 @@ export default function GenealogyManagement() {
             }
         } catch (err) {
             console.error(err);
-            alert(err.message || t("admin.genealogy.messages.loadClansError"));
+            notify(err.message || t("admin.genealogy.messages.loadClansError"));
         } finally {
             setLoading(false);
         }
@@ -213,7 +214,7 @@ export default function GenealogyManagement() {
             await deleteAdminClan(clan.id);
             await fetchClans();
         } catch (err) {
-            alert(err.message || t("admin.genealogy.messages.deleteError"));
+            notify(err.message || t("admin.genealogy.messages.deleteError"));
         }
     };
 

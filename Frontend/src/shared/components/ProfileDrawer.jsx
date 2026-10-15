@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { apiRequest } from "../../services/api";
 import { getStoredUser } from "../utils/auth";
 import "./ProfileDrawer.css";
+import { notify } from "../utils/toast";
 
 const buildName = (profile) =>
   profile?.display_name ||
@@ -99,12 +100,12 @@ export default function ProfileDrawer({
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      alert(t("shared.upload.invalidImage"));
+      notify(t("shared.upload.invalidImage"));
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      alert(t("shared.profile.maxSize"));
+      notify(t("shared.profile.maxSize"));
       return;
     }
 

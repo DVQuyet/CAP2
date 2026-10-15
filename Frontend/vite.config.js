@@ -39,6 +39,20 @@ export default defineConfig({
             },
         }),
     ],
+    build: {
+        rollupOptions: {
+            output: {
+                // Tách thư viện lớn ra chunk riêng để cache lâu và không nằm trong bundle vào trang đầu.
+                manualChunks(id) {
+                    if (!id.includes("node_modules")) return undefined;
+                    if (/node_modules[\/](recharts|d3-|victory-vendor)/.test(id)) return "vendor-charts";
+                    if (/node_modules[\/](react-dom|react-router|react-router-dom|react|scheduler)[\/]/.test(id)) return "vendor-react";
+                    if (/node_modules[\/](i18next|react-i18next|i18next-browser-languagedetector)/.test(id)) return "vendor-i18n";
+                    return undefined;
+                },
+            },
+        },
+    },
     server: {
         proxy: {
             "/api": {

@@ -41,7 +41,7 @@ AI không tự ghi database. Các tính năng AI chỉ sinh dữ liệu nháp, p
 ### 1. Backend
 
 ```powershell
-cd D:\cap2\Backend
+cd Backend
 npm install
 copy .env.example .env
 npm run dev
@@ -58,7 +58,7 @@ Các biến quan trọng trong `Backend/.env`: `DB_HOST`, `DB_PORT`, `DB_USER`, 
 ### 2. Frontend
 
 ```powershell
-cd D:\cap2\Frontend
+cd Frontend
 npm install
 copy .env.example .env
 npm run dev
@@ -75,7 +75,7 @@ http://localhost:5173
 Chỉ cần chạy nếu dùng nút ghi âm local/Whisper.
 
 ```powershell
-cd D:\cap2
+# chạy từ thư mục gốc của repo
 py -3.12 -m venv .venv-whisper
 .\.venv-whisper\Scripts\python.exe -m pip install --upgrade pip
 .\.venv-whisper\Scripts\python.exe -m pip install -r .\voice\requirements.txt
@@ -89,14 +89,14 @@ Voice worker đọc cấu hình DB từ `Backend/.env`.
 Frontend:
 
 ```powershell
-cd D:\cap2\Frontend
+cd Frontend
 npm run build
 ```
 
 Backend:
 
 ```powershell
-cd D:\cap2\Backend
+cd Backend
 node --check server.js
 npm run test:chatbot
 ```
@@ -104,7 +104,7 @@ npm run test:chatbot
 Python voice worker:
 
 ```powershell
-cd D:\cap2
+# chạy từ thư mục gốc của repo
 python -m py_compile voice\worker\worker.py
 ```
 

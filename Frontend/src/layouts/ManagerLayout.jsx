@@ -101,10 +101,6 @@ export default function ManagerLayout() {
     };
   }, []);
 
-  if (!isAuthenticated()) {
-    return <Navigate to="/" replace />;
-  }
-
   const handleLogout = () => {
     logout();
     window.location.href = "/";
@@ -266,6 +262,11 @@ export default function ManagerLayout() {
       setPasswordSaving(false);
     }
   };
+
+  // Đặt sau toàn bộ hook để thứ tự hook không đổi giữa các lần render.
+  if (!isAuthenticated()) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <div className={`manager-portal-container ${sidebarOpen ? "" : "sidebar-collapsed"}`}>

@@ -6,6 +6,7 @@ import DateInput from "../../../shared/components/DateInput";
 import { formatDateVN, isoToVietnamDate, vietnamDateToIso, pad2 } from "../../../shared/utils/dateFormat";
 import "./FundDesign.css";
 import FundAnalytics from "../components/FundAnalytics";
+import { notify } from "../../../shared/utils/toast";
 
 const getCurrentUserFromStorage = () => {
   const keys = ["user", "currentUser", "account", "authUser", "profile"];
@@ -292,7 +293,7 @@ export default function ClanFundPage() {
       link.remove();
       window.URL.revokeObjectURL(downloadUrl);
     } catch (error) {
-      alert(t("fund.messages.exportError") + ": " + error.message);
+      notify(t("fund.messages.exportError") + ": " + error.message);
     }
   };
 
@@ -312,10 +313,10 @@ export default function ClanFundPage() {
         headers: {}
       });
 
-      alert(t("fund.messages.importSuccess"));
+      notify(t("fund.messages.importSuccess"));
       loadData();
     } catch (error) {
-      alert(t("fund.messages.importError") + ": " + error.message);
+      notify(t("fund.messages.importError") + ": " + error.message);
     } finally {
       setImporting(false);
     }
@@ -341,7 +342,7 @@ export default function ClanFundPage() {
         qr_code_media_id: res.mediaId
       }));
     } catch (error) {
-      alert(t("fund.messages.qrUploadError"));
+      notify(t("fund.messages.qrUploadError"));
     }
   };
 
@@ -363,7 +364,7 @@ export default function ClanFundPage() {
       setShowCampaignModal(false);
       loadData();
     } catch (error) {
-      alert(error.message || t("fund.messages.createCampaignError"));
+      notify(error.message || t("fund.messages.createCampaignError"));
     } finally {
       setSubmitting(false);
     }
@@ -389,7 +390,7 @@ export default function ClanFundPage() {
 
       loadData();
     } catch (error) {
-      alert(t("fund.messages.updateCampaignError"));
+      notify(t("fund.messages.updateCampaignError"));
     }
   };
 
@@ -416,7 +417,7 @@ export default function ClanFundPage() {
 
       loadData();
     } catch (error) {
-      alert(t("fund.messages.approveError"));
+      notify(t("fund.messages.approveError"));
     } finally {
       setSubmitting(false);
     }
@@ -446,7 +447,7 @@ export default function ClanFundPage() {
       setGeneralTx(initialGeneralTx());
       loadData();
     } catch (error) {
-      alert(error.message || t("fund.messages.expenseError"));
+      notify(error.message || t("fund.messages.expenseError"));
     } finally {
       setSubmitting(false);
     }
@@ -458,7 +459,7 @@ export default function ClanFundPage() {
       setSelectedCampaign(data);
       setShowLedgerModal(true);
     } catch (error) {
-      alert(t("fund.messages.loadCampaignDetailError"));
+      notify(t("fund.messages.loadCampaignDetailError"));
     }
   };
 
@@ -1285,7 +1286,7 @@ export default function ClanFundPage() {
                         const managerPersonId = getManagerPersonId();
 
                         if (!managerPersonId) {
-                          alert(
+                          notify(
                             t("fund.messages.managerPersonIdNotFound")
                           );
                           return;

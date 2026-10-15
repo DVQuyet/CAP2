@@ -171,6 +171,14 @@ function getPlanTotalAmount(plan, quantities) {
   return Number(plan?.price_vnd || 0) * getPlanPeriodQuantity(plan, quantities);
 }
 
+function normalizePlanCode(planCode) {
+  return String(planCode || "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "_")
+    .replace(/-/g, "_");
+}
+
 function paymentMatchesPlanPurchase(payment, plan, periodQuantity) {
   if (!payment || !plan) return false;
   const samePlan = normalizePlanCode(payment.plan_code) === normalizePlanCode(plan.code);
@@ -233,14 +241,6 @@ export default function BillingPage() {
   BASIC: 1,
   PRO: 2,
   PLUS: 3,
-};
-
-const normalizePlanCode = (planCode) => {
-  return String(planCode || "")
-    .trim()
-    .toUpperCase()
-    .replace(/\s+/g, "_")
-    .replace(/-/g, "_");
 };
 
 const getPlanRank = (planCode) => {

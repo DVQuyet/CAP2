@@ -1,3 +1,4 @@
+import { logout } from "../shared/utils/auth";
 const DEFAULT_API_BASE_URL = import.meta.env.PROD ? "https://cap2-backend.onrender.com" : "http://localhost:3000";
 const RAW_API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
@@ -22,6 +23,25 @@ async function parseResponse(response) {
   return response.text();
 }
 
+// Phiên không còn hợp lệ (token hết hạn, tài khoản bị xóa/khóa): xóa phiên và đưa về trang phù hợp.
+// Chỉ áp dụng khi request có gửi token và không phải chính các endpoint đăng nhập.
+const SESSION_LOSS_CODES = new Set(["TOKEN_INVALID", "ACCOUNT_NOT_FOUND", "ACCOUNT_DISABLED"]);
+let redirectingForSession = false;
+
+function handleSessionLoss(status, data, hadToken, path) {
+  if (!hadToken || redirectingForSession || typeof window === "undefined") return;
+  if (String(path || "").startsWith("/api/auth/")) return;
+
+  const code = data?.code || null;
+  const lost = SESSION_LOSS_CODES.has(code) || (status === 401 && code === "NO_TOKEN");
+  if (!lost) return;
+
+  redirectingForSession = true;
+  logout();
+  const target = code === "ACCOUNT_DISABLED" ? "/account-disabled" : "/login";
+  if (window.location.pathname !== target) window.location.assign(target);
+}
+
 export async function apiRequest(path, options = {}) {
   const token = localStorage.getItem("auth_token");
   const isFormData = options.body instanceof FormData;
@@ -40,6 +60,7 @@ export async function apiRequest(path, options = {}) {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
+    handleSessionLoss(response.status, data, Boolean(token), path);
     const error = new Error(data.message || data.error || "Có lỗi xảy ra.");
     error.status = response.status;
     error.data = data;

@@ -7,15 +7,6 @@
     "start": "cd Backend && node server.js",
     "dev": "cd Backend && nodemon server.js"
   },
-  "dependencies": {
-    "express": "^4.18.2",
-    "mysql2": "^3.6.5",
-    "dotenv": "^16.3.1",
-    "cors": "^2.8.5"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.2"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/CAP-2/CAP2.git"

@@ -4,6 +4,7 @@ import { apiRequest } from "../../../services/api";
 import { resolveImageUrl } from "../../../shared/utils/media";
 import { formatDateVN } from "../../../shared/utils/dateFormat";
 import "./FundDesign.css";
+import { notify } from "../../../shared/utils/toast";
 
 export default function MemberFundPage() {
   const { t } = useTranslation();
@@ -81,7 +82,7 @@ export default function MemberFundPage() {
       });
       setShowPayModal(true);
     } catch (error) {
-      alert(t("fund.member.messages.loadCampaignDetailError"));
+      notify(t("fund.member.messages.loadCampaignDetailError"));
     }
   };
 
@@ -100,7 +101,7 @@ export default function MemberFundPage() {
       });
       setFormData(prev => ({ ...prev, evidence_media_id: res.mediaId }));
     } catch (error) {
-      alert(t("fund.member.messages.uploadBillError"));
+      notify(t("fund.member.messages.uploadBillError"));
     }
   };
 
@@ -122,7 +123,7 @@ export default function MemberFundPage() {
         loadData();
       }, 2500);
     } catch (error) {
-      alert(error.message || t("fund.member.messages.reportError"));
+      notify(error.message || t("fund.member.messages.reportError"));
     } finally {
       setSubmitting(false);
     }
@@ -146,7 +147,7 @@ export default function MemberFundPage() {
         loadData();
       }, 2500);
     } catch (error) {
-      alert(error.message || t("fund.member.messages.reportError"));
+      notify(error.message || t("fund.member.messages.reportError"));
     } finally {
       setSubmitting(false);
     }
