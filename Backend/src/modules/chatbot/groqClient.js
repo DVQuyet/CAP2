@@ -46,7 +46,8 @@ function logGroqError(error) {
     });
 }
 
-async function callGroq(systemPrompt, userContent, maxTokens = 1000) {
+// requestOptions: { timeout, maxRetries } cho riêng lần gọi này (vd chat cần trả lời nhanh, không thử lại).
+async function callGroq(systemPrompt, userContent, maxTokens = 1000, requestOptions = undefined) {
     const client = getGroqClient();
     if (!client) return null;
 
@@ -59,7 +60,7 @@ async function callGroq(systemPrompt, userContent, maxTokens = 1000) {
             ],
             max_tokens: maxTokens,
             temperature: 0.1,
-        });
+        }, requestOptions);
         return response?.choices?.[0]?.message?.content || null;
     } catch (error) {
         logGroqError(error);

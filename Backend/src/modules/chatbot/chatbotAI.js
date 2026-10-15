@@ -7,6 +7,12 @@ const {
     buildTitlePrompt,
 } = require('./chatbotPrompts');
 
+// Câu hỏi trong khung chat cần trả lời nhanh: hết thời gian thì dùng câu trả lời có sẵn thay vì chờ và thử lại.
+const CHAT_REQUEST_OPTIONS = {
+    timeout: Number(process.env.GROQ_CHAT_TIMEOUT_MS || 4000),
+    maxRetries: Number(process.env.GROQ_CHAT_MAX_RETRIES || 0),
+};
+
 function stripJsonBlock(value) {
     return String(value || '')
         .replace(/```json/gi, '')
@@ -73,7 +79,7 @@ async function getPlan({ message, history, userProfile, clanContext } = {}) {
         `Dòng họ: ${clanContext?.clan_name || ''}`,
     ].join('\n\n')) + `\n\n<cau_hoi>${escapeDataBlock(message || '')}</cau_hoi>`;
 
-    const raw = await callGroq(buildPlanPrompt(), userContent, 500);
+    const raw = await callGroq(buildPlanPrompt(), userContent, 500, CHAT_REQUEST_OPTIONS);
     if (!raw) return fallbackPlan(message);
     const parsed = parseJsonObject(raw);
     return parsed || fallbackPlan(message);
@@ -104,7 +110,7 @@ async function getExplanation({
         : escapeDataBlock(userMessage || '');
     const userContent = `<du_lieu>\n${data}\n</du_lieu>\n\n<cau_hoi>${question}</cau_hoi>`;
 
-    const raw = await callGroq(systemPrompt, userContent, 800);
+    const raw = await callGroq(systemPrompt, userContent, 800, CHAT_REQUEST_OPTIONS);
     const text = String(raw || '').trim();
     return text || fallbackExplain({ intent, relation, evidence, userProfile, clanContext });
 }

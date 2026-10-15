@@ -7,7 +7,8 @@ function hasUsableEvidence(evidence) {
 
 async function buildExplanation({ relation, path, evidence } = {}) {
     const fallback = relation ? fallbackExplanationService.explainRelationship(relation) : null;
-    if (!hasUsableEvidence(evidence)) {
+    // Lời giải thích dựng bằng luật đã nêu đủ tên người dọc đường quan hệ; chỉ gọi LLM khi bật CHATBOT_LLM_REWRITE=all.
+    if (process.env.CHATBOT_LLM_REWRITE !== 'all' || !hasUsableEvidence(evidence)) {
         return { explanation: fallback, aiUsed: false, source: 'rule_explanation' };
     }
 

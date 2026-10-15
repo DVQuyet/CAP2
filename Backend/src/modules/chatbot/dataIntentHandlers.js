@@ -5,7 +5,7 @@ const memberSearch = require('./memberSearchService');
 const chatbotAI = require('./chatbotAI');
 const { resolveKinshipReference } = require('./kinshipReferenceService');
 const { toPositiveId, queryOptional } = require('./chatbotUtils');
-const { formatDateWithPrecision, ageOf, relativesOf, describePersonBrief } = require('./chatbotFormat');
+const { formatDateWithPrecision, ageOf, relativesOf, describePersonBrief, formatDateVN } = require('./chatbotFormat');
 
 function firstEntity(plan) {
     if (Array.isArray(plan?.entities)) return plan.entities.find(Boolean) || null;
@@ -63,7 +63,14 @@ function needsCurrentPersonAnswer() {
     return 'Bạn muốn hỏi theo người nào trong gia phả? Vui lòng chọn hoặc nhập tên của bạn trong cây.';
 }
 
+// Câu trả lời dữ kiện (người, ngày, số, danh sách) đã đầy đủ và chính xác: không gửi LLM diễn đạt lại để khỏi chậm
+// và khỏi sai số. Chỉ câu kể chuyện (kỷ niệm) mới nhờ LLM. CHATBOT_LLM_REWRITE=all để bật lại cho mọi câu.
+const LLM_REWRITE_INTENTS = new Set(['memories_stories']);
+
 async function explainResolvedIntent({ intent, message, resolvedData, context }) {
+    if (process.env.CHATBOT_LLM_REWRITE !== 'all' && !LLM_REWRITE_INTENTS.has(intent)) {
+        return { explanation: null, aiUsed: false };
+    }
     const result = await chatbotAI.explainRelationship({
         intent,
         userMessage: message,
@@ -425,7 +432,7 @@ async function handleStatsIntent({ clanId, message, parsed, context, planner }) 
         );
         const label = metric === 'oldest_living' ? 'lớn tuổi nhất' : 'nhỏ tuổi nhất';
         answer = person
-            ? `Thành viên còn sống ${label} có ghi ngày sinh là ${person.display_name} (sinh ${formatDateOnly(person.birth_date)}${person.generation ? `, đời thứ ${person.generation}` : ''}).`
+            ? `Thành viên còn sống ${label} có ghi ngày sinh là ${person.display_name} (sinh ${formatDateVN(person.birth_date)}${person.generation ? `, đời thứ ${person.generation}` : ''}).`
             : 'Gia phả chưa có đủ dữ liệu ngày sinh để xác định.';
         resolvedData.person = person || null;
     }
@@ -531,16 +538,16 @@ async function handleEventsIntent({ clanId, accountId = null, message, parsed, c
     const ai = await explainResolvedIntent({ intent: parsed.intent, message, resolvedData, context });
 
     const clanEventText = events.length
-        ? `Sự kiện ${range.label}: ${events.map((event) => `${event.title} (${formatDateOnly(event.start_date || event.event_date) || 'chưa rõ ngày'}${event.end_date && formatDateOnly(event.end_date) !== formatDateOnly(event.start_date || event.event_date) ? ` - ${formatDateOnly(event.end_date)}` : ''})`).join(', ')}.`
+        ? `Sự kiện ${range.label}: ${events.map((event) => `${event.title} (${formatDateVN(event.start_date || event.event_date) || 'chưa rõ ngày'}${event.end_date && formatDateOnly(event.end_date) !== formatDateOnly(event.start_date || event.event_date) ? ` - ${formatDateVN(event.end_date)}` : ''})`).join(', ')}.`
         : '';
     const calendarText = calendarEvents.length
-        ? `Lịch ${range.label}: ${calendarEvents.map((event) => `${event.title} (${formatDateOnly(event.event_date)}${event.event_time ? ` ${event.event_time}` : ''})`).join('; ')}.`
+        ? `Lịch ${range.label}: ${calendarEvents.map((event) => `${event.title} (${formatDateVN(event.event_date)}${event.event_time ? ` lúc ${event.event_time}` : ''})`).join('; ')}.`
         : '';
     const anniversaryText = anniversaries.length
-        ? `Ngày giỗ ${range.label}: ${anniversaries.map((item) => `${item.title.replace(/^Ngày giỗ\s+/, '')} (${formatDateOnly(item.date)}${item.anniversary_lunar_date ? `, âm lịch ${item.anniversary_lunar_date}` : ''})`).join('; ')}.`
+        ? `Ngày giỗ ${range.label}: ${anniversaries.map((item) => `${item.title.replace(/^Ngày giỗ\s+/, '')} (${formatDateVN(item.date)}${item.anniversary_lunar_date ? `, tức ${String(item.anniversary_lunar_date).split('/').slice(0, 2).join('/')} âm lịch` : ''})`).join('; ')}.`
         : '';
     const birthdayText = birthdays.length
-        ? `Sinh nhật ${range.label}: ${birthdays.map((item) => `${item.title.replace(/^Sinh nhật\s+/, '')} (${formatDateOnly(item.date)})`).join('; ')}.`
+        ? `Sinh nhật ${range.label}: ${birthdays.map((item) => `${item.title.replace(/^Sinh nhật\s+/, '')} (${formatDateVN(item.date)})`).join('; ')}.`
         : '';
 
     const parts = kind === 'death_anniversary'

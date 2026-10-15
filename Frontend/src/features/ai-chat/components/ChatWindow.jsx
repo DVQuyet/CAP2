@@ -105,6 +105,9 @@ export default function ChatWindow({
         makeLocalMessage("assistant", data.answer || error?.message || "Không thể xử lý câu hỏi.", {
           metadata: data,
           candidates: data.candidates || [],
+          // Lỗi mạng/máy chủ (không phải câu trả lời của trợ lý): cho thử lại đúng câu vừa hỏi.
+          retryText: data.answer ? null : messageText,
+          retryExtra: data.answer ? null : extra,
         }),
       ]);
     } finally {
@@ -160,7 +163,12 @@ export default function ChatWindow({
           <div className="ai-empty-state">Chưa xác định được dòng họ hoặc thành viên hiện tại.</div>
         ) : null}
         {renderedMessages.map((message) => (
-          <MessageBubble key={message.id} message={message} onCandidatePick={handleCandidatePick} />
+          <MessageBubble
+            key={message.id}
+            message={message}
+            onCandidatePick={handleCandidatePick}
+            onRetry={(text, extra) => sendMessage(text, extra || {})}
+          />
         ))}
         {loading ? <TypingIndicator /> : null}
       </div>

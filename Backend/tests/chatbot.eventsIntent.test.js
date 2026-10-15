@@ -65,7 +65,8 @@ test('hỏi riêng ngày giỗ chỉ trả ngày giỗ, không lẫn sự kiện
     const result = await run('Tháng này có giỗ ai không');
 
     assert.match(result.answer, /Đinh Viết Hòa/);
-    assert.match(result.answer, /âm lịch 15\/09/);
+    assert.match(result.answer, /15\/09 âm lịch/);
+    assert.doesNotMatch(result.answer, /\d{4}-\d{2}-\d{2}/, 'ngày hiển thị kiểu Việt, không phải ISO');
     assert.doesNotMatch(result.answer, /Họp họ/);
     assert.doesNotMatch(result.answer, /Đinh Viết Lâm/);
     assert.strictEqual(mock.find(/FROM events/).length, 0, 'không truy vấn sự kiện khi chỉ hỏi ngày giỗ');

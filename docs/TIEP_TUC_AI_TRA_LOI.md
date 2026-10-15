@@ -29,7 +29,7 @@ Số dòng trong file này tính theo commit `1f98244`; sau khi sửa có thể 
 | 1 – Hết câu trả lời sai | xong | 69/82, hội thoại 1/5 | GĐ1 |
 | 2 – Phủ câu hỏi | xong | 82/82, hội thoại 1/5 | GĐ2 |
 | 3 – Hội thoại | xong | 82/82, hội thoại 7/7 | GĐ3 |
-| 4 – Nhanh, nói tự nhiên | chưa làm | giữ điểm, p95 < 1,5 s không LLM | |
+| 4 – Nhanh, nói tự nhiên | xong | 82/82, hội thoại 7/7 | GĐ4 |
 | 5 – Quyền và dữ liệu | chưa làm | giữ điểm | |
 
 Ước lượng: tổng ~1,2–1,9 triệu token (~8–10 ngày công nếu làm tay).
@@ -103,14 +103,14 @@ Số dòng trong file này tính theo commit `1f98244`; sau khi sửa có thể 
 
 ## Giai đoạn 4 — Nhanh và nói tự nhiên (~150–250k token)
 
-- [ ] 4.1 Bỏ gọi Groq "diễn đạt lại" cho câu trả lời ngắn: `explainResolvedIntent` (`dataIntentHandlers.js:65`) đang gọi cho
+- [x] 4.1 Bỏ gọi Groq "diễn đạt lại" cho câu trả lời ngắn: `explainResolvedIntent` (`dataIntentHandlers.js:65`) đang gọi cho
   thông tin người, kỷ niệm, sự kiện, chào hỏi; `relationshipExplanationAI` cho biểu thức quan hệ. Chỉ giữ cho lịch sử/kỷ niệm,
   timeout chat ~4 s, không thử lại (`groqClient.js:13`, biến `GROQ_TIMEOUT_MS`, `GROQ_MAX_RETRIES`).
-- [ ] 4.2 Ngày kiểu Việt dd/mm/yyyy (kèm âm lịch cho ngày giỗ) ở mọi câu trả lời (đang in `1940-10-25`).
-- [ ] 4.3 Giải thích đường quan hệ bằng tên ("Nam là con chú Lâm; chú Lâm là con ông Bình — em ruột ông nội bạn")
+- [x] 4.2 Ngày kiểu Việt dd/mm/yyyy (kèm âm lịch cho ngày giỗ) ở mọi câu trả lời (đang in `1940-10-25`).
+- [x] 4.3 Giải thích đường quan hệ bằng tên ("Nam là con chú Lâm; chú Lâm là con ông Bình — em ruột ông nội bạn")
   thay cho "vì cha của bạn, rồi đến cha của người đó…".
-- [ ] 4.4 Frontend: `white-space: pre-line` cho `.ai-message p` (`AIChat.css:226`); nút "Thử lại" khi lỗi; "Cảm ơn" đáp đúng ngữ cảnh (đang chào lại).
-- [ ] 4.5 Ghi thời gian từng bước (phân tích, DB, LLM) vào metadata để đo p95.
+- [x] 4.4 Frontend: `white-space: pre-line` cho `.ai-message p` (`AIChat.css:226`); nút "Thử lại" khi lỗi; "Cảm ơn" đáp đúng ngữ cảnh (đang chào lại).
+- [x] 4.5 Ghi thời gian từng bước (phân tích, DB, LLM) vào metadata để đo p95.
 
 ## Giai đoạn 5 — Quyền và dữ liệu (~100–200k token)
 
@@ -130,6 +130,10 @@ Số dòng trong file này tính theo commit `1f98244`; sau khi sửa có thể 
 4. Bước chọn "bạn là ai" trong chat có được gắn vĩnh viễn tài khoản với hồ sơ như hiện nay không? (việc 5.2)
 
 ## Ghi chú phiên trước
+
+- 15/10/2026 (tiếp): GĐ4 xong. Chỉ câu kỷ niệm gọi Groq diễn đạt lại (`CHATBOT_LLM_REWRITE=all` để bật lại); chat gọi Groq với
+  timeout 4 s, không thử lại (`GROQ_CHAT_TIMEOUT_MS`, `GROQ_CHAT_MAX_RETRIES`); ngày kiểu Việt; đáp "cảm ơn/vâng"; giao diện
+  xuống dòng và nút "Thử lại"; `timings` trong câu trả lời và log câu chậm (`CHATBOT_SLOW_MS`). p95 thực tế cần đo trên Render.
 
 - 15/10/2026 (tiếp): GĐ3 xong. `conversationFlowService.js` viết lại câu trước khi phân tích: đại từ (theo giới tính),
   câu lược, chọn người khi hỏi lại. Hỏi lại/không tìm thấy trả 200 và được lưu lịch sử; trạng thái chờ chọn nằm trong bộ nhớ

@@ -364,6 +364,14 @@ function buildUnknownAnswer(message) {
         : 'Câu này nằm ngoài phạm vi gia phả nên tôi chưa trả lời được. Tôi có thể giúp tra quan hệ họ hàng, thông tin thành viên, ngày giỗ, sự kiện và lịch sử dòng họ — ví dụ: "Gia phả có bao nhiêu người?", "Sắp tới có giỗ ai không?".';
 }
 
+// "Cảm ơn" -> không có gì; "ok/vâng" -> mời hỏi tiếp; còn lại là lời chào.
+function buildShortcutReply(message, userProfile = {}, clanInfo = {}) {
+    const text = normalizeShortcutMessage(message);
+    if (/^(cam on|thanks|thank you|thank)/.test(text)) return 'Không có gì ạ! Bạn cần tra thêm gì về gia phả cứ hỏi tôi nhé.';
+    if (/^(ok|okay|vang|da|duoc|roi|u|uh|um)\b/.test(text)) return 'Vâng. Bạn muốn hỏi gì tiếp về gia phả?';
+    return buildGreetingReply(userProfile, clanInfo);
+}
+
 function buildGreetingReply(userProfile = {}, clanInfo = {}) {
     const displayName = String(userProfile.display_name || '').trim();
     const clanName = String(clanInfo.clan_name || '').trim();
@@ -1728,6 +1736,8 @@ async function applyPermissionFilterToResponse(responsePayload, { clanId, viewer
 
 exports.ask = async (req, res) => {
     let responsePayload = null;
+    const startedAt = Date.now();
+    const timings = {};
 
     try {
         const body = req.body || {};
@@ -1799,8 +1809,8 @@ exports.ask = async (req, res) => {
             responsePayload = {
                 success: true,
                 intent: 'general_chat',
-                answer: buildGreetingReply(chatbotContext.userProfile, chatbotContext.clanInfo),
-                reply: buildGreetingReply(chatbotContext.userProfile, chatbotContext.clanInfo),
+                answer: buildShortcutReply(message, chatbotContext.userProfile, chatbotContext.clanInfo),
+                reply: buildShortcutReply(message, chatbotContext.userProfile, chatbotContext.clanInfo),
                 suggestedQuestions,
                 suggestions: suggestedQuestions.map((text) => ({ type: 'quick_question', text })),
                 confidence: 1,
@@ -1888,6 +1898,7 @@ exports.ask = async (req, res) => {
         });
         const parsed = planning.plan;
         const planner = planning.planner;
+        timings.planMs = Date.now() - startedAt;
         const explicitTargetPersonId = toPositiveId(body.targetPersonId || body.target_person_id);
         if (explicitTargetPersonId && parsed.entities) {
             parsed.entities.targetPersonId = explicitTargetPersonId;
@@ -1981,6 +1992,12 @@ exports.ask = async (req, res) => {
 
         if (!responsePayload || res.headersSent) return;
         if (!responsePayload.planner) responsePayload.planner = planner;
+        timings.totalMs = Date.now() - startedAt;
+        responsePayload.timings = timings;
+        // Ghi lại câu trả lời chậm (không ghi nội dung câu hỏi) để theo dõi p95.
+        if (timings.totalMs > Number(process.env.CHATBOT_SLOW_MS || 3000)) {
+            console.warn('chatbot slow answer', { intent: parsed.intent, planner: planner?.source, ...timings });
+        }
         if (!responsePayload.source && responsePayload.relationshipPath) responsePayload.source = 'rule_engine';
 
         responsePayload = await applyPermissionFilterToResponse(responsePayload, {

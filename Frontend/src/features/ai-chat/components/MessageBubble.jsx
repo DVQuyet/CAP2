@@ -34,7 +34,7 @@ function AssistantAction({ action }) {
   );
 }
 
-export default function MessageBubble({ message, onCandidatePick }) {
+export default function MessageBubble({ message, onCandidatePick, onRetry }) {
   const isUser = message.role === "user";
   const candidates = message.candidates || message.metadata?.candidates || [];
   const actions = message.actions || message.metadata?.actions || [];
@@ -59,6 +59,12 @@ export default function MessageBubble({ message, onCandidatePick }) {
               </button>
             ))}
           </div>
+        ) : null}
+        {!isUser && message.retryText ? (
+          <button type="button" className="ai-retry-btn" onClick={() => onRetry?.(message.retryText, message.retryExtra)}>
+            <span className="material-symbols-outlined" aria-hidden="true">refresh</span>
+            Thử lại
+          </button>
         ) : null}
         {!isUser && actions.length ? actions.map((action, index) => (
           <AssistantAction key={`${action.type}-${index}`} action={action} />

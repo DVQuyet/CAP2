@@ -225,6 +225,21 @@
 
 .ai-message p {
   margin: 0;
+  white-space: pre-line;
+}
+
+.ai-retry-btn {
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #155e75;
+  font-size: 0.85rem;
+  cursor: pointer;
 }
 
 .ai-msg-user {
