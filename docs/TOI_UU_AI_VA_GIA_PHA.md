@@ -16,6 +16,8 @@ cách hiển thị, cách lưu quan hệ giữa các thành viên, và cách AI 
 
 ## 2. Cách AI trả lời
 
+> Kết quả kiểm tra đầu-cuối (47/82 câu đúng, hội thoại 0/5) và kế hoạch chi tiết: [KE_HOACH_AI_TRA_LOI.md](KE_HOACH_AI_TRA_LOI.md).
+
 ### 2.1 Luồng hiện tại
 
 ```text
