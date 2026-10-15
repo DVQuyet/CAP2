@@ -1445,7 +1445,7 @@ exports.getGeneralPosts = async (req, res) => {
       : '';
     const [fetchedPosts] = await db.query(
       `SELECT p.id, p.description, p.content, p.image_url, p.image_media_id, p.created_at, 
-              COALESCE(author.display_name, a.email, 'Thành viên') as author_name,
+              COALESCE(NULLIF(TRIM(author.display_name), ''), 'Thành viên') as author_name,
               (SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id) AS like_count,
               (SELECT COUNT(*) FROM post_comments pc WHERE pc.post_id = p.id) AS comment_count,
               EXISTS(
@@ -2062,7 +2062,7 @@ exports.getFamilyMemories = async (req, res) => {
       values.push(memoriesBeforeId);
     }
     const [fetchedMemories] = await db.query(
-      `SELECT fm.*, COALESCE(p.display_name, a.email) AS author_name, a.email AS author_email,
+      `SELECT fm.*, COALESCE(NULLIF(TRIM(p.display_name), ''), 'Thành viên dòng họ') AS author_name,
               (
                 SELECT COUNT(*)
                 FROM family_memory_readers fmr_count
