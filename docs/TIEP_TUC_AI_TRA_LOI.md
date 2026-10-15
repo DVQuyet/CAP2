@@ -26,7 +26,7 @@ Số dòng trong file này tính theo commit `1f98244`; sau khi sửa có thể 
 | Giai đoạn | Trạng thái | E2E sau giai đoạn | Commit |
 |---|---|---|---|
 | 0 – CI | xong | 47/82 (ngày cố định 15/10/2026) | GĐ0 |
-| 1 – Hết câu trả lời sai | chưa làm | mục tiêu ≥ 62/82 | |
+| 1 – Hết câu trả lời sai | xong | 69/82, hội thoại 1/5 | GĐ1 |
 | 2 – Phủ câu hỏi | chưa làm | mục tiêu ≥ 76/82 | |
 | 3 – Hội thoại | chưa làm | hội thoại ≥ 4/5 | |
 | 4 – Nhanh, nói tự nhiên | chưa làm | giữ điểm, p95 < 1,5 s không LLM | |
@@ -41,7 +41,7 @@ Số dòng trong file này tính theo commit `1f98244`; sau khi sửa có thể 
 
 ## Giai đoạn 1 — Hết câu trả lời sai (~350–500k token, mục tiêu ≥ 62/82)
 
-- [ ] **1.1 Một nguồn xưng hô cho cả hai chiều.** `relationshipEngine.js:600 findPeopleByKinship` đang lọc bằng
+- [x] **1.1 Một nguồn xưng hô cho cả hai chiều.** `relationshipEngine.js:600 findPeopleByKinship` đang lọc bằng
   `vietnameseKinshipRules.js:288 pathMatchesKinship` — so **chuỗi con trên nhãn đã bỏ dấu** ("cha" nằm trong "chau",
   "co" khớp cô/cố/con). Trong khi `buildRelationshipResult` (`relationshipEngine.js:~402`) đã tính nhãn đúng bằng
   `describeKinship` (`genealogy/core/kinshipNaming.js:333`). Sửa: lọc theo `relationshipLabel`/`kinshipCategory` từ
@@ -49,26 +49,26 @@ Số dòng trong file này tính theo commit `1f98244`; sau khi sửa có thể 
   (bố/cha/ba/tía, mẹ/má/u/bầm…); trả lời tách "ruột/họ".
   Câu phải đúng: Bà nội → Trần Thị Lan · Cô → Đinh Thị Hạnh · Cụ nội → Đinh Công Thành (không có Đinh Thị Mai) ·
   Chú → Đinh Văn Hùng (không có Đinh Văn Bình) · Ông chú → Đinh Văn Bình · Bà cô → Đinh Thị Mai · Em họ → Đinh Văn Nam.
-- [ ] **1.2 Hiểu không dấu theo cụm.** `intentParserService.js:13 normalizeSynonyms` đổi "ba" → "cha" nên "bà nội" thành
+- [x] **1.2 Hiểu không dấu theo cụm.** `intentParserService.js:13 normalizeSynonyms` đổi "ba" → "cha" nên "bà nội" thành
   "cha nội". Phân tích trên chuỗi **có dấu** trước; chỉ khi người dùng gõ không dấu mới tra bảng cụm
   ("ba noi" = bà nội, "ong chu" = ông chú, "ba co" = bà cô, "cu noi" = cụ nội, "co toi" = cô tôi); còn mơ hồ ("co" = cô/cố?)
   thì hỏi lại. `parseKinshipLookup` (`:91`) ưu tiên cụm dài; nhãn in ra luôn có dấu (đang in "cu/chu/co của bạn").
-- [ ] **1.3 Trùng tên phải hỏi lại.** `memberSearchService.js:249` chỉ coi là mơ hồ khi điểm < 0.98, nên hai người cùng tên
+- [x] **1.3 Trùng tên phải hỏi lại.** `memberSearchService.js:249` chỉ coi là mơ hồ khi điểm < 0.98, nên hai người cùng tên
   (điểm 1.0) bị chọn ngầm. Sửa: ≥ 2 ứng viên cùng tên chuẩn hóa → `ambiguous`; câu hỏi lại kèm đời, cha/mẹ, năm sinh.
   Áp cho `handleNamedRelationshipExpression` (`chatbotController.js:757`) và mọi chỗ gọi `resolvePerson`.
   Câu phải đúng: "Con của Đinh Văn Hùng là ai?" → hỏi lại Hùng nào.
-- [ ] **1.4 Sửa thứ tự/điều kiện parser** (`intentParserService.js`):
+- [x] **1.4 Sửa thứ tự/điều kiện parser** (`intentParserService.js`):
   - "Tôi có mấy anh chị em?" bị `parseStatsCount` (`:349`) hiểu "chị" thành "chi" (chi họ) → chặn khi có "anh chị em/anh em/chị em".
   - "Tôi đời thứ mấy?" phải ra `find_generation` (người hỏi), không phải thống kê số đời.
   - "Ai là em của ông nội tôi?" phải đi biểu thức chuỗi (`parseRelationshipExpression`), không tra một từ.
   - "Thủy tổ của dòng họ là ai?": `parseAncestors` (`:300`) + `extractSubjectAfterPreposition` (`:280`) đang coi
     "dòng họ là ai" là tên người → chủ thể "dòng họ/họ/gia phả" nghĩa là thủy tổ (người đời đầu không có cha mẹ trong cây).
   - "Có ai tên Lan không?": `parsePersonExists` (`:36`) còn dính chữ "ai" ("Ai Lan") → bỏ "ai tên/ai có tên/người tên".
-- [ ] **1.5 Thông tin người trả đúng trường được hỏi.** `dataIntentHandlers.js:110 handlePersonInfoIntent` luôn in
+- [x] **1.5 Thông tin người trả đúng trường được hỏi.** `dataIntentHandlers.js:110 handlePersonInfoIntent` luôn in
   đời/ngày sinh/quê theo một mẫu → "Hòa mất năm nào?" in ngày sinh. Trả theo trường: mất (death_date, độ chính xác),
   còn sống (is_living), tuổi (chỉ khi ngày sinh exact/year), quê, tiểu sử. `parsePersonInfo` (`:433`) không tách được tên
   trong "Quê quán của Đinh Văn Lâm ở đâu?".
-- [ ] **1.6 Câu so sánh hai người** (`chatbotController.js:400 handleCompareRelationship`): giải thích theo góc nhìn người A,
+- [x] **1.6 Câu so sánh hai người** (`chatbotController.js:400 handleCompareRelationship`): giải thích theo góc nhìn người A,
   không dùng "cha của bạn…".
 
 ## Giai đoạn 2 — Phủ đủ câu hỏi (~300–450k token, mục tiêu ≥ 76/82)
@@ -128,5 +128,10 @@ Số dòng trong file này tính theo commit `1f98244`; sau khi sửa có thể 
 4. Bước chọn "bạn là ai" trong chat có được gắn vĩnh viễn tài khoản với hồ sơ như hiện nay không? (việc 5.2)
 
 ## Ghi chú phiên trước
+
+- 15/10/2026 (tiếp): GĐ1 xong. Tra xưng hô dùng nhãn `describeKinship` (`kinshipTermService.js`, `findPeopleByKinshipTerm`,
+  `resolveKinshipChain`); trùng tên hỏi lại kèm đời/năm sinh/cha mẹ; thông tin người theo trường; giải thích quan hệ bằng tên.
+  Câu còn trượt thuộc GĐ2 (mấy vợ, con nuôi, vợ lẽ, con trưởng, đời đông nhất, giỗ theo người, họp họ khi nào, nhà thờ,
+  trưởng họ, ngoài phạm vi, "A với B là gì của nhau", số điện thoại) và GĐ3 (hội thoại).
 
 - 15/10/2026: mới kiểm tra và lập kế hoạch, chưa sửa mã trả lời. Mốc 47/82, hội thoại 0/5 (commit `1f98244`).

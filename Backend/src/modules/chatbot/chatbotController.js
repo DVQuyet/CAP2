@@ -15,6 +15,54 @@ const { parseEventCommand } = require('./eventCommandService');
 const { resolveRelationshipExpression } = require('./relationshipExpressionResolver');
 const { toPositiveId, queryOptional } = require('./chatbotUtils');
 const { ARCHIVED_MEMBER_JOIN_SQL } = require('../manager/common.service');
+const { describePersonBrief, capitalizeFirst } = require('./chatbotFormat');
+const { plainTermToKey, hasVietnameseDiacritics } = require('./kinshipTermService');
+
+// Từ không dấu (thứ tự trong câu) -> key có dấu theo thứ tự đi từ người gốc ra; null nếu có từ không đổi được.
+function chainKeysFromTerms(terms) {
+    if (!Array.isArray(terms) || !terms.length) return null;
+    const keys = terms.slice().reverse().map(plainTermToKey);
+    return keys.every(Boolean) ? keys : null;
+}
+
+// Trả lời biểu thức quan hệ tính từ chính người hỏi ("em trai của bố tôi").
+async function answerViewerKinshipChain({ clanId, currentMemberId, keys, intent, planner }) {
+    const chain = await relationshipEngine.resolveKinshipChain(currentMemberId, keys, { clanId });
+    if (!chain.ok) return null;
+    const phrase = keys.slice().reverse().join(' của ');
+    const people = chain.last;
+    if (people.length === 1) {
+        const relation = await relationshipEngine.findRelationship(currentMemberId, people[0].id, { clanId });
+        const label = relation.found ? relation.relationshipLabel : null;
+        const explanation = relation.found ? explanationService.explainRelationship(relation) : null;
+        return {
+            success: true,
+            intent,
+            answer: `Theo dữ liệu gia phả hiện tại, ${phrase} bạn là ${people[0].name}.${explanation ? ` ${explanation}` : (label ? ` Đó là ${label} của bạn.` : '')}`,
+            confidence: 0.88,
+            planner,
+            relationshipPath: relation.found ? relation.relationshipPath : [],
+            pathNodes: relation.found ? relation.pathNodes : [],
+            relationshipLabel: label,
+            pathVisualizer: relation.found ? explanationService.buildPathVisualizer(relation) : null,
+            targetPerson: { id: people[0].id, name: people[0].name },
+            people: [{ id: people[0].id, name: people[0].name }],
+        };
+    }
+    const graph = await relationshipEngine.loadClanGraph(clanId);
+    const described = await Promise.all(people.map(async (item) => {
+        const relation = await relationshipEngine.findRelationship(currentMemberId, item.id, { clanId });
+        return relation.found ? `${item.name} (${relation.relationshipLabel} của bạn)` : item.name;
+    }));
+    return {
+        success: true,
+        intent,
+        answer: `Theo dữ liệu gia phả hiện tại, ${phrase} bạn gồm: ${described.join(', ')}.`,
+        confidence: 0.86,
+        planner,
+        people: people.map((item) => ({ id: item.id, name: item.name, generation: graph.people.get(Number(item.id))?.generation || null })),
+    };
+}
 const {
     needsCurrentPersonAnswer,
     handlePersonInfoIntent,
@@ -282,11 +330,11 @@ function publicRelationPayload(payload) {
     return visualizer ? { ...payload, pathVisualizer: visualizer } : payload;
 }
 
-function ambiguityResponse(res, intent, candidates) {
+function ambiguityResponse(res, intent, candidates, subject = null) {
     const clarification = buildClarificationResponse({
         candidates,
         reason: 'ambiguous_person',
-        context: { intent },
+        context: { intent, ...(subject ? { subject } : {}) },
     });
     return res.status(409).json({
         success: false,
@@ -317,7 +365,7 @@ async function resolveNamedPerson(res, clanId, intent, names, currentMemberId = 
     const kinship = await resolveKinshipReference({ clanId, currentMemberId, names });
     if (kinship?.status === 'resolved') return kinship.person;
     if (kinship?.status === 'ambiguous') {
-        ambiguityResponse(res, intent, kinship.candidates);
+        ambiguityResponse(res, intent, kinship.candidates, Array.isArray(names) ? names[0] : names);
         return null;
     }
     if (kinship?.status === 'not_found') {
@@ -337,7 +385,7 @@ async function resolveNamedPerson(res, clanId, intent, names, currentMemberId = 
         return null;
     }
     if (result.status === 'ambiguous') {
-        ambiguityResponse(res, intent, result.candidates);
+        ambiguityResponse(res, intent, result.candidates, Array.isArray(names) ? names[0] : names);
         return null;
     }
     return result.person;
@@ -417,13 +465,13 @@ async function handleCompareRelationship({ res, clanId, currentMemberId, parsed 
     return {
         success: true,
         intent: parsed.intent,
-        answer: explanationService.explainRelationship(relation) || `Theo dữ liệu gia phả hiện tại, ${relation.targetName} là ${relation.relationshipLabel} của ${relation.sourceName}.`,
+        answer: explanationService.explainRelationship(relation, { viewerIsSource: false }) || `Theo dữ liệu gia phả hiện tại, ${relation.targetName} là ${relation.relationshipLabel} của ${relation.sourceName}.`,
         confidence: Math.min(relation.confidence, parsed.confidence),
         relationshipPath: relation.relationshipPath,
         pathNodes: relation.pathNodes,
         relationshipKey: relation.relationshipKey,
         relationshipLabel: relation.relationshipLabel,
-        explanation: explanationService.explainRelationship(relation),
+        explanation: explanationService.explainRelationship(relation, { viewerIsSource: false }),
         evidence: relation.evidence,
         pathVisualizer: explanationService.buildPathVisualizer(relation),
         sourcePerson: { id: relation.sourcePerson.id, name: relation.sourceName },
@@ -517,23 +565,68 @@ async function handleFindByKinship({ clanId, currentMemberId, parsed }) {
             needsPersonSelection: true,
         };
     }
-    const people = await relationshipEngine.findPeopleByKinship(currentMemberId, parsed.entities.kinshipTerm, { clanId });
+    const entities = parsed.entities || {};
+    const term = entities.kinshipTerm;
+    if (Array.isArray(entities.ambiguousTerms) && entities.ambiguousTerms.length > 1) {
+        const options = entities.ambiguousTerms;
+        return {
+            success: true,
+            intent: parsed.intent,
+            answer: `Bạn muốn hỏi ${options.map((item) => `"${item}"`).join(' hay ')} của bạn? Gõ có dấu giúp tôi hiểu chính xác hơn.`,
+            confidence: 0.5,
+            needsClarification: true,
+            suggestions: options.map((item) => ({ type: 'quick_question', text: `${capitalizeFirst(item)} của tôi là ai?` })),
+        };
+    }
+
+    const found = await relationshipEngine.findPeopleByKinshipTerm(currentMemberId, term, { clanId });
+    // "chú ruột": chỉ giữ nhãn đúng bằng từ hỏi (bỏ "chú họ").
+    const matches = entities.strict
+        ? found.filter((item) => String(item.label).replace(/\s*\(.*?\)\s*/g, ' ').trim() === term)
+        : found;
+    if (!matches.length) {
+        return {
+            success: true,
+            intent: parsed.intent,
+            answer: entities.count
+                ? `Theo dữ liệu gia phả hiện tại, chưa ghi nhận ${term} nào của bạn.`
+                : `Theo dữ liệu gia phả hiện tại, tôi chưa tìm thấy ${term} của bạn.`,
+            confidence: 0.5,
+            people: [],
+        };
+    }
+
+    // Nhóm theo nhãn để không lẫn ruột với họ ("chú: …; chú họ: …").
+    const groups = new Map();
+    for (const match of matches) {
+        const label = String(match.label).replace(/\s*\(.*?\)\s*/g, ' ').trim();
+        if (!groups.has(label)) groups.set(label, []);
+        groups.get(label).push(match);
+    }
+    const names = (items) => items.map((item) => item.name).join(', ');
+    const grouped = () => [...groups].map(([label, items]) => `${label}: ${names(items)}`).join('; ');
+    let answer;
+    if (entities.count) {
+        answer = `Theo dữ liệu gia phả hiện tại, bạn có ${matches.length} ${term}: ${groups.size === 1 ? names(matches) : grouped()}.`;
+    } else if (groups.size === 1) {
+        const [label, items] = [...groups][0];
+        answer = label === term
+            ? `Theo dữ liệu gia phả hiện tại, ${term} của bạn là: ${names(items)}.`
+            : `Theo dữ liệu gia phả hiện tại, ${term} của bạn (${label}) là: ${names(items)}.`;
+    } else {
+        answer = `Theo dữ liệu gia phả hiện tại, ${term} của bạn gồm — ${grouped()}.`;
+    }
+    const uncertain = matches.filter((item) => item.uncertain);
+    if (uncertain.length) {
+        answer += ` Với ${names(uncertain)}, gia phả chưa đủ thông tin thứ bậc nên cách xưng hô có thể khác.`;
+    }
+
     return {
         success: true,
         intent: parsed.intent,
-        answer: people.length
-            ? `Theo dữ liệu gia phả hiện tại, ${parsed.entities.kinshipTerm} của bạn là: ${people.map((item) => item.targetName).join(', ')}.`
-            : `Theo dữ liệu gia phả hiện tại, tôi chưa tìm thấy ${parsed.entities.kinshipTerm} của bạn.`,
-        confidence: people.length ? parsed.confidence : 0.45,
-        people: people.map((item) => ({
-            id: item.targetPerson.id,
-            name: item.targetName,
-            relationshipPath: item.relationshipPath,
-            pathNodes: item.pathNodes,
-            relationshipLabel: item.relationshipLabel,
-            evidence: item.evidence,
-            pathVisualizer: explanationService.buildPathVisualizer(item),
-        })),
+        answer,
+        confidence: parsed.confidence || 0.88,
+        people: matches.map((item) => ({ id: item.id, name: item.name, relationshipLabel: item.label })),
     };
 }
 
@@ -551,6 +644,18 @@ async function handleFindGeneration({ res, clanId, currentMemberId, parsed }) {
         }
         person = await relationshipEngine.getPerson(currentMemberId, { clanId });
     } else {
+        const search = await memberSearch.resolvePerson({ clanId, names: parsed.entities.targetName });
+        const generations = [...new Set((search.candidates || []).map((item) => item.generation).filter(Boolean))];
+        if (search.status === 'ambiguous' && generations.length === 1 && search.candidates.every((item) => item.generation)) {
+            const name = relationshipEngine.personName(search.candidates[0]);
+            return {
+                success: true,
+                intent: parsed.intent,
+                answer: `Theo dữ liệu gia phả hiện tại, có ${search.candidates.length} người tên ${name} và đều thuộc đời thứ ${generations[0]}.`,
+                confidence: parsed.confidence,
+                people: search.candidates.map((item) => ({ id: item.id, name: relationshipEngine.personName(item), generation: item.generation })),
+            };
+        }
         person = await resolveNamedPerson(res, clanId, parsed.intent, parsed.entities.targetName, currentMemberId);
         if (!person) return null;
     }
@@ -596,7 +701,43 @@ const ANCESTOR_LEVEL_LABELS = ['Cha mẹ', 'Ông bà', 'Cụ', 'Kỵ', 'Cao tổ
 const ANCESTOR_EDGE_TYPES = new Set(['father', 'mother', 'adopted_parent']);
 
 // Tổ tiên theo dòng sinh/nhận làm con (không tính cha mẹ kế), nhóm theo đời phía trên.
+async function handleClanFounders({ clanId, parsed }) {
+    const graph = await relationshipEngine.loadClanGraph(clanId);
+    const people = [...graph.people.values()];
+    const hasParent = (id) => (graph.adjacency.get(Number(id)) || []).some((edge) => ANCESTOR_EDGE_TYPES.has(edge.type));
+    const hasChild = (id) => (graph.adjacency.get(Number(id)) || []).some((edge) => ['son', 'daughter', 'child', 'adopted_son', 'adopted_daughter', 'adopted_child'].includes(edge.type));
+    const generations = people.map((person) => Number(person.generation)).filter((value) => Number.isFinite(value) && value > 0);
+    const firstGeneration = generations.length ? Math.min(...generations) : null;
+    const roots = people.filter((person) => !hasParent(person.id)
+        && (firstGeneration === null || Number(person.generation) === firstGeneration));
+    // Ưu tiên người có con cháu trong cây; vợ/chồng của thủy tổ ghi kèm.
+    const withDescendants = roots.filter((person) => hasChild(person.id));
+    const founders = (withDescendants.length ? withDescendants : roots)
+        .sort((a, b) => (Number(a.gender) === 1 ? 0 : 1) - (Number(b.gender) === 1 ? 0 : 1) || Number(a.id) - Number(b.id));
+    if (!founders.length) {
+        return { success: true, intent: parsed.intent, answer: 'Gia phả hiện chưa ghi nhận thủy tổ của dòng họ.', confidence: 0.5, people: [] };
+    }
+    const main = founders[0];
+    const spouseIds = new Set((graph.adjacency.get(Number(main.id)) || []).filter((edge) => edge.type === 'spouse').map((edge) => Number(edge.to)));
+    const others = founders.slice(1).filter((person) => !spouseIds.has(Number(person.id)));
+    const spouses = founders.slice(1).filter((person) => spouseIds.has(Number(person.id)));
+    const generationText = firstGeneration ? ` (đời ${firstGeneration})` : '';
+    let answer = `Theo dữ liệu gia phả hiện tại, thủy tổ được ghi nhận${generationText} là ${relationshipEngine.personName(main)}`;
+    if (spouses.length) answer += `, ${Number(main.gender) === 2 ? 'chồng' : 'vợ'} là ${formatPeopleList(spouses)}`;
+    if (others.length) answer += `; cùng đời đầu còn có ${formatPeopleList(others)}`;
+    answer += '.';
+    return {
+        success: true,
+        intent: parsed.intent,
+        answer,
+        confidence: parsed.confidence || 0.85,
+        person: { id: main.id, name: relationshipEngine.personName(main) },
+        people: founders.map((person) => ({ id: person.id, name: relationshipEngine.personName(person) })),
+    };
+}
+
 async function handleListAncestors({ res, clanId, currentMemberId, parsed }) {
+    if (parsed.entities?.source === 'clan') return handleClanFounders({ clanId, parsed });
     const subject = await resolveSubjectPerson({ res, clanId, currentMemberId, parsed });
     if (!subject.person) return subject.response;
     const person = subject.person;
@@ -759,12 +900,19 @@ async function handleNamedRelationshipExpression({ clanId, message }) {
     if (!ast) return null;
     const search = await memberSearch.resolvePerson({ clanId, names: [ast.personName] });
     if (search.status === 'not_found') return null;
-    const label = String(ast.originalTerms || ast.terms.join(' của ')).toLocaleLowerCase('vi-VN');
+    // Câu gõ không dấu ("bo cua …"): hiện từ xưng hô có dấu ("cha của …").
+    const accentedKeys = chainKeysFromTerms(ast.terms);
+    const label = (accentedKeys && !hasVietnameseDiacritics(ast.originalTerms)
+        ? accentedKeys.slice().reverse().join(' của ')
+        : String(ast.originalTerms || ast.terms.join(' của '))).toLocaleLowerCase('vi-VN');
     if (search.status === 'ambiguous') {
+        const candidateGraph = await relationshipEngine.loadClanGraph(clanId);
+        const described = search.candidates.map((person) => describePersonBrief(candidateGraph.people.get(Number(person.id)) || person, candidateGraph, relationshipEngine.personName));
         return {
             success: true,
             intent: 'relationship_expression',
-            answer: `Có nhiều người tên "${ast.personName}" trong gia phả: ${formatPeopleList(search.candidates)}. Bạn muốn hỏi ${label} của người nào?`,
+            answer: `Có ${search.candidates.length} người tên "${ast.personName}" trong gia phả: ${described.join('; ')}. Bạn muốn hỏi ${label} của người nào?`,
+            candidates: search.candidates.map((person, index) => ({ id: person.id, name: relationshipEngine.personName(person), generation: person.generation || null, description: described[index] })),
             confidence: 0.5,
             needsClarification: true,
             people: search.candidates.map((person) => ({ id: person.id, name: relationshipEngine.personName(person) })),
@@ -772,7 +920,13 @@ async function handleNamedRelationshipExpression({ clanId, message }) {
     }
     const base = search.person;
     const graph = await relationshipEngine.loadClanGraph(clanId);
-    const resolved = resolveRelationshipExpression({ ...ast, base: 'me' }, { sourcePersonId: base.id, graph });
+    const structuralKeys = chainKeysFromTerms(ast.terms);
+    const structural = structuralKeys
+        ? await relationshipEngine.resolveKinshipChain(base.id, structuralKeys, { clanId })
+        : null;
+    const resolved = structural?.ok
+        ? { ok: true, candidatePersonIds: structural.ids }
+        : resolveRelationshipExpression({ ...ast, base: 'me' }, { sourcePersonId: base.id, graph });
     const baseName = relationshipEngine.personName(graph.people.get(Number(base.id)) || base);
     const people = (resolved.candidatePersonIds || [])
         .map((id) => graph.people.get(Number(id)))
@@ -801,6 +955,11 @@ async function handleNamedRelationshipExpression({ clanId, message }) {
 async function handleRelationshipExpression({ clanId, currentMemberId, message }) {
     const ast = parseRelationshipExpression(message);
     if (ast.needsClarification) return null;
+    const structuralKeys = currentMemberId ? chainKeysFromTerms(ast.terms) : null;
+    if (structuralKeys) {
+        const structural = await answerViewerKinshipChain({ clanId, currentMemberId, keys: structuralKeys, intent: 'relationship_expression' });
+        if (structural) return structural;
+    }
 
     const graph = await relationshipEngine.loadClanGraph(clanId);
     const resolved = resolveRelationshipExpression(ast, {
@@ -870,6 +1029,11 @@ async function handlePlannedRelationshipExpression({ clanId, currentMemberId, me
     const graph = await relationshipEngine.loadClanGraph(clanId);
     const responseIntent = parsed.intent || 'relationship_query';
     const base = parsed?.ast?.base || 'me';
+    const structuralKeys = base === 'me' && currentMemberId ? chainKeysFromTerms(parsed.terms) : null;
+    if (structuralKeys) {
+        const structural = await answerViewerKinshipChain({ clanId, currentMemberId, keys: structuralKeys, intent: responseIntent, planner });
+        if (structural) return structural;
+    }
     const focusId = toPositiveId(memory?.currentFocusMember?.id || memory?.lastMentionedPersonId);
     const sourcePersonId = base === 'current_focus' ? focusId : currentMemberId;
 

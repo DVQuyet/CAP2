@@ -5,6 +5,7 @@ const memberSearch = require('./memberSearchService');
 const chatbotAI = require('./chatbotAI');
 const { resolveKinshipReference } = require('./kinshipReferenceService');
 const { toPositiveId, queryOptional } = require('./chatbotUtils');
+const { formatDateWithPrecision, ageOf, relativesOf, describePersonBrief } = require('./chatbotFormat');
 
 function firstEntity(plan) {
     if (Array.isArray(plan?.entities)) return plan.entities.find(Boolean) || null;
@@ -107,21 +108,91 @@ function profileFieldsForQuestion(person, message) {
     };
 }
 
+// "03-10" -> "10/3 âm lịch"
+function lunarAnniversaryText(value) {
+    const match = String(value || '').match(/^(\d{1,2})-(\d{1,2})$/);
+    return match ? `${Number(match[2])}/${Number(match[1])} âm lịch` : null;
+}
+
+function livingState(person) {
+    if (person.is_living === null || person.is_living === undefined) return null;
+    return Number(person.is_living) === 1;
+}
+
+// "X là ai": đời, cha mẹ, vợ/chồng, con, sinh/mất, quê, tiểu sử.
+function personOverview(person, graph) {
+    const nameOf = relationshipEngine.personName;
+    const name = nameOf(person);
+    const relatives = graph ? relativesOf(graph, person.id) : null;
+    const parts = [];
+    if (person.generation) parts.push(`đời thứ ${person.generation}`);
+    if (relatives) {
+        const parents = [relatives.father, relatives.mother].filter(Boolean).map(nameOf);
+        if (parents.length) parts.push(`con của ${parents.join(' và ')}`);
+        if (relatives.adoptiveParents.length) parts.push(`con nuôi của ${relatives.adoptiveParents.map(nameOf).join(', ')}`);
+        if (relatives.spouses.length) parts.push(`${Number(person.gender) === 2 ? 'chồng' : 'vợ'}: ${relatives.spouses.map(nameOf).join(', ')}`);
+        if (relatives.children.length) parts.push(`con: ${relatives.children.map(nameOf).join(', ')}`);
+    }
+    const birth = formatDateWithPrecision(person.birth_date, person.birth_date_precision || 'exact');
+    const death = formatDateWithPrecision(person.death_date, person.death_date_precision || 'exact');
+    if (birth) parts.push(`sinh ${birth}`);
+    if (livingState(person) === false) parts.push(death ? `mất ${death}` : 'đã mất');
+    if (person.hometown) parts.push(`quê ${person.hometown}`);
+    let text = parts.length ? `${name}: ${parts.join('; ')}.` : `${name} có trong gia phả nhưng chưa có thêm thông tin.`;
+    if (person.bio) text += ` ${String(person.bio).trim()}`;
+    return text;
+}
+
+// Trả đúng thông tin được hỏi thay cho một mẫu cố định.
+function personFieldAnswer(person, subtype, graph) {
+    const name = relationshipEngine.personName(person);
+    const living = livingState(person);
+    const birth = formatDateWithPrecision(person.birth_date, person.birth_date_precision || 'exact');
+    const death = formatDateWithPrecision(person.death_date, person.death_date_precision || 'exact');
+    const age = ageOf(person);
+    const ageText = age ? `${age.approximate ? 'khoảng ' : ''}${age.age} tuổi` : null;
+    const anniversary = lunarAnniversaryText(person.death_anniversary_lunar);
+    switch (subtype) {
+        case 'birth_info':
+            return birth ? `${name} sinh ${birth}.` : `Gia phả chưa ghi ngày sinh của ${name}.`;
+        case 'death_info':
+            if (living === true) return `${name} hiện còn sống theo dữ liệu gia phả.`;
+            if (death) return `${name} mất ${death}${ageText ? `, hưởng thọ ${ageText}` : ''}.${anniversary ? ` Ngày giỗ: ${anniversary}.` : ''}`;
+            if (living === false) return `${name} đã mất nhưng gia phả chưa ghi ngày mất.${anniversary ? ` Ngày giỗ: ${anniversary}.` : ''}`;
+            return `Gia phả chưa ghi ${name} còn sống hay đã mất.`;
+        case 'alive_info':
+            if (living === true) return `${name} còn sống${ageText ? ` (${ageText})` : ''}.`;
+            if (living === false) return `${name} đã mất${death ? ` (${death})` : ''}.`;
+            return `Gia phả chưa ghi ${name} còn sống hay đã mất.`;
+        case 'age_info':
+            if (!age) return `Gia phả chưa đủ dữ liệu ngày sinh để tính tuổi của ${name}.`;
+            return living === false
+                ? `${name} đã mất${death ? ` ${death}` : ''}, hưởng thọ ${ageText}.`
+                : `${name} năm nay ${ageText}${birth ? ` (sinh ${birth})` : ''}.`;
+        case 'hometown_info':
+            return person.hometown ? `Quê quán của ${name}: ${person.hometown}.` : `Gia phả chưa ghi quê quán của ${name}.`;
+        case 'address_info':
+            return `Trợ lý không cung cấp địa chỉ nơi ở của ${name}; bạn có thể xem trong hồ sơ thành viên nếu có quyền.`;
+        case 'bio_info':
+            return person.bio ? `Tiểu sử ${name}: ${String(person.bio).trim()}` : `Gia phả chưa có tiểu sử của ${name}.`;
+        default:
+            return personOverview(person, graph);
+    }
+}
+
 async function handlePersonInfoIntent({ clanId, currentMemberId, message, parsed, context, planner }) {
     const entity = firstEntity(parsed);
+    const nameAlternatives = Array.isArray(parsed.entities) ? parsed.entities.filter(Boolean) : (entity ? [].concat(entity) : []);
     let rows = [];
     const kinship = entity
-        ? await resolveKinshipReference({
-            clanId,
-            currentMemberId,
-            names: [].concat(Array.isArray(parsed.entities) ? parsed.entities : entity),
-        })
+        ? await resolveKinshipReference({ clanId, currentMemberId, names: nameAlternatives })
         : null;
     if (kinship) {
         if (kinship.status === 'resolved') rows = [kinship.person];
         else if (kinship.status === 'ambiguous') rows = kinship.candidates;
     } else if (entity) {
-        const resolved = await memberSearch.resolvePerson({ clanId, names: [entity], limit: 3 });
+        // Thử mọi cách viết tên ("Ông Bình" và "Bình").
+        const resolved = await memberSearch.resolvePerson({ clanId, names: nameAlternatives, limit: 3 });
         if (resolved.status === 'resolved') rows = [resolved.person];
         else rows = resolved.candidates || [];
     } else {
@@ -130,33 +201,38 @@ async function handlePersonInfoIntent({ clanId, currentMemberId, message, parsed
     }
 
     const ids = rows.map((row) => toPositiveId(row.id)).filter(Boolean).slice(0, 3);
+    // SELECT * để lấy cả độ chính xác ngày/ngày giỗ âm lịch nếu DB đã có các cột này.
     const profiles = ids.length
         ? await queryOptional(
-            `SELECT id, display_name, gender, generation, branch,
-                    birth_date, death_date, is_living, address, hometown, bio, note
-             FROM people
-             WHERE clan_id = ? AND id IN (${ids.map(() => '?').join(',')})`,
+            `SELECT * FROM people WHERE clan_id = ? AND id IN (${ids.map(() => '?').join(',')})`,
             [clanId, ...ids]
         )
         : [];
-    const resolvedData = { type: 'person_profile', data: profiles, entity: entity || null, subtype: parsed.subtype || null };
+    const subtype = parsed.subtype || null;
+    const resolvedData = { type: 'person_profile', data: profiles, entity: entity || null, subtype };
     const ai = await explainResolvedIntent({
         intent: parsed.intent,
         message,
         resolvedData: { ...resolvedData, data: profiles.map((person) => profileFieldsForQuestion(person, message)) },
         context,
     });
-    const fallback = profiles.length
-        ? profiles.map((person) => {
-            const details = [
-                person.generation ? `đời thứ ${person.generation}` : null,
-                person.branch ? `chi ${person.branch}` : null,
-                person.birth_date ? `sinh ngày ${formatDateOnly(person.birth_date)}` : null,
-                person.hometown ? `quê quán ${person.hometown}` : null,
-            ].filter(Boolean).join(', ');
-            return `${person.display_name || 'Thành viên'}${details ? `: ${details}` : ''}.`;
-        }).join(' ')
-        : 'Tôi chưa tìm thấy thông tin người này trong gia phả.';
+
+    let graph = null;
+    if (profiles.length && (!subtype || subtype === 'overview' || profiles.length > 1)) {
+        graph = await relationshipEngine.loadClanGraph(clanId).catch(() => null);
+    }
+    let fallback = 'Tôi chưa tìm thấy thông tin người này trong gia phả.';
+    if (profiles.length === 1) {
+        fallback = personFieldAnswer(profiles[0], subtype, graph);
+    } else if (profiles.length > 1) {
+        // Nhiều người khớp tên: nói rõ từng người là ai để không nhầm.
+        fallback = `Có ${profiles.length} người khớp: ${profiles.map((person) => {
+            const brief = describePersonBrief(graph?.people.get(Number(person.id)) || person, graph, relationshipEngine.personName);
+            const detail = subtype && subtype !== 'overview' ? personFieldAnswer(person, subtype, graph) : '';
+            return detail ? `${brief} — ${detail}` : brief;
+        }).join(' ')}`;
+    }
+
     return {
         success: true,
         intent: parsed.intent,
@@ -165,7 +241,7 @@ async function handlePersonInfoIntent({ clanId, currentMemberId, message, parsed
         source: 'database',
         planner,
         resolvedData,
-        people: profiles.map((person) => ({ id: person.id, name: person.display_name })),
+        people: profiles.map((person) => ({ id: person.id, name: relationshipEngine.personName(person) })),
         ai: { plannerUsed: planner?.source === 'llm_planner' && planner.accepted, explanationUsed: ai.aiUsed },
     };
 }
@@ -190,10 +266,18 @@ async function handlePersonExistsIntent({ clanId, parsed, planner }) {
     }
 
     const name = relationshipEngine.personName(best);
+    const top = matches.filter((person) => Number(person.score) === Number(best.score));
+    let answer = `Có. ${name} có trong gia phả.${formatPersonSummary(best)}`;
+    if (top.length > 1) {
+        const graph = await relationshipEngine.loadClanGraph(clanId).catch(() => null);
+        answer = `Có. Gia phả có ${top.length} người khớp tên "${displayQueryName(queryName)}": ${top
+            .map((person) => describePersonBrief(graph?.people.get(Number(person.id)) || person, graph, relationshipEngine.personName))
+            .join('; ')}.`;
+    }
     return {
         success: true,
         intent: parsed.intent,
-        answer: `Có. ${name} có trong gia phả.${formatPersonSummary(best)}`,
+        answer,
         confidence: Math.min(0.95, Number(best.score || parsed.confidence || 0.8)),
         source: 'database',
         planner,

@@ -89,6 +89,7 @@ async function planQuery({
                     entities: {},
                     ast: { base: 'me', steps: expression.chain },
                     expression: expression.chain,
+                    terms: expression.terms,
                 },
                 planner: plannerMetadata('rule_expression', true),
             };
@@ -154,6 +155,7 @@ async function planQuery({
             entities: validated.plan.entities || {},
             ast: validated.plan.ast || null,
             expression: validated.plan.expression || null,
+            subtype: validated.plan.subtype || null,
         },
         planner: plannerMetadata('llm_planner', true, {
             confidence: validated.plan.confidence ?? null,

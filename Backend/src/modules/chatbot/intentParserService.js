@@ -1,4 +1,9 @@
 const { cleanHumanName, normalizeText } = require('./memberSearchService');
+const { splitKinshipTerms, normalizeAccented } = require('./kinshipTermService');
+
+const SELF_WORD_PATTERN = '(?:tôi|toi|mình|minh|tui|tớ)';
+const CLAN_SUBJECTS = new Set(['dong ho', 'ho', 'gia pha', 'ho toc', 'dong toc', 'ca ho', 'dong ho minh', 'ho minh', 'dong ho nay', 'ho nay', 'gia pha nay', 'dong ho toi', 'ho toi']);
+const TITLE_WORDS = /^(ông|bà|anh|chị|em|cô|chú|bác|cậu|dì|cháu|cụ|ong|ba|chi|co|chu|bac|cau|di|chau|cu)\s+/i;
 
 const CURRENT_USER_WORDS = /(tôi|toi|mình|minh|con|em|cháu|chau|tao|tui)/i;
 
@@ -21,9 +26,11 @@ function normalizeSynonyms(value) {
 }
 
 function makeNameAlternatives(raw) {
-    const cleaned = cleanHumanName(stripQuestionNoise(raw));
     const original = stripQuestionNoise(raw);
-    return [...new Set([cleaned, original].filter(Boolean))];
+    const cleaned = cleanHumanName(original);
+    // "ông Bình", "bà Lan": thêm tên không kèm danh xưng để tìm được người có tên đầy đủ.
+    const withoutTitle = original.replace(TITLE_WORDS, '').trim();
+    return [...new Set([cleaned, original, withoutTitle].filter(Boolean))];
 }
 
 function cleanExtractedPersonName(value) {
@@ -40,21 +47,24 @@ function parsePersonExists(message) {
     // Câu hỏi về kỷ niệm/sự kiện/lịch không phải tra tên người.
     if (/\b(ky niem|ki niem|cau chuyen|su kien|lich|sinh nhat|gio)\b/.test(normalized)) return null;
     if (!/\b(gia pha|trong cay|cay|ten)\b/.test(normalized) && !/^co\s+.+\s+khong$/.test(normalized) && !/^tim\s+/.test(normalized)) return null;
+    // "ai tên X", "người tên X": người dùng nói rõ đó là tên, cho phép tên một chữ ("Lan", "Hùng").
+    const explicitName = /\b(ai|nguoi|nguoi nao)\s+(co\s+)?ten\b/.test(normalized);
 
     let name = normalized
         .replace(/^trong gia pha co\s+/i, '')
-        .replace(/^gia pha co ai ten\s+/i, '')
         .replace(/^gia pha co\s+/i, '')
         .replace(/^trong cay co\s+/i, '')
         .replace(/^cay co\s+/i, '')
         .replace(/^co\s+/i, '')
         .replace(/^tim\s+/i, '')
+        .replace(/^(ai|nguoi nao|nguoi)\s+(co\s+)?ten\s+(la\s+)?/i, '')
         .replace(/\s+co trong (gia pha|cay).*$/i, '')
         .replace(/\s+trong (gia pha|cay).*$/i, '')
         .replace(/\s+khong$/i, '')
         .trim();
     name = cleanExtractedPersonName(name);
-    if (!name || name.split(/\s+/).length < 2) return null;
+    if (!name) return null;
+    if (name.split(/\s+/).length < 2 && !explicitName) return null;
 
     return {
         intent: 'person_exists',
@@ -89,60 +99,37 @@ function parseCompareRelationship(message) {
 }
 
 function parseKinshipLookup(message) {
-    const normalized = normalizeSynonyms(message);
-    const knownTerms = [
-        'ong noi',
-        'ba noi',
-        'ong ngoai',
-        'ba ngoai',
-        'ong co',
-        'ba co',
-        'cu ong',
-        'cu ba',
-        'cu',
-        'cha',
-        'bo',
-        'ba',
-        'me',
-        'bac',
-        'chu',
-        'co',
-        'o',
-        'cau',
-        'di',
-        'duong',
-        'mo',
-        'mu',
-        'thim',
-        'vo',
-        'chong',
-    ];
+    const text = normalizeAccented(stripQuestionNoise(message));
+    const core = text
+        .replace(/^(ai là|ai la)\s+/, '')
+        .replace(/\s+(là ai|la ai|tên gì|ten gi|tên là gì|ten la gi|gồm những ai|gom nhung ai|gồm ai|gom ai|là những ai|la nhung ai|có những ai|co nhung ai|là người nào|la nguoi nao)$/, '')
+        .trim();
 
-    if (!normalized.startsWith('ai la') && !/(^|\s)la ai($|\s)/.test(normalized)) return null;
-    if (!CURRENT_USER_WORDS.test(normalized)) return null;
+    let fragment = null;
+    let count = false;
+    const countMatch = core.match(new RegExp(`^${SELF_WORD_PATTERN}\\s+(?:có|co)\\s+(?:mấy|may|bao nhiêu|bao nhieu)\\s+(.+?)(?:\\s+(?:không|khong))?$`));
+    if (countMatch) {
+        fragment = countMatch[1];
+        count = true;
+    } else {
+        const ownerMatch = core.match(new RegExp(`^(.+?)\\s+(?:(?:của|cua)\\s+)?${SELF_WORD_PATTERN}$`));
+        if (ownerMatch) fragment = ownerMatch[1];
+    }
+    if (!fragment) return null;
+    fragment = fragment.replace(/^(người|nguoi)\s+/, '');
 
-    const term = knownTerms
-        .sort((a, b) => b.length - a.length)
-        .find((item) => new RegExp(`(^|\\s)${item}(\\s|$)`).test(normalized));
-    if (!term) return null;
-
-    const displayTerm = {
-        'ong noi': 'ông nội',
-        'ba noi': 'bà nội',
-        'ong ngoai': 'ông ngoại',
-        'ba ngoai': 'bà ngoại',
-        bo: 'cha',
-        me: 'mẹ',
-        duong: 'dượng',
-        mo: 'mợ',
-        thim: 'thím',
-    }[term] || term;
-
+    // Đúng một từ xưng hô; chuỗi "em của ông nội tôi" để parser biểu thức quan hệ xử lý.
+    const { terms, rest } = splitKinshipTerms(fragment);
+    if (terms.length !== 1 || rest.length) return null;
+    const keys = terms[0].keys;
     return {
         intent: 'find_by_kinship',
         confidence: 0.9,
         entities: {
-            kinshipTerm: displayTerm,
+            kinshipTerm: keys[0],
+            ambiguousTerms: keys.length > 1 ? keys : null,
+            count,
+            strict: Boolean(terms[0].strict),
         },
     };
 }
@@ -204,6 +191,8 @@ function parseChildren(message) {
     }
 
     if (!target) return null;
+    // "Con của tôi", "Tôi có mấy người con": người hỏi là gốc, để tra xưng hô xử lý.
+    if (new RegExp(`^${SELF_WORD_PATTERN}$`, 'i').test(String(target).trim())) return null;
     return {
         intent: 'list_children',
         confidence: 0.88,
@@ -279,8 +268,13 @@ function parseParents(message) {
 // Tên người sau "với/của"; "tôi/mình" hoặc không có tên nghĩa là chính người đang hỏi.
 function extractSubjectAfterPreposition(text) {
     const match = String(text || '').match(/(?:\bvới\b|\bvoi\b|\bcủa\b|\bcua\b)\s+(.+)$/i);
-    const raw = match ? stripQuestionNoise(match[1]) : '';
-    if (!raw || /^(tôi|toi|mình|minh|em|con|cháu|chau)$/i.test(raw) || /^(toi|minh)$/.test(normalizeText(raw))) {
+    const raw = match
+        ? stripQuestionNoise(match[1])
+            .replace(/\s+(là ai|la ai|là những ai|la nhung ai|gồm những ai|gom nhung ai|gồm ai|gom ai|là gì|la gi|tên gì|ten gi)$/i, '')
+            .trim()
+        : '';
+    if (raw && CLAN_SUBJECTS.has(normalizeText(raw))) return { source: 'clan', targetName: [] };
+    if (!raw || /^(tôi|toi|mình|minh|em|con|cháu|chau|tui)$/i.test(raw) || /^(toi|minh)$/.test(normalizeText(raw))) {
         return { source: 'current_member', targetName: [] };
     }
     return { source: 'named_person', targetName: makeNameAlternatives(raw) };
@@ -300,11 +294,17 @@ function parseSameGeneration(message) {
 function parseAncestors(message) {
     const text = stripQuestionNoise(message);
     const normalized = normalizeText(text);
-    if (!/\b(to tien|thuy to|tien nhan)\b/.test(normalized)) return null;
+    if (!/\b(to tien|thuy to|tien nhan|ong to|cu to)\b/.test(normalized)) return null;
+    if (/\b(gio|ngay gio|ky nhat)\b/.test(normalized)) return null;
+    const subject = extractSubjectAfterPreposition(text);
+    // "Thủy tổ dòng họ là ai", "Cụ tổ là ai": hỏi người lập dòng họ, không phải tổ tiên riêng của người hỏi.
+    if (/\b(thuy to|ong to|cu to)\b/.test(normalized) && subject.source !== 'named_person') {
+        return { intent: 'list_ancestors', confidence: 0.86, entities: { source: 'clan', targetName: [] } };
+    }
     return {
         intent: 'list_ancestors',
         confidence: 0.84,
-        entities: extractSubjectAfterPreposition(text),
+        entities: subject,
     };
 }
 
@@ -324,6 +324,7 @@ function parseGeneration(message) {
             .trim();
     }
 
+    if (new RegExp(`^${SELF_WORD_PATTERN}$`, 'i').test(withoutQuestion)) withoutQuestion = '';
     return {
         intent: 'find_generation',
         confidence: 0.84,
@@ -349,6 +350,9 @@ function parseAgeRanking(message) {
 function parseStatsCount(message) {
     const normalized = normalizeText(stripQuestionNoise(message));
     if (/\bthuoc\s+(?:doi|the he)\b/.test(normalized) && /\bmay\b/.test(normalized)) return null;
+    // "Tôi đời thứ mấy" hỏi đời của một người; "Tôi có mấy anh chị em/con" là tra xưng hô.
+    if (/\b(doi thu may|the he thu may)\b/.test(normalized)) return null;
+    if (/^(toi|minh|tui)\s+co\s+(may|bao nhieu)\s+/.test(normalized)) return null;
     const asksCount = /\b(co bao nhieu|bao nhieu|may|so luong|tong so|thong ke|dem)\b/.test(normalized);
     const inFamilyScope = /\b(gia pha|dong ho|ho toc|thanh vien|nguoi|doi|the he|chi|nhanh|nam|nu|con song|da mat|qua doi)\b/.test(normalized);
     if (!asksCount || !inFamilyScope) return null;
@@ -430,22 +434,58 @@ function parseMemoriesStories(message) {
     };
 }
 
+const PERSON_FIELD_PATTERNS = [
+    ['death_info', /\b(mat nam nao|mat nam|nam mat|ngay mat|mat ngay|mat khi nao|qua doi|tu tran|mat luc nao)\b/],
+    ['alive_info', /\b(con song khong|con song|con khong|da mat chua|mat chua|con tai the)\b/],
+    ['age_info', /\b(bao nhieu tuoi|may tuoi|tuoi|tho bao nhieu)\b/],
+    ['birth_info', /\b(sinh nam nao|sinh nam|nam sinh|ngay sinh|sinh ngay|sinh khi nao|sinh luc nao)\b/],
+    ['hometown_info', /\b(que quan|que o dau|que)\b/],
+    ['address_info', /\b(dia chi|song o dau|o dau)\b/],
+    ['bio_info', /\b(tieu su|cuoc doi|la nguoi the nao|lam nghe gi)\b/],
+];
+
+// Từ hỏi trường thông tin (có dấu và không dấu), để cắt khỏi câu khi tách tên.
+const PERSON_FIELD_WORDS = '(?:sinh năm nào|sinh nam nao|sinh năm|sinh nam|năm sinh|nam sinh|ngày sinh|ngay sinh|sinh ngày|sinh ngay|mất năm nào|mat nam nao|mất năm|mat nam|năm mất|nam mat|ngày mất|ngay mat|mất khi nào|mat khi nao|qua đời|qua doi|còn sống không|con song khong|còn sống|con song|đã mất chưa|da mat chua|bao nhiêu tuổi|bao nhieu tuoi|mấy tuổi|may tuoi|quê quán|que quan|quê ở đâu|que o dau|quê|que|địa chỉ|dia chi|sống ở đâu|song o dau|tiểu sử|tieu su|cuộc đời|cuoc doi|ghi chú|ghi chu|thông tin|thong tin)';
+
 function parsePersonInfo(message) {
     const text = stripQuestionNoise(message);
     const normalized = normalizeText(text);
-    const asksInfo = /\b(thong tin|sinh nam|ngay sinh|nam sinh|que quan|dia chi|tieu su|ghi chu|mat nam|ngay mat)\b/.test(normalized);
+    const field = (PERSON_FIELD_PATTERNS.find(([, pattern]) => pattern.test(normalized)) || [null])[0];
+    const asksOverview = /\s(là ai|la ai)$/i.test(text) || /^(giới thiệu|gioi thieu|cho tôi biết về|cho toi biet ve)\s+/i.test(text);
+    const asksInfo = Boolean(field) || /\b(thong tin|ghi chu)\b/.test(normalized) || asksOverview;
     if (!asksInfo) return null;
 
     let target = text
-        .replace(/^(cho\s+tôi\s+biết|cho\s+toi\s+biet|xem|hỏi|hoi)?\s*(thông tin|thong tin)\s+(của|cua|về|ve)?\s*/i, '')
-        .replace(/\s+(sinh năm|sinh nam|ngày sinh|ngay sinh|quê quán|que quan|địa chỉ|dia chi|tiểu sử|tieu su|ghi chú|ghi chu|mất năm|mat nam|ngày mất|ngay mat).*$/i, '')
+        .replace(/^(cho\s+tôi\s+biết|cho\s+toi\s+biet|xem|hỏi|hoi|giới thiệu|gioi thieu)\s+(về\s+|ve\s+)?/i, '')
+        .replace(new RegExp(`^${PERSON_FIELD_WORDS}\\s+(?:của|cua|về|ve)?\\s*`, 'i'), '')
+        .replace(new RegExp(`\\s+${PERSON_FIELD_WORDS}.*$`, 'i'), '')
+        .replace(/\s+(là ai|la ai|là gì|la gi|ở đâu|o dau|là năm nào|la nam nao|là ngày nào|la ngay nao|năm nào|nam nao|khi nào|khi nao|không|khong)$/i, '')
         .trim();
-    if (/^(của|cua)\s+/i.test(target)) target = target.replace(/^(của|cua)\s+/i, '').trim();
-    if (/^(tôi|toi|mình|minh)$/i.test(normalizeText(target))) target = '';
+    if (/^(của|cua|về|ve)\s+/i.test(target)) target = target.replace(/^(của|cua|về|ve)\s+/i, '').trim();
+    if (new RegExp(`^${SELF_WORD_PATTERN}$`, 'i').test(target)) target = '';
+    const normalizedTarget = normalizeText(target);
+    if (/\b(nha tho|tu duong|dong ho|gia pha|ho toc|truong ho|truong chi|thuy to|to tien)\b/.test(normalizedTarget)) return null;
+    if (/(^|\s)(của|cua)(\s|$)/i.test(target)) return null;
+    if (target) {
+        const { terms, rest } = splitKinshipTerms(target);
+        const onlySelfWords = rest.every((word) => /^(tôi|toi|mình|minh|tui|tớ)$/i.test(word));
+        if (terms.length && onlySelfWords) return null;
+    }
+
+    if (asksOverview && !field) {
+        // "X là ai": X phải là tên người (không phải đại từ hay từ xưng hô) — "Bạn là ai", "Ông nội tôi là ai" đã có parser khác.
+        if (!target || /^(bạn|ban|em|anh|chị|chi|ông ấy|bà ấy|người đó|người này|họ|ai)$/i.test(target)) return null;
+        if (/\b(thuy to|to tien|dong ho|gia pha|nha tho|truong ho|ho toc|truong chi)\b/.test(normalizeText(target))) return null;
+        const { terms, rest } = splitKinshipTerms(target);
+        if (terms.length && !rest.length) return null;
+        const tokens = target.split(/\s+/);
+        if (tokens.length < 2 && !TITLE_WORDS.test(`${target} `)) return null;
+    }
 
     return {
         intent: 'person_info',
         confidence: target ? 0.82 : 0.72,
+        subtype: field || (asksOverview ? 'overview' : null),
         entities: target ? makeNameAlternatives(target) : [],
     };
 }
@@ -501,10 +541,10 @@ function parse(message) {
         parseStatsCount,
         parseEventsUpcoming,
         parseMemoriesStories,
-        parsePersonInfo,
-        parseGeneralChat,
         parseSameGeneration,
         parseAncestors,
+        parsePersonInfo,
+        parseGeneralChat,
         parseGeneration,
     ];
 

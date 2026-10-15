@@ -41,22 +41,32 @@ function buildBreadcrumb(relation) {
     return crumbs;
 }
 
-function explainRelationship(relation) {
+// "Đinh Văn Nam là em họ của bạn (bạn → cha: Đinh Văn Hùng → cha: Đinh Văn Hòa → em trai: Đinh Văn Bình → …)".
+// viewerIsSource = false khi so sánh hai người khác (không gọi người đầu là "bạn").
+function explainRelationship(relation, { viewerIsSource = true } = {}) {
     if (!relation?.found) return null;
     const targetName = relation.targetName || personName(relation.targetPerson);
     const sourceName = relation.sourceName || personName(relation.sourcePerson) || 'bạn';
+    const sourceLabel = viewerIsSource ? 'bạn' : sourceName;
     const label = relation.relationshipLabel || describeRelationshipPath(relation.relationshipPath || [], {
         sourcePerson: relation.sourcePerson,
         targetPerson: relation.targetPerson,
     });
 
     if (!relation.relationshipPath?.length) {
-        return `${targetName} chính là ${sourceName}.`;
+        return `${targetName} chính là ${sourceLabel}.`;
     }
 
-    const readable = relation.relationshipPath.map((edge, index) => describeStep(edge, index));
-    const reason = readable.length ? ` vì ${readable.join(', rồi đến ')}.` : '.';
-    return `${targetName} là ${label} của ${sourceName}${reason}`;
+    const names = Array.isArray(relation.pathPeople) ? relation.pathPeople.map((item) => item?.name) : [];
+    const steps = relation.relationshipPath.map((edge, index) => {
+        const name = names[index + 1];
+        const word = edge === 'half_sibling' ? 'anh/chị/em cùng cha hoặc mẹ' : edgeToVietnamese(edge);
+        return name ? `${word}: ${name}` : describeStep(edge, index);
+    });
+    const chain = names.length === relation.relationshipPath.length + 1
+        ? ` (${[sourceLabel, ...steps].join(' → ')})`
+        : ` vì ${relation.relationshipPath.map((edge, index) => describeStep(edge, index)).join(', rồi đến ')}`;
+    return `${targetName} là ${label} của ${sourceLabel}${chain}.`;
 }
 
 function buildPathVisualizer(relation) {

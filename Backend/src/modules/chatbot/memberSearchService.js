@@ -245,9 +245,12 @@ async function resolvePerson({ clanId, names, limit = 5 }) {
     all.sort((a, b) => b.score - a.score);
     if (!all.length) return { status: 'not_found', candidates: [] };
 
-    const [first, second] = all;
-    if (second && first.score < 0.98 && Math.abs(first.score - second.score) < 0.08) {
-        return { status: 'ambiguous', candidates: all.slice(0, limit) };
+    const [first] = all;
+    // Ứng viên sát điểm người đứng đầu. Hai người cùng tên đầy đủ (cùng điểm 1.0) cũng phải hỏi lại, không chọn ngầm.
+    const close = all.filter((row) => first.score - row.score < 0.08);
+    const exactTies = close.filter((row) => row.score >= 0.98).length;
+    if (close.length > 1 && (first.score < 0.98 || exactTies > 1)) {
+        return { status: 'ambiguous', candidates: close.slice(0, limit) };
     }
 
     return { status: 'resolved', person: first, candidates: all.slice(0, limit) };

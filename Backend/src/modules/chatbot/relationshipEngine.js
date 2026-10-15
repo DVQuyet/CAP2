@@ -11,6 +11,7 @@ const {
 const { pickBestRelationshipPath, scorePath } = require('./relationshipPathRanker');
 const { buildRelationshipEvidence } = require('./relationshipEvidenceService');
 const { buildKinshipGraph, describeKinship, normalizePolicy } = require('../genealogy/core');
+const { matchKinshipLabel } = require('./kinshipTermService');
 
 // Con nuôi, con thừa tự, con nuôi dưỡng đều là quan hệ "nuôi" trong đồ thị hỏi đáp.
 const ADOPTIVE_TYPES = new Set(['adopted', 'heir', 'foster']);
@@ -425,6 +426,7 @@ function buildRelationshipResult(graph, sourceId, targetId, path, edges, pathNod
         depth: path.length,
         pathScore: scorePath(path),
         pathNodes: normalizedPathNodes,
+        pathPeople: normalizedPathNodes.map((id) => ({ id, name: personName(graph.people.get(Number(id))) })),
         evidence: buildRelationshipEvidence({
             sourcePerson,
             targetPerson,
@@ -629,6 +631,73 @@ async function findPeopleByKinship(sourcePersonId, kinshipTerm, options = {}) {
     return results.sort((a, b) => a.depth - b.depth || String(a.targetName).localeCompare(String(b.targetName), 'vi'));
 }
 
+// "Ai là <xưng hô> của X": gán nhãn cho từng người trong phạm vi bằng describeKinship rồi so khớp
+// nguyên nhãn có dấu (kinshipTermService), không so chuỗi con trên nhãn đã bỏ dấu như pathMatchesKinship.
+async function findPeopleByKinshipTerm(sourcePersonId, termKey, options = {}) {
+    const clanId = toPositiveId(options.clanId);
+    const sourceId = toPositiveId(sourcePersonId);
+    const graph = await loadClanGraph(clanId, options);
+    if (!graph.kinship || !graph.people.has(sourceId)) return [];
+
+    // Chỉ xét người nối được với người gốc trong phạm vi vài bước (đủ cho mọi xưng hô thông dụng).
+    const maxDepth = Number(options.maxDepth || 10);
+    const reachable = new Map([[sourceId, 0]]);
+    const queue = [sourceId];
+    for (let cursor = 0; cursor < queue.length; cursor += 1) {
+        const currentId = queue[cursor];
+        const depth = reachable.get(currentId);
+        if (depth >= maxDepth) continue;
+        for (const edge of graph.adjacency.get(currentId) || []) {
+            if (reachable.has(edge.to)) continue;
+            reachable.set(edge.to, depth + 1);
+            queue.push(edge.to);
+        }
+    }
+
+    const matches = [];
+    for (const [personId] of reachable) {
+        if (personId === sourceId) continue;
+        const structural = describeKinship(graph.kinship, sourceId, personId, { region: graph.region });
+        const match = matchKinshipLabel(structural, termKey);
+        if (!match) continue;
+        const person = graph.people.get(personId);
+        if (!person) continue;
+        matches.push({
+            person,
+            id: personId,
+            name: personName(person),
+            label: structural.label,
+            uncertain: match.uncertain,
+            category: structural.category || null,
+            kind: structural.kind || null,
+            relativeGeneration: Number(structural.relativeGeneration || 0),
+        });
+    }
+
+    return matches.sort((a, b) => a.relativeGeneration - b.relativeGeneration
+        || String(a.person.birth_date || '9999').localeCompare(String(b.person.birth_date || '9999'))
+        || a.id - b.id);
+}
+
+// "em trai của cha tôi", "con của vợ của X": đi từng bước bằng findPeopleByKinshipTerm (theo nhãn describeKinship),
+// nên anh em cùng cha khác mẹ, thứ bậc theo năm sinh, con nuôi... được tính như câu hỏi một từ.
+// termKeys theo thứ tự từ người gốc đi ra. Trả { ok, ids, last } (last: kết quả bước cuối kèm nhãn).
+async function resolveKinshipChain(sourcePersonId, termKeys = [], options = {}) {
+    let current = [toPositiveId(sourcePersonId)].filter(Boolean);
+    let last = [];
+    for (const key of termKeys) {
+        const next = new Map();
+        for (const personId of current) {
+            const matches = await findPeopleByKinshipTerm(personId, key, options);
+            for (const match of matches) if (!next.has(match.id)) next.set(match.id, match);
+        }
+        last = [...next.values()];
+        current = last.map((item) => item.id);
+        if (!current.length) return { ok: false, ids: [], last: [] };
+    }
+    return { ok: current.length > 0, ids: current, last };
+}
+
 async function getChildrenOf(personId, options = {}) {
     const graph = await loadClanGraph(options.clanId, options);
     const id = toPositiveId(personId);
@@ -738,6 +807,8 @@ function clearClanCache(clanId) {
 module.exports = {
     findRelationship,
     findPeopleByKinship,
+    findPeopleByKinshipTerm,
+    resolveKinshipChain,
     getChildrenOf,
     getSpousesOf,
     getParentsOf,
