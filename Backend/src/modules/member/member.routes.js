@@ -8,6 +8,7 @@ router.get("/dashboard", verifyToken, checkRole(["admin", "manager", "member"]),
 router.get("/notifications", verifyToken, checkRole(["admin", "manager", "member"]), memberController.getNotifications);
 router.patch("/notifications/read-all", verifyToken, checkRole(["admin", "manager", "member"]), memberController.markAllNotificationsRead);
 router.patch("/notifications/:id/read", verifyToken, checkRole(["admin", "manager", "member"]), memberController.markNotificationRead);
+router.get("/profile", verifyToken, checkRole(["admin", "manager", "member"]), memberController.getProfile);
 router.put("/profile", verifyToken, checkRole(["admin", "manager", "member"]), memberController.updateProfile);
 router.put("/password", verifyToken, checkRole(["admin", "manager", "member"]), memberController.changePassword);
 router.post("/tree-edit-session", verifyToken, checkRole(["admin", "manager", "member"]), memberController.verifyTreeEditSession);

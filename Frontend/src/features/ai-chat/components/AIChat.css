@@ -37,7 +37,7 @@
   bottom: 68px;
   width: min(420px, calc(100vw - 32px));
   height: min(680px, calc(100vh - 112px));
-  min-height: 460px;
+  min-height: min(460px, calc(100vh - 112px));
   background: #ffffff;
   border: 1px solid #d8e2e7;
   border-radius: 8px;

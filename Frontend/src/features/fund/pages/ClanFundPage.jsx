@@ -2240,6 +2240,34 @@ export default function ClanFundPage() {
   padding-bottom: 20px;
 }
 
+/* Màn hình thấp: thanh nút không dính đáy để không che ô cuối ("Hạn chốt"). */
+@media (max-height: 700px) {
+  .fund-create-modal .modal-footer {
+    position: static;
+    background: none;
+  }
+}
+
+/* Màn hình hẹp: tiêu đề nhỏ lại và các cặp ô xếp một cột để không bị cắt/ép. */
+@media (max-width: 640px) {
+  .modal-header-v2 {
+    padding: 16px 16px 12px;
+  }
+
+  .modal-header-v2 h3 {
+    font-size: 1.25rem;
+    overflow-wrap: anywhere;
+  }
+
+  .fund-create-modal .modal-body-v2 {
+    padding: 16px 16px 24px;
+  }
+
+  .form-row-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .fund-create-modal .modal-footer {
   position: sticky;
   bottom: 0;

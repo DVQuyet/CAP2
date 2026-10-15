@@ -2950,7 +2950,7 @@ const submitCreateDialog = async () => {
     // Không thu nhỏ quá mức đọc được; cây lớn hơn màn hình thì căn theo đỉnh để thấy thủy tổ trước.
     const minFitScale = isTreeMobile ? 0.3 : 0.2;
     const fitScale = Math.min(usableWidth / treeWidth, usableHeight / treeHeight);
-    const nextScale = clamp(fitScale, minFitScale, 1.05);
+    const nextScale = clamp(fitScale, minFitScale, 1);
     const treeCenterX = bounds.left + treeWidth / 2;
     const treeCenterY = bounds.top + treeHeight / 2;
     const nextX = rect.width / 2 - treeCenterX * nextScale;

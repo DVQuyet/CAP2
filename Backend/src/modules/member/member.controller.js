@@ -625,6 +625,37 @@ exports.loadClanTreeForAdmin = async (clanId) => {
   };
 };
 
+// Thông tin hồ sơ của tài khoản đang đăng nhập (dùng cho dashboard và GET /profile).
+function buildProfilePayload(context, relations) {
+  return {
+    account_id: context.account_id,
+    person_id: context.person_id,
+    role_id: context.role_id,
+    status: context.status,
+    profile_completed: Number(context.profile_completed || 0),
+    email: context.account_email,
+    display_name: context.display_name,
+    first_name: context.first_name,
+    middle_name: context.middle_name,
+    surname: context.surname,
+    hometown: context.hometown,
+    gender: context.gender,
+    birth_date: context.birth_date,
+    generation: context.generation,
+    bio: context.bio,
+    avatar_url: context.avatar_url,
+    avatar_media_id: context.avatar_media_id,
+    pending_bio: context.pending_bio,
+    pending_avatar_url: context.pending_avatar_url,
+    pending_avatar_media_id: context.pending_avatar_media_id,
+    moderation_status: context.moderation_status,
+    moderation_reason: context.moderation_reason,
+    family_id: relations.family_id,
+    spouse_id: relations.spouse_id,
+    children_ids: relations.children_ids,
+  };
+}
+
 exports.getDashboard = async (req, res) => {
   try {
     await ensureProfileCompletedColumn();
@@ -790,33 +821,7 @@ exports.getDashboard = async (req, res) => {
 
     return res.json({
       success: true,
-      profile: {
-        account_id: context.account_id,
-        person_id: context.person_id,
-        role_id: context.role_id,
-        status: context.status,
-        profile_completed: Number(context.profile_completed || 0),
-        email: context.account_email,
-        display_name: context.display_name,
-        first_name: context.first_name,
-        middle_name: context.middle_name,
-        surname: context.surname,
-        hometown: context.hometown,
-        gender: context.gender,
-        birth_date: context.birth_date,
-        generation: context.generation,
-        bio: context.bio,
-        avatar_url: context.avatar_url,
-        avatar_media_id: context.avatar_media_id,
-        pending_bio: context.pending_bio,
-        pending_avatar_url: context.pending_avatar_url,
-        pending_avatar_media_id: context.pending_avatar_media_id,
-        moderation_status: context.moderation_status,
-        moderation_reason: context.moderation_reason,
-        family_id: relations.family_id,
-        spouse_id: relations.spouse_id,
-        children_ids: relations.children_ids,
-      },
+      profile: buildProfilePayload(context, relations),
       clan: {
         clan_id: context.clan_id,
         clan_name: context.clan_name,
@@ -837,6 +842,31 @@ exports.getDashboard = async (req, res) => {
   } catch (error) {
     console.error("getDashboard error:", error);
     return res.status(500).json({ success: false, message: "Lỗi lấy dữ liệu trang thành viên" });
+  }
+};
+
+// Hồ sơ nhẹ cho ngăn "Sửa tài khoản": không tải cả cây gia phả như dashboard.
+exports.getProfile = async (req, res) => {
+  try {
+    await ensureProfileCompletedColumn();
+    const context = await getAccountContext(req.user.id);
+    if (!context) {
+      return res.status(404).json({ success: false, message: "Không tìm thấy tài khoản" });
+    }
+    const relations = await getOwnedFamilyRelations(context.person_id);
+    return res.json({
+      success: true,
+      profile: buildProfilePayload(context, relations),
+      clan: {
+        clan_id: context.clan_id,
+        clan_name: context.clan_name,
+        history: context.clan_history,
+        hall_address: context.clan_hall_address,
+      },
+    });
+  } catch (error) {
+    console.error("getProfile error:", error);
+    return res.status(500).json({ success: false, message: "Không tải được hồ sơ" });
   }
 };
 

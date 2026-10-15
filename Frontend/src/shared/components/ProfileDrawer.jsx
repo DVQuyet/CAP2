@@ -280,7 +280,14 @@ export default function ProfileDrawer({
     setMessage("");
 
     try {
-      const data = await apiRequest("/api/member/dashboard");
+      // Endpoint nhẹ chỉ trả hồ sơ; dashboard tải cả cây gia phả nên chậm. Máy chủ cũ chưa có thì dùng dashboard.
+      let data;
+      try {
+        data = await apiRequest("/api/member/profile");
+      } catch (profileError) {
+        if (profileError?.status !== 404) throw profileError;
+        data = await apiRequest("/api/member/dashboard");
+      }
       const nextProfile = data.profile || {};
 
       setProfile(nextProfile);
