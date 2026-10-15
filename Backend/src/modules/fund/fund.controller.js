@@ -72,6 +72,19 @@ const toPositiveAmount = (value) => {
     return Number.isFinite(amount) && amount > 0 ? amount : null;
 };
 
+// Kiểm tra id (người, đợt quỹ, sự kiện) thuộc đúng dòng họ trước khi ghi sổ quỹ.
+const CLAN_SCOPED_TABLES = { people: 'people', fund_campaigns: 'fund_campaigns', events: 'events' };
+const belongsToClan = async (table, id, clanId) => {
+    if (id === null || id === undefined || id === '') return true;
+    const tableName = CLAN_SCOPED_TABLES[table];
+    const numericId = Number(id);
+    if (!tableName || !Number.isInteger(numericId) || numericId <= 0) return false;
+    const [rows] = await db.query(`SELECT 1 FROM ${tableName} WHERE id = ? AND clan_id = ? LIMIT 1`, [numericId, clanId]);
+    return rows.length > 0;
+};
+
+const APPROVAL_STATUSES = ['approved', 'rejected', 'pending'];
+
 // --- CAMPAIGN MANAGEMENT ---
 
 exports.getCampaigns = async (req, res) => {
@@ -234,17 +247,26 @@ exports.addIncome = async (req, res) => {
             });
         }
 
-        let finalPersonId = person_id;
+        // Member chỉ được ghi khoản nộp của chính mình và luôn ở trạng thái chờ duyệt.
+        const isPrivileged = ['admin', 'manager'].includes(req.user?.role_name);
+        let finalPersonId = isPrivileged ? person_id : null;
         if (!finalPersonId && req.user) {
             const [userRows] = await db.query('SELECT person_id FROM accounts WHERE id = ?', [req.user.id]);
             finalPersonId = userRows[0]?.person_id;
         }
 
-        // Nếu là member nộp, để status là pending
-        let finalStatus = 'approved';
-        if (req.user && req.user.role_id === 3) {
-            finalStatus = 'pending';
+        const refsValid =
+            (await belongsToClan('people', finalPersonId, clanId)) &&
+            (await belongsToClan('fund_campaigns', campaign_id, clanId)) &&
+            (await belongsToClan('events', event_id, clanId));
+        if (!refsValid) {
+            return res.status(400).json({
+                success: false,
+                message: 'Người nộp, đợt quỹ hoặc sự kiện không thuộc dòng họ của bạn.'
+            });
         }
+
+        const finalStatus = isPrivileged ? 'approved' : 'pending';
 
         const [result] = await db.query(
             `INSERT INTO event_contributions 
@@ -308,6 +330,17 @@ exports.addExpense = async (req, res) => {
             return res.status(403).json({
                 success: false,
                 message: 'Unauthorized'
+            });
+        }
+
+        const refsValid =
+            (await belongsToClan('people', recipient_person_id, clanId)) &&
+            (await belongsToClan('fund_campaigns', campaign_id, clanId)) &&
+            (await belongsToClan('events', event_id, clanId));
+        if (!refsValid) {
+            return res.status(400).json({
+                success: false,
+                message: 'Người nhận, đợt quỹ hoặc sự kiện không thuộc dòng họ của bạn.'
             });
         }
 
@@ -642,7 +675,17 @@ exports.reportPayment = async (req, res) => {
             [personId]
         );
 
+        if (!personRows.length) {
+            return res.status(400).json({ success: false, message: 'User not linked to person' });
+        }
         const { clan_id, display_name } = personRows[0];
+
+        if (!toPositiveAmount(amount)) {
+            return res.status(400).json({ success: false, message: 'Số tiền phải lớn hơn 0.' });
+        }
+        if (!(await belongsToClan('fund_campaigns', campaign_id, clan_id))) {
+            return res.status(400).json({ success: false, message: 'Đợt quỹ không thuộc dòng họ của bạn.' });
+        }
 
         await db.query(
             `INSERT INTO event_contributions 
@@ -736,15 +779,29 @@ exports.approvePayment = async (req, res) => {
             });
         }
 
-        await db.query(
+        if (!APPROVAL_STATUSES.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Trạng thái không hợp lệ.'
+            });
+        }
+
+        const [updateResult] = await db.query(
             'UPDATE event_contributions SET status = ?, manager_note = ? WHERE id = ? AND clan_id = ?',
             [
                 status,
-                manager_note,
+                manager_note || null,
                 transaction_id,
                 clanId
             ]
         );
+
+        if (!updateResult.affectedRows) {
+            return res.status(404).json({
+                success: false,
+                message: 'Không tìm thấy khoản đóng góp.'
+            });
+        }
 
         res.json({
             success: true

@@ -316,6 +316,18 @@ const assignTask = async(req, res) => {
                 });
             }
 
+            // Manager chỉ được giao việc cho sự kiện của dòng họ mình.
+            if (Number(req.user?.role_id) === 2) {
+                const ownClanId = await getManagerClanId(managerAccountId);
+                if (ownClanId == null || Number(eventRow.clan_id) !== Number(ownClanId)) {
+                    await connection.rollback();
+                    return res.status(403).json({
+                        success: false,
+                        message: 'Bạn không có quyền giao việc cho sự kiện của dòng họ khác',
+                    });
+                }
+            }
+
             clanId = eventRow.clan_id || clanId;
         }
 

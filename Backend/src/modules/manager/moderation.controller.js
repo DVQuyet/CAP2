@@ -1,3 +1,4 @@
+const { invalidateAccountCache } = require('../../middleware/authMiddleware');
 const {
     db,
     ensureCanAddAccount,
@@ -233,6 +234,7 @@ const rejectUser = async(req, res) => {
 
         const sql = "UPDATE accounts SET status = 'rejected' WHERE id = ?";
         await db.query(sql, [accountId]);
+        invalidateAccountCache(accountId);
 
         emitToClan(req, target.clan_id, "pending_approval_changed", {
             type: "user",

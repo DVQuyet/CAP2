@@ -268,6 +268,32 @@ async function markPaymentAsPaid(payment = {}, rawPayload = {}, source = 'sepay_
   try {
     await connection.beginTransaction();
 
+    // Khóa dòng thanh toán và chỉ ghi nhận một lần: webhook gửi trùng không được cộng hạn lần nữa.
+    const [lockedRows] = await connection.query(
+      'SELECT status FROM payments WHERE id = ? FOR UPDATE',
+      [payment.id]
+    );
+    if (!lockedRows.length || lockedRows[0].status === 'paid') {
+      await connection.rollback();
+      return purchase;
+    }
+
+    // Mua tiếp cùng gói khi gói còn hạn thì cộng dồn vào hạn hiện tại thay vì tính lại từ bây giờ.
+    const [subRows] = await connection.query(
+      'SELECT plan_id, status, expires_at FROM subscriptions WHERE clan_id = ? LIMIT 1 FOR UPDATE',
+      [payment.clan_id]
+    );
+    const currentSub = subRows[0];
+    const currentExpiry = currentSub?.expires_at ? new Date(currentSub.expires_at) : null;
+    const canExtend =
+      purchase.periodMonths != null &&
+      currentSub &&
+      currentSub.status === 'active' &&
+      Number(currentSub.plan_id) === Number(payment.plan_id) &&
+      currentExpiry &&
+      currentExpiry.getTime() > Date.now();
+    const baseTime = canExtend ? currentExpiry : new Date();
+
     await connection.query(
       `
       UPDATE payments
@@ -276,13 +302,14 @@ async function markPaymentAsPaid(payment = {}, rawPayload = {}, source = 'sepay_
           period_started_at = NOW(),
           period_expires_at = CASE
             WHEN ? IS NULL THEN NULL
-            ELSE DATE_ADD(NOW(), INTERVAL ? MONTH)
+            ELSE DATE_ADD(?, INTERVAL ? MONTH)
           END,
           raw_response = ?
       WHERE id = ?
       `,
       [
         purchase.periodMonths,
+        baseTime,
         purchase.periodMonths,
         JSON.stringify({
           type: source,
@@ -303,17 +330,24 @@ async function markPaymentAsPaid(payment = {}, rawPayload = {}, source = 'sepay_
         NOW(),
         CASE
           WHEN ? IS NULL THEN NULL
-          ELSE DATE_ADD(NOW(), INTERVAL ? MONTH)
+          ELSE DATE_ADD(?, INTERVAL ? MONTH)
         END
       )
       ON DUPLICATE KEY UPDATE
         plan_id = VALUES(plan_id),
         status = VALUES(status),
-        started_at = VALUES(started_at),
+        started_at = IF(?, started_at, VALUES(started_at)),
         expires_at = VALUES(expires_at),
         cancelled_at = NULL
       `,
-      [payment.clan_id, payment.plan_id, purchase.periodMonths, purchase.periodMonths]
+      [
+        payment.clan_id,
+        payment.plan_id,
+        purchase.periodMonths,
+        baseTime,
+        purchase.periodMonths,
+        canExtend ? 1 : 0,
+      ]
     );
 
     await connection.commit();
@@ -876,4 +910,5 @@ module.exports = {
   handleSepayWebhook,
   getPaymentStatus,
   cancelPendingPayment,
+  markPaymentAsPaid,
 };

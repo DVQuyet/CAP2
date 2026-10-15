@@ -1,3 +1,4 @@
+const { invalidateAccountCache } = require('../../middleware/authMiddleware');
 const db = require("../../config/db");
 const bcrypt = require("bcryptjs");
 const { deletePersonCompletely } = require("../../shared/utils/personDeletion");
@@ -1166,6 +1167,7 @@ exports.updateAccountAccess = async (req, res) => {
       const rid = Number(body.role_id);
       if (![2, 3].includes(rid)) throw Object.assign(new Error("Chỉ gán vai trò Manager hoặc Member"), { status: 400 });
       await connection.query("UPDATE accounts SET role_id = ? WHERE id = ?", [rid, targetId]);
+      invalidateAccountCache(targetId);
     }
 
     if (body.status !== undefined) {

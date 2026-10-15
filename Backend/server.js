@@ -44,8 +44,20 @@ app.use(cors({
     credentials: true
 }));
 
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+// Upload file đi qua multer; body JSON/form chỉ cần giới hạn nhỏ.
+const BODY_LIMIT = process.env.BODY_LIMIT || '2mb';
+app.disable('x-powered-by');
+app.use((req, res, next) => {
+    res.set({
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'SAMEORIGIN',
+        'Referrer-Policy': 'strict-origin-when-cross-origin',
+        'Cross-Origin-Resource-Policy': 'cross-origin',
+    });
+    next();
+});
+app.use(express.json({ limit: BODY_LIMIT }));
+app.use(express.urlencoded({ extended: true, limit: BODY_LIMIT }));
 app.use(passport.initialize());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -213,18 +225,22 @@ io.on('connection', (socket) => {
     });
 
     socket.on('person_editing_start', async (data = {}) => {
-        if (!Number.isFinite(clanId) || clanId <= 0) return;
-        const targetPersonId = Number(data.person_id || data.personId);
-        if (!Number.isFinite(targetPersonId) || targetPersonId <= 0) return;
-        const [targetRows] = await db.query('SELECT id FROM people WHERE id = ? AND clan_id = ? LIMIT 1', [targetPersonId, clanId]);
-        if (!targetRows.length) return;
-        app.locals.treeEditing.set(treeSocketKey(clanId, targetPersonId, socket.id), {
-            clan_id: clanId,
-            person_id: targetPersonId,
-            account_id: accountId,
-            socket_id: socket.id,
-        });
-        emitTreePresence(clanId);
+        try {
+            if (!Number.isFinite(clanId) || clanId <= 0) return;
+            const targetPersonId = Number(data.person_id || data.personId);
+            if (!Number.isFinite(targetPersonId) || targetPersonId <= 0) return;
+            const [targetRows] = await db.query('SELECT id FROM people WHERE id = ? AND clan_id = ? LIMIT 1', [targetPersonId, clanId]);
+            if (!targetRows.length) return;
+            app.locals.treeEditing.set(treeSocketKey(clanId, targetPersonId, socket.id), {
+                clan_id: clanId,
+                person_id: targetPersonId,
+                account_id: accountId,
+                socket_id: socket.id,
+            });
+            emitTreePresence(clanId);
+        } catch (error) {
+            console.error('person_editing_start error:', error.message);
+        }
     });
 
     socket.on('person_editing_stop', (data = {}) => {
@@ -479,6 +495,21 @@ app.use((req, res) => {
     res.status(404).json({
         message: 'Đường dẫn không tồn tại!'
     });
+});
+
+// 9.1 Error handler toàn cục: lỗi body/CORS/multer trả JSON thay vì stack trace HTML.
+app.use((error, req, res, next) => {
+    if (res.headersSent) return next(error);
+    const status = Number(error.status || error.statusCode) || (error.type === 'entity.too.large' ? 413 : 500);
+    if (status >= 500) console.error('Unhandled error:', error);
+    res.status(status).json({
+        success: false,
+        message: status >= 500 ? 'Lỗi hệ thống, vui lòng thử lại.' : (error.message || 'Yêu cầu không hợp lệ'),
+    });
+});
+
+process.on('unhandledRejection', (reason) => {
+    console.error('Unhandled promise rejection:', reason);
 });
 
 // 10. Start server

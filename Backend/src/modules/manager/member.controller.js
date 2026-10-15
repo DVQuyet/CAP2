@@ -1,3 +1,4 @@
+const { invalidateAccountCache } = require('../../middleware/authMiddleware');
 const {
     ensureArchivedMembersTable,
 } = require('./archive.service');
@@ -439,6 +440,7 @@ const archiveMember = async(req, res) => {
             ]
         );
 
+        invalidateAccountCache(targetAccountId);
         return res.json({ success: true, message: 'Đã chuyển thành viên vào kho lưu trữ.' });
     } catch (error) {
         console.error('archiveMember error:', error);
@@ -563,6 +565,7 @@ const restoreArchivedMember = async(req, res) => {
             return res.status(400).json({ success: false, message: 'Bản ghi lưu trữ không có account_id hợp lệ' });
         }
         await db.query('DELETE FROM archived_members WHERE id = ?', [archiveId]);
+        invalidateAccountCache();
         return res.json({
             success: true,
             message: 'Phục hồi thành viên thành công.',
@@ -754,6 +757,7 @@ const updateMemberByManager = async(req, res) => {
                 }
 
                 await db.query('UPDATE accounts SET status = ? WHERE id = ?', [st, targetAccountId]);
+                invalidateAccountCache(targetAccountId);
             }
         }
 
@@ -772,6 +776,7 @@ const updateMemberByManager = async(req, res) => {
             }
             if (rid !== Number(full.role_id)) {
                 await db.query('UPDATE accounts SET role_id = ? WHERE id = ?', [rid, targetAccountId]);
+                invalidateAccountCache(targetAccountId);
             }
         }
 
