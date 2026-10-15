@@ -37,6 +37,8 @@ function parsePersonExists(message) {
     const normalized = normalizeText(stripQuestionNoise(message));
     if (/\b(co bao nhieu|bao nhieu|may|so luong|tong so|thong ke|dem)\b/.test(normalized)) return null;
     if (!/\b(co|tim|kiem tra|tra|ton tai)\b/.test(normalized)) return null;
+    // Câu hỏi về kỷ niệm/sự kiện/lịch không phải tra tên người.
+    if (/\b(ky niem|ki niem|cau chuyen|su kien|lich|sinh nhat|gio)\b/.test(normalized)) return null;
     if (!/\b(gia pha|trong cay|cay|ten)\b/.test(normalized) && !/^co\s+.+\s+khong$/.test(normalized) && !/^tim\s+/.test(normalized)) return null;
 
     let name = normalized
@@ -274,6 +276,38 @@ function parseParents(message) {
     };
 }
 
+// Tên người sau "với/của"; "tôi/mình" hoặc không có tên nghĩa là chính người đang hỏi.
+function extractSubjectAfterPreposition(text) {
+    const match = String(text || '').match(/(?:\bvới\b|\bvoi\b|\bcủa\b|\bcua\b)\s+(.+)$/i);
+    const raw = match ? stripQuestionNoise(match[1]) : '';
+    if (!raw || /^(tôi|toi|mình|minh|em|con|cháu|chau)$/i.test(raw) || /^(toi|minh)$/.test(normalizeText(raw))) {
+        return { source: 'current_member', targetName: [] };
+    }
+    return { source: 'named_person', targetName: makeNameAlternatives(raw) };
+}
+
+function parseSameGeneration(message) {
+    const text = stripQuestionNoise(message);
+    const normalized = normalizeText(text);
+    if (!/\b(cung doi|cung the he|ngang doi|ngang the he)\b/.test(normalized)) return null;
+    return {
+        intent: 'same_generation',
+        confidence: 0.84,
+        entities: extractSubjectAfterPreposition(text),
+    };
+}
+
+function parseAncestors(message) {
+    const text = stripQuestionNoise(message);
+    const normalized = normalizeText(text);
+    if (!/\b(to tien|thuy to|tien nhan)\b/.test(normalized)) return null;
+    return {
+        intent: 'list_ancestors',
+        confidence: 0.84,
+        entities: extractSubjectAfterPreposition(text),
+    };
+}
+
 function parseGeneration(message) {
     const text = stripQuestionNoise(message);
     const normalized = normalizeText(text);
@@ -355,15 +389,34 @@ function parseClanHistory(message) {
     };
 }
 
+function detectEventWindow(normalized) {
+    if (/\bhom nay\b/.test(normalized)) return 'today';
+    if (/\bngay mai\b/.test(normalized)) return 'tomorrow';
+    if (/\b(tuan sau|tuan toi)\b/.test(normalized)) return 'next_week';
+    if (/\btuan nay\b/.test(normalized)) return 'week';
+    if (/\b(thang sau|thang toi)\b/.test(normalized)) return 'next_month';
+    if (/\bthang nay\b/.test(normalized)) return 'month';
+    return null;
+}
+
 function parseEventsUpcoming(message) {
-    const normalized = normalizeText(stripQuestionNoise(message));
-    const asksEvent = /\b(su kien|ngay gio|ngay giỗ|lich|sap toi|sap co|sap dien ra|to chuc)\b/.test(normalized);
+    // "lịch sử" là câu hỏi về dòng họ, không phải lịch sự kiện.
+    const normalized = normalizeText(stripQuestionNoise(message)).replace(/\blich su\b/g, ' ');
+    const asksEvent = /\b(su kien|ngay gio|lich|sap toi|sap co|sap dien ra|to chuc)\b/.test(normalized);
     const inClanScope = /\b(dong ho|ho toc|gia pha|nha tho|tu duong|le|gio)\b/.test(normalized);
-    if (!asksEvent || !inClanScope) return null;
+    const eventNoun = /\b(su kien|lich|gio|ngay gio|ky nhat|sinh nhat|le hoi|le)\b/.test(normalized);
+    const hasWhen = /\b(sap toi|sap co|sap dien ra|sap den|hom nay|ngay mai|tuan nay|tuan sau|tuan toi|thang nay|thang sau|thang toi|gan day|ke tiep|tiep theo)\b/.test(normalized);
+    if (!(asksEvent && inClanScope) && !(eventNoun && hasWhen)) return null;
+
+    const kind = /\b(gio|ky nhat)\b/.test(normalized)
+        ? 'death_anniversary'
+        : /\bsinh nhat\b/.test(normalized)
+            ? 'birthday'
+            : null;
     return {
         intent: 'events_upcoming',
         confidence: 0.84,
-        entities: {},
+        entities: { window: detectEventWindow(normalized), kind },
     };
 }
 
@@ -399,6 +452,9 @@ function parsePersonInfo(message) {
 
 function parseGeneralChat(message) {
     const normalized = normalizeText(stripQuestionNoise(message));
+    if (/\b(ban|tro ly|ai)\s+(co the\s+)?(lam duoc|giup duoc|biet)\s+(nhung\s+)?gi\b|\bhuong dan\b.*\b(su dung|dung)\b|^ban lam duoc gi\b|\bco the lam gi\b/.test(normalized)) {
+        return { intent: 'general_chat', confidence: 0.8, entities: { topic: 'capabilities' } };
+    }
     if (!/^(chao|xin chao|hello|hi|cam on|thank|thanks|ban la ai|tro ly lam duoc gi)\b/.test(normalized)) return null;
     return {
         intent: 'general_chat',
@@ -447,6 +503,8 @@ function parse(message) {
         parseMemoriesStories,
         parsePersonInfo,
         parseGeneralChat,
+        parseSameGeneration,
+        parseAncestors,
         parseGeneration,
     ];
 

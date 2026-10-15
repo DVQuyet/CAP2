@@ -25,4 +25,13 @@ assert.strictEqual(parse('nhắc tôi gọi điện cho bác').needsDate, true);
 assert.strictEqual(parse('Ông nội tôi là ai?'), null, 'câu hỏi thường không bị coi là tạo sự kiện');
 assert.strictEqual(parse('Ngày giỗ sắp tới là khi nào?'), null);
 
+// now = thứ hai 05/10/2026.
+const sundayNextWeek = parse('Hẹn họp chi vào chủ nhật tuần sau');
+assert.strictEqual(sundayNextWeek.title, 'Họp chi');
+assert.strictEqual(sundayNextWeek.date, '2026-10-18', 'chủ nhật của tuần kế tiếp');
+assert.strictEqual(parse('Nhắc tôi đi tảo mộ thứ bảy').date, '2026-10-10', 'thứ bảy sắp tới');
+assert.strictEqual(parse('Đặt lịch họp họ thứ hai tuần sau lúc 8h').date, '2026-10-12');
+assert.strictEqual(parse('Nhắc tôi họp thứ hai').date, '2026-10-12', 'cùng thứ với hôm nay thì lấy tuần sau');
+assert.strictEqual(parse('Nhắc tôi gọi điện cho bác tuần sau').date, '2026-10-12', '"tuần sau" đơn lẻ vẫn là +7 ngày');
+
 console.log('chatbot.eventCommand.test.js passed');

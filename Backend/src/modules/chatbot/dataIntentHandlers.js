@@ -327,48 +327,117 @@ async function handleStatsIntent({ clanId, message, parsed, context, planner }) 
 
 const isoDay = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
-// Ngày giỗ sắp tới được tính từ gia phả (ngày giỗ âm lịch hoặc ngày mất), không nằm trong bảng events.
-async function loadUpcomingAnniversaries(clanId, days = 60) {
+// Khoảng thời gian trong câu hỏi ("hôm nay", "tuần này", "tháng sau"...). Mặc định: 60 ngày tới.
+function resolveEventWindow(name, now = new Date()) {
+    const day = (offset = 0, base = now) => new Date(base.getFullYear(), base.getMonth(), base.getDate() + offset);
+    const today = day();
+    switch (name) {
+        case 'today': return { from: today, to: today, label: 'hôm nay', bounded: true };
+        case 'tomorrow': return { from: day(1), to: day(1), label: 'ngày mai', bounded: true };
+        case 'week': return { from: today, to: day(7), label: 'trong 7 ngày tới', bounded: true };
+        case 'next_week': {
+            const monday = day(7 - ((today.getDay() + 6) % 7));
+            return { from: monday, to: day(6, monday), label: 'tuần sau', bounded: true };
+        }
+        case 'month':
+            return { from: today, to: new Date(today.getFullYear(), today.getMonth() + 1, 0), label: 'trong tháng này', bounded: true };
+        case 'next_month':
+            return {
+                from: new Date(today.getFullYear(), today.getMonth() + 1, 1),
+                to: new Date(today.getFullYear(), today.getMonth() + 2, 0),
+                label: 'trong tháng sau',
+                bounded: true,
+            };
+        default:
+            return { from: today, to: day(60), label: 'trong 60 ngày tới', bounded: false };
+    }
+}
+
+// Ngày giỗ/sinh nhật được tính từ gia phả (ngày giỗ âm lịch hoặc ngày mất, ngày sinh chính xác), không nằm trong bảng events.
+async function loadPersonEvents(clanId, { from, to, types, limit = 8 }) {
     try {
         const { buildYearlyPersonEvents } = require('../calendar/calendar.controller');
-        const today = new Date();
-        const until = new Date(today.getTime() + days * 86400000);
-        const items = await buildYearlyPersonEvents({ clanId, from: isoDay(today), to: isoDay(until) });
+        const items = await buildYearlyPersonEvents({ clanId, from: isoDay(from), to: isoDay(to) });
         return items
-            .filter((item) => item.type === 'death_anniversary')
+            .filter((item) => types.includes(item.type))
             .sort((a, b) => String(a.date).localeCompare(String(b.date)))
-            .slice(0, 8);
+            .slice(0, limit);
     } catch (error) {
-        console.error('loadUpcomingAnniversaries error:', error?.message || error);
+        console.error('loadPersonEvents error:', error?.message || error);
         return [];
     }
 }
 
-async function handleEventsIntent({ clanId, message, parsed, context, planner }) {
-    const events = await queryOptional(
+const EVENT_KIND_TYPES = {
+    death_anniversary: ['death_anniversary'],
+    birthday: ['birthday'],
+};
+
+async function handleEventsIntent({ clanId, accountId = null, message, parsed, context, planner }) {
+    const entities = parsed?.entities && !Array.isArray(parsed.entities) ? parsed.entities : {};
+    const asksAnniversary = /gi[oỗ]|giỗ|ky nhat|kỵ nhật/i.test(String(message || '').normalize('NFC'));
+    const kind = entities.kind || (asksAnniversary ? 'death_anniversary' : null);
+    const range = resolveEventWindow(entities.window);
+    const fromIso = isoDay(range.from);
+    const toIso = isoDay(range.to);
+
+    // Không nêu mốc thời gian: giữ cách cũ (mọi sự kiện chưa kết thúc, tối đa 5).
+    const events = kind ? [] : await queryOptional(
         `SELECT title, event_date, start_date, end_date, description
          FROM events
          WHERE clan_id = ?
-           AND (COALESCE(end_date, event_date, start_date) >= CURDATE())
+           AND COALESCE(end_date, event_date, start_date) >= ?
+           AND COALESCE(start_date, event_date, end_date) <= ?
          ORDER BY COALESCE(start_date, event_date) ASC
-         LIMIT 5`,
-        [clanId]
+         LIMIT ${range.bounded ? 8 : 5}`,
+        [clanId, fromIso, range.bounded ? toIso : '9999-12-31']
     );
-    const anniversaries = await loadUpcomingAnniversaries(clanId);
-    const asksAnniversary = /gi[oỗ]|giỗ|ky nhat|kỵ nhật/i.test(String(message || '').normalize('NFC'));
-    const resolvedData = { type: 'events_upcoming', data: events, anniversaries };
+
+    // Lịch do người dùng/quản lý thêm (kể cả qua trợ lý): lịch chung của dòng họ hoặc lịch cá nhân của chính người hỏi.
+    const calendarEvents = kind || !accountId ? [] : await queryOptional(
+        `SELECT title, event_date, event_time
+         FROM calendar_events
+         WHERE clan_id = ?
+           AND event_date BETWEEN ? AND ?
+           AND (visibility = 'global' OR creator_account_id = ?)
+         ORDER BY event_date ASC, event_time ASC
+         LIMIT 8`,
+        [clanId, fromIso, toIso, accountId]
+    );
+
+    const personTypes = kind ? EVENT_KIND_TYPES[kind] || ['death_anniversary'] : ['death_anniversary', 'birthday'];
+    const personEvents = await loadPersonEvents(clanId, { from: range.from, to: range.to, types: personTypes });
+    const anniversaries = personEvents.filter((item) => item.type === 'death_anniversary');
+    const birthdays = personEvents.filter((item) => item.type === 'birthday');
+
+    const resolvedData = { type: 'events_upcoming', data: events, calendar: calendarEvents, anniversaries, birthdays, window: entities.window || 'default' };
     const ai = await explainResolvedIntent({ intent: parsed.intent, message, resolvedData, context });
-    const eventText = events.length
-        ? `Sự kiện sắp tới: ${events.map((event) => `${event.title} (${formatDateOnly(event.start_date || event.event_date) || 'chưa rõ ngày'}${event.end_date && formatDateOnly(event.end_date) !== formatDateOnly(event.start_date || event.event_date) ? ` - ${formatDateOnly(event.end_date)}` : ''})`).join(', ')}.`
+
+    const clanEventText = events.length
+        ? `Sự kiện ${range.label}: ${events.map((event) => `${event.title} (${formatDateOnly(event.start_date || event.event_date) || 'chưa rõ ngày'}${event.end_date && formatDateOnly(event.end_date) !== formatDateOnly(event.start_date || event.event_date) ? ` - ${formatDateOnly(event.end_date)}` : ''})`).join(', ')}.`
+        : '';
+    const calendarText = calendarEvents.length
+        ? `Lịch ${range.label}: ${calendarEvents.map((event) => `${event.title} (${formatDateOnly(event.event_date)}${event.event_time ? ` ${event.event_time}` : ''})`).join('; ')}.`
         : '';
     const anniversaryText = anniversaries.length
-        ? `Ngày giỗ trong 60 ngày tới: ${anniversaries.map((item) => `${item.title.replace(/^Ngày giỗ\s+/, '')} (${formatDateOnly(item.date)}${item.anniversary_lunar_date ? `, âm lịch ${item.anniversary_lunar_date}` : ''})`).join('; ')}.`
+        ? `Ngày giỗ ${range.label}: ${anniversaries.map((item) => `${item.title.replace(/^Ngày giỗ\s+/, '')} (${formatDateOnly(item.date)}${item.anniversary_lunar_date ? `, âm lịch ${item.anniversary_lunar_date}` : ''})`).join('; ')}.`
         : '';
-    const parts = asksAnniversary ? [anniversaryText, eventText] : [eventText, anniversaryText];
-    const fallback = parts.filter(Boolean).join(' ') || (asksAnniversary
-        ? 'Trong 60 ngày tới chưa có ngày giỗ nào được ghi trong gia phả (cần có ngày mất hoặc ngày giỗ âm lịch trong hồ sơ).'
-        : 'Hiện chưa có sự kiện sắp tới được ghi nhận.');
-    const hasData = events.length || anniversaries.length;
+    const birthdayText = birthdays.length
+        ? `Sinh nhật ${range.label}: ${birthdays.map((item) => `${item.title.replace(/^Sinh nhật\s+/, '')} (${formatDateOnly(item.date)})`).join('; ')}.`
+        : '';
+
+    const parts = kind === 'death_anniversary'
+        ? [anniversaryText]
+        : kind === 'birthday'
+            ? [birthdayText]
+            : [clanEventText, calendarText, anniversaryText, birthdayText];
+    const emptyText = kind === 'death_anniversary'
+        ? `Chưa có ngày giỗ nào ${range.label} trong gia phả (cần có ngày mất hoặc ngày giỗ âm lịch trong hồ sơ).`
+        : kind === 'birthday'
+            ? `Chưa có sinh nhật nào ${range.label} (cần có ngày sinh chính xác trong hồ sơ).`
+            : `Không có sự kiện nào ${range.label}.`;
+    const fallback = parts.filter(Boolean).join(' ') || emptyText;
+    const hasData = events.length || calendarEvents.length || personEvents.length;
     return {
         success: true,
         intent: parsed.intent,
@@ -381,8 +450,29 @@ async function handleEventsIntent({ clanId, message, parsed, context, planner })
     };
 }
 
+const CAPABILITIES_REPLY = [
+    'Tôi có thể giúp bạn:',
+    '• Tra quan hệ: "Cha của [tên] là ai?", "Ông nội tôi là ai?", "[tên] là gì của tôi?"',
+    '• Tra thông tin: "[tên] sinh năm nào?", "[tên] thuộc đời thứ mấy?", "Những người cùng đời với tôi"',
+    '• Thống kê: "Gia phả có bao nhiêu người?", "Dòng họ có mấy đời?"',
+    '• Lịch: "Sắp tới có giỗ ai không?", "Tháng này có sinh nhật ai?"',
+    '• Tạo lịch: "Nhắc tôi giỗ ông nội ngày 15/3 âm lịch" rồi bấm "Thêm vào lịch".',
+].join('\n');
+
 async function handleGeneralChatIntent({ message, parsed, context, planner }) {
     const resolvedData = { type: 'general', data: null };
+    if (parsed?.entities?.topic === 'capabilities') {
+        return {
+            success: true,
+            intent: parsed.intent,
+            answer: CAPABILITIES_REPLY,
+            confidence: parsed.confidence || 0.8,
+            source: 'assistant',
+            planner,
+            resolvedData,
+            ai: { plannerUsed: false, explanationUsed: false },
+        };
+    }
     const ai = await explainResolvedIntent({ intent: parsed.intent, message, resolvedData, context });
     return {
         success: true,

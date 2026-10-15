@@ -3,7 +3,7 @@
 //   "đặt lịch đi tảo mộ ngày mai".
 // Chỉ dựng bản nháp; người dùng bấm "Thêm vào lịch" thì giao diện mới gọi API lịch để lưu.
 
-const TRIGGER_PATTERN = /(^|\s)(nhắc\s+(tôi|mình|em|giúp)|nhac\s+(toi|minh|em|giup)|thêm\s+(sự kiện|lịch|lời nhắc|nhắc)|them\s+(su kien|lich|loi nhac|nhac)|tạo\s+(sự kiện|lịch|lời nhắc|nhắc)|tao\s+(su kien|lich|loi nhac|nhac)|đặt\s+lịch|dat\s+lich|lên\s+lịch|len\s+lich|ghi\s+nhớ\s+ngày|ghi\s+nho\s+ngay)(\s|$)/i;
+const TRIGGER_PATTERN = /(^|\s)(nhắc\s+(tôi|mình|em|giúp)|nhac\s+(toi|minh|em|giup)|thêm\s+(sự kiện|lịch|lời nhắc|nhắc)|them\s+(su kien|lich|loi nhac|nhac)|tạo\s+(sự kiện|lịch|lời nhắc|nhắc)|tao\s+(su kien|lich|loi nhac|nhac)|đặt\s+lịch|dat\s+lich|lên\s+lịch|len\s+lich|ghi\s+nhớ\s+ngày|ghi\s+nho\s+ngay|hẹn(?=\s+(?:họp|gặp|lịch))|hen(?=\s+(?:hop|gap|lich)))(\s|$)/i;
 
 const pad2 = (value) => String(value).padStart(2, '0');
 const isoOf = (date) => `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
@@ -22,11 +22,47 @@ function detectType(text) {
     return 'personal';
 }
 
+// Thứ trong tuần: [mẫu, số thứ theo getDay() (0 = chủ nhật)]. Dùng lookahead vì \b không nhận ký tự có dấu.
+const WEEKDAY_PATTERNS = [
+    [/(?:chủ\s+nhật|chu\s+nhat)(?=\s|$|[,.;!?])/i, 0],
+    [/(?:thứ\s+hai|thu\s+hai|thứ\s+2|thu\s+2)(?=\s|$|[,.;!?])/i, 1],
+    [/(?:thứ\s+ba|thu\s+ba|thứ\s+3|thu\s+3)(?=\s|$|[,.;!?])/i, 2],
+    [/(?:thứ\s+tư|thu\s+tu|thứ\s+4|thu\s+4)(?=\s|$|[,.;!?])/i, 3],
+    [/(?:thứ\s+năm|thu\s+nam|thứ\s+5|thu\s+5)(?=\s|$|[,.;!?])/i, 4],
+    [/(?:thứ\s+sáu|thu\s+sau|thứ\s+6|thu\s+6)(?=\s|$|[,.;!?])/i, 5],
+    [/(?:thứ\s+bảy|thu\s+bay|thứ\s+7|thu\s+7)(?=\s|$|[,.;!?])/i, 6],
+];
+const NEXT_WEEK_PATTERN = /(?:tuần\s+sau|tuần\s+tới|tuan\s+sau|tuan\s+toi)(?=\s|$|[,.;!?])/i;
+
+function extractWeekday(text, now) {
+    for (const [pattern, weekday] of WEEKDAY_PATTERNS) {
+        const match = text.match(pattern);
+        if (!match) continue;
+        const consumed = [match[0]];
+        const nextWeek = text.match(NEXT_WEEK_PATTERN);
+        let target;
+        if (nextWeek) {
+            // Tuần sau tính từ thứ hai của tuần kế tiếp (thứ hai = 0 ... chủ nhật = 6).
+            consumed.push(nextWeek[0]);
+            const sinceMonday = (now.getDay() + 6) % 7;
+            target = addDays(now, 7 - sinceMonday + ((weekday + 6) % 7));
+        } else {
+            // Lần sắp tới của thứ đó, không tính hôm nay.
+            target = addDays(now, ((weekday - now.getDay() + 7) % 7) || 7);
+        }
+        return { isoDate: isoOf(target), lunar: false, consumed };
+    }
+    return null;
+}
+
 // Trả về { isoDate, lunar, lunarText, consumed: [chuỗi đã dùng] } hoặc null.
 function extractDate(text, now, lunarToSolar) {
     const consumed = [];
     const lunar = /(âm\s*lịch|am\s*lich|\bâm\b|\bam\b|ÂL\b)/i.test(text);
     if (lunar) consumed.push(text.match(/(âm\s*lịch|am\s*lich|\bâm\b|\bam\b|ÂL\b)/i)[0]);
+
+    const weekday = extractWeekday(text, now);
+    if (weekday) return weekday;
 
     const relative = [
         [/\bhôm nay\b|\bhom nay\b/i, 0],

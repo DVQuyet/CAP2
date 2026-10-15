@@ -50,6 +50,26 @@ test("tổ tiên và hậu duệ theo đúng chiều quan hệ", () => {
   assert.deepEqual([...getAncestorIds(1, indexes)], []);
 });
 
+test("người có cả cha mẹ ruột và cha mẹ nuôi: tổ tiên gồm cả hai dòng", () => {
+  // 5 là con ruột của (3,4) và con nuôi/thừa tự của (1,2); 3 là con của (1,2) nên 1,2 cũng là tổ tiên qua dòng ruột.
+  const adoptivePeople = [...people, { id: 6, display_name: "Cha nuôi", gender: 1 }, { id: 7, display_name: "Mẹ nuôi", gender: 2 }];
+  const adoptiveFamilies = [...families, { id: 12, father_id: 6, mother_id: 7 }];
+  const adoptiveChildRows = [
+    ...childRows,
+    { family_id: 12, person_id: 5, child_type: "adopted", is_primary_lineage: 0 },
+  ];
+  const indexes = buildFamilyIndexes(adoptivePeople, adoptiveFamilies, adoptiveChildRows);
+  assert.deepEqual([...getAncestorIds(5, indexes)].sort(), [1, 2, 3, 4, 6, 7]);
+  assert.deepEqual([...getDescendantIds(6, indexes)], [5], "cha nuôi có con nuôi là hậu duệ");
+  assert.equal(indexes.childFamiliesByPersonId.get(5).length, 2);
+  assert.equal(indexes.childFamilyByPersonId.get(5).id, 11, "gia đình chính là cha mẹ ruột/dòng chính, không bị ghi đè bởi dòng đến sau");
+
+  // Thứ tự dòng dữ liệu đảo ngược vẫn chọn đúng gia đình chính.
+  const reversed = buildFamilyIndexes(adoptivePeople, adoptiveFamilies, [adoptiveChildRows[2], adoptiveChildRows[0], adoptiveChildRows[1]]);
+  assert.equal(reversed.childFamilyByPersonId.get(5).id, 11);
+  assert.deepEqual([...getAncestorIds(5, reversed)].sort(), [1, 2, 3, 4, 6, 7]);
+});
+
 test("vòng lặp cha mẹ không làm treo việc duyệt tổ tiên", () => {
   const loopFamilies = [
     { id: 20, father_id: 1, mother_id: null },

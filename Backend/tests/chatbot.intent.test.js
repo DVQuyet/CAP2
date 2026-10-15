@@ -30,6 +30,19 @@ const cases = [
     ['ke toi nghe cau chuyen gia dinh', 'memories_stories'],
     ['thong tin Nguyen Van A', 'person_info'],
     ['chao ban', 'general_chat'],
+    // Sự kiện theo mốc thời gian / loại, không cần nhắc "dòng họ"
+    ['Sắp tới có sự kiện gì', 'events_upcoming'],
+    ['Hôm nay có sự kiện gì', 'events_upcoming'],
+    ['Tháng này có giỗ ai không', 'events_upcoming'],
+    ['Sinh nhật của ai sắp tới', 'events_upcoming'],
+    ['Ngày giỗ sắp tới là khi nào', 'events_upcoming'],
+    // "Có ... không" nhưng là kỷ niệm, không phải tra tên người
+    ['Có kỷ niệm nào gần đây không', 'memories_stories'],
+    // Lịch sử vẫn là lịch sử dòng họ, không bị coi là lịch sự kiện
+    ['Lịch sử dòng họ như thế nào', 'clan_history'],
+    ['Những người cùng đời với tôi', 'same_generation'],
+    ['Ai là tổ tiên của Đinh Viết Lâm', 'list_ancestors'],
+    ['Bạn làm được những gì', 'general_chat'],
 ];
 
 for (const [message, expectedIntent] of cases) {
@@ -49,5 +62,21 @@ assert.strictEqual(branchCount.entities.metric, 'branch_count');
 const currentGeneration = parser.parse('Nguoi nay thuoc doi thu may?');
 assert.strictEqual(currentGeneration.intent, 'find_generation');
 assert.strictEqual(currentGeneration.entities.source, 'current_member');
+
+const eventWindow = parser.parse('Tháng này có giỗ ai không');
+assert.strictEqual(eventWindow.entities.window, 'month');
+assert.strictEqual(eventWindow.entities.kind, 'death_anniversary');
+assert.strictEqual(parser.parse('Sinh nhật của ai sắp tới').entities.kind, 'birthday');
+assert.strictEqual(parser.parse('Hôm nay có sự kiện gì').entities.window, 'today');
+assert.strictEqual(parser.parse('Ngày mai có sự kiện gì').entities.window, 'tomorrow');
+assert.strictEqual(parser.parse('Tuần sau có sự kiện gì').entities.window, 'next_week');
+
+const sameGenSelf = parser.parse('Những người cùng đời với tôi');
+assert.strictEqual(sameGenSelf.entities.source, 'current_member');
+const sameGenNamed = parser.parse('Ai cùng đời với Đinh Viết Lâm');
+assert.strictEqual(sameGenNamed.intent, 'same_generation');
+assert.strictEqual(sameGenNamed.entities.source, 'named_person');
+assert.ok(sameGenNamed.entities.targetName.some((name) => /Đinh Viết Lâm/i.test(name)));
+assert.strictEqual(parser.parse('Bạn làm được những gì').entities.topic, 'capabilities');
 
 console.log('chatbot.intent.test.js passed');

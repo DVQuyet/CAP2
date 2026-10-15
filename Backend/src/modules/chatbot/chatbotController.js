@@ -14,6 +14,7 @@ const { resolveKinshipReference } = require('./kinshipReferenceService');
 const { parseEventCommand } = require('./eventCommandService');
 const { resolveRelationshipExpression } = require('./relationshipExpressionResolver');
 const { toPositiveId, queryOptional } = require('./chatbotUtils');
+const { ARCHIVED_MEMBER_JOIN_SQL } = require('../manager/common.service');
 const {
     needsCurrentPersonAnswer,
     handlePersonInfoIntent,
@@ -572,6 +573,115 @@ async function handleFindGeneration({ res, clanId, currentMemberId, parsed }) {
             : `Theo dữ liệu gia phả hiện tại, ${relationshipEngine.personName(person)} chưa có dữ liệu đời/thế hệ.`,
         confidence: generation ? parsed.confidence : 0.5,
         person: { id: person.id, name: relationshipEngine.personName(person), generation },
+    };
+}
+
+// Người được hỏi: chính người dùng ("tôi") hoặc người gọi tên. person rỗng nghĩa là đã có phản hồi (lỗi/đa nghĩa).
+async function resolveSubjectPerson({ res, clanId, currentMemberId, parsed }) {
+    const names = parsed.entities?.targetName;
+    if (parsed.entities?.source === 'current_member' || !Array.isArray(names) || !names.length) {
+        if (!currentMemberId) {
+            return { response: { success: true, intent: parsed.intent, answer: needsCurrentPersonAnswer(), confidence: 0.2, needsPersonSelection: true } };
+        }
+        const person = await relationshipEngine.getPerson(currentMemberId, { clanId });
+        return person
+            ? { person }
+            : { response: { success: false, intent: parsed.intent, answer: 'Tôi chưa xác định được thành viên bạn đang hỏi.', confidence: 0 } };
+    }
+    const person = await resolveNamedPerson(res, clanId, parsed.intent, names, currentMemberId);
+    return person ? { person } : { response: null };
+}
+
+const ANCESTOR_LEVEL_LABELS = ['Cha mẹ', 'Ông bà', 'Cụ', 'Kỵ', 'Cao tổ'];
+const ANCESTOR_EDGE_TYPES = new Set(['father', 'mother', 'adopted_parent']);
+
+// Tổ tiên theo dòng sinh/nhận làm con (không tính cha mẹ kế), nhóm theo đời phía trên.
+async function handleListAncestors({ res, clanId, currentMemberId, parsed }) {
+    const subject = await resolveSubjectPerson({ res, clanId, currentMemberId, parsed });
+    if (!subject.person) return subject.response;
+    const person = subject.person;
+    const graph = await relationshipEngine.loadClanGraph(clanId);
+    const name = relationshipEngine.personName(graph.people.get(Number(person.id)) || person);
+
+    const seen = new Set([Number(person.id)]);
+    const levels = [];
+    let frontier = [Number(person.id)];
+    for (let depth = 0; depth < 12 && frontier.length; depth += 1) {
+        const next = [];
+        for (const id of frontier) {
+            for (const edge of graph.adjacency.get(id) || []) {
+                const target = Number(edge.to);
+                if (!ANCESTOR_EDGE_TYPES.has(edge.type) || seen.has(target) || !graph.people.has(target)) continue;
+                seen.add(target);
+                next.push(target);
+            }
+        }
+        if (next.length) levels.push(next);
+        frontier = next;
+    }
+
+    if (!levels.length) {
+        return {
+            success: true,
+            intent: parsed.intent,
+            answer: `Theo dữ liệu gia phả hiện tại, chưa có thông tin tổ tiên của ${name}.`,
+            confidence: 0.6,
+            person: { id: person.id, name },
+            people: [],
+        };
+    }
+
+    const label = (index) => ANCESTOR_LEVEL_LABELS[index] || `Đời trên thứ ${index + 1}`;
+    const lines = levels.map((ids, index) => `${label(index)}: ${formatPeopleList(ids.map((id) => graph.people.get(id)).filter(Boolean))}`);
+    const founders = levels[levels.length - 1].map((id) => graph.people.get(id)).filter(Boolean);
+    const people = levels.flat().map((id) => graph.people.get(id)).filter(Boolean);
+    return {
+        success: true,
+        intent: parsed.intent,
+        answer: `Theo dữ liệu gia phả hiện tại, tổ tiên của ${name} gồm — ${lines.join('; ')}. Người xa nhất được ghi nhận: ${formatPeopleList(founders)}.`,
+        confidence: parsed.confidence,
+        person: { id: person.id, name },
+        people: people.slice(0, 20).map((item) => ({ id: item.id, name: relationshipEngine.personName(item) })),
+    };
+}
+
+// Những người cùng đời (cùng số đời trong gia phả) với một người.
+async function handleSameGeneration({ res, clanId, currentMemberId, parsed }) {
+    const subject = await resolveSubjectPerson({ res, clanId, currentMemberId, parsed });
+    if (!subject.person) return subject.response;
+    const person = subject.person;
+    const name = relationshipEngine.personName(person);
+    const generation = person.generation || person.generation_level || null;
+    if (!generation) {
+        return {
+            success: true,
+            intent: parsed.intent,
+            answer: `Theo dữ liệu gia phả hiện tại, ${name} chưa có dữ liệu đời/thế hệ nên chưa tìm được người cùng đời.`,
+            confidence: 0.5,
+            person: { id: person.id, name },
+        };
+    }
+
+    const rows = await queryOptional(
+        `SELECT p.id, p.display_name, p.surname, p.middle_name, p.first_name, p.gender
+         FROM people p
+         LEFT JOIN accounts a ON a.person_id = p.id
+         ${ARCHIVED_MEMBER_JOIN_SQL}
+         WHERE p.clan_id = ? AND p.generation = ? AND p.id <> ? AND am.id IS NULL
+         ORDER BY p.display_name ASC, p.id ASC
+         LIMIT 31`,
+        [clanId, generation, person.id]
+    );
+    const shown = rows.slice(0, 30);
+    return {
+        success: true,
+        intent: parsed.intent,
+        answer: shown.length
+            ? `Theo dữ liệu gia phả hiện tại, ${name} thuộc đời thứ ${generation}; những người cùng đời${rows.length > 30 ? ' (30 người đầu)' : ''}: ${formatPeopleList(shown)}.`
+            : `Theo dữ liệu gia phả hiện tại, ${name} thuộc đời thứ ${generation} và chưa ghi nhận người nào khác cùng đời.`,
+        confidence: parsed.confidence,
+        person: { id: person.id, name, generation },
+        people: shown.map((item) => ({ id: item.id, name: relationshipEngine.personName(item) })),
     };
 }
 
@@ -1197,6 +1307,10 @@ exports.ask = async (req, res) => {
             responsePayload = await handleFindByKinship({ clanId, currentMemberId, parsed });
         } else if (parsed.intent === 'find_generation') {
             responsePayload = await handleFindGeneration({ res, clanId, currentMemberId, parsed });
+        } else if (parsed.intent === 'same_generation') {
+            responsePayload = await handleSameGeneration({ res, clanId, currentMemberId, parsed });
+        } else if (parsed.intent === 'list_ancestors') {
+            responsePayload = await handleListAncestors({ res, clanId, currentMemberId, parsed });
         } else if (parsed.intent === 'self_identity') {
             responsePayload = await handleSelfIdentity({ clanId, currentMemberId, parsed });
         } else if (parsed.intent === 'relationship_expression' && parsed.ast?.steps?.length) {
@@ -1228,7 +1342,7 @@ exports.ask = async (req, res) => {
         } else if (parsed.intent === 'stats_count' || parsed.intent === 'family_analytics') {
             responsePayload = await handleStatsIntent({ clanId, message, parsed, context: chatbotContext, planner });
         } else if (parsed.intent === 'events_upcoming') {
-            responsePayload = await handleEventsIntent({ clanId, message, parsed, context: chatbotContext, planner });
+            responsePayload = await handleEventsIntent({ clanId, accountId, message, parsed, context: chatbotContext, planner });
         } else if (parsed.intent === 'general_chat') {
             responsePayload = await handleGeneralChatIntent({ message, parsed, context: chatbotContext, planner });
         } else {

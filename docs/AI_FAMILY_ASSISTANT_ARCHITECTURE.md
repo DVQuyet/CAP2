@@ -1,5 +1,7 @@
 # AI Family Assistant Architecture
 
+> Luồng hiện tại, độ phủ câu hỏi và đề xuất tối ưu: xem [TOI_UU_AI_VA_GIA_PHA.md](TOI_UU_AI_VA_GIA_PHA.md).
+
 ## Principle
 
 Relationship data is decided only by the rule engine:

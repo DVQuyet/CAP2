@@ -9,6 +9,9 @@ export function buildFamilyIndexes(people = [], families = [], childRows = []) {
   const peopleById = new Map(asArray(people).map((person) => [Number(person.id), person]));
   const familiesById = new Map(asArray(families).map((family) => [Number(family.id), family]));
   const childFamilyByPersonId = new Map();
+  // Một người có thể thuộc nhiều gia đình cha mẹ (ruột + nuôi/thừa tự/kế): giữ đủ để duyệt tổ tiên không sót.
+  const childFamiliesByPersonId = new Map();
+  const childFamilyScore = new Map();
   const childrenByParentId = new Map();
   const spousesByPersonId = new Map();
   const parentsByChildId = new Map();
@@ -17,10 +20,24 @@ export function buildFamilyIndexes(people = [], families = [], childRows = []) {
     const family = familiesById.get(Number(row.family_id));
     const childId = toId(row.person_id);
     if (!family || !childId || !peopleById.has(childId)) return;
-    childFamilyByPersonId.set(childId, family);
-    parentsByChildId.set(childId, [toId(family.father_id), toId(family.mother_id)].filter(Boolean));
+    if (!childFamiliesByPersonId.has(childId)) childFamiliesByPersonId.set(childId, []);
+    childFamiliesByPersonId.get(childId).push(family);
 
-    [toId(family.father_id), toId(family.mother_id)].filter(Boolean).forEach((parentId) => {
+    // Gia đình "chính": dòng chính, rồi cha mẹ ruột; bằng điểm thì giữ gia đình gặp trước.
+    const isPrimaryRow = row.is_primary_lineage === true || Number(row.is_primary_lineage) === 1;
+    const isBiological = !row.child_type || row.child_type === "biological";
+    const score = (isPrimaryRow ? 2 : 0) + (isBiological ? 1 : 0);
+    if (!childFamilyScore.has(childId) || score > childFamilyScore.get(childId)) {
+      childFamilyScore.set(childId, score);
+      childFamilyByPersonId.set(childId, family);
+    }
+
+    const parentIds = [toId(family.father_id), toId(family.mother_id)].filter(Boolean);
+    const knownParents = new Set(parentsByChildId.get(childId) || []);
+    parentIds.forEach((parentId) => knownParents.add(parentId));
+    parentsByChildId.set(childId, [...knownParents]);
+
+    parentIds.forEach((parentId) => {
       if (!childrenByParentId.has(parentId)) childrenByParentId.set(parentId, new Set());
       childrenByParentId.get(parentId).add(childId);
     });
@@ -36,7 +53,7 @@ export function buildFamilyIndexes(people = [], families = [], childRows = []) {
     spousesByPersonId.get(motherId).add(fatherId);
   });
 
-  return { peopleById, familiesById, childFamilyByPersonId, childrenByParentId, spousesByPersonId, parentsByChildId };
+  return { peopleById, familiesById, childFamilyByPersonId, childFamiliesByPersonId, childrenByParentId, spousesByPersonId, parentsByChildId };
 }
 
 export function getAncestorIds(personId, indexes, visited = new Set()) {
