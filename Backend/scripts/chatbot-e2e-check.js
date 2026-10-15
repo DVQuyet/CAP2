@@ -217,6 +217,15 @@ async function fakeQuery(rawSql, params = []) {
         return [people.filter((row) => (row.is_living === 1 && row.birth_date && row.birth_date_precision === 'exact')
             || (row.is_living !== 1 && ((row.death_date && row.death_date_precision === 'exact') || row.death_anniversary_lunar)))];
     }
+    if (has(/FROM events WHERE clan_id = \? AND title LIKE \?/)) {
+        const needle = strip(String(params[1] || '').replace(/%/g, ''));
+        return [events.filter((row) => strip(row.title).includes(needle))];
+    }
+    if (has(/FROM calendar_events WHERE clan_id = \? AND title LIKE \?/)) {
+        const needle = strip(String(params[1] || '').replace(/%/g, ''));
+        return [calendarEvents.filter((row) => strip(row.title).includes(needle)
+            && (row.visibility === 'global' || row.creator_account_id === Number(params[2])))];
+    }
     if (has(/FROM events WHERE clan_id = \?/)) {
         const [, from, to] = params;
         return [events.filter((row) => (row.end_date || row.event_date) >= from && (row.start_date || row.event_date) <= to)];
@@ -318,7 +327,7 @@ const CASES = [
     ['Thống kê', 'Có bao nhiêu người đã mất?', /5 thành viên đã mất/],
     ['Thống kê', 'Ai lớn tuổi nhất còn sống?', /Phạm Văn Đức/],
     ['Thống kê', 'Ai nhỏ tuổi nhất?', /Đinh Văn An/],
-    ['Thống kê', 'Đời nào đông người nhất?', /đời thứ 3/],
+    ['Thống kê', 'Đời nào đông người nhất?', /đời thứ 3/i],
     ['Thống kê', 'Ai là con trưởng của Đinh Văn Hòa?', /Đinh Văn Hùng/],
     ['Lịch', 'Sắp tới có sự kiện gì?', /Giỗ tổ/, '', /Việc riêng của người khác/],
     ['Lịch', 'Tháng sau có giỗ ai không?', /Đinh Văn Hòa/],

@@ -171,6 +171,8 @@ function personFieldAnswer(person, subtype, graph) {
                 : `${name} năm nay ${ageText}${birth ? ` (sinh ${birth})` : ''}.`;
         case 'hometown_info':
             return person.hometown ? `Quê quán của ${name}: ${person.hometown}.` : `Gia phả chưa ghi quê quán của ${name}.`;
+        case 'contact_info':
+            return `Trợ lý không cung cấp số điện thoại hay email của ${name}; bạn có thể xem trong hồ sơ thành viên nếu có quyền.`;
         case 'address_info':
             return `Trợ lý không cung cấp địa chỉ nơi ở của ${name}; bạn có thể xem trong hồ sơ thành viên nếu có quyền.`;
         case 'bio_info':
@@ -270,7 +272,7 @@ async function handlePersonExistsIntent({ clanId, parsed, planner }) {
     let answer = `Có. ${name} có trong gia phả.${formatPersonSummary(best)}`;
     if (top.length > 1) {
         const graph = await relationshipEngine.loadClanGraph(clanId).catch(() => null);
-        answer = `Có. Gia phả có ${top.length} người khớp tên "${displayQueryName(queryName)}": ${top
+        answer = `Có. Gia phả có ${top.length} người khớp tên này: ${top
             .map((person) => describePersonBrief(graph?.people.get(Number(person.id)) || person, graph, relationshipEngine.personName))
             .join('; ')}.`;
     }
@@ -308,6 +310,29 @@ async function handleClanHistoryIntent({ message, parsed, context, planner }) {
         source: 'database',
         planner,
         resolvedData: { type: 'clan_info', data: context.clanInfo || {} },
+        ai: { plannerUsed: planner?.source === 'llm_planner' && planner.accepted, explanationUsed: false },
+    };
+}
+
+// Nhà thờ họ, trưởng họ.
+async function handleClanInfoIntent({ parsed, context, planner }) {
+    const clan = context.clanInfo || {};
+    const field = parsed.entities?.field;
+    let answer;
+    if (field === 'hall') {
+        answer = clan.hall_address
+            ? `Theo thông tin dòng họ ${clan.clan_name || ''}: ${String(clan.hall_address).trim()}.`.replace(/\s+:/, ':')
+            : 'Gia phả hiện chưa ghi địa chỉ nhà thờ họ.';
+    } else {
+        answer = 'Gia phả hiện chưa ghi nhận trưởng họ. Quản lý dòng họ có thể bổ sung khi hệ thống có thông tin này.';
+    }
+    return {
+        success: true,
+        intent: parsed.intent,
+        answer,
+        confidence: field === 'hall' && clan.hall_address ? (parsed.confidence || 0.85) : 0.5,
+        source: 'database',
+        planner,
         ai: { plannerUsed: planner?.source === 'llm_planner' && planner.accepted, explanationUsed: false },
     };
 }
@@ -357,6 +382,13 @@ async function handleStatsIntent({ clanId, message, parsed, context, planner }) 
         const generationCount = stats.filter((row) => row.generation !== null && row.generation !== undefined).length;
         answer = generationCount
             ? `Gia phả hiện có ${generationCount} đời đã ghi nhận.`
+            : 'Gia phả hiện chưa có dữ liệu đời/thế hệ.';
+    } else if (metric === 'largest_generation') {
+        const rows = stats.filter((row) => row.generation !== null && row.generation !== undefined);
+        const max = Math.max(0, ...rows.map((row) => Number(row.count || 0)));
+        const top = rows.filter((row) => Number(row.count || 0) === max);
+        answer = top.length && max > 0
+            ? `Đời thứ ${top.map((row) => row.generation).join(', ')} đông nhất với ${max} thành viên.`
             : 'Gia phả hiện chưa có dữ liệu đời/thế hệ.';
     } else if (metric === 'branch_count') {
         const [branchRow] = await queryOptional(
@@ -579,4 +611,5 @@ module.exports = {
     handleStatsIntent,
     handleEventsIntent,
     handleGeneralChatIntent,
+    handleClanInfoIntent,
 };

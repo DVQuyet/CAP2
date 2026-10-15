@@ -5,6 +5,10 @@ const { parseRelationshipExpression } = require('./relationshipQueryParser');
 const db = require('../../config/db');
 
 const DETERMINISTIC_RULE_INTENTS = new Set([
+    'person_anniversary',
+    'event_lookup',
+    'clan_info',
+    'child_status',
     'same_generation',
     'list_ancestors',
     'compare_relationship',

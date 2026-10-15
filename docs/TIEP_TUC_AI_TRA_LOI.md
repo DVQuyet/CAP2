@@ -27,7 +27,7 @@ Số dòng trong file này tính theo commit `1f98244`; sau khi sửa có thể 
 |---|---|---|---|
 | 0 – CI | xong | 47/82 (ngày cố định 15/10/2026) | GĐ0 |
 | 1 – Hết câu trả lời sai | xong | 69/82, hội thoại 1/5 | GĐ1 |
-| 2 – Phủ câu hỏi | chưa làm | mục tiêu ≥ 76/82 | |
+| 2 – Phủ câu hỏi | xong | 82/82, hội thoại 1/5 | GĐ2 |
 | 3 – Hội thoại | chưa làm | hội thoại ≥ 4/5 | |
 | 4 – Nhanh, nói tự nhiên | chưa làm | giữ điểm, p95 < 1,5 s không LLM | |
 | 5 – Quyền và dữ liệu | chưa làm | giữ điểm | |
@@ -73,20 +73,20 @@ Số dòng trong file này tính theo commit `1f98244`; sau khi sửa có thể 
 
 ## Giai đoạn 2 — Phủ đủ câu hỏi (~300–450k token, mục tiêu ≥ 76/82)
 
-- [ ] 2.1 "X là ai?", "Ông Bình là ai?" → giới thiệu: đời, cha mẹ, vợ/chồng, con, sinh/mất (ý định mới hoặc mở rộng `person_info`).
-- [ ] 2.2 Tuổi, còn sống không.
-- [ ] 2.3 Đếm vợ/chồng/con ("X có mấy vợ", "mấy người con"); vợ lẽ (`families.union_type = 'concubine'`), con nuôi/con riêng
+- [x] 2.1 "X là ai?", "Ông Bình là ai?" → giới thiệu: đời, cha mẹ, vợ/chồng, con, sinh/mất (ý định mới hoặc mở rộng `person_info`).
+- [x] 2.2 Tuổi, còn sống không.
+- [x] 2.3 Đếm vợ/chồng/con ("X có mấy vợ", "mấy người con"); vợ lẽ (`families.union_type = 'concubine'`), con nuôi/con riêng
   (`children.child_type`) — tôn trọng `families.visibility = 'managers'` với thành viên thường (xem `modules/genealogy/treeVisibility.js`).
-- [ ] 2.4 Con trưởng/con thứ N (`children.sort_order`, rồi năm sinh); "Đời nào đông người nhất".
-- [ ] 2.5 Ngày giỗ của một người: `death_anniversary_lunar` hoặc ngày mất exact → ngày âm + ngày dương sắp tới
+- [x] 2.4 Con trưởng/con thứ N (`children.sort_order`, rồi năm sinh); "Đời nào đông người nhất".
+- [x] 2.5 Ngày giỗ của một người: `death_anniversary_lunar` hoặc ngày mất exact → ngày âm + ngày dương sắp tới
   (dùng `convertLunar2SolarDate`/`solarIsoToLunar` export ở cuối `calendar/calendar.controller.js`). Kiểm cột tồn tại trước khi đưa vào SELECT.
-- [ ] 2.6 Sự kiện theo tên ("Họp họ năm nay tổ chức khi nào?") — tìm theo từ khóa trong `events`/`calendar_events` (theo quyền).
-- [ ] 2.7 Nhà thờ họ: thêm `clans.hall_address` vào `handleClanHistoryIntent` (`dataIntentHandlers.js:216`) và vào
+- [x] 2.6 Sự kiện theo tên ("Họp họ năm nay tổ chức khi nào?") — tìm theo từ khóa trong `events`/`calendar_events` (theo quyền).
+- [x] 2.7 Nhà thờ họ: thêm `clans.hall_address` vào `handleClanHistoryIntent` (`dataIntentHandlers.js:216`) và vào
   `buildExplainData` (`chatbotPrompts.js:67`, hiện thiếu).
-- [ ] 2.8 "Ai là trưởng họ?" — chờ quyết định dữ liệu; tạm trả "gia phả chưa ghi nhận trưởng họ".
-- [ ] 2.9 "A với B là gì của nhau", kể cả khi một bên là "tôi".
-- [ ] 2.10 Câu ngoài phạm vi: nói rõ chỉ trả lời về gia phả + 3 ví dụ, thay câu "Tôi chưa hiểu rõ câu hỏi…" ở nhánh `unknown` cuối `exports.ask`.
-- [ ] 2.11 LLM planner (chỉ khi luật không hiểu): thêm ý định/thuộc tính mới vào `buildPlanPrompt` (`chatbotPrompts.js:1`),
+- [x] 2.8 "Ai là trưởng họ?" — chờ quyết định dữ liệu; tạm trả "gia phả chưa ghi nhận trưởng họ".
+- [x] 2.9 "A với B là gì của nhau", kể cả khi một bên là "tôi".
+- [x] 2.10 Câu ngoài phạm vi: nói rõ chỉ trả lời về gia phả + 3 ví dụ, thay câu "Tôi chưa hiểu rõ câu hỏi…" ở nhánh `unknown` cuối `exports.ask`.
+- [x] 2.11 LLM planner (chỉ khi luật không hiểu): thêm ý định/thuộc tính mới vào `buildPlanPrompt` (`chatbotPrompts.js:1`),
   `VALID_INTENTS` (`plannerValidatorService.js:1`), `DETERMINISTIC_RULE_INTENTS` (`queryPlannerService.js:7`); 15–20 ví dụ lấy từ bộ e2e.
 
 ## Giai đoạn 3 — Hội thoại mượt (~250–400k token, mục tiêu hội thoại ≥ 4/5)
@@ -119,6 +119,8 @@ Số dòng trong file này tính theo commit `1f98244`; sau khi sửa có thể 
 - [ ] 5.2 Siết `me.controller.js:513 setCurrentPerson`: hiện cho tự gắn với **bất kỳ** hồ sơ trong họ và ghi `accounts.person_id`
   nếu đang trống. Không gắn hồ sơ đã có tài khoản khác hoặc đã mất, ghi vết; hoặc chỉ lưu góc nhìn cho chat (chờ quyết định 4).
 - [ ] 5.3 Số điện thoại/địa chỉ/email trả theo quyền xem hồ sơ (chờ quyết định 2).
+- [ ] 5.4 Đồ thị chatbot lọc quan hệ nhạy cảm như cây (`genealogy/treeVisibility.js applyFamilyVisibility`) với thành viên thường:
+  hiện "Vợ của X", "X có mấy vợ" vẫn lộ vợ lẽ đặt chế độ chỉ quản lý xem. Gợi ý: `loadClanGraph` có 2 tầng cache (đủ/công khai), chọn theo vai trò người hỏi.
 
 ## Chờ nhóm quyết định
 
@@ -128,6 +130,12 @@ Số dòng trong file này tính theo commit `1f98244`; sau khi sửa có thể 
 4. Bước chọn "bạn là ai" trong chat có được gắn vĩnh viễn tài khoản với hồ sơ như hiện nay không? (việc 5.2)
 
 ## Ghi chú phiên trước
+
+- 15/10/2026 (tiếp): GĐ2 xong, 82/82. Ý định mới: `person_anniversary`, `event_lookup`, `clan_info`, `child_status`;
+  mở rộng `find_spouse` (đếm, vợ cả/lẽ), `list_children` (nuôi/riêng/trưởng/út/thứ N/đếm), `compare_relationship`
+  ("A với B là gì của nhau", có "tôi", nêu cả hai chiều), `person_info` (`contact_info` không tiết lộ số điện thoại/email —
+  chờ quyết định 2), thống kê đời đông nhất, câu ngoài phạm vi. Trưởng họ tạm trả "chưa ghi nhận" (chờ quyết định 1).
+  Quan hệ nhạy cảm (`families.visibility = 'managers'`) chưa lọc trong đồ thị chatbot → làm ở GĐ5 (việc 5.4).
 
 - 15/10/2026 (tiếp): GĐ1 xong. Tra xưng hô dùng nhãn `describeKinship` (`kinshipTermService.js`, `findPeopleByKinshipTerm`,
   `resolveKinshipChain`); trùng tên hỏi lại kèm đời/năm sinh/cha mẹ; thông tin người theo trường; giải thích quan hệ bằng tên.

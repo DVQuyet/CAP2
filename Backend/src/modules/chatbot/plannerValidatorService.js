@@ -13,6 +13,9 @@ const VALID_INTENTS = new Set([
     'events_upcoming',
     'stats_count',
     'general_chat',
+    'person_anniversary',
+    'event_lookup',
+    'clan_info',
 ]);
 
 const { EDGE_ACCEPTS } = require('./relationshipExpressionResolver');

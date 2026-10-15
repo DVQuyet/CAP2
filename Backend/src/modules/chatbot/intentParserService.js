@@ -77,6 +77,22 @@ function parsePersonExists(message) {
 }
 
 function parseCompareRelationship(message) {
+    const pairText = stripQuestionNoise(message);
+    const pair = pairText.match(/^(.+?)\s+(?:với|voi|và|va)\s+(.+?)\s+(?:là gì của nhau|la gi cua nhau|có quan hệ gì|co quan he gi|quan hệ (?:thế nào|ra sao|gì)|quan he (?:the nao|ra sao|gi)|là họ hàng gì|la ho hang gi|có họ hàng gì không|co ho hang gi khong|có họ với nhau không|co ho voi nhau khong)(?:\s+(?:với nhau|voi nhau))?$/i);
+    if (pair) {
+        const side = (value) => (new RegExp('^' + SELF_WORD_PATTERN + '$', 'i').test(value.trim())
+            ? { self: true, names: [] }
+            : { self: false, names: makeNameAlternatives(value) });
+        const left = side(pair[1]);
+        const right = side(pair[2]);
+        if (!(left.self && right.self)) {
+            return {
+                intent: 'compare_relationship',
+                confidence: 0.9,
+                entities: { personAName: left.names, personBName: right.names, personASelf: left.self, personBSelf: right.self },
+            };
+        }
+    }
     const normalized = normalizeText(message);
     if (!normalized.includes('quan he') || !/\sva\s/.test(normalized)) return null;
 
@@ -170,6 +186,31 @@ function parseChildren(message) {
 
     if (!normalized.includes('con')) return null;
 
+    const ORDER_WORDS = { hai: 2, ba: 3, tu: 4, bon: 4, nam: 5, sau: 6, bay: 7, tam: 8, chin: 9, muoi: 10 };
+    const filterOf = (word) => {
+        const value = normalizeText(word);
+        if (/^(nuoi)$/.test(value)) return { childFilter: 'adopted' };
+        if (/^(rieng)$/.test(value)) return { childFilter: 'step' };
+        if (/^(ruot)$/.test(value)) return { childFilter: 'biological' };
+        if (/^(trai)$/.test(value)) return { childFilter: 'son' };
+        if (/^(gai)$/.test(value)) return { childFilter: 'daughter' };
+        if (/^(truong|ca|dau long|dau)$/.test(value)) return { order: 'first' };
+        if (/^(ut)$/.test(value)) return { order: 'last' };
+        const nth = value.match(/^thu (\d+|\S+)$/);
+        if (nth) return { order: Number(nth[1]) || ORDER_WORDS[nth[1]] || null };
+        return null;
+    };
+    // "Con nuôi/con trưởng/con thứ hai của X là ai"
+    const typed = text.match(/^(?:ai\s+là\s+|ai\s+la\s+)?con\s+(nuôi|nuoi|riêng|rieng|ruột|ruot|trưởng|truong|cả|ca|út|ut|đầu lòng|dau long|thứ\s+\S+|thu\s+\S+)\s+(?:của|cua)\s+(.+?)(?:\s+(?:là ai|la ai|tên gì|ten gi|là những ai|la nhung ai|gồm những ai|gom nhung ai|gồm ai|gom ai))?$/i);
+    if (typed && filterOf(typed[1]) && !new RegExp('^' + SELF_WORD_PATTERN + '$', 'i').test(typed[2].trim())) {
+        return { intent: 'list_children', confidence: 0.88, entities: { targetName: makeNameAlternatives(typed[2]), ...filterOf(typed[1]) } };
+    }
+    // "X có mấy con nuôi/con trai"
+    const countTyped = text.match(/^(.+?)\s+(?:có|co)\s+(?:mấy|may|bao nhiêu|bao nhieu)\s+(?:người\s+|nguoi\s+)?con(?:\s+(nuôi|nuoi|riêng|rieng|ruột|ruot|trai|gái|gai))?(?:\s+(?:không|khong))?$/i);
+    if (countTyped && !new RegExp('^' + SELF_WORD_PATTERN + '$', 'i').test(countTyped[1].trim())) {
+        return { intent: 'list_children', confidence: 0.88, entities: { targetName: makeNameAlternatives(countTyped[1]), count: true, ...(countTyped[2] ? filterOf(countTyped[2]) : {}) } };
+    }
+
     let target = '';
     let normalizedMatch = normalized.match(/^con cua (.+?) (la ai|gom ai|la nhung ai)$/i);
     if (normalizedMatch) target = normalizedMatch[1];
@@ -205,6 +246,22 @@ function parseChildren(message) {
 function parseSpouse(message) {
     const text = stripQuestionNoise(message);
     const normalized = normalizeText(text);
+    const isSelf = (value) => new RegExp('^' + SELF_WORD_PATTERN + '$', 'i').test(String(value || '').trim());
+    // "X có mấy vợ/chồng"
+    const count = text.match(/^(.+?)\s+(?:có|co)\s+(?:mấy|may|bao nhiêu|bao nhieu)\s+(?:người\s+|nguoi\s+)?(vợ|chồng|vo|chong)(?:\s+(?:không|khong))?$/i);
+    if (count && !isSelf(count[1])) {
+        return {
+            intent: 'find_spouse',
+            confidence: 0.86,
+            entities: { spouseType: normalizeText(count[2]) === 'chong' ? 'husband' : 'wife', targetName: makeNameAlternatives(count[1]), count: true },
+        };
+    }
+    // "Vợ lẽ/vợ cả/vợ hai của X là ai"
+    const ranked = text.match(/^(?:ai\s+là\s+|ai\s+la\s+)?((?:vợ|vo)\s+(?:lẽ|le|bé|be|hai|ba|thứ\s+\S+|thu\s+\S+|sau|cả|ca|đầu|dau|trước|truoc))\s+(?:của|cua)\s+(.+?)(?:\s+(?:là ai|la ai|tên gì|ten gi|là những ai|la nhung ai|gồm những ai|gom nhung ai))?$/i);
+    if (ranked && !isSelf(ranked[2])) {
+        const rank = /\b(ca|dau|truoc)$/.test(normalizeText(ranked[1])) ? 'first' : 'secondary';
+        return { intent: 'find_spouse', confidence: 0.86, entities: { spouseType: 'wife', rank, targetName: makeNameAlternatives(ranked[2]) } };
+    }
     const normalizedMatch = normalized.match(/^(vo|chong) cua (.+?)( la ai| ten gi)?$/i);
     if (normalizedMatch) {
         return {
@@ -435,6 +492,7 @@ function parseMemoriesStories(message) {
 }
 
 const PERSON_FIELD_PATTERNS = [
+    ['contact_info', /\b(so dien thoai|dien thoai|sdt|email|lien lac|zalo)\b/],
     ['death_info', /\b(mat nam nao|mat nam|nam mat|ngay mat|mat ngay|mat khi nao|qua doi|tu tran|mat luc nao)\b/],
     ['alive_info', /\b(con song khong|con song|con khong|da mat chua|mat chua|con tai the)\b/],
     ['age_info', /\b(bao nhieu tuoi|may tuoi|tuoi|tho bao nhieu)\b/],
@@ -445,7 +503,7 @@ const PERSON_FIELD_PATTERNS = [
 ];
 
 // Từ hỏi trường thông tin (có dấu và không dấu), để cắt khỏi câu khi tách tên.
-const PERSON_FIELD_WORDS = '(?:sinh năm nào|sinh nam nao|sinh năm|sinh nam|năm sinh|nam sinh|ngày sinh|ngay sinh|sinh ngày|sinh ngay|mất năm nào|mat nam nao|mất năm|mat nam|năm mất|nam mat|ngày mất|ngay mat|mất khi nào|mat khi nao|qua đời|qua doi|còn sống không|con song khong|còn sống|con song|đã mất chưa|da mat chua|bao nhiêu tuổi|bao nhieu tuoi|mấy tuổi|may tuoi|quê quán|que quan|quê ở đâu|que o dau|quê|que|địa chỉ|dia chi|sống ở đâu|song o dau|tiểu sử|tieu su|cuộc đời|cuoc doi|ghi chú|ghi chu|thông tin|thong tin)';
+const PERSON_FIELD_WORDS = '(?:số điện thoại|so dien thoai|điện thoại|dien thoai|sđt|sdt|email|liên lạc|lien lac|zalo|sinh năm nào|sinh nam nao|sinh năm|sinh nam|năm sinh|nam sinh|ngày sinh|ngay sinh|sinh ngày|sinh ngay|mất năm nào|mat nam nao|mất năm|mat nam|năm mất|nam mat|ngày mất|ngay mat|mất khi nào|mat khi nao|qua đời|qua doi|còn sống không|con song khong|còn sống|con song|đã mất chưa|da mat chua|bao nhiêu tuổi|bao nhieu tuoi|mấy tuổi|may tuoi|quê quán|que quan|quê ở đâu|que o dau|quê|que|địa chỉ|dia chi|sống ở đâu|song o dau|tiểu sử|tieu su|cuộc đời|cuoc doi|ghi chú|ghi chu|thông tin|thong tin)';
 
 function parsePersonInfo(message) {
     const text = stripQuestionNoise(message);
@@ -520,6 +578,86 @@ function parseSelfIdentity(message) {
     return null;
 }
 
+// "Nhà thờ họ ở đâu?", "Ai là trưởng họ?"
+function parseClanInfo(message) {
+    const normalized = normalizeText(stripQuestionNoise(message));
+    if (/\b(nha tho|tu duong)\b/.test(normalized) && /\b(o dau|dia chi|nam o|cho nao|tai dau|nam dau)\b/.test(normalized)) {
+        return { intent: 'clan_info', confidence: 0.88, entities: { field: 'hall' } };
+    }
+    if (/\b(truong ho|toc truong|truong toc|truong chi)\b/.test(normalized)) {
+        return { intent: 'clan_info', confidence: 0.86, entities: { field: 'head' } };
+    }
+    return null;
+}
+
+const ANNIVERSARY_TAIL = '(?:là\\s+|la\\s+|vào\\s+|vao\\s+|rơi vào\\s+|roi vao\\s+)?(?:ngày nào|ngay nao|khi nào|khi nao|bao giờ|bao gio|lúc nào|luc nao|hôm nào|hom nao|tháng nào|thang nao|ngày mấy|ngay may)';
+
+// "Ngày giỗ của X là ngày nào?", "Giỗ cụ tổ là ngày nào?", "Giỗ ông nội tôi vào ngày nào?"
+function parsePersonAnniversary(message) {
+    const text = stripQuestionNoise(message);
+    const normalized = normalizeText(text);
+    if (!/\b(gio|ky nhat)\b/.test(normalized)) return null;
+    const match = text.match(new RegExp('(?:ngày\\s+giỗ|ngay\\s+gio|giỗ|gio|kỵ\\s+nhật|ky\\s+nhat)\\s+(?:của\\s+|cua\\s+)?(.+?)\\s+' + ANNIVERSARY_TAIL, 'i'));
+    if (!match) return null;
+    const subject = match[1].replace(/\s+(năm nay|nam nay|năm tới|nam toi|năm sau|nam sau)$/i, '').trim();
+    const plain = normalizeText(subject);
+    // "Ngày giỗ sắp tới là khi nào" hỏi danh sách sự kiện, không hỏi một người.
+    if (!subject || /^(sap toi|tiep theo|ke tiep|gan nhat|nay|tiep)$/.test(plain)) return null;
+    if (/^(cu to|ong to|thuy to|cu thuy to|ong ba to)$/.test(plain)) {
+        return { intent: 'person_anniversary', confidence: 0.88, entities: { source: 'clan' } };
+    }
+    // "Giỗ tổ" thường là ngày lễ chung của họ: tìm sự kiện trước, không có mới lấy ngày giỗ thủy tổ.
+    if (/^(to|ho|dong ho|to ho)$/.test(plain)) {
+        return { intent: 'person_anniversary', confidence: 0.8, entities: { source: 'clan', preferEvent: 'giỗ tổ' } };
+    }
+    const withoutSelf = subject.replace(new RegExp('\\s+(?:của\\s+|cua\\s+)?' + SELF_WORD_PATTERN + '$', 'i'), '').trim();
+    const { terms, rest } = splitKinshipTerms(withoutSelf);
+    if (terms.length === 1 && !rest.length) {
+        return { intent: 'person_anniversary', confidence: 0.86, entities: { source: 'kinship', kinshipTerm: terms[0].keys[0] } };
+    }
+    return { intent: 'person_anniversary', confidence: 0.84, entities: { source: 'named_person', targetName: makeNameAlternatives(subject) } };
+}
+
+// Từ chỉ sự kiện của họ (nhiều chữ để không nhầm họ "Lê" với "lễ").
+const EVENT_LOOKUP_WORDS = /\b(hop ho|hop chi|hop mat|hop toc|gio to|le hoi|le gio|le mung tho|mung tho|tao mo|dai hoi|khanh thanh|trung tu|sinh hoat ho|tet ho|le tet|le cung)\b/;
+
+// "Họp họ năm nay tổ chức khi nào?", "Lễ mừng thọ ông Bình vào ngày nào?"
+function parseEventLookup(message) {
+    const text = stripQuestionNoise(message);
+    const normalized = normalizeText(text);
+    if (!/\b(khi nao|bao gio|ngay nao|luc nao|vao ngay|dien ra|o dau)\b/.test(normalized)) return null;
+    if (!EVENT_LOOKUP_WORDS.test(normalized)) return null;
+    const keyword = text
+        .replace(/\s+(năm nay|nam nay|năm sau|nam sau|tháng này|thang nay|sắp tới|sap toi|lần tới|lan toi)(?=\s|$)/gi, ' ')
+        .replace(/\s+(sẽ\s+|se\s+|được\s+|duoc\s+)?(tổ chức|to chuc|diễn ra|dien ra)(\s.*)?$/i, '')
+        .replace(/\s+(là\s+|la\s+|vào\s+|vao\s+)?(khi nào|khi nao|bao giờ|bao gio|ngày nào|ngay nao|lúc nào|luc nao|ở đâu|o dau)(\s.*)?$/i, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    if (!keyword) return null;
+    return { intent: 'event_lookup', confidence: 0.82, entities: { keyword } };
+}
+
+// "Đinh Văn Phúc là con ruột hay con nuôi?", "X có phải con nuôi không?"
+function parseChildStatus(message) {
+    const text = stripQuestionNoise(message);
+    const normalized = normalizeText(text);
+    let nameText = null;
+    if (/^.+? (la )?con (ruot|nuoi|rieng)( hay| hoac)( la)? con (ruot|nuoi|rieng)$/.test(normalized)) {
+        nameText = text.split(/\s+(?:là\s+|la\s+)?con\s+/i)[0];
+    } else if (/^.+? co phai (la )?con (ruot|nuoi|rieng)( cua .+?)?( khong)?$/.test(normalized)) {
+        nameText = text.split(/\s+(?:có phải|co phai)\s+/i)[0];
+    }
+    if (!nameText || new RegExp('^' + SELF_WORD_PATTERN + '$', 'i').test(nameText.trim())) return null;
+    return { intent: 'child_status', confidence: 0.86, entities: { targetName: makeNameAlternatives(nameText.trim()) } };
+}
+
+// "Đời nào đông người nhất?"
+function parseGenerationRanking(message) {
+    const normalized = normalizeText(stripQuestionNoise(message));
+    if (!/\b(doi|the he) nao (dong|nhieu)( nguoi)?( nhat)?\b/.test(normalized) && !/\b(doi|the he) (dong|nhieu nguoi) nhat\b/.test(normalized)) return null;
+    return { intent: 'stats_count', confidence: 0.86, entities: { metric: 'largest_generation', generation: null } };
+}
+
 function parse(message) {
     const normalizedMessage = stripQuestionNoise(message);
     if (!normalizedMessage) {
@@ -528,6 +666,9 @@ function parse(message) {
 
     const parsers = [
         parseSelfIdentity,
+        parseClanInfo,
+        parsePersonAnniversary,
+        parseChildStatus,
         parseClanHistory,
         parsePersonExists,
         parseCompareRelationship,
@@ -538,12 +679,14 @@ function parse(message) {
         parseParents,
         parseKinshipLookup,
         parseAgeRanking,
+        parseGenerationRanking,
         parseStatsCount,
         parseEventsUpcoming,
         parseMemoriesStories,
         parseSameGeneration,
         parseAncestors,
         parsePersonInfo,
+        parseEventLookup,
         parseGeneralChat,
         parseGeneration,
     ];

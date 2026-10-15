@@ -15,7 +15,7 @@ const { parseEventCommand } = require('./eventCommandService');
 const { resolveRelationshipExpression } = require('./relationshipExpressionResolver');
 const { toPositiveId, queryOptional } = require('./chatbotUtils');
 const { ARCHIVED_MEMBER_JOIN_SQL } = require('../manager/common.service');
-const { describePersonBrief, capitalizeFirst } = require('./chatbotFormat');
+const { describePersonBrief, capitalizeFirst, formatDateVN, dateParts } = require('./chatbotFormat');
 const { plainTermToKey, hasVietnameseDiacritics } = require('./kinshipTermService');
 
 // Từ không dấu (thứ tự trong câu) -> key có dấu theo thứ tự đi từ người gốc ra; null nếu có từ không đổi được.
@@ -72,6 +72,7 @@ const {
     handleStatsIntent,
     handleEventsIntent,
     handleGeneralChatIntent,
+    handleClanInfoIntent,
 } = require('./dataIntentHandlers');
 const {
     buildConversationSessionId,
@@ -85,6 +86,17 @@ const {
     filterEvidenceByPermission,
     restrictedAnswer,
 } = require('./permissionAwareResponseService');
+
+// LLM planner có thể trả entities là mảng tên; đổi về dạng handler mới dùng.
+function withNamedEntities(parsed) {
+    if (!Array.isArray(parsed.entities)) return parsed;
+    return { ...parsed, entities: { source: 'named_person', targetName: parsed.entities.filter(Boolean) } };
+}
+
+function withKeywordEntity(parsed) {
+    if (!Array.isArray(parsed.entities)) return parsed;
+    return { ...parsed, entities: { keyword: String(parsed.entities.find(Boolean) || '') } };
+}
 
 function formatPeopleList(people) {
     return people.map((person) => relationshipEngine.personName(person)).filter(Boolean).join(', ');
@@ -279,6 +291,15 @@ function buildSuggestedQuestions(userProfile = {}, clanInfo = {}) {
     ];
 }
 
+// Câu không nhận ra: nếu không dính gì tới gia phả thì nói rõ ngoài phạm vi, kèm ví dụ hỏi được.
+function buildUnknownAnswer(message) {
+    const text = normalizeShortcutMessage(message);
+    const inScope = /\b(gia pha|dong ho|ho toc|doi|gio|to tien|thuy to|con|chau|ong|ba|cha|bo|me|vo|chong|anh|chi|em|chu|bac|co|di|cau|cu|nha tho|su kien|lich|ky niem|sinh|mat)\b/.test(text);
+    return inScope
+        ? 'Tôi chưa nắm được ý câu hỏi. Bạn thử hỏi theo dạng: "Ông nội tôi là ai?", "Con của Nguyễn Văn A là ai?", "Ngày giỗ của Nguyễn Văn A là ngày nào?".'
+        : 'Câu này nằm ngoài phạm vi gia phả nên tôi chưa trả lời được. Tôi có thể giúp tra quan hệ họ hàng, thông tin thành viên, ngày giỗ, sự kiện và lịch sử dòng họ — ví dụ: "Gia phả có bao nhiêu người?", "Sắp tới có giỗ ai không?".';
+}
+
 function buildGreetingReply(userProfile = {}, clanInfo = {}) {
     const displayName = String(userProfile.display_name || '').trim();
     const clanName = String(clanInfo.clan_name || '').trim();
@@ -446,10 +467,41 @@ async function handleFindRelationship({ res, clanId, currentMemberId, parsed }) 
 }
 
 async function handleCompareRelationship({ res, clanId, currentMemberId, parsed }) {
-    const personA = await resolveNamedPerson(res, clanId, parsed.intent, parsed.entities.personAName, currentMemberId);
+    const entities = parsed.entities || {};
+    if ((entities.personASelf || entities.personBSelf) && !currentMemberId) {
+        return { success: true, intent: parsed.intent, answer: needsCurrentPersonAnswer(), confidence: 0.2, needsPersonSelection: true };
+    }
+    const personA = entities.personASelf
+        ? await relationshipEngine.getPerson(currentMemberId, { clanId })
+        : await resolveNamedPerson(res, clanId, parsed.intent, entities.personAName, currentMemberId);
     if (!personA) return null;
-    const personB = await resolveNamedPerson(res, clanId, parsed.intent, parsed.entities.personBName, currentMemberId);
+    const personB = entities.personBSelf
+        ? await relationshipEngine.getPerson(currentMemberId, { clanId })
+        : await resolveNamedPerson(res, clanId, parsed.intent, entities.personBName, currentMemberId);
     if (!personB) return null;
+    // Một bên là chính người hỏi: trả lời theo góc nhìn "bạn", nêu cả hai chiều.
+    if (entities.personASelf || entities.personBSelf) {
+        const other = entities.personASelf ? personB : personA;
+        const forward = await relationshipEngine.findRelationship(currentMemberId, other.id, { clanId });
+        const backward = await relationshipEngine.findRelationship(other.id, currentMemberId, { clanId });
+        if (!forward.found) {
+            return { success: true, intent: parsed.intent, answer: `Theo dữ liệu gia phả hiện tại, tôi chưa tìm thấy đường quan hệ giữa bạn và ${relationshipEngine.personName(other)}.`, confidence: 0.35, relationshipPath: [] };
+        }
+        const otherName = relationshipEngine.personName(other);
+        const reverse = backward.found ? ` Ngược lại, bạn là ${backward.relationshipLabel} của ${otherName}.` : '';
+        return {
+            success: true,
+            intent: parsed.intent,
+            answer: `${explanationService.explainRelationship(forward)}${reverse}`,
+            confidence: Math.min(forward.confidence, parsed.confidence),
+            relationshipPath: forward.relationshipPath,
+            pathNodes: forward.pathNodes,
+            relationshipLabel: forward.relationshipLabel,
+            pathVisualizer: explanationService.buildPathVisualizer(forward),
+            sourcePerson: { id: forward.sourcePerson.id, name: forward.sourceName },
+            targetPerson: { id: forward.targetPerson.id, name: forward.targetName },
+        };
+    }
 
     const relation = await relationshipEngine.findRelationship(personA.id, personB.id, { clanId });
     if (!relation.found) {
@@ -465,7 +517,11 @@ async function handleCompareRelationship({ res, clanId, currentMemberId, parsed 
     return {
         success: true,
         intent: parsed.intent,
-        answer: explanationService.explainRelationship(relation, { viewerIsSource: false }) || `Theo dữ liệu gia phả hiện tại, ${relation.targetName} là ${relation.relationshipLabel} của ${relation.sourceName}.`,
+        answer: await (async () => {
+            const base = explanationService.explainRelationship(relation, { viewerIsSource: false }) || `Theo dữ liệu gia phả hiện tại, ${relation.targetName} là ${relation.relationshipLabel} của ${relation.sourceName}.`;
+            const backward = await relationshipEngine.findRelationship(personB.id, personA.id, { clanId });
+            return backward.found ? `${base} Ngược lại, ${relation.sourceName} là ${backward.relationshipLabel} của ${relation.targetName}.` : base;
+        })(),
         confidence: Math.min(relation.confidence, parsed.confidence),
         relationshipPath: relation.relationshipPath,
         pathNodes: relation.pathNodes,
@@ -479,37 +535,167 @@ async function handleCompareRelationship({ res, clanId, currentMemberId, parsed 
     };
 }
 
+const CHILD_TYPE_NOTES = { adopted: 'con nuôi', heir: 'con thừa tự', step: 'con riêng', foster: 'con nuôi dưỡng' };
+
+// Con của một người, sắp theo thứ tự trong gia phả (sort_order) rồi năm sinh, kèm loại con.
+function orderedChildrenOf(graph, personId) {
+    const id = Number(personId);
+    const rows = [];
+    const seen = new Set();
+    for (const family of graph.families.values()) {
+        if (Number(family.father_id) !== id && Number(family.mother_id) !== id) continue;
+        for (const row of graph.childrenByFamily.get(Number(family.id)) || []) {
+            const person = graph.people.get(Number(row.person_id));
+            if (!person || seen.has(Number(person.id))) continue;
+            seen.add(Number(person.id));
+            rows.push({ person, row, childType: String(row.child_type || 'biological') });
+        }
+    }
+    const order = (item) => (Number(item.row.sort_order) > 0 ? Number(item.row.sort_order) : 999);
+    return rows.sort((a, b) => order(a) - order(b)
+        || String(a.person.birth_date || '9999').localeCompare(String(b.person.birth_date || '9999'))
+        || Number(a.person.id) - Number(b.person.id));
+}
+
+function matchesChildFilter(item, filter) {
+    if (!filter) return true;
+    if (filter === 'adopted') return ['adopted', 'heir', 'foster'].includes(item.childType);
+    if (filter === 'step') return item.childType === 'step';
+    if (filter === 'biological') return ['biological', 'unknown', ''].includes(item.childType);
+    if (filter === 'son') return Number(item.person.gender) === 1;
+    if (filter === 'daughter') return Number(item.person.gender) === 2;
+    return true;
+}
+
 async function handleListChildren({ res, clanId, currentMemberId, parsed }) {
     const target = await resolveNamedPerson(res, clanId, parsed.intent, parsed.entities.targetName, currentMemberId);
     if (!target) return null;
-    const children = await relationshipEngine.getChildrenOf(target.id, { clanId });
+    const graph = await relationshipEngine.loadClanGraph(clanId);
     const targetName = relationshipEngine.personName(target);
+    const filter = parsed.entities.childFilter || null;
+    const all = orderedChildrenOf(graph, target.id);
+    const children = all.filter((item) => matchesChildFilter(item, filter));
+    const word = { adopted: 'con nuôi', step: 'con riêng', biological: 'con ruột', son: 'con trai', daughter: 'con gái' }[filter] || 'con';
+    const nameWithNote = (item) => (CHILD_TYPE_NOTES[item.childType] && !filter
+        ? `${relationshipEngine.personName(item.person)} (${CHILD_TYPE_NOTES[item.childType]})`
+        : relationshipEngine.personName(item.person));
+    const people = (items) => items.map((item) => ({ id: item.person.id, name: relationshipEngine.personName(item.person) }));
 
+    if (parsed.entities.order) {
+        const order = parsed.entities.order;
+        const picked = order === 'first' ? children[0] : order === 'last' ? children[children.length - 1] : children[Number(order) - 1];
+        if (!picked) {
+            return { success: true, intent: parsed.intent, answer: `Theo dữ liệu gia phả hiện tại, chưa đủ dữ liệu con của ${targetName} để xác định.`, confidence: 0.5, people: [] };
+        }
+        const orderWord = order === 'first' ? 'con cả' : order === 'last' ? 'con út' : `con thứ ${order}`;
+        // Có con trùng tên thì kèm năm sinh để biết là ai.
+        const label = (item) => {
+            const name = relationshipEngine.personName(item.person);
+            const twins = all.filter((other) => relationshipEngine.personName(other.person) === name).length > 1;
+            const year = dateParts(item.person.birth_date)?.year;
+            return twins && year ? `${name} (sinh ${year})` : name;
+        };
+        let answer = `Theo dữ liệu gia phả hiện tại, ${orderWord} của ${targetName} là ${label(picked)}`;
+        // "Con trưởng" theo nếp gia phả thường hiểu là con trai trưởng: nêu thêm nếu con cả là con gái.
+        if (order === 'first' && Number(picked.person.gender) !== 1) {
+            const eldestSon = children.find((item) => Number(item.person.gender) === 1);
+            if (eldestSon) answer += `; con trai trưởng là ${label(eldestSon)}`;
+        }
+        answer += '. Thứ tự dựa theo thứ tự con và năm sinh ghi trong gia phả.';
+        return { success: true, intent: parsed.intent, answer, confidence: parsed.confidence, people: people([picked]) };
+    }
+
+    let answer;
+    if (!children.length) {
+        answer = `Theo dữ liệu gia phả hiện tại, tôi chưa thấy dữ liệu ${word} của ${targetName}.`;
+    } else if (parsed.entities.count) {
+        answer = `Theo dữ liệu gia phả hiện tại, ${targetName} có ${children.length} ${word}: ${children.map(nameWithNote).join(', ')}.`;
+    } else {
+        answer = `Theo dữ liệu gia phả hiện tại, ${word} của ${targetName} ${children.length > 1 ? 'gồm' : 'là'}: ${children.map(nameWithNote).join(', ')}.`;
+    }
+    return { success: true, intent: parsed.intent, answer, confidence: parsed.confidence, people: people(children) };
+}
+
+// "X là con ruột hay con nuôi?"
+async function handleChildStatus({ res, clanId, currentMemberId, parsed }) {
+    const person = await resolveNamedPerson(res, clanId, parsed.intent, parsed.entities.targetName, currentMemberId);
+    if (!person) return null;
+    const graph = await relationshipEngine.loadClanGraph(clanId);
+    const name = relationshipEngine.personName(person);
+    const parts = [];
+    for (const [familyId, rows] of graph.childrenByFamily) {
+        const row = rows.find((item) => Number(item.person_id) === Number(person.id));
+        if (!row) continue;
+        const family = graph.families.get(Number(familyId));
+        const parents = [family?.father_id, family?.mother_id]
+            .map((id) => graph.people.get(Number(id)))
+            .filter(Boolean)
+            .map(relationshipEngine.personName);
+        const kind = CHILD_TYPE_NOTES[String(row.child_type || '')] || 'con ruột';
+        parts.push(`${kind}${parents.length ? ` của ${parents.join(' và ')}` : ''}`);
+    }
     return {
         success: true,
         intent: parsed.intent,
-        answer: children.length
-            ? `Theo dữ liệu gia phả hiện tại, con của ${targetName} là: ${formatPeopleList(children)}.`
-            : `Theo dữ liệu gia phả hiện tại, tôi chưa thấy dữ liệu con của ${targetName}.`,
-        confidence: parsed.confidence,
-        people: children.map((person) => ({ id: person.id, name: relationshipEngine.personName(person) })),
+        answer: parts.length
+            ? `Theo dữ liệu gia phả hiện tại, ${name} là ${parts.join('; đồng thời là ')}.`
+            : `Gia phả chưa ghi cha mẹ của ${name}.`,
+        confidence: parts.length ? parsed.confidence : 0.5,
+        person: { id: person.id, name },
     };
+}
+
+const ENDED_STATUSES = new Set(['divorced', 'separated', 'annulled']);
+
+// Mô tả một cuộc hôn nhân từ dòng families: "vợ cả", "vợ lẽ", "đã ly hôn".
+function describeUnion(family, spouseWord) {
+    if (!family) return null;
+    const notes = [];
+    if (String(family.union_type || '') === 'concubine') notes.push(spouseWord === 'vợ' ? 'vợ lẽ' : 'quan hệ thiếp');
+    else if (Number(family.wife_rank) === 1 && spouseWord === 'vợ') notes.push('vợ cả');
+    else if (Number(family.wife_rank) > 1 && spouseWord === 'vợ') notes.push(`vợ thứ ${family.wife_rank}`);
+    if (ENDED_STATUSES.has(String(family.relationship_status || ''))) notes.push('đã ly hôn');
+    return notes.length ? notes.join(', ') : null;
 }
 
 async function handleFindSpouse({ res, clanId, currentMemberId, parsed }) {
     const target = await resolveNamedPerson(res, clanId, parsed.intent, parsed.entities.targetName, currentMemberId);
     if (!target) return null;
-    const spouses = await relationshipEngine.getSpousesOf(target.id, { clanId });
+    const graph = await relationshipEngine.loadClanGraph(clanId);
     const targetName = relationshipEngine.personName(target);
+    const spouseWord = Number(target.gender) === 2 ? 'chồng' : (Number(target.gender) === 1 ? 'vợ' : 'vợ/chồng');
+    const seen = new Set();
+    let unions = (graph.adjacency.get(Number(target.id)) || [])
+        .filter((edge) => edge.type === 'spouse' && graph.people.has(Number(edge.to)))
+        .filter((edge) => (seen.has(Number(edge.to)) ? false : seen.add(Number(edge.to))))
+        .map((edge) => {
+            const family = graph.families.get(Number(edge.familyId)) || null;
+            return { person: graph.people.get(Number(edge.to)), family, note: describeUnion(family, spouseWord) };
+        });
+    if (parsed.entities.rank === 'secondary') {
+        unions = unions.filter((item) => String(item.family?.union_type || '') === 'concubine' || Number(item.family?.wife_rank) > 1);
+    } else if (parsed.entities.rank === 'first') {
+        unions = unions.filter((item) => Number(item.family?.wife_rank) === 1 || (unions.length === 1));
+    }
+    const label = parsed.entities.rank === 'secondary' ? 'vợ lẽ' : parsed.entities.rank === 'first' ? 'vợ cả' : spouseWord;
+    const list = unions.map((item) => (item.note && item.note !== label
+        ? `${relationshipEngine.personName(item.person)} (${item.note})`
+        : relationshipEngine.personName(item.person))).join(', ');
 
+    let answer;
+    if (!unions.length) {
+        answer = `Theo dữ liệu gia phả hiện tại, tôi chưa thấy dữ liệu ${label} của ${targetName}.`;
+    } else if (parsed.entities.count) {
+        answer = `Theo dữ liệu gia phả hiện tại, ${targetName} có ${unions.length} ${label}: ${list}.`;
+    } else {
+        answer = `Theo dữ liệu gia phả hiện tại, ${label} của ${targetName} ${unions.length > 1 ? 'gồm' : 'là'}: ${list}.`;
+    }
     return {
         success: true,
         intent: parsed.intent,
-        answer: spouses.length
-            ? `Theo dữ liệu gia phả hiện tại, vợ/chồng của ${targetName} là: ${formatPeopleList(spouses)}.`
-            : `Theo dữ liệu gia phả hiện tại, tôi chưa thấy dữ liệu vợ/chồng của ${targetName}.`,
+        answer,
         confidence: parsed.confidence,
-        people: spouses.map((person) => ({ id: person.id, name: relationshipEngine.personName(person) })),
+        people: unions.map((item) => ({ id: item.person.id, name: relationshipEngine.personName(item.person), note: item.note })),
     };
 }
 
@@ -701,19 +887,23 @@ const ANCESTOR_LEVEL_LABELS = ['Cha mẹ', 'Ông bà', 'Cụ', 'Kỵ', 'Cao tổ
 const ANCESTOR_EDGE_TYPES = new Set(['father', 'mother', 'adopted_parent']);
 
 // Tổ tiên theo dòng sinh/nhận làm con (không tính cha mẹ kế), nhóm theo đời phía trên.
-async function handleClanFounders({ clanId, parsed }) {
-    const graph = await relationshipEngine.loadClanGraph(clanId);
+// Thủy tổ: người đời đầu không có cha mẹ trong cây, ưu tiên người có con cháu; nam đứng trước.
+function computeClanFounders(graph) {
     const people = [...graph.people.values()];
     const hasParent = (id) => (graph.adjacency.get(Number(id)) || []).some((edge) => ANCESTOR_EDGE_TYPES.has(edge.type));
     const hasChild = (id) => (graph.adjacency.get(Number(id)) || []).some((edge) => ['son', 'daughter', 'child', 'adopted_son', 'adopted_daughter', 'adopted_child'].includes(edge.type));
     const generations = people.map((person) => Number(person.generation)).filter((value) => Number.isFinite(value) && value > 0);
     const firstGeneration = generations.length ? Math.min(...generations) : null;
-    const roots = people.filter((person) => !hasParent(person.id)
-        && (firstGeneration === null || Number(person.generation) === firstGeneration));
-    // Ưu tiên người có con cháu trong cây; vợ/chồng của thủy tổ ghi kèm.
+    const roots = people.filter((person) => !hasParent(person.id) && (firstGeneration === null || Number(person.generation) === firstGeneration));
     const withDescendants = roots.filter((person) => hasChild(person.id));
     const founders = (withDescendants.length ? withDescendants : roots)
         .sort((a, b) => (Number(a.gender) === 1 ? 0 : 1) - (Number(b.gender) === 1 ? 0 : 1) || Number(a.id) - Number(b.id));
+    return { founders, firstGeneration };
+}
+
+async function handleClanFounders({ clanId, parsed }) {
+    const graph = await relationshipEngine.loadClanGraph(clanId);
+    const { founders, firstGeneration } = computeClanFounders(graph);
     if (!founders.length) {
         return { success: true, intent: parsed.intent, answer: 'Gia phả hiện chưa ghi nhận thủy tổ của dòng họ.', confidence: 0.5, people: [] };
     }
@@ -733,6 +923,122 @@ async function handleClanFounders({ clanId, parsed }) {
         confidence: parsed.confidence || 0.85,
         person: { id: main.id, name: relationshipEngine.personName(main) },
         people: founders.map((person) => ({ id: person.id, name: relationshipEngine.personName(person) })),
+    };
+}
+
+// "03-10" -> { month: 3, day: 10 }
+function parseLunarMonthDay(value) {
+    const match = String(value || '').match(/^(\d{1,2})-(\d{1,2})$/);
+    return match ? { month: Number(match[1]), day: Number(match[2]) } : null;
+}
+
+// Ngày giỗ (âm lịch) của một người: ngày giỗ ghi sẵn, hoặc đổi từ ngày mất dương lịch chính xác.
+function anniversaryOf(person) {
+    const calendar = require('../calendar/calendar.controller');
+    const stored = parseLunarMonthDay(person.death_anniversary_lunar);
+    if (stored) return { ...stored, source: 'recorded' };
+    const parts = dateParts(person.death_date);
+    if (!parts || (person.death_date_precision && person.death_date_precision !== 'exact')) return null;
+    const lunar = calendar.solarIsoToLunar(`${parts.year}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`);
+    return lunar ? { month: lunar.month, day: lunar.day, source: 'death_date' } : null;
+}
+
+// Lần giỗ sắp tới (dương lịch) tính từ hôm nay.
+function nextAnniversarySolar({ month, day }, now = new Date()) {
+    const calendar = require('../calendar/calendar.controller');
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    for (const year of [now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1]) {
+        const iso = calendar.convertLunar2SolarDate(day, month, year);
+        if (iso && iso >= today) return iso;
+    }
+    return null;
+}
+
+function anniversaryAnswerFor(person) {
+    const name = relationshipEngine.personName(person);
+    if (Number(person.is_living) === 1) return `${name} còn sống nên chưa có ngày giỗ.`;
+    const anniversary = anniversaryOf(person);
+    if (!anniversary) return `Gia phả chưa ghi ngày mất hoặc ngày giỗ của ${name}.`;
+    const next = nextAnniversarySolar(anniversary);
+    return `Ngày giỗ của ${name} là ngày ${anniversary.day}/${anniversary.month} âm lịch${next ? `; lần tới rơi vào ${formatDateVN(next)} dương lịch` : ''}.`;
+}
+
+async function findEventsByKeyword({ clanId, accountId, keyword }) {
+    const like = `%${keyword}%`;
+    const clanEvents = await queryOptional(
+        `SELECT id, title, event_date, start_date, end_date FROM events WHERE clan_id = ? AND title LIKE ? ORDER BY COALESCE(start_date, event_date) ASC LIMIT 20`,
+        [clanId, like]
+    );
+    const calendarEvents = accountId ? await queryOptional(
+        `SELECT id, title, event_date, event_time FROM calendar_events WHERE clan_id = ? AND title LIKE ? AND (visibility = 'global' OR creator_account_id = ?) ORDER BY event_date ASC LIMIT 20`,
+        [clanId, like, accountId]
+    ) : [];
+    const iso = (value) => {
+        const parts = dateParts(value);
+        return parts ? `${parts.year}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}` : null;
+    };
+    return [
+        ...clanEvents.map((row) => ({ title: row.title, start: iso(row.start_date || row.event_date), end: iso(row.end_date || row.start_date || row.event_date), time: '' })),
+        ...calendarEvents.map((row) => ({ title: row.title, start: iso(row.event_date), end: iso(row.event_date), time: row.event_time || '' })),
+    ].filter((item) => item.start);
+}
+
+function describeEventMatch(events, keyword, now = new Date()) {
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const upcoming = events.filter((item) => item.end >= today).sort((a, b) => a.start.localeCompare(b.start));
+    const range = (item) => (item.end && item.end !== item.start ? `${formatDateVN(item.start)} - ${formatDateVN(item.end)}` : formatDateVN(item.start));
+    if (upcoming.length) {
+        const first = upcoming[0];
+        const days = Math.round((new Date(`${first.start}T00:00:00`) - new Date(`${today}T00:00:00`)) / 86400000);
+        const when = days > 0 ? ` (còn ${days} ngày)` : days === 0 ? ' (hôm nay)' : ' (đang diễn ra)';
+        const more = upcoming.length > 1 ? ` Sau đó: ${upcoming.slice(1, 3).map((item) => `${item.title} (${range(item)})`).join('; ')}.` : '';
+        return `Theo lịch của dòng họ, ${first.title}: ${range(first)}${first.time ? ` lúc ${first.time}` : ''}${when}.${more}`;
+    }
+    const past = events.sort((a, b) => b.start.localeCompare(a.start))[0];
+    if (past) return `Chưa có lịch sắp tới cho "${keyword}". Lần gần nhất: ${past.title} (${range(past)}).`;
+    return null;
+}
+
+async function handlePersonAnniversary({ res, clanId, currentMemberId, accountId, parsed }) {
+    const entities = parsed.entities || {};
+    if (entities.preferEvent) {
+        const events = await findEventsByKeyword({ clanId, accountId, keyword: entities.preferEvent });
+        const text = describeEventMatch(events, entities.preferEvent);
+        if (text) return { success: true, intent: parsed.intent, answer: text, confidence: 0.82 };
+    }
+    let people = [];
+    if (entities.source === 'clan') {
+        const graph = await relationshipEngine.loadClanGraph(clanId);
+        const { founders } = computeClanFounders(graph);
+        people = founders.slice(0, 1);
+    } else if (entities.source === 'kinship') {
+        if (!currentMemberId) return { success: true, intent: parsed.intent, answer: needsCurrentPersonAnswer(), confidence: 0.2, needsPersonSelection: true };
+        people = (await relationshipEngine.findPeopleByKinshipTerm(currentMemberId, entities.kinshipTerm, { clanId })).map((item) => item.person);
+    } else {
+        const person = await resolveNamedPerson(res, clanId, parsed.intent, entities.targetName, currentMemberId);
+        if (!person) return null;
+        people = [person];
+    }
+    if (!people.length) {
+        return { success: true, intent: parsed.intent, answer: 'Theo dữ liệu gia phả hiện tại, tôi chưa xác định được người bạn hỏi ngày giỗ.', confidence: 0.4 };
+    }
+    return {
+        success: true,
+        intent: parsed.intent,
+        answer: people.map(anniversaryAnswerFor).join(' '),
+        confidence: parsed.confidence || 0.84,
+        people: people.map((person) => ({ id: person.id, name: relationshipEngine.personName(person) })),
+    };
+}
+
+async function handleEventLookup({ clanId, accountId, parsed }) {
+    const keyword = String(parsed.entities?.keyword || '').trim();
+    const events = keyword ? await findEventsByKeyword({ clanId, accountId, keyword }) : [];
+    return {
+        success: true,
+        intent: parsed.intent,
+        answer: describeEventMatch(events, keyword) || `Chưa tìm thấy sự kiện "${keyword}" trong lịch của dòng họ.`,
+        confidence: events.length ? 0.84 : 0.5,
     };
 }
 
@@ -1475,6 +1781,14 @@ exports.ask = async (req, res) => {
             responsePayload = await handleSameGeneration({ res, clanId, currentMemberId, parsed });
         } else if (parsed.intent === 'list_ancestors') {
             responsePayload = await handleListAncestors({ res, clanId, currentMemberId, parsed });
+        } else if (parsed.intent === 'child_status') {
+            responsePayload = await handleChildStatus({ res, clanId, currentMemberId, parsed: withNamedEntities(parsed) });
+        } else if (parsed.intent === 'person_anniversary') {
+            responsePayload = await handlePersonAnniversary({ res, clanId, currentMemberId, accountId, parsed: withNamedEntities(parsed) });
+        } else if (parsed.intent === 'event_lookup') {
+            responsePayload = await handleEventLookup({ clanId, accountId, parsed: withKeywordEntity(parsed) });
+        } else if (parsed.intent === 'clan_info') {
+            responsePayload = await handleClanInfoIntent({ parsed, context: chatbotContext, planner });
         } else if (parsed.intent === 'self_identity') {
             responsePayload = await handleSelfIdentity({ clanId, currentMemberId, parsed });
         } else if (parsed.intent === 'relationship_expression' && parsed.ast?.steps?.length) {
@@ -1514,7 +1828,7 @@ exports.ask = async (req, res) => {
                 await handleRelationshipExpression({ clanId, currentMemberId, message }) || {
                 success: true,
                 intent: 'unknown',
-                answer: 'Tôi chưa hiểu rõ câu hỏi. Bạn có thể hỏi theo dạng: "Nguyễn Văn A là gì của tôi?", "Con của bác Hai là ai?", hoặc "Ai là ông nội của tôi?".',
+                answer: buildUnknownAnswer(message),
                 confidence: parsed.confidence,
                 planner,
             };

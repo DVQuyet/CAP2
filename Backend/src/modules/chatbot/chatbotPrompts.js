@@ -14,7 +14,12 @@ Intent hợp lệ:
 - memories_stories: hỏi câu chuyện, ký ức gia đình
 - events_upcoming: hỏi sự kiện, ngày giỗ, lịch sắp tới
 - stats_count: hỏi số lượng, thống kê thành viên
+- person_anniversary: hỏi ngày giỗ của một người cụ thể (entities: [tên người])
+- event_lookup: hỏi khi nào diễn ra một sự kiện cụ thể của họ (entities: [tên sự kiện])
+- clan_info: hỏi nhà thờ họ ở đâu hoặc ai là trưởng họ (entities: {"field": "hall"} hoặc {"field": "head"})
 - general_chat: chào hỏi, cảm ơn, câu hỏi chung
+
+Với person_info, subtype là một trong: birth_info, death_info, alive_info, age_info, hometown_info, bio_info, contact_info, overview.
 
 Với relationship_query, ast.steps chỉ dùng:
 father, mother, parent, son, daughter, child, spouse, husband, wife,
@@ -41,7 +46,19 @@ Input: "Dòng họ mình từ đâu?"
 Output: {"intent":"clan_history","ast":null,"entities":[],"confidence":0.9}
 
 Input: "Ông Hai sinh năm nào?"
-Output: {"intent":"person_info","ast":null,"entities":["Ông Hai"],"subtype":"birth_info","confidence":0.9}`;
+Output: {"intent":"person_info","ast":null,"entities":["Ông Hai"],"subtype":"birth_info","confidence":0.9}
+
+Input: "Cụ Thành mất năm nào vậy?"
+Output: {"intent":"person_info","ast":null,"entities":["Cụ Thành"],"subtype":"death_info","confidence":0.9}
+
+Input: "Giỗ bà Lan rơi vào hôm nào?"
+Output: {"intent":"person_anniversary","ast":null,"entities":["bà Lan"],"confidence":0.88}
+
+Input: "Bao giờ thì họp chi năm nay?"
+Output: {"intent":"event_lookup","ast":null,"entities":["họp chi"],"confidence":0.85}
+
+Input: "Nhà thờ tổ của mình nằm chỗ nào?"
+Output: {"intent":"clan_info","ast":null,"entities":{"field":"hall"},"confidence":0.88}`;
 }
 
 // System prompt chỉ chứa quy tắc cố định. Lịch sử dòng họ, ký ức, câu hỏi... do người dùng
