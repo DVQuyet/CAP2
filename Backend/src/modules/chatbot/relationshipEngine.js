@@ -12,6 +12,22 @@ const { pickBestRelationshipPath, scorePath } = require('./relationshipPathRanke
 const { buildRelationshipEvidence } = require('./relationshipEvidenceService');
 const { buildKinshipGraph, describeKinship, normalizePolicy } = require('../genealogy/core');
 const { matchKinshipLabel } = require('./kinshipTermService');
+const { AsyncLocalStorage } = require('async_hooks');
+const { applyFamilyVisibility } = require('../genealogy/treeVisibility');
+
+// Người hỏi có được thấy quan hệ nhạy cảm (families.visibility = 'managers') không. Đặt một lần cho cả yêu cầu
+// (runWithViewer) để mọi chỗ dùng đồ thị trong lượt hỏi đó đều thấy đúng phần được phép, giống cây gia phả.
+const viewerContext = new AsyncLocalStorage();
+
+function runWithViewer(viewer, fn) {
+    return viewerContext.run({ canSeeSensitive: Boolean(viewer?.canSeeSensitive) }, fn);
+}
+
+// 'all' khi không có ngữ cảnh (công cụ nội bộ, test) để giữ hành vi cũ; 'public' với thành viên thường.
+function currentTier() {
+    const store = viewerContext.getStore();
+    return store && store.canSeeSensitive === false ? 'public' : 'all';
+}
 
 // Con nuôi, con thừa tự, con nuôi dưỡng đều là quan hệ "nuôi" trong đồ thị hỏi đáp.
 const ADOPTIVE_TYPES = new Set(['adopted', 'heir', 'foster']);
@@ -229,7 +245,8 @@ async function loadClanGraph(clanId, options = {}) {
     const normalizedClanId = toPositiveId(clanId);
     if (!normalizedClanId) throw new Error('clanId không hợp lệ');
 
-    const cacheKey = String(normalizedClanId);
+    const tier = options.tier || currentTier();
+    const cacheKey = `${normalizedClanId}:${tier}`;
     const graphVersion = await getGraphVersion(normalizedClanId);
     const cached = graphCache.get(cacheKey);
     if (!options.forceRefresh && cached && cached.expiresAt > now() && Number(cached.graph?.graphVersion || 1) === graphVersion) {
@@ -241,7 +258,7 @@ async function loadClanGraph(clanId, options = {}) {
 
     // Thành viên đã bị xóa khỏi cây (chuyển vào kho lưu trữ) không tham gia suy luận quan hệ.
     await ensureArchivedMembersTable();
-    const [peopleRows] = await db.query(
+    let [peopleRows] = await db.query(
         `
         SELECT p.*
         FROM people p
@@ -252,7 +269,7 @@ async function loadClanGraph(clanId, options = {}) {
         `,
         [normalizedClanId]
     );
-    const [familyRows] = await db.query('SELECT * FROM families WHERE clan_id = ?', [normalizedClanId]);
+    let [familyRows] = await db.query('SELECT * FROM families WHERE clan_id = ?', [normalizedClanId]);
     const familyIds = familyRows.map((family) => Number(family.id)).filter((id) => Number.isFinite(id));
 
     let childRows = [];
@@ -262,6 +279,12 @@ async function loadClanGraph(clanId, options = {}) {
             familyIds
         );
         childRows = rows;
+    }
+    if (tier === 'public') {
+        ({ people: peopleRows, families: familyRows, children: childRows } = applyFamilyVisibility(
+            { people: peopleRows, families: familyRows, children: childRows },
+            { role_id: 3 }
+        ));
     }
 
     const people = new Map(peopleRows.map((person) => [Number(person.id), person]));
@@ -386,6 +409,7 @@ async function loadClanGraph(clanId, options = {}) {
         parentFamiliesByChild,
         adjacency,
         graphVersion,
+        tier,
         // Đồ thị cấu trúc để xưng hô theo tổ tiên chung, vai vế, nội/ngoại, thông gia.
         kinship: buildKinshipGraph({ people: peopleRows, families: familyRows, children: childRows }),
         region: await loadClanKinshipRegion(normalizedClanId),
@@ -453,7 +477,7 @@ async function findRelationship(sourcePersonId, targetPersonId, options = {}) {
     }
 
     const graph = await loadClanGraph(clanId, options);
-    const cacheKey = `${clanId}:${graph.graphVersion}:${sourceId}:${targetId}:${maxDepth}:${candidateLimit}`;
+    const cacheKey = `${clanId}:${graph.tier || 'all'}:${graph.graphVersion}:${sourceId}:${targetId}:${maxDepth}:${candidateLimit}`;
     const cachedPath = pathCache.get(cacheKey);
     if (cachedPath && cachedPath.expiresAt > now()) return cachedPath.result;
     if (cachedPath) pathCache.delete(cacheKey);
@@ -798,13 +822,16 @@ async function loadClanKinshipRegion(clanId) {
 function clearClanCache(clanId) {
     const normalizedClanId = toPositiveId(clanId);
     if (!normalizedClanId) return;
-    graphCache.delete(String(normalizedClanId));
+    graphCache.delete(`${normalizedClanId}:all`);
+    graphCache.delete(`${normalizedClanId}:public`);
     for (const key of [...pathCache.keys()]) {
         if (key.startsWith(`${normalizedClanId}:`)) pathCache.delete(key);
     }
 }
 
 module.exports = {
+    runWithViewer,
+    currentTier,
     findRelationship,
     findPeopleByKinship,
     findPeopleByKinshipTerm,

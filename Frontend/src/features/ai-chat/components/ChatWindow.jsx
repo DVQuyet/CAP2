@@ -33,7 +33,8 @@ export default function ChatWindow({
   const [loading, setLoading] = useState(false);
   const listRef = useRef(null);
 
-  const ready = Boolean(context?.clanId && context?.currentMemberId);
+  // Hỏi được ngay khi biết dòng họ; câu cần "tôi" thì trợ lý sẽ nhắc chọn người trong cây.
+  const ready = Boolean(context?.clanId);
   const needsPersonSelection = Boolean(context?.clanId && !context?.currentMemberId);
   const renderedMessages = useMemo(
     () => messages.slice(Math.max(messages.length - MAX_RENDERED_MESSAGES, 0)),
@@ -159,7 +160,7 @@ export default function ChatWindow({
             onSelect={onBindPerson}
           />
         ) : null}
-        {!contextLoading && !needsPersonSelection && !ready ? (
+        {!contextLoading && !ready ? (
           <div className="ai-empty-state">Chưa xác định được dòng họ hoặc thành viên hiện tại.</div>
         ) : null}
         {renderedMessages.map((message) => (

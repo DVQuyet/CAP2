@@ -15,6 +15,7 @@ const { parseEventCommand } = require('./eventCommandService');
 const { resolveRelationshipExpression } = require('./relationshipExpressionResolver');
 const { toPositiveId, queryOptional } = require('./chatbotUtils');
 const { ARCHIVED_MEMBER_JOIN_SQL } = require('../manager/common.service');
+const { canSeeSensitiveRelations } = require('../genealogy/treeVisibility');
 const { describePersonBrief, capitalizeFirst, formatDateVN, dateParts } = require('./chatbotFormat');
 const { plainTermToKey, hasVietnameseDiacritics } = require('./kinshipTermService');
 const { findPronoun, rewritePronoun, rewriteEllipsis, selectCandidate, findFocusText } = require('./conversationFlowService');
@@ -1734,7 +1735,13 @@ async function applyPermissionFilterToResponse(responsePayload, { clanId, viewer
     return nextPayload;
 }
 
-exports.ask = async (req, res) => {
+// Mọi tra cứu trong một yêu cầu dùng đồ thị theo quyền của người hỏi (quan hệ nhạy cảm chỉ quản lý thấy).
+const withViewer = (handler) => (req, res) => relationshipEngine.runWithViewer(
+    { canSeeSensitive: canSeeSensitiveRelations(req.user) },
+    () => handler(req, res)
+);
+
+exports.ask = withViewer(async (req, res) => {
     let responsePayload = null;
     const startedAt = Date.now();
     const timings = {};
@@ -2076,7 +2083,7 @@ exports.ask = async (req, res) => {
             error: process.env.NODE_ENV === 'development' ? error.message : undefined,
         });
     }
-};
+});
 
 exports.history = async (req, res) => {
     try {
@@ -2161,7 +2168,7 @@ exports.suggestions = async (req, res) => {
     }
 };
 
-exports.getRelationshipById = async (req, res) => {
+exports.getRelationshipById = withViewer(async (req, res) => {
     try {
         const clanId = toPositiveId(req.query.clanId || req.query.clan_id || req.user?.clan_id);
         const currentMemberId = toPositiveId(req.query.currentMemberId || req.query.current_member_id || req.user?.person_id);
@@ -2190,9 +2197,9 @@ exports.getRelationshipById = async (req, res) => {
         console.error('chatbot relationship error:', error);
         return res.status(500).json({ success: false, message: 'Không thể tính quan hệ' });
     }
-};
+});
 
-exports.getPath = async (req, res) => {
+exports.getPath = withViewer(async (req, res) => {
     try {
         const clanId = toPositiveId(req.query.clanId || req.query.clan_id || req.user?.clan_id);
         const sourceId = toPositiveId(req.query.sourceId || req.query.source_id || req.user?.person_id);
@@ -2211,7 +2218,7 @@ exports.getPath = async (req, res) => {
         console.error('chatbot path error:', error);
         return res.status(500).json({ success: false, message: 'Không thể tải đường quan hệ' });
     }
-};
+});
 
 exports.voice = async (req, res) => {
     const transcript = sanitizeMessage(req.body?.transcript || req.body?.message || '');

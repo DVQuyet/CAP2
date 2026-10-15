@@ -531,7 +531,7 @@ exports.setCurrentPerson = async (req, res) => {
 
     const [personRows] = await connection.query(
       `
-      SELECT id, clan_id, display_name, surname, middle_name, first_name
+      SELECT id, clan_id, display_name, surname, middle_name, first_name, is_living
       FROM people
       WHERE id = ?
       LIMIT 1
@@ -546,10 +546,29 @@ exports.setCurrentPerson = async (req, res) => {
     }
 
     const clanId = toPositiveId(person.clan_id);
-    const allowedClanId = requestedClanId || context.clanId;
+    // Chỉ chọn người trong dòng họ của chính tài khoản; clanId client gửi lên không được mở rộng phạm vi (trừ admin).
+    const isAdmin = Number(req.user?.role_id) === 1 || req.user?.role_name === 'admin';
+    const allowedClanId = isAdmin ? (requestedClanId || context.clanId) : context.clanId;
     if (!clanId || !allowedClanId || Number(clanId) !== Number(allowedClanId)) {
       await connection.rollback();
       return res.status(403).json({ success: false, message: "Thành viên không thuộc dòng họ hiện tại." });
+    }
+    if (person.is_living !== null && person.is_living !== undefined && Number(person.is_living) === 0) {
+      await connection.rollback();
+      return res.status(400).json({ success: false, message: "Không thể chọn người đã mất làm hồ sơ của bạn." });
+    }
+    // Hồ sơ đã thuộc tài khoản khác thì không cho nhận.
+    const [ownerRows] = await connection.query(
+      "SELECT id FROM accounts WHERE person_id = ? AND id <> ? LIMIT 1",
+      [personId, accountId]
+    );
+    const [mappedRows] = await connection.query(
+      "SELECT account_id FROM account_people WHERE person_id = ? AND account_id <> ? AND role = 'self' LIMIT 1",
+      [personId, accountId]
+    );
+    if (ownerRows.length || mappedRows.length) {
+      await connection.rollback();
+      return res.status(409).json({ success: false, message: "Hồ sơ này đã gắn với một tài khoản khác. Hãy nhờ quản lý dòng họ kiểm tra." });
     }
 
     await connection.query(
@@ -568,23 +587,8 @@ exports.setCurrentPerson = async (req, res) => {
       `,
       [accountId, personId, clanId]
     );
-    await connection.query(
-      "UPDATE accounts SET person_id = COALESCE(person_id, ?) WHERE id = ?",
-      [personId, accountId]
-    );
-    await connection.query(
-      `
-      INSERT INTO account_clans (account_id, clan_id, person_id, status)
-      VALUES (?, ?, ?, 'active')
-      ON DUPLICATE KEY UPDATE
-        clan_id = VALUES(clan_id),
-        person_id = VALUES(person_id),
-        status = 'active'
-      `,
-      [accountId, clanId, personId]
-    ).catch((error) => {
-      if (error?.code !== "ER_NO_SUCH_TABLE") throw error;
-    });
+    // Chỉ lưu "góc nhìn" cho trợ lý (account_people). Không ghi accounts.person_id hay account_clans:
+    // các trang khác dùng hai chỗ đó để biết hồ sơ của tài khoản (sửa hồ sơ, quyền), việc gắn chính thức do quản lý làm.
 
     await connection.commit();
 

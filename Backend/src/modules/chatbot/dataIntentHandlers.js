@@ -259,7 +259,11 @@ async function handlePersonInfoIntent({ clanId, currentMemberId, message, parsed
 async function handlePersonExistsIntent({ clanId, parsed, planner }) {
     const rawName = parsed?.entities?.rawName || firstEntity(parsed);
     const queryName = Array.isArray(rawName) ? rawName[0] : rawName;
-    const people = await loadClanPeopleForSearch(clanId);
+    let people = await loadClanPeopleForSearch(clanId);
+    if (relationshipEngine.currentTier() === 'public') {
+        const graph = await relationshipEngine.loadClanGraph(clanId).catch(() => null);
+        if (graph) people = people.filter((person) => graph.people.has(Number(person.id)));
+    }
     const matches = memberSearch.findPersonByName(queryName, people);
     const best = matches[0] || null;
 

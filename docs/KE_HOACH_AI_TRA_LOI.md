@@ -5,6 +5,9 @@ người dùng có thể hỏi; phần 3 là kế hoạch sửa theo giai đoạ
 
 > Danh sách việc để làm tiếp (có ô đánh dấu, vị trí mã, mốc điểm): [TIEP_TUC_AI_TRA_LOI.md](TIEP_TUC_AI_TRA_LOI.md).
 
+> **Cập nhật sau khi thực hiện kế hoạch (15/10/2026):** bộ kiểm tra đầu-cuối đạt **82/82 câu** và **7/7 lượt hội thoại**
+> (từ 47/82 và 0/5). Chi tiết từng việc và các quyết định còn chờ: [TIEP_TUC_AI_TRA_LOI.md](TIEP_TUC_AI_TRA_LOI.md).
+
 ## 1. Kết quả kiểm tra
 
 ### 1.1 Cách kiểm tra

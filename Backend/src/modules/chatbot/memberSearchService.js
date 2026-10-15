@@ -1,5 +1,7 @@
 const db = require('../../config/db');
-const { personName } = require('./relationshipEngine');
+const relationshipEngine = require('./relationshipEngine');
+
+const { personName } = relationshipEngine;
 
 const tableExistenceCache = new Map();
 
@@ -243,6 +245,15 @@ async function resolvePerson({ clanId, names, limit = 5 }) {
     }
 
     all.sort((a, b) => b.score - a.score);
+    // Thành viên thường không thấy người chỉ có quan hệ nhạy cảm (đã ẩn khỏi cây): bỏ khỏi kết quả tìm.
+    if (all.length && relationshipEngine.currentTier() === 'public') {
+        const graph = await relationshipEngine.loadClanGraph(clanId).catch(() => null);
+        if (graph) {
+            for (let index = all.length - 1; index >= 0; index -= 1) {
+                if (!graph.people.has(Number(all[index].id))) all.splice(index, 1);
+            }
+        }
+    }
     if (!all.length) return { status: 'not_found', candidates: [] };
 
     const [first] = all;

@@ -30,7 +30,7 @@ Số dòng trong file này tính theo commit `1f98244`; sau khi sửa có thể 
 | 2 – Phủ câu hỏi | xong | 82/82, hội thoại 1/5 | GĐ2 |
 | 3 – Hội thoại | xong | 82/82, hội thoại 7/7 | GĐ3 |
 | 4 – Nhanh, nói tự nhiên | xong | 82/82, hội thoại 7/7 | GĐ4 |
-| 5 – Quyền và dữ liệu | chưa làm | giữ điểm | |
+| 5 – Quyền và dữ liệu | xong | 82/82, hội thoại 7/7 | GĐ5 |
 
 Ước lượng: tổng ~1,2–1,9 triệu token (~8–10 ngày công nếu làm tay).
 
@@ -114,12 +114,12 @@ Số dòng trong file này tính theo commit `1f98244`; sau khi sửa có thể 
 
 ## Giai đoạn 5 — Quyền và dữ liệu (~100–200k token)
 
-- [ ] 5.1 Cho chat ngay khi biết dòng họ: `ChatWindow.jsx:37` đang đòi `currentMemberId`; chỉ yêu cầu chọn người khi câu cần "tôi"
+- [x] 5.1 Cho chat ngay khi biết dòng họ: `ChatWindow.jsx:37` đang đòi `currentMemberId`; chỉ yêu cầu chọn người khi câu cần "tôi"
   (backend đã trả `needsPersonSelection`).
-- [ ] 5.2 Siết `me.controller.js:513 setCurrentPerson`: hiện cho tự gắn với **bất kỳ** hồ sơ trong họ và ghi `accounts.person_id`
+- [x] 5.2 Siết `me.controller.js:513 setCurrentPerson`: hiện cho tự gắn với **bất kỳ** hồ sơ trong họ và ghi `accounts.person_id`
   nếu đang trống. Không gắn hồ sơ đã có tài khoản khác hoặc đã mất, ghi vết; hoặc chỉ lưu góc nhìn cho chat (chờ quyết định 4).
-- [ ] 5.3 Số điện thoại/địa chỉ/email trả theo quyền xem hồ sơ (chờ quyết định 2).
-- [ ] 5.4 Đồ thị chatbot lọc quan hệ nhạy cảm như cây (`genealogy/treeVisibility.js applyFamilyVisibility`) với thành viên thường:
+- [x] 5.3 Số điện thoại/địa chỉ/email trả theo quyền xem hồ sơ (chờ quyết định 2).
+- [x] 5.4 Đồ thị chatbot lọc quan hệ nhạy cảm như cây (`genealogy/treeVisibility.js applyFamilyVisibility`) với thành viên thường:
   hiện "Vợ của X", "X có mấy vợ" vẫn lộ vợ lẽ đặt chế độ chỉ quản lý xem. Gợi ý: `loadClanGraph` có 2 tầng cache (đủ/công khai), chọn theo vai trò người hỏi.
 
 ## Chờ nhóm quyết định
@@ -130,6 +130,13 @@ Số dòng trong file này tính theo commit `1f98244`; sau khi sửa có thể 
 4. Bước chọn "bạn là ai" trong chat có được gắn vĩnh viễn tài khoản với hồ sơ như hiện nay không? (việc 5.2)
 
 ## Ghi chú phiên trước
+
+- 15/10/2026 (tiếp): GĐ5 xong — **hết kế hoạch**. Chat dùng được khi đã biết dòng họ. `setCurrentPerson` chỉ cho chọn người trong
+  dòng họ của chính tài khoản (trước đây gửi `clanId` khác là được thêm vào `account_clans` của dòng họ đó), không nhận hồ sơ đã
+  có tài khoản hoặc người đã mất, và không ghi `accounts.person_id`/`account_clans` nữa (chỉ `account_people`). Đồ thị chatbot
+  theo vai trò (`runWithViewer`, cache 2 tầng): thành viên thường không thấy quan hệ `visibility = 'managers'`, giống cây.
+  Số điện thoại/địa chỉ: mặc định không tiết lộ (chờ quyết định 2). Việc còn lại: các quyết định của nhóm; đo p95 thật trên Render;
+  chạy bộ kiểm tra có LLM bằng key dev.
 
 - 15/10/2026 (tiếp): GĐ4 xong. Chỉ câu kỷ niệm gọi Groq diễn đạt lại (`CHATBOT_LLM_REWRITE=all` để bật lại); chat gọi Groq với
   timeout 4 s, không thử lại (`GROQ_CHAT_TIMEOUT_MS`, `GROQ_CHAT_MAX_RETRIES`); ngày kiểu Việt; đáp "cảm ơn/vâng"; giao diện
