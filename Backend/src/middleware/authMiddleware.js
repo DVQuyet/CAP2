@@ -39,6 +39,14 @@ async function loadAccountState(accountId) {
     return state;
 }
 
+// Trạng thái hiện tại của tài khoản (role, bị khóa hay không) cho các luồng tự xác thực token
+// như Socket.IO và media. Trả null nếu tài khoản không tồn tại.
+exports.getAccountAccess = async (accountId) => {
+    const state = await loadAccountState(Number(accountId));
+    if (!state) return null;
+    return { ...state, disabled: state.archived || state.status === 'rejected', roleName: getRoleName(state.roleId) };
+};
+
 // Gọi khi đổi role/khóa tài khoản để có hiệu lực ngay trên instance hiện tại.
 exports.invalidateAccountCache = (accountId) => {
     if (accountId === undefined) accountCache.clear();

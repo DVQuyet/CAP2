@@ -113,3 +113,24 @@ test('token không gắn tài khoản được chuyển cho checkRole', async ()
     checkRole(['member'])(req, res, () => assert.fail('không được cho qua'));
     assert.strictEqual(res.statusCode, 403);
 });
+
+test('getAccountAccess dùng cho socket/media phản ánh trạng thái và role trong DB', async () => {
+    const { getAccountAccess } = require('../src/middleware/authMiddleware');
+    createMockDb(async (sql) => {
+        if (/FROM accounts/.test(sql)) return [[{ id: 18, role_id: 3, status: 'rejected' }]];
+        return [[]];
+    });
+    const disabled = await getAccountAccess(18);
+    assert.strictEqual(disabled.disabled, true);
+
+    invalidateAccountCache();
+    createMockDb(async (sql) => (/FROM accounts/.test(sql) ? [[{ id: 19, role_id: 3, status: 'active' }]] : [[]]));
+    const demoted = await getAccountAccess(19);
+    assert.strictEqual(demoted.disabled, false);
+    assert.strictEqual(demoted.roleId, 3);
+    assert.strictEqual(demoted.roleName, 'member');
+
+    invalidateAccountCache();
+    createMockDb(async () => [[]]);
+    assert.strictEqual(await getAccountAccess(20), null);
+});
