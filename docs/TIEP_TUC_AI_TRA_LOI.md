@@ -25,7 +25,7 @@ Số dòng trong file này tính theo commit `1f98244`; sau khi sửa có thể 
 
 | Giai đoạn | Trạng thái | E2E sau giai đoạn | Commit |
 |---|---|---|---|
-| 0 – CI | chưa làm | — | |
+| 0 – CI | xong | 47/82 (ngày cố định 15/10/2026) | GĐ0 |
 | 1 – Hết câu trả lời sai | chưa làm | mục tiêu ≥ 62/82 | |
 | 2 – Phủ câu hỏi | chưa làm | mục tiêu ≥ 76/82 | |
 | 3 – Hội thoại | chưa làm | hội thoại ≥ 4/5 | |
@@ -36,7 +36,8 @@ Số dòng trong file này tính theo commit `1f98244`; sau khi sửa có thể 
 
 ## Giai đoạn 0 — Lưới an toàn (~50k token)
 
-- [ ] Thêm bước `node scripts/chatbot-e2e-check.js --min 47` vào job backend trong `.github/workflows/ci.yml`; nâng `--min` sau mỗi giai đoạn.
+- [x] Thêm bước `node scripts/chatbot-e2e-check.js --min 47` vào job backend trong `.github/workflows/ci.yml`; nâng `--min` sau mỗi giai đoạn.
+  Script cố định "hôm nay" = 15/10/2026 (đổi bằng biến `CHATBOT_E2E_NOW`) để câu về giỗ/sinh nhật không đổi theo ngày chạy.
 
 ## Giai đoạn 1 — Hết câu trả lời sai (~350–500k token, mục tiêu ≥ 62/82)
 

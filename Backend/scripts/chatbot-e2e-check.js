@@ -11,6 +11,20 @@ process.env.GROQ_API_KEY = '';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'chatbot-e2e-check';
 const path = require('path');
 
+// Cố định "hôm nay" để câu hỏi về giỗ/sinh nhật sắp tới cho cùng kết quả ở mọi ngày chạy (kể cả CI).
+const FIXED_NOW = new Date(process.env.CHATBOT_E2E_NOW || '2026-10-15T09:00:00+07:00').getTime();
+const RealDate = Date;
+global.Date = class extends RealDate {
+    constructor(...args) {
+        if (args.length) super(...args);
+        else super(FIXED_NOW);
+    }
+
+    static now() {
+        return FIXED_NOW;
+    }
+};
+
 const db = require(path.join(__dirname, '..', 'src', 'config', 'db'));
 
 const CLAN_ID = 13;
