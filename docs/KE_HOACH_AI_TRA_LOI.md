@@ -3,6 +3,8 @@
 Cập nhật 15/10/2026. Phần 1 là kết quả kiểm tra thật trên mã hiện tại; phần 2 là danh mục câu hỏi
 người dùng có thể hỏi; phần 3 là kế hoạch sửa theo giai đoạn, có thước đo để biết khi nào xong.
 
+> Danh sách việc để làm tiếp (có ô đánh dấu, vị trí mã, mốc điểm): [TIEP_TUC_AI_TRA_LOI.md](TIEP_TUC_AI_TRA_LOI.md).
+
 ## 1. Kết quả kiểm tra
 
 ### 1.1 Cách kiểm tra
