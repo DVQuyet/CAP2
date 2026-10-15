@@ -1,4 +1,7 @@
-require('dotenv').config();
+require('./src/config/loadEnv');
+
+// Chạy ở máy cá nhân mà vẫn dùng DB/URL của bản thật: cảnh báo khi khởi động (xem src/config/environmentCheck.js).
+require('./src/config/environmentCheck').warnIfLocalUsesProductionConfig();
 require("dns").setDefaultResultOrder("ipv4first");
 
 const express = require('express');
@@ -529,7 +532,12 @@ if (String(process.env.RUN_MIGRATIONS_ON_START || '').toLowerCase() === 'true') 
         .catch((error) => console.error('Migrate khi khởi động lỗi:', error.message));
 }
 
-startCalendarReminderScheduler(app);
+// Máy cá nhân có thể tắt tác vụ nền (nhắc lịch gửi email thật) bằng DISABLE_BACKGROUND_JOBS=true.
+if (process.env.DISABLE_BACKGROUND_JOBS === 'true') {
+    console.log('Bỏ qua tác vụ nhắc lịch nền (DISABLE_BACKGROUND_JOBS=true).');
+} else {
+    startCalendarReminderScheduler(app);
+}
 
 server.listen(PORT, () => {
     console.log(`

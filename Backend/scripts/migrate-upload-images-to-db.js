@@ -1,4 +1,4 @@
-require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
+require('../src/config/loadEnv');
 
 const path = require('path');
 const db = require('../src/config/db');

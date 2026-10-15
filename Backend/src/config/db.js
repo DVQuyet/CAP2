@@ -1,7 +1,7 @@
 const dns = require('dns');
 const net = require('net');
 const mysql = require('mysql2');
-require('dotenv').config();
+require('./loadEnv');
 
 const dbHost = process.env.DB_HOST;
 const dbPort = Number(process.env.DB_PORT || 3306);
