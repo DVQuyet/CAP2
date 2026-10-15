@@ -1,5 +1,8 @@
 import { logout } from "../shared/utils/auth";
-const DEFAULT_API_BASE_URL = import.meta.env.PROD ? "https://cap2-backend.onrender.com" : "http://localhost:3000";
+// Trang mở từ máy cá nhân (localhost) thì gọi backend local, kể cả khi chạy bản build (npm run preview);
+// chỉ bản triển khai thật mới gọi backend Render. Đặt VITE_API_BASE_URL nếu muốn trỏ chỗ khác.
+const IS_LOCAL_PAGE = typeof window !== "undefined" && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname);
+const DEFAULT_API_BASE_URL = import.meta.env.PROD && !IS_LOCAL_PAGE ? "https://cap2-backend.onrender.com" : "http://localhost:3000";
 const RAW_API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
   import.meta.env.VITE_API_URL ||

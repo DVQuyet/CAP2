@@ -2,8 +2,34 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
+// Chỉ khi chạy dev: trả /sw.js là một service worker tự gỡ. Trình duyệt từng mở bản build (PWA) trên localhost
+// sẽ tự cập nhật sang worker này, xóa bộ nhớ đệm, gỡ đăng ký và tải lại trang -> hiện đúng code đang chạy.
+const devServiceWorkerKillSwitch = {
+    name: "dev-service-worker-kill-switch",
+    apply: "serve",
+    configureServer(server) {
+        server.middlewares.use("/sw.js", (req, res) => {
+            res.setHeader("Content-Type", "application/javascript; charset=utf-8");
+            res.setHeader("Cache-Control", "no-store");
+            res.end([
+                "self.addEventListener('install', () => self.skipWaiting());",
+                "self.addEventListener('activate', (event) => {",
+                "  event.waitUntil((async () => {",
+                "    const keys = await caches.keys();",
+                "    await Promise.all(keys.map((key) => caches.delete(key)));",
+                "    await self.registration.unregister();",
+                "    const clients = await self.clients.matchAll({ type: 'window' });",
+                "    clients.forEach((client) => client.navigate(client.url));",
+                "  })());",
+                "});",
+            ].join("\n"));
+        });
+    },
+};
+
 export default defineConfig({
     plugins: [
+        devServiceWorkerKillSwitch,
         react(),
         VitePWA({
             registerType: "autoUpdate",

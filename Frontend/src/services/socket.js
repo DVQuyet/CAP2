@@ -1,12 +1,8 @@
 import { io } from "socket.io-client";
+import { API_BASE_URL } from "./api";
 
-const SOCKET_URL = (
-  import.meta.env.VITE_SOCKET_URL ||
-  import.meta.env.VITE_API_BASE_URL ||
-  (import.meta.env.PROD && typeof window !== "undefined"
-    ? window.location.origin
-    : "http://localhost:3000")
-).replace(/\/$/, "");
+// Socket chạy trên cùng backend với API (local khi mở từ localhost, Render khi là bản thật).
+const SOCKET_URL = (import.meta.env.VITE_SOCKET_URL || API_BASE_URL).replace(/\/$/, "");
 
 let socket = null;
 let currentAccountId = null;
