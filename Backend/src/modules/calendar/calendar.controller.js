@@ -802,11 +802,26 @@ const processDueReminders = async () => {
   const summary = [];
 
   for (const event of events) {
-    const result = await notifyEventRecipients(event);
-    await db.query(
-      'UPDATE calendar_events SET reminder_sent_at = NOW(), email_sent_at = CASE WHEN ? > 0 THEN NOW() ELSE email_sent_at END WHERE id = ?',
-      [result.emailSent, event.id]
+    // Giành quyền gửi bằng một UPDATE có điều kiện: nhiều instance cùng chạy scheduler
+    // thì chỉ một instance gửi nhắc cho mỗi sự kiện, tránh email/thông báo trùng.
+    const [claim] = await db.query(
+      'UPDATE calendar_events SET reminder_sent_at = NOW() WHERE id = ? AND reminder_sent_at IS NULL',
+      [event.id]
     );
+    if (!claim.affectedRows) continue;
+
+    let result;
+    try {
+      result = await notifyEventRecipients(event);
+    } catch (error) {
+      // Gửi thất bại hoàn toàn: trả lại để lần quét sau thử lại.
+      await db.query('UPDATE calendar_events SET reminder_sent_at = NULL WHERE id = ?', [event.id]);
+      throw error;
+    }
+
+    if (result.emailSent > 0) {
+      await db.query('UPDATE calendar_events SET email_sent_at = NOW() WHERE id = ?', [event.id]);
+    }
     summary.push({ event_id: event.id, ...result });
   }
 
@@ -1047,3 +1062,6 @@ exports.processDueReminders = processDueReminders;
 exports.buildYearlyPersonEvents = buildYearlyPersonEvents;
 exports.convertLunar2SolarDate = convertLunar2SolarDate;
 exports.solarIsoToLunar = solarIsoToLunar;
+
+// Dùng bởi scripts/migrate.js để chạy trước các bước chỉnh schema.
+module.exports.ensureManagerEventsForCalendarSchema = ensureManagerEventsForCalendarSchema;

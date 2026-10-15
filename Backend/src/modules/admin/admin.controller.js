@@ -1305,3 +1305,7 @@ exports.deletePost = async (req, res) => {
     return res.status(500).json({ success: false, message: "Lỗi xóa bài viết" });
   }
 };
+
+// Dùng bởi scripts/migrate.js để chạy trước các bước chỉnh schema.
+module.exports.ensureTaskTables = ensureTaskTables;
+module.exports.ensureManagerTaskEventLink = ensureManagerTaskEventLink;

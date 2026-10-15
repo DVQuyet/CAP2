@@ -900,3 +900,4 @@ if (!scheduledJobStarted && process.env.VOICE_SCHEDULED_JOB_DISABLED !== "true")
 }
 
 module.exports = router;
+module.exports.ensureVoiceSchema = ensureVoiceSchema;

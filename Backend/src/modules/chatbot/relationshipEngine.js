@@ -345,23 +345,37 @@ async function loadClanGraph(clanId, options = {}) {
             motherId: toPositiveId(family.mother_id),
         });
     }
-    const childIds = [...childParentKeys.keys()];
-    if (childIds.length <= MAX_HALF_SIBLING_PAIR_MATERIALIZATION) {
-        for (let i = 0; i < childIds.length; i += 1) {
-            for (let j = i + 1; j < childIds.length; j += 1) {
-                const a = childParentKeys.get(childIds[i]);
-                const b = childParentKeys.get(childIds[j]);
-                const sameFather = a.fatherId && b.fatherId && a.fatherId === b.fatherId;
-                const sameMother = a.motherId && b.motherId && a.motherId === b.motherId;
-                if ((sameFather || sameMother) && !(sameFather && sameMother)) {
-                    addEdge(adjacency, childIds[i], { to: childIds[j], type: 'half_sibling' });
-                    addEdge(adjacency, childIds[j], { to: childIds[i], type: 'half_sibling' });
+    // Gom theo cha / theo mẹ rồi mới ghép cặp trong từng nhóm: không còn quét mọi cặp O(n^2)
+    // trên toàn dòng họ, chỉ những người thật sự chung một phía cha hoặc mẹ mới được xét.
+    const groupBy = (keyOf) => {
+        const groups = new Map();
+        for (const [childId, keys] of childParentKeys.entries()) {
+            const key = keyOf(keys);
+            if (!key) continue;
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key).push(childId);
+        }
+        return groups;
+    };
+    const addHalfSiblingEdges = (groups) => {
+        for (const members of groups.values()) {
+            if (members.length < 2 || members.length > MAX_HALF_SIBLING_PAIR_MATERIALIZATION) continue;
+            for (let i = 0; i < members.length; i += 1) {
+                for (let j = i + 1; j < members.length; j += 1) {
+                    const a = childParentKeys.get(members[i]);
+                    const b = childParentKeys.get(members[j]);
+                    const sameFather = a.fatherId && b.fatherId && a.fatherId === b.fatherId;
+                    const sameMother = a.motherId && b.motherId && a.motherId === b.motherId;
+                    // Cùng cả cha lẫn mẹ là anh chị em ruột, đã có cạnh riêng ở trên.
+                    if (sameFather && sameMother) continue;
+                    addEdge(adjacency, members[i], { to: members[j], type: 'half_sibling' });
+                    addEdge(adjacency, members[j], { to: members[i], type: 'half_sibling' });
                 }
             }
         }
-    } else {
-        // TODO: Replace O(n^2) half-sibling materialization with parent-index lazy expansion.
-    }
+    };
+    addHalfSiblingEdges(groupBy((keys) => keys.fatherId));
+    addHalfSiblingEdges(groupBy((keys) => keys.motherId));
 
     const graph = {
         clanId: normalizedClanId,

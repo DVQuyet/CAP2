@@ -515,6 +515,24 @@ process.on('unhandledRejection', (reason) => {
 // 10. Start server
 const PORT = process.env.PORT || 3000;
 
+if (String(process.env.RUN_MIGRATIONS_ON_START || '').toLowerCase() === 'true') {
+    // Chạy migrate với DDL bật rồi trả lại trạng thái cấu hình ban đầu.
+    const { runAllSchemaEnsures } = require('./src/shared/schema/registry');
+    const previousDdlFlag = process.env.DISABLE_RUNTIME_DDL;
+    process.env.DISABLE_RUNTIME_DDL = 'false';
+    runAllSchemaEnsures({ log: () => {} })
+        .then((results) => {
+            const failed = results.filter((item) => !item.ok);
+            console.log(`Migrate khi khởi động: ${results.length - failed.length}/${results.length} bước thành công.`);
+            failed.forEach((item) => console.warn(`  ✖ ${item.label}: ${item.error}`));
+        })
+        .catch((error) => console.error('Migrate khi khởi động lỗi:', error.message))
+        .finally(() => {
+            if (previousDdlFlag === undefined) delete process.env.DISABLE_RUNTIME_DDL;
+            else process.env.DISABLE_RUNTIME_DDL = previousDdlFlag;
+        });
+}
+
 startCalendarReminderScheduler(app);
 
 server.listen(PORT, () => {

@@ -415,3 +415,6 @@ exports.resetPasswordWithCode = async (req, res) => {
     }
 };
 
+
+// Dùng bởi scripts/migrate.js để chạy trước các bước chỉnh schema.
+module.exports.ensureArchivedMembersTable = ensureArchivedMembersTable;

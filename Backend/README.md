@@ -345,3 +345,20 @@ node --check src\modules\genealogy\kinshipValidation.service.js
 - Nếu thêm field layout mới, cập nhật cả DB ensure/migration, backend normalize và frontend storage/render.
 - Nếu thêm rule relation mới, kiểm tra cả backend validation và frontend dialog/force confirmation.
 - Không commit `.env`, upload/audio hoặc dữ liệu local.
+
+## Migration schema
+
+Các bước chỉnh schema trước đây tự chạy lúc request nay gom lại trong `src/shared/schema/registry.js`.
+
+```powershell
+cd Backend
+npm run migrate          # chạy một lần khi deploy (idempotent)
+```
+
+Sau khi migrate, đặt `DISABLE_RUNTIME_DDL=true` trong `.env` để server không tự `ALTER/CREATE` lúc xử lý request.
+Với deploy một instance có thể đặt `RUN_MIGRATIONS_ON_START=true` để tự chạy khi khởi động.
+
+## Phân trang
+
+`GET /api/member/posts/general`, `/api/member/memories`, `/api/member/notifications` nhận `?limit=&before_id=`
+và trả thêm `has_more`, `next_before_id`. Không truyền tham số thì trả tối đa 200 bản ghi mới nhất (thông báo: 50).

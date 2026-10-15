@@ -603,3 +603,6 @@ exports.setCurrentPerson = async (req, res) => {
     connection.release();
   }
 };
+
+// Dùng bởi scripts/migrate.js để chạy trước các bước chỉnh schema.
+module.exports.ensureAccountPeopleTable = ensureAccountPeopleTable;

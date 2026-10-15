@@ -8,7 +8,7 @@ const dbPort = Number(process.env.DB_PORT || 3306);
 const usePublicDns = String(process.env.DB_USE_PUBLIC_DNS || '').toLowerCase() === 'true';
 const useSsl = String(process.env.DB_SSL || '').toLowerCase() === 'true';
 const rejectUnauthorized = String(process.env.DB_SSL_REJECT_UNAUTHORIZED || 'false').toLowerCase() !== 'false';
-const connectionLimit = Number(process.env.DB_CONNECTION_LIMIT || 5);
+const connectionLimit = Number(process.env.DB_CONNECTION_LIMIT || 10);
 
 const resolver = new dns.Resolver();
 resolver.setServers(
@@ -66,5 +66,42 @@ if (useSsl) {
 const pool = mysql.createPool(poolConfig);
 
 const db = pool.promise();
+
+// Khi đã chạy `npm run migrate`, đặt DISABLE_RUNTIME_DDL=true để các hàm ensure*() rải rác trong
+// controller không tự ALTER/CREATE trên đường xử lý request (tốn thời gian, khóa bảng, khó kiểm soát).
+const DDL_PATTERN = /^\s*(ALTER\s+TABLE|CREATE\s+TABLE|CREATE\s+(UNIQUE\s+)?INDEX|DROP\s+INDEX)\b/i;
+const isRuntimeDdlDisabled = () => String(process.env.DISABLE_RUNTIME_DDL || '').toLowerCase() === 'true';
+const skippedDdl = new Set();
+
+const shouldSkipDdl = (sql) => {
+    if (!isRuntimeDdlDisabled()) return false;
+    const text = typeof sql === 'string' ? sql : sql && sql.sql;
+    if (typeof text !== 'string' || !DDL_PATTERN.test(text)) return false;
+    const head = text.replace(/\s+/g, ' ').trim().slice(0, 100);
+    if (!skippedDdl.has(head)) {
+        skippedDdl.add(head);
+        console.warn(`[db] DISABLE_RUNTIME_DDL: bỏ qua "${head}". Chạy npm run migrate nếu schema chưa đủ.`);
+    }
+    return true;
+};
+
+const SKIPPED_RESULT = () => [{ affectedRows: 0, warningStatus: 0 }, undefined];
+
+const guardMethods = (target) => {
+    for (const method of ['query', 'execute']) {
+        const original = target[method];
+        if (typeof original !== 'function') continue;
+        target[method] = function guardedQuery(sql, ...rest) {
+            if (shouldSkipDdl(sql)) return Promise.resolve(SKIPPED_RESULT());
+            return original.call(this, sql, ...rest);
+        };
+    }
+    return target;
+};
+
+guardMethods(db);
+
+const originalGetConnection = db.getConnection.bind(db);
+db.getConnection = async (...args) => guardMethods(await originalGetConnection(...args));
 
 module.exports = db;

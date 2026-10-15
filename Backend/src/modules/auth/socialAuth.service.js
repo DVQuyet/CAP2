@@ -453,3 +453,6 @@ module.exports = {
   handleSocialLogin,
   verifySocialRegistrationToken,
 };
+
+// Dùng bởi scripts/migrate.js để chạy trước các bước chỉnh schema.
+module.exports.ensureSocialAuthSchema = ensureSocialAuthSchema;

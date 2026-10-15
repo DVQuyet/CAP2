@@ -1,3 +1,4 @@
+const { parsePageParams, finishPage } = require('../../shared/utils/pagination');
 const db = require("../../config/db");
 const bcrypt = require("bcryptjs");
 const { getRoleName } = require("../../config/roles");
@@ -842,23 +843,36 @@ exports.getDashboard = async (req, res) => {
 exports.getNotifications = async (req, res) => {
   try {
     const context = await getAccountContext(req.user.id);
-    const [rows] = await db.query(
+    const { limit, beforeId } = parsePageParams(req.query, { defaultLimit: 50, maxLimit: 100 });
+    const cursorSql = beforeId
+      ? 'AND (created_at, id) < (SELECT n.created_at, n.id FROM notifications n WHERE n.id = ?)'
+      : '';
+    const [fetched] = await db.query(
       `
         SELECT id, type, title, message, is_read, link_url, created_at
         FROM notifications
-        WHERE receiver_account_id = ?
+        WHERE (receiver_account_id = ?
            OR (
                 receiver_account_id IS NULL
                 AND receiver_person_id = ?
-              )
+              ))
+          ${cursorSql}
         ORDER BY created_at DESC, id DESC
-        LIMIT 50
+        LIMIT ?
       `,
-      [req.user.id, context?.person_id || 0]
+      [req.user.id, context?.person_id || 0, ...(beforeId ? [beforeId] : []), limit + 1]
     );
 
+    const page = finishPage(fetched, limit);
+    const rows = page.items;
     const unreadCount = rows.filter((row) => Number(row.is_read) === 0).length;
-    return res.json({ success: true, notifications: rows, unread_count: unreadCount });
+    return res.json({
+      success: true,
+      notifications: rows,
+      unread_count: unreadCount,
+      has_more: page.has_more,
+      next_before_id: page.next_before_id,
+    });
   } catch (error) {
     console.error("getNotifications error:", error);
     return res.status(500).json({ success: false, message: "Khong the tai thong bao" });
@@ -1395,7 +1409,11 @@ exports.getGeneralPosts = async (req, res) => {
       return res.status(400).json({ success: false, message: "Tài khoản chưa thuộc dòng họ nào." });
     }
 
-    const [rows] = await db.query(
+    const { limit: postsLimit, beforeId: postsBeforeId } = parsePageParams(req.query);
+    const postsCursorSql = postsBeforeId
+      ? 'AND (p.created_at, p.id) < (SELECT c.created_at, c.id FROM posts c WHERE c.id = ?)'
+      : '';
+    const [fetchedPosts] = await db.query(
       `SELECT p.id, p.description, p.content, p.image_url, p.image_media_id, p.created_at, 
               COALESCE(author.display_name, a.email, 'Thành viên') as author_name,
               (SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id) AS like_count,
@@ -1409,10 +1427,18 @@ exports.getGeneralPosts = async (req, res) => {
        JOIN accounts a ON p.author_id = a.id
        LEFT JOIN people author ON a.person_id = author.id
        WHERE p.clan_id = ? AND p.status = 'approved'
-       ORDER BY p.created_at DESC`,
-      [context.person_id || 0, context.clan_id]
+         ${postsCursorSql}
+       ORDER BY p.created_at DESC, p.id DESC
+       LIMIT ?`,
+      [context.person_id || 0, context.clan_id, ...(postsBeforeId ? [postsBeforeId] : []), postsLimit + 1]
     );
-    return res.json({ success: true, posts: rows.map(normalizePostStats) });
+    const postsPage = finishPage(fetchedPosts, postsLimit);
+    return res.json({
+      success: true,
+      posts: postsPage.items.map(normalizePostStats),
+      has_more: postsPage.has_more,
+      next_before_id: postsPage.next_before_id,
+    });
   } catch (error) {
     console.error("getGeneralPosts error:", error);
     return res.status(500).json({ success: false, message: "Lỗi lấy danh sách bài viết." });
@@ -2000,7 +2026,12 @@ exports.getFamilyMemories = async (req, res) => {
 
     where += ")";
 
-    const [rows] = await db.query(
+    const { limit: memoriesLimit, beforeId: memoriesBeforeId } = parsePageParams(req.query);
+    if (memoriesBeforeId) {
+      where += ' AND (fm.created_at, fm.id) < (SELECT c.created_at, c.id FROM family_memories c WHERE c.id = ?)';
+      values.push(memoriesBeforeId);
+    }
+    const [fetchedMemories] = await db.query(
       `SELECT fm.*, COALESCE(p.display_name, a.email) AS author_name, a.email AS author_email,
               (
                 SELECT COUNT(*)
@@ -2011,11 +2042,18 @@ exports.getFamilyMemories = async (req, res) => {
        LEFT JOIN accounts a ON a.id = fm.author_account_id
        LEFT JOIN people p ON p.id = fm.author_person_id
        WHERE ${where}
-       ORDER BY fm.created_at DESC`,
-      values
+       ORDER BY fm.created_at DESC, fm.id DESC
+       LIMIT ?`,
+      [...values, memoriesLimit + 1]
     );
 
-    return res.json({ success: true, memories: rows.map(mapMemoryRow) });
+    const memoriesPage = finishPage(fetchedMemories, memoriesLimit);
+    return res.json({
+      success: true,
+      memories: memoriesPage.items.map(mapMemoryRow),
+      has_more: memoriesPage.has_more,
+      next_before_id: memoriesPage.next_before_id,
+    });
   } catch (error) {
     console.error('getFamilyMemories error:', error);
     return res.status(500).json({ success: false, message: 'Không thể tải kỉ niệm dòng họ' });
@@ -2299,3 +2337,8 @@ exports.updatePost = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Không thể cập nhật bài đăng.' });
   }
 };
+
+// Dùng bởi scripts/migrate.js để chạy trước các bước chỉnh schema.
+module.exports.ensurePostInteractionTables = ensurePostInteractionTables;
+module.exports.ensureTaskTables = ensureTaskTables;
+module.exports.ensureFamilyMemoriesSchema = ensureFamilyMemoriesSchema;
