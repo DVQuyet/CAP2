@@ -17,6 +17,70 @@ const { toPositiveId, queryOptional } = require('./chatbotUtils');
 const { ARCHIVED_MEMBER_JOIN_SQL } = require('../manager/common.service');
 const { describePersonBrief, capitalizeFirst, formatDateVN, dateParts } = require('./chatbotFormat');
 const { plainTermToKey, hasVietnameseDiacritics } = require('./kinshipTermService');
+const { findPronoun, rewritePronoun, rewriteEllipsis, selectCandidate, findFocusText } = require('./conversationFlowService');
+
+const normalizeName = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase().trim();
+
+// Lưu câu trả lời gửi thẳng qua res (hỏi lại, không tìm thấy) để lịch sử và trí nhớ không bị đứt.
+function storeTurnAnswer(res, body) {
+    const turn = res?.locals?.chatbotTurn;
+    if (!turn) return;
+    storeChatbotMessage({
+        conversationId: turn.conversationId,
+        clanId: turn.clanId,
+        accountId: turn.accountId,
+        currentMemberId: turn.currentMemberId,
+        role: 'assistant',
+        message: body.answer,
+        intent: body.intent || null,
+        confidence: body.confidence ?? null,
+        metadata: { ...body, turn: { question: turn.message, pending: turn.pending || null } },
+    }).catch(() => {});
+}
+
+// Gợi ý câu hỏi tiếp theo về người vừa được hỏi tới.
+function followUpSuggestions(subject, graph, askedMessage) {
+    const person = graph?.people.get(Number(subject?.id)) || subject;
+    const name = relationshipEngine.personName(person) || subject?.name;
+    if (!name) return [];
+    const spouseWord = Number(person?.gender) === 2 ? 'Chồng' : 'Vợ';
+    const items = [
+        `${spouseWord} của ${name} là ai?`,
+        `Con của ${name} là ai?`,
+        Number(person?.is_living) === 0 ? `Ngày giỗ của ${name} là ngày nào?` : `${name} sinh năm nào?`,
+        `${name} là gì của tôi?`,
+    ];
+    const asked = normalizeName(askedMessage).replace(/[?.!]/g, '');
+    return items
+        .filter((text) => normalizeName(text).replace(/[?.!]/g, '') !== asked)
+        .map((text) => ({ type: 'quick_question', text }));
+}
+
+// Trí nhớ hội thoại nằm trong RAM; khi server khởi động lại thì dựng lại từ lượt trả lời gần nhất trong DB.
+async function restoreMemoryFromHistory(conversationId, memorySessionId) {
+    if (!conversationId || !(await memberSearch.tableExists('chatbot_messages'))) return null;
+    const columns = await getTableColumns('chatbot_messages');
+    if (!columns.has('metadata')) return null;
+    const rows = await queryOptional(
+        'SELECT metadata FROM chatbot_messages WHERE conversation_id = ? ORDER BY id DESC LIMIT 4',
+        [conversationId]
+    );
+    for (const row of rows) {
+        let meta = row.metadata;
+        if (typeof meta === 'string') {
+            try { meta = JSON.parse(meta); } catch (_) { meta = null; }
+        }
+        if (!meta?.turn) continue;
+        return updateConversationMemory(memorySessionId, {
+            lastQuestion: meta.turn.question || null,
+            lastFocusText: meta.turn.focusText || null,
+            lastSubject: meta.turn.subject || null,
+            lastAnswerPeople: meta.turn.answerPeople || [],
+            pendingClarification: meta.turn.pending || null,
+        });
+    }
+    return null;
+}
 
 // Từ không dấu (thứ tự trong câu) -> key có dấu theo thứ tự đi từ người gốc ra; null nếu có từ không đổi được.
 function chainKeysFromTerms(terms) {
@@ -351,52 +415,87 @@ function publicRelationPayload(payload) {
     return visualizer ? { ...payload, pathVisualizer: visualizer } : payload;
 }
 
-function ambiguityResponse(res, intent, candidates, subject = null) {
+async function ambiguityResponse(res, intent, candidates, subject = null, clanId = null) {
     const clarification = buildClarificationResponse({
         candidates,
         reason: 'ambiguous_person',
         context: { intent, ...(subject ? { subject } : {}) },
     });
-    return res.status(409).json({
+    // Mô tả từng người (đời, năm sinh, cha mẹ) để phân biệt người trùng tên.
+    const graph = clanId ? await relationshipEngine.loadClanGraph(clanId).catch(() => null) : null;
+    const described = clarification.candidates.map((candidate) => ({
+        ...candidate,
+        description: graph ? describePersonBrief(graph.people.get(Number(candidate.id)) || candidate, graph, relationshipEngine.personName) : null,
+    }));
+    if (graph) {
+        clarification.answer = `Có ${described.length} người khớp với "${subject || 'người này'}": ${described.map((item, index) => `${index + 1}. ${item.description || item.name}`).join('; ')}. Bạn muốn hỏi người nào? (bấm chọn hoặc trả lời số thứ tự)`;
+    }
+    const turn = res?.locals?.chatbotTurn;
+    if (turn?.memorySessionId) {
+        turn.pending = {
+            intent,
+            subject,
+            message: turn.message,
+            candidates: described.map(({ id, name, generation, birthYear, description }) => ({ id, name, generation, birthYear, description })),
+        };
+        updateConversationMemory(turn.memorySessionId, { pendingClarification: turn.pending });
+    }
+    const body = {
         success: false,
         code: 'AMBIGUOUS_PERSON',
         intent,
         answer: clarification.answer,
         needsClarification: true,
         reason: clarification.reason,
-        candidates: clarification.candidates.map((candidate) => ({
+        candidates: described.map((candidate) => ({
             ...candidate,
             confidence: Number(candidates.find((person) => Number(person.id) === Number(candidate.id))?.score || 0),
         })),
         pendingClarification: clarification.pendingClarification,
-    });
+    };
+    storeTurnAnswer(res, body);
+    return res.status(200).json(body);
 }
 
 function notFoundResponse(res, intent, name) {
-    return res.status(404).json({
+    const body = {
         success: false,
         code: 'PERSON_NOT_FOUND',
         intent,
         answer: `Theo dữ liệu gia phả hiện tại, tôi chưa tìm thấy thành viên khớp với "${Array.isArray(name) ? name[0] : name}".`,
         confidence: 0,
-    });
+    };
+    storeTurnAnswer(res, body);
+    return res.status(200).json(body);
 }
 
 async function resolveNamedPerson(res, clanId, intent, names, currentMemberId = null) {
+    // Người dùng vừa chọn một ứng viên khi được hỏi lại: dùng đúng người đó (một lần, đúng tên đang hỏi).
+    const forced = res?.locals?.chatbotTurn?.forced;
+    if (forced?.personId) {
+        const asked = [].concat(names || []).map(normalizeName);
+        if (!forced.subject || asked.includes(normalizeName(forced.subject))) {
+            res.locals.chatbotTurn.forced = null;
+            const person = await relationshipEngine.getPerson(forced.personId, { clanId });
+            if (person) return person;
+        }
+    }
     const kinship = await resolveKinshipReference({ clanId, currentMemberId, names });
     if (kinship?.status === 'resolved') return kinship.person;
     if (kinship?.status === 'ambiguous') {
-        ambiguityResponse(res, intent, kinship.candidates, Array.isArray(names) ? names[0] : names);
+        await ambiguityResponse(res, intent, kinship.candidates, Array.isArray(names) ? names[0] : names, clanId);
         return null;
     }
     if (kinship?.status === 'not_found') {
-        res.status(404).json({
+        const body = {
             success: false,
             code: 'PERSON_NOT_FOUND',
             intent,
             answer: `Theo dữ liệu gia phả hiện tại, tôi chưa tìm thấy ${kinship.label} của bạn.`,
             confidence: 0,
-        });
+        };
+        storeTurnAnswer(res, body);
+        res.status(200).json(body);
         return null;
     }
 
@@ -406,7 +505,7 @@ async function resolveNamedPerson(res, clanId, intent, names, currentMemberId = 
         return null;
     }
     if (result.status === 'ambiguous') {
-        ambiguityResponse(res, intent, result.candidates, Array.isArray(names) ? names[0] : names);
+        await ambiguityResponse(res, intent, result.candidates, Array.isArray(names) ? names[0] : names, clanId);
         return null;
     }
     return result.person;
@@ -602,7 +701,7 @@ async function handleListChildren({ res, clanId, currentMemberId, parsed }) {
             if (eldestSon) answer += `; con trai trưởng là ${label(eldestSon)}`;
         }
         answer += '. Thứ tự dựa theo thứ tự con và năm sinh ghi trong gia phả.';
-        return { success: true, intent: parsed.intent, answer, confidence: parsed.confidence, people: people([picked]) };
+        return { success: true, intent: parsed.intent, answer, confidence: parsed.confidence, subjectPerson: { id: target.id, name: targetName }, people: people([picked]) };
     }
 
     let answer;
@@ -613,7 +712,7 @@ async function handleListChildren({ res, clanId, currentMemberId, parsed }) {
     } else {
         answer = `Theo dữ liệu gia phả hiện tại, ${word} của ${targetName} ${children.length > 1 ? 'gồm' : 'là'}: ${children.map(nameWithNote).join(', ')}.`;
     }
-    return { success: true, intent: parsed.intent, answer, confidence: parsed.confidence, people: people(children) };
+    return { success: true, intent: parsed.intent, answer, confidence: parsed.confidence, subjectPerson: { id: target.id, name: targetName }, people: people(children) };
 }
 
 // "X là con ruột hay con nuôi?"
@@ -695,6 +794,7 @@ async function handleFindSpouse({ res, clanId, currentMemberId, parsed }) {
         intent: parsed.intent,
         answer,
         confidence: parsed.confidence,
+        subjectPerson: { id: target.id, name: targetName },
         people: unions.map((item) => ({ id: item.person.id, name: relationshipEngine.personName(item.person), note: item.note })),
     };
 }
@@ -735,6 +835,7 @@ async function handleFindParents({ res, clanId, currentMemberId, parsed }) {
             ? `Theo dữ liệu gia phả hiện tại, ${parsed.entities.parentType === 'both' ? 'cha mẹ' : parsed.entities.parentType === 'mother' ? 'mẹ' : 'bố/cha'} của ${isSelfReferenceName(parsed.entities.targetName) ? 'bạn' : targetName} là: ${formatPeopleList(people)}.${parentResult.inferred ? ' Quan hệ này được suy ra từ dữ liệu vợ/chồng của cha hoặc mẹ trong gia phả.' : ''}`
             : `Theo dữ liệu gia phả hiện tại, tôi chưa thấy dữ liệu ${parsed.entities.parentType === 'mother' ? 'mẹ' : parsed.entities.parentType === 'father' ? 'bố/cha' : 'cha mẹ'} của ${isSelfReferenceName(parsed.entities.targetName) ? 'bạn' : targetName}.`,
         confidence: parentResult.inferred ? Math.min(parsed.confidence, 0.72) : parsed.confidence,
+        subjectPerson: { id: target.id, name: targetName },
         people: people.map((person) => ({ id: person.id, name: relationshipEngine.personName(person) })),
         inferred: parentResult.inferred || false,
         inferredFrom: parentResult.inferredFrom || null,
@@ -1201,10 +1302,16 @@ function buildEventDraftPayload(message) {
 
 // "<quan hệ> của <tên người>": tìm người theo tên rồi đi theo chuỗi quan hệ từ người đó.
 // Trả null để luồng cũ xử lý khi câu không có dạng này hoặc không tìm thấy tên.
-async function handleNamedRelationshipExpression({ clanId, message }) {
+async function handleNamedRelationshipExpression({ clanId, message, forced = null }) {
     const ast = parseNamedRelationshipExpression(message);
     if (!ast) return null;
-    const search = await memberSearch.resolvePerson({ clanId, names: [ast.personName] });
+    let search;
+    if (forced?.personId && (!forced.subject || normalizeName(forced.subject) === normalizeName(ast.personName))) {
+        const chosen = await relationshipEngine.getPerson(forced.personId, { clanId });
+        search = chosen ? { status: 'resolved', person: chosen, candidates: [chosen] } : await memberSearch.resolvePerson({ clanId, names: [ast.personName] });
+    } else {
+        search = await memberSearch.resolvePerson({ clanId, names: [ast.personName] });
+    }
     if (search.status === 'not_found') return null;
     // Câu gõ không dấu ("bo cua …"): hiện từ xưng hô có dấu ("cha của …").
     const accentedKeys = chainKeysFromTerms(ast.terms);
@@ -1217,7 +1324,8 @@ async function handleNamedRelationshipExpression({ clanId, message }) {
         return {
             success: true,
             intent: 'relationship_expression',
-            answer: `Có ${search.candidates.length} người tên "${ast.personName}" trong gia phả: ${described.join('; ')}. Bạn muốn hỏi ${label} của người nào?`,
+            answer: `Có ${search.candidates.length} người tên "${ast.personName}" trong gia phả: ${described.map((item, index) => `${index + 1}. ${item}`).join('; ')}. Bạn muốn hỏi ${label} của người nào? (bấm chọn hoặc trả lời số thứ tự)`,
+            subject: ast.personName,
             candidates: search.candidates.map((person, index) => ({ id: person.id, name: relationshipEngine.personName(person), generation: person.generation || null, description: described[index] })),
             confidence: 0.5,
             needsClarification: true,
@@ -1623,7 +1731,9 @@ exports.ask = async (req, res) => {
 
     try {
         const body = req.body || {};
-        const message = sanitizeMessage(body.message || '');
+        const rawMessage = sanitizeMessage(body.message || '');
+        // Câu dùng để trả lời; có thể được viết lại (đại từ, câu lược, chọn người khi hỏi lại).
+        let message = rawMessage;
         const clanId = toPositiveId(body.clanId || body.clan_id || req.user?.clan_id);
         const currentMemberId = toPositiveId(body.currentMemberId || body.current_member_id || req.user?.person_id);
         const accountId = toPositiveId(req.user?.id || req.user?.account_id);
@@ -1658,6 +1768,31 @@ exports.ask = async (req, res) => {
             conversationId,
             message,
         });
+        if (!res.locals) res.locals = {};
+        res.locals.chatbotTurn = { memorySessionId, conversationId, clanId, accountId, currentMemberId, message, forced: null, pending: null };
+        let memory = conversationMemory || await restoreMemoryFromHistory(conversationId, memorySessionId).catch(() => null);
+
+        // Đang hỏi lại vì trùng tên: nhận lựa chọn (nút bấm hoặc "1", "người thứ hai", "sinh 1965").
+        const pending = memory?.pendingClarification || null;
+        const pickedId = pending
+            ? (toPositiveId(body.clarificationChoice || body.clarification_choice) || selectCandidate(message, pending.candidates))
+            : null;
+        const chosen = pickedId && pending.candidates.some((item) => Number(item.id) === Number(pickedId)) ? Number(pickedId) : null;
+        if (pending) memory = updateConversationMemory(memorySessionId, { pendingClarification: null });
+        if (chosen) {
+            message = pending.message || message;
+            res.locals.chatbotTurn.forced = { personId: chosen, subject: pending.subject || null };
+        } else if (memory) {
+            // "Thế còn X?", "Còn con của ông ấy?" rồi "ông ấy/bà ấy" -> tên người vừa nhắc.
+            const ellipsis = rewriteEllipsis(message, memory);
+            if (ellipsis) message = ellipsis.message;
+            if (findPronoun(message)) {
+                const pronounGraph = await relationshipEngine.loadClanGraph(clanId).catch(() => null);
+                const rewritten = rewritePronoun(message, memory, (id) => pronounGraph?.people.get(Number(id)) || null);
+                if (rewritten) message = rewritten.message;
+            }
+        }
+        res.locals.chatbotTurn.message = message;
 
         if (isCommonChatShortcut(message)) {
             const suggestedQuestions = buildSuggestedQuestions(chatbotContext.userProfile, chatbotContext.clanInfo);
@@ -1687,7 +1822,7 @@ exports.ask = async (req, res) => {
                 accountId,
                 currentMemberId,
                 role: 'user',
-                message,
+                message: rawMessage,
                 intent: responsePayload.intent,
                 confidence: responsePayload.confidence,
                 metadata: { planner: responsePayload.planner },
@@ -1719,7 +1854,17 @@ exports.ask = async (req, res) => {
 
         // Quan hệ của một người có tên ("cha của Đinh Viết Lâm", "vợ của X", "mẹ của vợ của X"):
         // trả lời thẳng từ đồ thị gia phả, không cần gọi AI lập kế hoạch.
-        const namedRelationshipPayload = await handleNamedRelationshipExpression({ clanId, message });
+        const namedRelationshipPayload = await handleNamedRelationshipExpression({ clanId, message, forced: res.locals.chatbotTurn.forced });
+        if (namedRelationshipPayload && res.locals.chatbotTurn.forced) res.locals.chatbotTurn.forced = null;
+        if (namedRelationshipPayload?.needsClarification && namedRelationshipPayload.candidates?.length) {
+            res.locals.chatbotTurn.pending = {
+                intent: namedRelationshipPayload.intent,
+                subject: namedRelationshipPayload.subject || null,
+                message,
+                candidates: namedRelationshipPayload.candidates,
+            };
+            updateConversationMemory(memorySessionId, { pendingClarification: res.locals.chatbotTurn.pending });
+        }
         // Yêu cầu tạo sự kiện/lời nhắc ("nhắc tôi giỗ ông nội 15/3 âm lịch"): dựng bản nháp để người dùng bấm lưu.
         const eventDraftPayload = namedRelationshipPayload ? null : buildEventDraftPayload(message);
         const ruleFastPath = namedRelationshipPayload || eventDraftPayload;
@@ -1728,7 +1873,7 @@ exports.ask = async (req, res) => {
             planner: { source: namedRelationshipPayload ? 'rule_named_relationship' : 'rule_event_command', accepted: true, aiServerSkipped: true },
         } : await queryPlanner.planQuery({
             message,
-            memory: conversationMemory,
+            memory: memory || conversationMemory,
             userId: accountId || currentMemberId,
             clanId,
             currentMemberId,
@@ -1753,7 +1898,7 @@ exports.ask = async (req, res) => {
             accountId,
             currentMemberId,
             role: 'user',
-            message,
+            message: rawMessage,
             intent: parsed.intent,
             confidence: parsed.confidence,
             metadata: { entities: parsed.entities, planner, ast: parsed.ast || null },
@@ -1797,7 +1942,7 @@ exports.ask = async (req, res) => {
                 currentMemberId,
                 message,
                 parsed,
-                memory: conversationMemory,
+                memory: memory || conversationMemory,
                 planner,
             });
         } else if (parsed.intent === 'relationship_query' && parsed.ast?.steps?.length) {
@@ -1806,7 +1951,7 @@ exports.ask = async (req, res) => {
                 currentMemberId,
                 message,
                 parsed,
-                memory: conversationMemory,
+                memory: memory || conversationMemory,
                 planner,
             });
         } else if (parsed.intent === 'person_info') {
@@ -1824,7 +1969,7 @@ exports.ask = async (req, res) => {
         } else if (parsed.intent === 'general_chat') {
             responsePayload = await handleGeneralChatIntent({ message, parsed, context: chatbotContext, planner });
         } else {
-            responsePayload = await handleCoreferenceFollowUp({ clanId, currentMemberId, message, memory: conversationMemory }) ||
+            responsePayload = await handleCoreferenceFollowUp({ clanId, currentMemberId, message, memory: memory || conversationMemory }) ||
                 await handleRelationshipExpression({ clanId, currentMemberId, message }) || {
                 success: true,
                 intent: 'unknown',
@@ -1855,6 +2000,29 @@ exports.ask = async (req, res) => {
                 ...memoryPatch,
             });
         }
+        // Người được hỏi tới (để hiểu "ông ấy", "thế còn X") và người trong câu trả lời.
+        const singlePerson = Array.isArray(responsePayload.people) && responsePayload.people.length === 1 ? responsePayload.people[0] : null;
+        const subjectPerson = responsePayload.subjectPerson
+            || responsePayload.person
+            || (responsePayload.sourcePerson && Number(responsePayload.sourcePerson.id) !== Number(currentMemberId) ? responsePayload.sourcePerson : null)
+            || responsePayload.targetPerson
+            || singlePerson
+            || null;
+        const subject = subjectPerson?.id ? { id: Number(subjectPerson.id), name: subjectPerson.name || null } : (memory?.lastSubject || null);
+        const answerPeople = (responsePayload.people || []).filter((item) => item?.id).slice(0, 10).map((item) => ({ id: Number(item.id), name: item.name || null }));
+        const entityNames = Array.isArray(parsed.entities) ? parsed.entities : [].concat(parsed.entities?.targetName || []);
+        const focusText = findFocusText(message, [subjectPerson?.name, ...entityNames, parsed.entities?.kinshipTerm]);
+        const turnInfo = { question: message, focusText, subject, answerPeople, pending: res.locals.chatbotTurn.pending || null };
+        updateConversationMemory(memorySessionId, {
+            lastQuestion: message,
+            lastFocusText: focusText,
+            lastSubject: subject,
+            lastAnswerPeople: answerPeople,
+        });
+        if (subjectPerson?.id && !(Array.isArray(responsePayload.suggestions) && responsePayload.suggestions.length) && !responsePayload.needsClarification) {
+            const suggestionGraph = await relationshipEngine.loadClanGraph(clanId).catch(() => null);
+            responsePayload.suggestions = followUpSuggestions(subjectPerson, suggestionGraph, message);
+        }
 
         await storeChatbotMessage({
             conversationId,
@@ -1865,7 +2033,7 @@ exports.ask = async (req, res) => {
             message: responsePayload.answer,
             intent: responsePayload.intent,
             confidence: responsePayload.confidence,
-            metadata: responsePayload,
+            metadata: { ...responsePayload, turn: turnInfo },
         });
 
         if (conversationId) {

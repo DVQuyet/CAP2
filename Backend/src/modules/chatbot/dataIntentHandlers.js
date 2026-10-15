@@ -243,6 +243,7 @@ async function handlePersonInfoIntent({ clanId, currentMemberId, message, parsed
         source: 'database',
         planner,
         resolvedData,
+        subjectPerson: profiles.length === 1 ? { id: profiles[0].id, name: relationshipEngine.personName(profiles[0]) } : null,
         people: profiles.map((person) => ({ id: person.id, name: relationshipEngine.personName(person) })),
         ai: { plannerUsed: planner?.source === 'llm_planner' && planner.accepted, explanationUsed: ai.aiUsed },
     };

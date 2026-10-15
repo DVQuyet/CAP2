@@ -52,8 +52,10 @@ export default function MessageBubble({ message, onCandidatePick }) {
                 type="button"
                 onClick={() => onCandidatePick?.(candidate)}
               >
-                <span>{candidate.name}</span>
-                <small>{candidate.generation ? `Đời ${candidate.generation}` : "Chưa rõ đời"}</small>
+                <span>{candidate.description || candidate.name}</span>
+                {!candidate.description ? (
+                  <small>{candidate.generation ? `Đời ${candidate.generation}` : "Chưa rõ đời"}</small>
+                ) : null}
               </button>
             ))}
           </div>

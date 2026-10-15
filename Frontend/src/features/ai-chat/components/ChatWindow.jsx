@@ -31,7 +31,6 @@ export default function ChatWindow({
   const [suggestions, setSuggestions] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [selectedTargetId, setSelectedTargetId] = useState(null);
   const listRef = useRef(null);
 
   const ready = Boolean(context?.clanId && context?.currentMemberId);
@@ -73,7 +72,8 @@ export default function ChatWindow({
     node.scrollTop = node.scrollHeight;
   }, [renderedMessages.length, loading]);
 
-  const sendMessage = async (text = input) => {
+  // extra: thông tin kèm theo câu hỏi, vd { clarificationChoice } khi người dùng chọn một người lúc được hỏi lại.
+  const sendMessage = async (text = input, extra = {}) => {
     const messageText = String(text || "").trim();
     if (!messageText || loading || !ready) return;
     setInput("");
@@ -84,8 +84,13 @@ export default function ChatWindow({
         message: messageText,
         clanId: context.clanId,
         currentMemberId: context.currentMemberId,
-        targetPersonId: selectedTargetId,
+        ...extra,
       });
+      // Gợi ý câu hỏi tiếp theo theo câu trả lời vừa nhận (vd về người vừa hỏi tới).
+      const nextSuggestions = (Array.isArray(data.suggestions) ? data.suggestions : [])
+        .map((item, index) => ({ id: `reply-${Date.now()}-${index}`, text: typeof item === "string" ? item : item?.text }))
+        .filter((item) => item.text);
+      if (nextSuggestions.length) setSuggestions(nextSuggestions);
       setMessages((prev) => [
         ...prev,
         makeLocalMessage("assistant", data.answer || "Tôi chưa có câu trả lời.", {
@@ -107,9 +112,10 @@ export default function ChatWindow({
     }
   };
 
+  // Chọn một người khi trợ lý hỏi lại (trùng tên): gửi lựa chọn để trợ lý trả lời đúng câu hỏi ban đầu.
   const handleCandidatePick = (candidate) => {
-    setSelectedTargetId(candidate.id);
-    setInput(`Tôi gọi ${candidate.name} bằng gì?`);
+    const label = candidate.description || `${candidate.name}${candidate.generation ? ` (đời ${candidate.generation})` : ""}`;
+    sendMessage(`Chọn: ${label}`, { clarificationChoice: candidate.id });
   };
 
   const handleTranscript = (transcript, errorMessage) => {

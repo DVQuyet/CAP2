@@ -28,7 +28,7 @@ Số dòng trong file này tính theo commit `1f98244`; sau khi sửa có thể 
 | 0 – CI | xong | 47/82 (ngày cố định 15/10/2026) | GĐ0 |
 | 1 – Hết câu trả lời sai | xong | 69/82, hội thoại 1/5 | GĐ1 |
 | 2 – Phủ câu hỏi | xong | 82/82, hội thoại 1/5 | GĐ2 |
-| 3 – Hội thoại | chưa làm | hội thoại ≥ 4/5 | |
+| 3 – Hội thoại | xong | 82/82, hội thoại 7/7 | GĐ3 |
 | 4 – Nhanh, nói tự nhiên | chưa làm | giữ điểm, p95 < 1,5 s không LLM | |
 | 5 – Quyền và dữ liệu | chưa làm | giữ điểm | |
 
@@ -91,15 +91,15 @@ Số dòng trong file này tính theo commit `1f98244`; sau khi sửa có thể 
 
 ## Giai đoạn 3 — Hội thoại mượt (~250–400k token, mục tiêu hội thoại ≥ 4/5)
 
-- [ ] 3.1 Thay đại từ ("ông ấy/bà ấy/người đó…", danh sách ở `coreferenceResolver.js:7`) bằng người vừa nhắc **trước khi** gọi parser.
+- [x] 3.1 Thay đại từ ("ông ấy/bà ấy/người đó…", danh sách ở `coreferenceResolver.js:7`) bằng người vừa nhắc **trước khi** gọi parser.
   Hiện chỉ thử ở nhánh `unknown` (`chatbotController.js:1349`) nên "Vợ của ông ấy là ai?" bị tìm người tên "ong ay".
-- [ ] 3.2 "Thế còn X?", "Còn X thì sao?" → lặp lại ý định trước với người mới (lưu ý định + thuộc tính lượt trước).
-- [ ] 3.3 `memoryPatchFromResponse` (`chatbotController.js:1084`): ghi người chính cho mọi câu trả lời về một người.
-- [ ] 3.4 Lưu bộ nhớ hội thoại theo cuộc hội thoại trong DB thay cho `Map` trong RAM (`conversationMemoryService.js:4`).
-- [ ] 3.5 Hỏi lại có trạng thái: thay HTTP 409/404 (`ambiguityResponse :285`, `notFoundResponse :306`) bằng 200 + `needsClarification`
+- [x] 3.2 "Thế còn X?", "Còn X thì sao?" → lặp lại ý định trước với người mới (lưu ý định + thuộc tính lượt trước).
+- [x] 3.3 `memoryPatchFromResponse` (`chatbotController.js:1084`): ghi người chính cho mọi câu trả lời về một người.
+- [x] 3.4 Lưu bộ nhớ hội thoại theo cuộc hội thoại trong DB thay cho `Map` trong RAM (`conversationMemoryService.js:4`).
+- [x] 3.5 Hỏi lại có trạng thái: thay HTTP 409/404 (`ambiguityResponse :285`, `notFoundResponse :306`) bằng 200 + `needsClarification`
   + ứng viên, lưu ý định đang chờ; client gửi lựa chọn → trả lời đúng câu gốc. Frontend `ChatWindow.jsx:110 handleCandidatePick`
   đang thay câu hỏi bằng "Tôi gọi X bằng gì?" và không xóa `selectedTargetId`.
-- [ ] 3.6 Chip gợi ý theo ngữ cảnh: dùng `suggestions` server trả kèm câu trả lời (ChatWindow chỉ tải gợi ý một lần ở `:47`).
+- [x] 3.6 Chip gợi ý theo ngữ cảnh: dùng `suggestions` server trả kèm câu trả lời (ChatWindow chỉ tải gợi ý một lần ở `:47`).
 
 ## Giai đoạn 4 — Nhanh và nói tự nhiên (~150–250k token)
 
@@ -130,6 +130,11 @@ Số dòng trong file này tính theo commit `1f98244`; sau khi sửa có thể 
 4. Bước chọn "bạn là ai" trong chat có được gắn vĩnh viễn tài khoản với hồ sơ như hiện nay không? (việc 5.2)
 
 ## Ghi chú phiên trước
+
+- 15/10/2026 (tiếp): GĐ3 xong. `conversationFlowService.js` viết lại câu trước khi phân tích: đại từ (theo giới tính),
+  câu lược, chọn người khi hỏi lại. Hỏi lại/không tìm thấy trả 200 và được lưu lịch sử; trạng thái chờ chọn nằm trong bộ nhớ
+  hội thoại và được dựng lại từ `chatbot_messages.metadata.turn` khi RAM mất. Giao diện gửi `clarificationChoice` khi bấm
+  ứng viên; chip gợi ý cập nhật theo câu trả lời. Bộ kiểm tra có thêm hội thoại hỏi lại (7 lượt), CI chặn dưới 7/7.
 
 - 15/10/2026 (tiếp): GĐ2 xong, 82/82. Ý định mới: `person_anniversary`, `event_lookup`, `clan_info`, `child_status`;
   mở rộng `find_spouse` (đếm, vợ cả/lẽ), `list_children` (nuôi/riêng/trưởng/út/thứ N/đếm), `compare_relationship`

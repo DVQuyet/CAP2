@@ -4,6 +4,7 @@
 //   node scripts/chatbot-e2e-check.js            in câu sai + tổng kết
 //   node scripts/chatbot-e2e-check.js --all      in mọi câu
 //   node scripts/chatbot-e2e-check.js --min 70   thoát mã 1 nếu đúng ít hơn 70 câu (dùng cho CI)
+//   --min-conversation 7                        thoát mã 1 nếu hội thoại nối tiếp đúng ít hơn 7 lượt
 //
 // Người hỏi: Đinh Văn Quyết (id 101, đời 4). Dữ liệu mẫu có vợ cả + vợ lẽ, con nuôi,
 // hai người cùng tên "Đinh Văn Hùng", ngày giỗ âm lịch, sự kiện, lịch cá nhân/chung và kỷ niệm.
@@ -361,11 +362,16 @@ const CONVERSATION = [
     ['Còn con của ông ấy?', /Đinh Văn Nam/],
     ['Ông ấy sinh năm nào?', /1970/],
     ['Thế còn Đinh Văn Bình?', /1940/],
+    // Trùng tên: hỏi lại, rồi trả lời bằng số thứ tự.
+    ['Con của Đinh Văn Hùng là ai?', /người nào/],
+    ['1', /Đinh Văn Quyết/],
 ];
 
 const showAll = process.argv.includes('--all');
 const minIndex = process.argv.indexOf('--min');
 const minPassed = minIndex > -1 ? Number(process.argv[minIndex + 1]) : 0;
+const minConversationIndex = process.argv.indexOf('--min-conversation');
+const minConversation = minConversationIndex > -1 ? Number(process.argv[minConversationIndex + 1]) : 0;
 
 (async () => {
     const results = [];
@@ -399,7 +405,7 @@ const minPassed = minIndex > -1 ? Number(process.argv[minIndex + 1]) : 0;
         console.log('\nCâu SQL chưa được giả lập (kết quả có thể thiếu):');
         for (const [sql, count] of unhandledSql) console.log(`  ${count}× ${sql}`);
     }
-    if (passed < minPassed) process.exit(1);
+    if (passed < minPassed || conversation.filter((row) => row.ok).length < minConversation) process.exit(1);
 })().catch((error) => {
     console.error('Lỗi khi chạy kiểm tra:', error);
     process.exit(1);
