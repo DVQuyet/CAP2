@@ -16,6 +16,9 @@ const { resolveRelationshipExpression } = require('./relationshipExpressionResol
 const { toPositiveId, queryOptional } = require('./chatbotUtils');
 const { ARCHIVED_MEMBER_JOIN_SQL } = require('../manager/common.service');
 const { canSeeSensitiveRelations } = require('../genealogy/treeVisibility');
+const { normalizeTyping } = require('./typingNormalizer');
+const { withTreeFields, fallbackFlag } = require('./chatbotResponseMeta');
+const { saveFeedback } = require('./chatbotFeedbackService');
 const { describePersonBrief, capitalizeFirst, formatDateVN, dateParts } = require('./chatbotFormat');
 const { plainTermToKey, hasVietnameseDiacritics } = require('./kinshipTermService');
 const { findPronoun, rewritePronoun, rewriteEllipsis, selectCandidate, findFocusText } = require('./conversationFlowService');
@@ -23,10 +26,10 @@ const { findPronoun, rewritePronoun, rewriteEllipsis, selectCandidate, findFocus
 const normalizeName = (value) => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/gi, 'd').toLowerCase().trim();
 
 // Lưu câu trả lời gửi thẳng qua res (hỏi lại, không tìm thấy) để lịch sử và trí nhớ không bị đứt.
-function storeTurnAnswer(res, body) {
+async function storeTurnAnswer(res, body) {
     const turn = res?.locals?.chatbotTurn;
-    if (!turn) return;
-    storeChatbotMessage({
+    if (!turn) return null;
+    return storeChatbotMessage({
         conversationId: turn.conversationId,
         clanId: turn.clanId,
         accountId: turn.accountId,
@@ -35,8 +38,8 @@ function storeTurnAnswer(res, body) {
         message: body.answer,
         intent: body.intent || null,
         confidence: body.confidence ?? null,
-        metadata: { ...body, turn: { question: turn.message, pending: turn.pending || null } },
-    }).catch(() => {});
+        metadata: { ...body, turn: { question: turn.message, rawQuestion: turn.rawMessage || turn.message, pending: turn.pending || null } },
+    }).catch(() => null);
 }
 
 // Gợi ý câu hỏi tiếp theo về người vừa được hỏi tới.
@@ -199,7 +202,7 @@ async function canAccessClan(req, clanId, currentMemberId) {
 }
 
 async function storeChatbotMessage(payload) {
-    if (!(await memberSearch.tableExists('chatbot_messages'))) return;
+    if (!(await memberSearch.tableExists('chatbot_messages'))) return null;
     const columns = await getTableColumns('chatbot_messages');
     const insertColumns = [];
     const values = [];
@@ -226,15 +229,16 @@ async function storeChatbotMessage(payload) {
     add('confidence', payload.confidence ?? null);
     add('metadata', payload.metadata ? JSON.stringify(payload.metadata) : null);
 
-    if (!insertColumns.includes('message')) return;
-    if (columns.has('conversation_id') && !conversationId) return;
-    if (columns.has('account_id') && !payload.accountId) return;
+    if (!insertColumns.includes('message')) return null;
+    if (columns.has('conversation_id') && !conversationId) return null;
+    if (columns.has('account_id') && !payload.accountId) return null;
 
-    await db.query(
+    const [result] = await db.query(
         `INSERT INTO chatbot_messages (${insertColumns.join(', ')})
          VALUES (${insertColumns.map(() => '?').join(', ')})`,
         values
     );
+    return result?.insertId || null;
 }
 
 const tableColumnsCache = new Map();
@@ -462,19 +466,21 @@ async function ambiguityResponse(res, intent, candidates, subject = null, clanId
         })),
         pendingClarification: clarification.pendingClarification,
     };
-    storeTurnAnswer(res, body);
+    body.personIds = withTreeFields(body).personIds;
+    body.messageId = await storeTurnAnswer(res, body);
     return res.status(200).json(body);
 }
 
-function notFoundResponse(res, intent, name) {
+async function notFoundResponse(res, intent, name) {
     const body = {
         success: false,
         code: 'PERSON_NOT_FOUND',
         intent,
         answer: `Theo dữ liệu gia phả hiện tại, tôi chưa tìm thấy thành viên khớp với "${Array.isArray(name) ? name[0] : name}".`,
         confidence: 0,
+        personIds: [],
     };
-    storeTurnAnswer(res, body);
+    body.messageId = await storeTurnAnswer(res, body);
     return res.status(200).json(body);
 }
 
@@ -503,14 +509,15 @@ async function resolveNamedPerson(res, clanId, intent, names, currentMemberId = 
             answer: `Theo dữ liệu gia phả hiện tại, tôi chưa tìm thấy ${kinship.label} của bạn.`,
             confidence: 0,
         };
-        storeTurnAnswer(res, body);
+        body.personIds = [];
+        body.messageId = await storeTurnAnswer(res, body);
         res.status(200).json(body);
         return null;
     }
 
     const result = await memberSearch.resolvePerson({ clanId, names });
     if (result.status === 'not_found') {
-        notFoundResponse(res, intent, names);
+        await notFoundResponse(res, intent, names);
         return null;
     }
     if (result.status === 'ambiguous') {
@@ -1741,6 +1748,13 @@ const withViewer = (handler) => (req, res) => relationshipEngine.runWithViewer(
     () => handler(req, res)
 );
 
+// POST /api/chatbot/ask  (trả JSON, các trường chính của câu trả lời):
+//   success, intent, answer, confidence, planner, suggestions[], needsClarification? + candidates[]
+//   messageId     id tin nhắn trả lời đã lưu (null nếu không lưu được) -> dùng cho POST /messages/:id/feedback;
+//                 lịch sử (GET /history) trả cùng id ở `id`
+//   personIds     mọi id người được nhắc trong câu trả lời, người trọng tâm đứng đầu (cho nút "Xem trên cây"); [] nếu không có
+//   relationshipPath  (câu hỏi quan hệ) mảng bước quan hệ, [] khi không có một đường duy nhất; kèm pathNodes, relationshipLabel,
+//                 pathVisualizer, evidence, sourcePerson/targetPerson khi có
 exports.ask = withViewer(async (req, res) => {
     let responsePayload = null;
     const startedAt = Date.now();
@@ -1750,7 +1764,8 @@ exports.ask = withViewer(async (req, res) => {
         const body = req.body || {};
         const rawMessage = sanitizeMessage(body.message || '');
         // Câu dùng để trả lời; có thể được viết lại (đại từ, câu lược, chọn người khi hỏi lại).
-        let message = rawMessage;
+        // Đã bỏ lời xã giao và mở rộng viết tắt (ck/vk, a/c/e, bn...); rawMessage giữ nguyên để lưu lịch sử.
+        let message = normalizeTyping(rawMessage) || rawMessage;
         const clanId = toPositiveId(body.clanId || body.clan_id || req.user?.clan_id);
         const currentMemberId = toPositiveId(body.currentMemberId || body.current_member_id || req.user?.person_id);
         const accountId = toPositiveId(req.user?.id || req.user?.account_id);
@@ -1786,7 +1801,7 @@ exports.ask = withViewer(async (req, res) => {
             message,
         });
         if (!res.locals) res.locals = {};
-        res.locals.chatbotTurn = { memorySessionId, conversationId, clanId, accountId, currentMemberId, message, forced: null, pending: null };
+        res.locals.chatbotTurn = { memorySessionId, conversationId, clanId, accountId, currentMemberId, message, rawMessage, forced: null, pending: null };
         let memory = conversationMemory || await restoreMemoryFromHistory(conversationId, memorySessionId).catch(() => null);
 
         // Đang hỏi lại vì trùng tên: nhận lựa chọn (nút bấm hoặc "1", "người thứ hai", "sinh 1965").
@@ -1844,7 +1859,8 @@ exports.ask = withViewer(async (req, res) => {
                 confidence: responsePayload.confidence,
                 metadata: { planner: responsePayload.planner },
             });
-            await storeChatbotMessage({
+            responsePayload = withTreeFields(responsePayload, { currentMemberId });
+            responsePayload.messageId = await storeChatbotMessage({
                 conversationId,
                 clanId,
                 accountId,
@@ -2016,6 +2032,7 @@ exports.ask = withViewer(async (req, res) => {
             },
         });
 
+        responsePayload = withTreeFields(responsePayload, { currentMemberId });
         const memoryPatch = memoryPatchFromResponse(responsePayload);
         if (memoryPatch) {
             updateConversationMemory(memorySessionId, {
@@ -2036,7 +2053,7 @@ exports.ask = withViewer(async (req, res) => {
         const answerPeople = (responsePayload.people || []).filter((item) => item?.id).slice(0, 10).map((item) => ({ id: Number(item.id), name: item.name || null }));
         const entityNames = Array.isArray(parsed.entities) ? parsed.entities : [].concat(parsed.entities?.targetName || []);
         const focusText = findFocusText(message, [subjectPerson?.name, ...entityNames, parsed.entities?.kinshipTerm]);
-        const turnInfo = { question: message, focusText, subject, answerPeople, pending: res.locals.chatbotTurn.pending || null };
+        const turnInfo = { question: message, rawQuestion: rawMessage, focusText, subject, answerPeople, pending: res.locals.chatbotTurn.pending || null };
         updateConversationMemory(memorySessionId, {
             lastQuestion: message,
             lastFocusText: focusText,
@@ -2048,7 +2065,9 @@ exports.ask = withViewer(async (req, res) => {
             responsePayload.suggestions = followUpSuggestions(subjectPerson, suggestionGraph, message);
         }
 
-        await storeChatbotMessage({
+        // Cờ để thống kê câu bot chưa hiểu (intent 'unknown' hoặc phải nhờ LLM lập kế hoạch): xem scripts/chatbot-unknown-report.js.
+        const fallback = fallbackFlag({ intent: responsePayload.intent, plannerSource: planner?.source });
+        responsePayload.messageId = await storeChatbotMessage({
             conversationId,
             clanId,
             accountId,
@@ -2057,7 +2076,7 @@ exports.ask = withViewer(async (req, res) => {
             message: responsePayload.answer,
             intent: responsePayload.intent,
             confidence: responsePayload.confidence,
-            metadata: { ...responsePayload, turn: turnInfo },
+            metadata: { ...responsePayload, turn: turnInfo, ...(fallback ? { fallback } : {}) },
         });
 
         if (conversationId) {
@@ -2084,6 +2103,18 @@ exports.ask = withViewer(async (req, res) => {
         });
     }
 });
+
+// POST /api/chatbot/messages/:id/feedback  body { rating: 1 | -1, comment? }
+exports.feedback = async (req, res) => {
+    try {
+        const accountId = toPositiveId(req.user?.id || req.user?.account_id);
+        const result = await saveFeedback({ messageId: req.params.id, accountId, body: req.body });
+        return res.status(result.status).json(result.body);
+    } catch (error) {
+        console.error('chatbot feedback error:', error);
+        return res.status(500).json({ success: false, message: 'Không thể lưu đánh giá' });
+    }
+};
 
 exports.history = async (req, res) => {
     try {

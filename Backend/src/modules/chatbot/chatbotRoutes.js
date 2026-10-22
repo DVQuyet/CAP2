@@ -11,6 +11,7 @@ router.post('/ask', chatbotController.ask);
 router.post('/message', chatbotController.ask);
 router.post('/voice', chatbotController.voice);
 router.get('/history', chatbotController.history);
+router.post('/messages/:id/feedback', chatbotController.feedback);
 router.get('/suggestions', chatbotController.suggestions);
 router.get('/relationship/:id', chatbotController.getRelationshipById);
 router.get('/path', chatbotController.getPath);

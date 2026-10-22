@@ -168,7 +168,7 @@ function parseCallTermQuestion(message) {
 
 function parseRelationshipToCurrentUser(message) {
     const text = stripQuestionNoise(message);
-    const match = text.match(/^(.+?)\s+là\s+gì\s+của\s+(tôi|mình|con|em|cháu)\??$/i);
+    const match = text.match(/^(.+?)\s+(?:là|la)\s+(?:gì|gi)\s+(?:của|cua)\s+(tôi|toi|mình|minh|con|em|cháu|chau)\??$/i);
     if (!match) return null;
     return {
         intent: 'find_relationship',
