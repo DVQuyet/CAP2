@@ -87,12 +87,4 @@ Hai luồng đầu dùng helper mới `getAccountAccess` (export từ `authMiddl
 
 ## Chưa làm
 
-- Chia nhỏ `FamilyTreeEditor.jsx` (4.1k dòng), `ClanFundPage.jsx`, `member.controller.js` (cần test giao diện/tích hợp trước).
-- Validation đầu vào bằng zod/joi; test tích hợp có MySQL.
-- Chuỗi tiếng Việt cứng trong JSX (ví dụ `ArchivedMembersDialog`, `GeneralPosts`, `TimeCapsulePage`) chưa đưa vào i18n.
-- Nút "tải thêm" cho danh sách kỷ niệm và thông báo (bảng tin bài viết đã có; kỷ niệm/thông báo vẫn bị trần 200/50 bản ghi mới nhất).
-- Chuyển media từ MySQL LONGBLOB sang object storage (cần chọn dịch vụ và cấp key); bỏ `?token=` trong URL media đi kèm mục này.
-- Tải cây theo nhánh/độ sâu (cần đổi API và editor; nên đo bằng `scripts/load-test-family-tree.js` trước).
-- Anh chị em ruột trong gia đình trên 300 con vẫn chưa ghép cạnh (TODO còn trong `relationshipEngine.js`).
-- Giai đoạn 5: GEDCOM, hoàn tác thay đổi cây, báo cáo PDF, đối soát quỹ qua SePay, web push.
-- Đổi role/khóa tài khoản chỉ xóa cache trên instance hiện tại; instance khác chậm tối đa 30 giây (`AUTH_ACCOUNT_CACHE_TTL_MS`).
+Đã chuyển sang `docs/VIEC_CHUA_LAM.md` (danh sách duy nhất, cập nhật 22/10/2026).
