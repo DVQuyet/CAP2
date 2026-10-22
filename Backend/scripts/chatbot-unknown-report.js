@@ -11,15 +11,27 @@ const stripDiacritics = (value) => String(value || '')
     .replace(/đ/gi, 'd');
 
 // Chuẩn hóa để gom các câu gần giống nhau: bỏ dấu, bỏ dấu câu, bỏ lời xã giao đầu/cuối câu.
+// Họ lót hay đứng trước tên người: "Văn A", "Thị Nha" -> chữ cuối là tên, không phải từ đệm.
+const NAME_PARTICLES = new Set(['van', 'thi', 'dinh', 'huu', 'quoc', 'ngoc', 'y']);
+
 function normalizeQuestion(text) {
-    return stripDiacritics(text)
+    // Kiểm tra viết hoa TRƯỚC khi hạ chữ thường: "Nguyễn Văn A", "Đinh Thị Nha" là tên người.
+    const original = String(text || '').replace(/[?.!\s]+$/u, '');
+    const tailTokens = original.split(/\s+/u);
+    const lastOriginal = tailTokens[tailTokens.length - 1] || '';
+    const prevOriginal = tailTokens[tailTokens.length - 2] || '';
+    const tailLooksLikeName = tailTokens.length >= 2
+        && (/^\p{Lu}/u.test(lastOriginal) || /^\p{Lu}/u.test(prevOriginal)
+            || NAME_PARTICLES.has(stripDiacritics(prevOriginal).toLowerCase()));
+    const normalized = stripDiacritics(text)
         .toLowerCase()
         .replace(/[^a-z0-9\s]/g, ' ')
         .replace(/\s+/g, ' ')
         .trim()
-        .replace(/^(cho (minh|toi|em|con|chau|tui) hoi|xin hoi|minh hoi|toi hoi|hoi)\s+/, '')
-        .replace(/\s+(a|ah|ạ|nhe|nha|di|vay|the)$/, '')
+        .replace(/^(cho (minh|toi|em|con|chau|tui) hoi|xin hoi|minh hoi|toi hoi)\s+/, '')
         .trim();
+    // Từ đệm cuối câu ("nhe", "nha"...) chỉ bỏ khi cuối câu không giống tên người.
+    return tailLooksLikeName ? normalized : normalized.replace(/\s+(a|ah|nhe|nha|di|vay|the)$/, '').trim();
 }
 
 function parseMetadata(value) {
@@ -79,7 +91,7 @@ async function main() {
          FROM chatbot_messages
          WHERE ${assistantFilter}
            AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
-           AND (intent = 'unknown' OR JSON_EXTRACT(metadata, '$.fallback') IS NOT NULL)`,
+           AND (intent = 'unknown' OR metadata LIKE '%"fallback"%')`,
         [days]
     );
     const groups = groupUnknownQuestions(rows, { top });

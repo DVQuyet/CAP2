@@ -49,7 +49,7 @@ function validateFeedbackBody(body = {}) {
 }
 
 // Chỉ chủ tài khoản của tin nhắn trả lời (role assistant) mới được đánh giá.
-async function saveFeedback({ messageId, accountId, body }) {
+async function saveFeedback({ messageId, accountId, body, canAccessClan = null }) {
     const id = Number(messageId);
     if (!Number.isInteger(id) || id <= 0) return { status: 400, body: { success: false, message: 'id tin nhắn không hợp lệ' } };
     const checked = validateFeedbackBody(body);
@@ -61,8 +61,18 @@ async function saveFeedback({ messageId, accountId, body }) {
     if (!message) return { status: 404, body: { success: false, message: 'Không tìm thấy tin nhắn' } };
     const role = message.role || (message.sender === 'bot' ? 'assistant' : message.sender);
     if (role !== 'assistant') return { status: 400, body: { success: false, message: 'Chỉ đánh giá được câu trả lời của trợ lý' } };
-    if (Number(message.account_id) !== Number(accountId)) {
+    // Chủ tin nhắn: theo cột account_id; bảng cũ không có cột này thì theo chủ hội thoại.
+    let ownerId = Object.prototype.hasOwnProperty.call(message, 'account_id') ? message.account_id : undefined;
+    if ((ownerId === undefined || ownerId === null) && message.conversation_id) {
+        const [owners] = await db.query('SELECT account_id FROM conversations WHERE id = ? LIMIT 1', [message.conversation_id]);
+        ownerId = owners?.[0]?.account_id;
+    }
+    if (!ownerId || Number(ownerId) !== Number(accountId)) {
         return { status: 403, body: { success: false, message: 'Bạn không có quyền đánh giá tin nhắn này' } };
+    }
+    // Người đã rời/bị loại khỏi dòng họ không được đánh giá nữa.
+    if (message.clan_id && typeof canAccessClan === 'function' && !(await canAccessClan(message.clan_id))) {
+        return { status: 403, body: { success: false, message: 'Bạn không có quyền truy cập dòng họ này' } };
     }
 
     await db.query(

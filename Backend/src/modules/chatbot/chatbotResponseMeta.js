@@ -36,8 +36,9 @@ function collectPersonIds(payload, { currentMemberId = null } = {}) {
     if (source && source !== me) add(payload.sourcePerson);
     (payload.pathNodes || []).forEach(add);
     (payload.pathPeople || []).forEach(add);
-    add(payload.sourcePerson);
     (payload.candidates || []).forEach(add);
+    // Người hỏi chỉ được giữ khi không còn ai khác để hiển thị.
+    if (!ids.length && source) add(payload.sourcePerson);
     return ids.slice(0, MAX_PERSON_IDS);
 }
 

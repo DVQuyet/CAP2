@@ -467,7 +467,7 @@ async function ambiguityResponse(res, intent, candidates, subject = null, clanId
         })),
         pendingClarification: clarification.pendingClarification,
     };
-    body.personIds = withTreeFields(body).personIds;
+    Object.assign(body, withTreeFields(body));
     body.messageId = await storeTurnAnswer(res, body);
     return res.status(200).json(body);
 }
@@ -2109,7 +2109,14 @@ exports.ask = withViewer(async (req, res) => {
 exports.feedback = async (req, res) => {
     try {
         const accountId = toPositiveId(req.user?.id || req.user?.account_id);
-        const result = await saveFeedback({ messageId: req.params.id, accountId, body: req.body });
+        const currentMemberId = toPositiveId(req.query?.currentMemberId || req.query?.current_member_id || req.user?.person_id);
+        const result = await saveFeedback({
+            messageId: req.params.id,
+            accountId,
+            body: req.body,
+            // Kiểm tra quyền hiện tại với dòng họ (cùng logic với ask/history).
+            canAccessClan: (clanId) => canAccessClan(req, clanId, currentMemberId),
+        });
         return res.status(result.status).json(result.body);
     } catch (error) {
         console.error('chatbot feedback error:', error);
@@ -2320,3 +2327,6 @@ exports.voice = async (req, res) => {
     req.body = { ...req.body, message: transcript };
     return exports.ask(req, res);
 };
+
+// Chỉ để test.
+exports.__test = { ambiguityResponse };

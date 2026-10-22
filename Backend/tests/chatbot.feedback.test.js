@@ -19,6 +19,7 @@ const messages = [
 const mockMessages = () => createMockDb(async (sql, params) => {
     if (/^SELECT \* FROM chatbot_messages WHERE id = \?/.test(sql)) return [messages.filter((row) => row.id === Number(params[0]))];
     if (/^INSERT INTO chatbot_feedback/.test(sql)) return [{ affectedRows: 1 }];
+    if (/FROM account_clans/.test(sql)) return [[{ 1: 1 }]];
     return [[]];
 });
 
