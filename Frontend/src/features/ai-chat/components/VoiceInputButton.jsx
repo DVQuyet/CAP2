@@ -1,6 +1,8 @@
 import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 export default function VoiceInputButton({ disabled, onTranscript }) {
+  const { t } = useTranslation();
   const [listening, setListening] = useState(false);
   const recognitionRef = useRef(null);
 
@@ -8,7 +10,7 @@ export default function VoiceInputButton({ disabled, onTranscript }) {
     if (disabled) return;
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      onTranscript?.("", "Trình duyệt chưa hỗ trợ nhận diện giọng nói.");
+      onTranscript?.("", t("aiChat.voiceUnsupported"));
       return;
     }
 
@@ -25,7 +27,7 @@ export default function VoiceInputButton({ disabled, onTranscript }) {
     recognition.onend = () => setListening(false);
     recognition.onerror = () => {
       setListening(false);
-      onTranscript?.("", "Không nghe rõ giọng nói. Vui lòng thử lại.");
+      onTranscript?.("", t("aiChat.voiceError"));
     };
     recognition.onresult = (event) => {
       const transcript = event.results?.[0]?.[0]?.transcript || "";
@@ -41,10 +43,11 @@ export default function VoiceInputButton({ disabled, onTranscript }) {
       className={`ai-icon-btn ${listening ? "active" : ""}`}
       onClick={toggleListening}
       disabled={disabled}
-      title="Nhập bằng giọng nói"
-      aria-label="Nhập bằng giọng nói"
+      title={t("aiChat.voiceInput")}
+      aria-label={t("aiChat.voiceInput")}
+      aria-pressed={listening}
     >
-      <span className="material-symbols-outlined">{listening ? "mic" : "mic_none"}</span>
+      <span className="material-symbols-outlined" aria-hidden="true">{listening ? "mic" : "mic_none"}</span>
     </button>
   );
 }

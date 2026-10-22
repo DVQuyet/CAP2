@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { askChatbot, getChatbotHistory, getChatbotSuggestions } from "../../../api/chatbotService";
 import MessageBubble from "./MessageBubble";
 import PersonContextSelector from "./PersonContextSelector";
@@ -27,6 +28,8 @@ export default function ChatWindow({
   onBindPerson,
   onClose,
 }) {
+  const { t } = useTranslation();
+  const inputRef = useRef(null);
   const [messages, setMessages] = useState([]);
   const [suggestions, setSuggestions] = useState([]);
   const [input, setInput] = useState("");
@@ -94,7 +97,7 @@ export default function ChatWindow({
       if (nextSuggestions.length) setSuggestions(nextSuggestions);
       setMessages((prev) => [
         ...prev,
-        makeLocalMessage("assistant", data.answer || "Tôi chưa có câu trả lời.", {
+        makeLocalMessage("assistant", data.answer || t("aiChat.noAnswer"), {
           metadata: data,
           candidates: data.candidates || [],
         }),
@@ -103,7 +106,7 @@ export default function ChatWindow({
       const data = error?.data || {};
       setMessages((prev) => [
         ...prev,
-        makeLocalMessage("assistant", data.answer || error?.message || "Không thể xử lý câu hỏi.", {
+        makeLocalMessage("assistant", data.answer || error?.message || t("aiChat.errorFallback"), {
           metadata: data,
           candidates: data.candidates || [],
           // Lỗi mạng/máy chủ (không phải câu trả lời của trợ lý): cho thử lại đúng câu vừa hỏi.
@@ -118,8 +121,8 @@ export default function ChatWindow({
 
   // Chọn một người khi trợ lý hỏi lại (trùng tên): gửi lựa chọn để trợ lý trả lời đúng câu hỏi ban đầu.
   const handleCandidatePick = (candidate) => {
-    const label = candidate.description || `${candidate.name}${candidate.generation ? ` (đời ${candidate.generation})` : ""}`;
-    sendMessage(`Chọn: ${label}`, { clarificationChoice: candidate.id });
+    const label = candidate.description || `${candidate.name}${candidate.generation ? t("aiChat.generationParen", { n: candidate.generation }) : ""}`;
+    sendMessage(t("aiChat.pickLabel", { label }),{ clarificationChoice: candidate.id });
   };
 
   const handleTranscript = (transcript, errorMessage) => {
@@ -133,24 +136,42 @@ export default function ChatWindow({
     }
   };
 
+  // Mở cửa sổ: đưa con trỏ vào ô nhập ngay khi hỏi được.
+  useEffect(() => {
+    if (ready && !loading) inputRef.current?.focus();
+  }, [ready, loading]);
+
+  const exampleQuestions = [t("aiChat.example1"), t("aiChat.example2"), t("aiChat.example3")];
+  const showWelcome = ready && !contextLoading && !needsPersonSelection && messages.length === 0 && !loading;
+
+  const handleKeyDown = (event) => {
+    if (event.key === "Escape") {
+      event.stopPropagation();
+      onClose?.();
+    }
+  };
+
   return (
-    <section className="ai-chat-window" aria-label="AI Family Assistant">
+    <section className="ai-chat-window" role="dialog" aria-label={t("aiChat.windowLabel")} onKeyDown={handleKeyDown}>
       <header className="ai-chat-header">
-        <div>
-          <strong>AI Family Assistant</strong>
-          <small>Trả lời dựa trên dữ liệu gia phả</small>
+        <span className="ai-chat-avatar" aria-hidden="true">
+          <span className="material-symbols-outlined">account_tree</span>
+        </span>
+        <div className="ai-chat-heading">
+          <strong>{t("aiChat.title")}</strong>
+          <small>{t("aiChat.subtitle")}</small>
         </div>
-        <button type="button" className="ai-icon-btn" onClick={onClose} aria-label="Đóng">
-          <span className="material-symbols-outlined">close</span>
+        <button type="button" className="ai-icon-btn" onClick={onClose} aria-label={t("aiChat.close")} title={t("aiChat.close")}>
+          <span className="material-symbols-outlined" aria-hidden="true">close</span>
         </button>
       </header>
 
-      <div className="ai-chat-messages" ref={listRef}>
+      <div className="ai-chat-messages" ref={listRef} role="log" aria-live="polite" aria-relevant="additions">
         {contextLoading ? (
-          <div className="ai-empty-state">Đang xác định dòng họ và thành viên hiện tại...</div>
+          <div className="ai-empty-state" role="status">{t("aiChat.loadingContext")}</div>
         ) : null}
         {!contextLoading && contextError ? (
-          <div className="ai-empty-state">{contextError}</div>
+          <div className="ai-empty-state is-error" role="alert">{contextError}</div>
         ) : null}
         {!contextLoading && needsPersonSelection ? (
           <PersonContextSelector
@@ -161,7 +182,24 @@ export default function ChatWindow({
           />
         ) : null}
         {!contextLoading && !ready ? (
-          <div className="ai-empty-state">Chưa xác định được dòng họ hoặc thành viên hiện tại.</div>
+          <div className="ai-empty-state">{t("aiChat.contextMissing")}</div>
+        ) : null}
+        {showWelcome ? (
+          <div className="ai-welcome">
+            <span className="ai-welcome-icon" aria-hidden="true">
+              <span className="material-symbols-outlined">forum</span>
+            </span>
+            <h3>{t("aiChat.welcomeTitle")}</h3>
+            <p>{t("aiChat.welcomeBody")}</p>
+            <div className="ai-welcome-examples">
+              {exampleQuestions.map((question) => (
+                <button key={question} type="button" onClick={() => sendMessage(question)}>
+                  <span className="material-symbols-outlined" aria-hidden="true">chat_bubble</span>
+                  <span>{question}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         ) : null}
         {renderedMessages.map((message) => (
           <MessageBubble
@@ -174,7 +212,7 @@ export default function ChatWindow({
         {loading ? <TypingIndicator /> : null}
       </div>
 
-      <SuggestionChips suggestions={suggestions} onPick={sendMessage} />
+      <SuggestionChips suggestions={suggestions} onPick={sendMessage} disabled={!ready || loading} />
 
       <form
         className="ai-chat-input"
@@ -185,13 +223,17 @@ export default function ChatWindow({
       >
         <VoiceInputButton disabled={!ready || loading} onTranscript={handleTranscript} />
         <input
+          ref={inputRef}
           value={input}
           onChange={(event) => setInput(event.target.value)}
-          placeholder="Hỏi về quan hệ gia đình..."
+          placeholder={t("aiChat.placeholder")}
+          aria-label={t("aiChat.placeholder")}
+          autoComplete="off"
+          enterKeyHint="send"
           disabled={!ready || loading}
         />
-        <button type="submit" className="ai-send-btn" disabled={!input.trim() || !ready || loading} aria-label="Gửi">
-          <span className="material-symbols-outlined">send</span>
+        <button type="submit" className="ai-send-btn" disabled={!input.trim() || !ready || loading} aria-label={t("aiChat.send")} title={t("aiChat.send")}>
+          <span className="material-symbols-outlined" aria-hidden="true">send</span>
         </button>
       </form>
     </section>

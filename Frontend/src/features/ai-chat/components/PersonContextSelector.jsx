@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 export default function PersonContextSelector({ people = [], loading, error, onSelect }) {
+  const { t } = useTranslation();
   const [query, setQuery] = useState("");
   const [savingId, setSavingId] = useState(null);
 
@@ -24,23 +26,24 @@ export default function PersonContextSelector({ people = [], loading, error, onS
   return (
     <div className="ai-context-selector">
       <div className="ai-context-title">
-        <span className="material-symbols-outlined">person_search</span>
+        <span className="material-symbols-outlined" aria-hidden="true">person_search</span>
         <div>
-          <strong>Bạn là ai trong gia phả?</strong>
-          <small>Chọn đúng thành viên để trợ lý tính quan hệ từ dữ liệu thật.</small>
+          <strong>{t("aiChat.selectorTitle")}</strong>
+          <small>{t("aiChat.selectorHint")}</small>
         </div>
       </div>
       {error ? <div className="ai-context-error">{error}</div> : null}
       <input
         value={query}
         onChange={(event) => setQuery(event.target.value)}
-        placeholder="Tìm tên của bạn..."
+        placeholder={t("aiChat.selectorSearch")}
+        aria-label={t("aiChat.selectorSearch")}
         className="ai-context-search"
       />
       <div className="ai-context-list">
-        {loading ? <div className="ai-context-muted">Đang tải danh sách thành viên...</div> : null}
+        {loading ? <div className="ai-context-muted">{t("aiChat.selectorLoading")}</div> : null}
         {!loading && !filteredPeople.length ? (
-          <div className="ai-context-muted">Chưa tìm thấy thành viên phù hợp.</div>
+          <div className="ai-context-muted">{t("aiChat.selectorEmpty")}</div>
         ) : null}
         {filteredPeople.map((person) => (
           <button
@@ -51,7 +54,7 @@ export default function PersonContextSelector({ people = [], loading, error, onS
             disabled={savingId === person.id}
           >
             <span>{person.name || person.display_name}</span>
-            <small>{person.generation ? `Đời ${person.generation}` : "Chưa rõ đời"}</small>
+            <small>{person.generation ? t("aiChat.generation", { n: person.generation }) : t("aiChat.generationUnknown")}</small>
           </button>
         ))}
       </div>

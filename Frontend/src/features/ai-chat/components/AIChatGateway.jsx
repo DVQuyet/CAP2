@@ -1,10 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { getStoredUser } from "../../../shared/utils/auth";
 import { getMeContext, getMeContextPeople, setCurrentPerson } from "../../../api/chatbotService";
 import ChatWindow from "./ChatWindow";
 import "./AIChat.css";
 
 const AIChatGateway = () => {
+  const { t } = useTranslation();
+  const launcherRef = useRef(null);
+  const wasOpenRef = useRef(false);
   const [open, setOpen] = useState(false);
   const [context, setContext] = useState(null);
   const [contextLoading, setContextLoading] = useState(false);
@@ -41,7 +45,7 @@ const AIChatGateway = () => {
         }
       })
       .catch((error) => {
-        if (!cancelled) setContextError(error?.message || "Không thể xác định ngữ cảnh tài khoản.");
+        if (!cancelled) setContextError(error?.message || t("aiChat.contextError"));
       })
       .finally(() => {
         if (!cancelled) setContextLoading(false);
@@ -49,7 +53,13 @@ const AIChatGateway = () => {
     return () => {
       cancelled = true;
     };
-  }, [open, user.account_id, user.id]);
+  }, [open, user.account_id, user.id, t]);
+
+  // Đóng cửa sổ (Esc / nút đóng): trả focus về nút mở.
+  useEffect(() => {
+    if (wasOpenRef.current && !open) launcherRef.current?.focus();
+    wasOpenRef.current = open;
+  }, [open]);
 
   const handleBindPerson = async (person) => {
     if (!person?.id || !context?.clanId) return;
@@ -68,7 +78,7 @@ const AIChatGateway = () => {
   };
 
   return (
-    <div className="ai-chat-widget">
+    <div className={`ai-chat-widget${open ? " is-open" : ""}`}>
       {open ? (
         <ChatWindow
           context={context}
@@ -83,11 +93,13 @@ const AIChatGateway = () => {
       <button
         type="button"
         className="ai-chat-btn"
+        ref={launcherRef}
         onClick={() => setOpen((value) => !value)}
-        aria-label={open ? "Đóng trợ lý gia phả" : "Mở trợ lý gia phả"}
-        title={open ? "Đóng trợ lý gia phả" : "Mở trợ lý gia phả"}
+        aria-label={open ? t("aiChat.launcherClose") : t("aiChat.launcherOpen")}
+        aria-expanded={open}
+        title={open ? t("aiChat.launcherClose") : t("aiChat.launcherOpen")}
       >
-        <span className="material-symbols-outlined">{open ? "close" : "psychology"}</span>
+        <span className="material-symbols-outlined" aria-hidden="true">{open ? "close" : "psychology"}</span>
       </button>
     </div>
   );
