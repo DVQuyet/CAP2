@@ -136,9 +136,12 @@ export const getMemberTasks = async () =>
     "Không thể tải công việc được giao",
   );
 
-export const getMemberEvents = async () =>
+export const getMemberEvents = async (params = {}) =>
   requestJson(
-    "/events",
+    `/events${params.limit || params.beforeId ? `?${new URLSearchParams({
+      ...(params.limit ? { limit: String(params.limit) } : {}),
+      ...(params.beforeId ? { before_id: String(params.beforeId) } : {}),
+    })}` : ""}`,
     {
       headers: getAuthHeaders(),
     },

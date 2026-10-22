@@ -496,9 +496,10 @@ recognition.onerror = (event) => {
       }
 
       if (isMember) {
-        const [taskData, eventData] = await Promise.all([getMemberTasks(), getMemberEvents()]);
+        const [taskData, eventData] = await Promise.all([getMemberTasks(), getMemberEvents({ limit: EVENTS_PAGE_SIZE })]);
         setTasks(asArray(taskData.tasks));
         setEvents(asArray(eventData.events));
+        setEventsNextBeforeId(nextCursorOf(eventData));
         setMembers([]);
         setClan(null);
         return;
@@ -548,11 +549,13 @@ recognition.onerror = (event) => {
     if (!eventsNextBeforeId || loadingMoreEvents) return;
     setLoadingMoreEvents(true);
     try {
-      const eventData = await getManagerEventsAPI({
-        clan_id: isAdmin && clanId ? clanId : undefined,
-        limit: EVENTS_PAGE_SIZE,
-        beforeId: eventsNextBeforeId,
-      });
+      const eventData = isMember
+        ? await getMemberEvents({ limit: EVENTS_PAGE_SIZE, beforeId: eventsNextBeforeId })
+        : await getManagerEventsAPI({
+          clan_id: isAdmin && clanId ? clanId : undefined,
+          limit: EVENTS_PAGE_SIZE,
+          beforeId: eventsNextBeforeId,
+        });
       setEvents((current) => appendPage(current, asArray(eventData.events)));
       setEventsNextBeforeId(nextCursorOf(eventData));
     } catch (err) {
@@ -560,7 +563,7 @@ recognition.onerror = (event) => {
     } finally {
       setLoadingMoreEvents(false);
     }
-  }, [eventsNextBeforeId, loadingMoreEvents, isAdmin, clanId, setError, t]);
+  }, [eventsNextBeforeId, loadingMoreEvents, isMember, isAdmin, clanId, setError, t]);
 
   useEffect(() => {
     loadData();
@@ -1280,6 +1283,17 @@ const openEvent = (eventId) => {
             })}
           </div>
         )}
+        {eventsNextBeforeId && (
+          <button
+            type="button"
+            className="task-load-more"
+            onClick={loadMoreEvents}
+            disabled={loadingMoreEvents}
+            style={{ margin: "12px auto", padding: "10px 20px", cursor: "pointer", display: "block" }}
+          >
+            {loadingMoreEvents ? t("common.loading") : t("eventsTasks.loadMoreEvents")}
+          </button>
+        )}
 
         {selectedEventId && (
           <div className="task-modal-backdrop" role="presentation" onMouseDown={() => setSelectedEventId("")}>
@@ -1652,11 +1666,11 @@ const openEvent = (eventId) => {
           <table className="premium-table">
             <thead>
               <tr>
-                <th>{t("eventsTasks.form.eventName") || "Tên sự kiện"}</th>
-                <th>{t("eventsTasks.form.time") || "Thời gian"}</th>
-                <th>{t("eventsTasks.form.description") || "Mô tả"}</th>
+                <th>{t("eventsTasks.form.eventName")}</th>
+                <th>{t("eventsTasks.form.time")}</th>
+                <th>{t("eventsTasks.form.description")}</th>
                 <th>{t("common.status.title")}</th>
-                <th>{t("eventsTasks.stats.totalTasksLabel") || "Công việc"}</th>
+                <th>{t("eventsTasks.stats.totalTasksLabel")}</th>
               </tr>
             </thead>
             <tbody>

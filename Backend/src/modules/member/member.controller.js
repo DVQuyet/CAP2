@@ -1703,7 +1703,16 @@ exports.getAssignedEvents = async (req, res) => {
       return res.json({ success: true, events: [] });
     }
 
-    const sql = `
+    // Phân trang keyset chỉ bật khi client gửi limit/before_id (thứ tự tăng dần: con trỏ là sự kiện cuối trang trước).
+    const paged = req.query.limit !== undefined || req.query.before_id !== undefined || req.query.beforeId !== undefined;
+    const { limit, beforeId } = parsePageParams(req.query, { defaultLimit: 30, maxLimit: 100 });
+    const params = [accountId, accountId, context.clan_id];
+    let cursorSql = "";
+    if (paged && beforeId) {
+      cursorSql = " AND (COALESCE(e.start_date, e.event_date), e.id) > (SELECT COALESCE(ec.start_date, ec.event_date), ec.id FROM events ec WHERE ec.id = ?)";
+      params.push(beforeId);
+    }
+    let sql = `
       SELECT
         e.id,
         e.clan_id,
@@ -1731,13 +1740,20 @@ exports.getAssignedEvents = async (req, res) => {
           WHERE mt.event_id = e.id AND mta.member_account_id = ? AND mta.status = 'completed'
         ) AS my_completed_task_count
       FROM events e
-      WHERE e.clan_id = ?
+      WHERE e.clan_id = ?${cursorSql}
       HAVING status IN ('ongoing', 'upcoming')
       ORDER BY COALESCE(e.start_date, e.event_date) ASC, e.id ASC
     `;
 
-    const [rows] = await db.query(sql, [accountId, accountId, context.clan_id]);
-    return res.json({ success: true, events: rows });
+    if (!paged) {
+      const [rows] = await db.query(sql, params);
+      return res.json({ success: true, events: rows });
+    }
+    sql += " LIMIT ?";
+    params.push(limit + 1);
+    const [fetched] = await db.query(sql, params);
+    const page = finishPage(fetched, limit);
+    return res.json({ success: true, events: page.items, has_more: page.has_more, next_before_id: page.next_before_id });
   } catch (error) {
     console.error("getAssignedEvents error:", error);
     return res.status(500).json({ success: false, message: "Lỗi lấy danh sách sự kiện" });

@@ -86,3 +86,30 @@ test('getManagerEvents trang đầu kèm counts toàn dòng họ, trang sau thì
     await manager.getManagerEvents({ user: { id: 1, role_id: 1 }, query: { limit: '10', before_id: '9' } }, res2);
     assert.strictEqual(res2.body.counts, undefined);
 });
+
+// Sự kiện được giao (member): phân trang keyset tăng dần, giữ hành vi cũ khi không gửi tham số.
+const memberEventsMock = (events) => createMockDb(async (sql) => {
+    if (/FROM events e/.test(sql)) return [events];
+    return [[{ account_id: 5, role_id: 3, clan_id: 7 }]];
+});
+
+test('getAssignedEvents không gửi limit/before_id thì không LIMIT và không có has_more', async () => {
+    const mock = memberEventsMock([{ id: 1 }, { id: 2 }]);
+    const res = mockRes();
+    await member.getAssignedEvents({ user: { id: 5 }, query: {} }, res);
+    assert.strictEqual(res.body.events.length, 2);
+    assert.strictEqual(res.body.has_more, undefined);
+    assert.doesNotMatch(mock.find(/FROM events e/)[0].sql, /LIMIT/);
+});
+
+test('getAssignedEvents phân trang keyset và trả has_more/next_before_id', async () => {
+    const mock = memberEventsMock([{ id: 11 }, { id: 12 }, { id: 13 }]);
+    const res = mockRes();
+    await member.getAssignedEvents({ user: { id: 5 }, query: { limit: '2', before_id: '10' } }, res);
+    assert.strictEqual(res.body.events.length, 2);
+    assert.strictEqual(res.body.has_more, true);
+    assert.strictEqual(res.body.next_before_id, 12);
+    const query = mock.find(/FROM events e/)[0];
+    assert.match(query.sql, /\(COALESCE\(e\.start_date, e\.event_date\), e\.id\) > \(SELECT/);
+    assert.deepStrictEqual(query.params, [5, 5, 7, 10, 3]);
+});
