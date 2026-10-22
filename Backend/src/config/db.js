@@ -10,6 +10,11 @@ const useSsl = String(process.env.DB_SSL || '').toLowerCase() === 'true';
 const rejectUnauthorized = String(process.env.DB_SSL_REJECT_UNAUTHORIZED || 'false').toLowerCase() !== 'false';
 const connectionLimit = Number(process.env.DB_CONNECTION_LIMIT || 10);
 
+// Lưới an toàn thứ hai: khi chạy test tuyệt đối không tạo pool tới host thật.
+if (process.env.NODE_ENV === 'test' && !['127.0.0.1', 'localhost', '::1'].includes(String(dbHost || '').trim())) {
+    throw new Error(`[db] NODE_ENV=test nhưng DB_HOST="${dbHost}" không phải localhost. Test phải preload tests/setup.env.js (dùng npm test).`);
+}
+
 const resolver = new dns.Resolver();
 resolver.setServers(
     (process.env.DB_DNS_SERVERS || '8.8.8.8,1.1.1.1')
@@ -46,6 +51,7 @@ const poolConfig = {
     database: process.env.DB_NAME,
     waitForConnections: true,
     connectionLimit,
+    connectTimeout: Number(process.env.DB_CONNECT_TIMEOUT || 10000),
     queueLimit: 0
 };
 
