@@ -8,6 +8,7 @@ import "../index.css";
 import "../app/App.css";
 import "../i18n/i18n";
 import { LanguageProvider } from "../i18n/LanguageContext";
+import ConfirmProvider from "../shared/components/ConfirmProvider";
 import FamilyTreeEditor from "../features/genealogy/components/FamilyTreeEditor.jsx";
 
 const params = new URLSearchParams(window.location.search);
@@ -60,6 +61,7 @@ const children = [
 ReactDOM.createRoot(document.getElementById("root")).render(
   <BrowserRouter>
     <LanguageProvider>
+      <ConfirmProvider>
       <div style={{ padding: 16, minHeight: "100vh", boxSizing: "border-box" }}>
         <FamilyTreeEditor
           clan={{ id: 1, clan_name: "Họ Nguyễn" }}
@@ -72,6 +74,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           onReload={() => {}}
         />
       </div>
+      </ConfirmProvider>
     </LanguageProvider>
   </BrowserRouter>
 );

@@ -314,7 +314,7 @@ export default function PostsPage() {
 
             {/* 🌟 Premium Glass Confirm Dialog */}
             {confirmDelete.show && (
-                <div className="premium-confirm-overlay">
+                <div className="premium-confirm-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) setConfirmDelete({ show: false, postId: null }); }}>
                     <div className="premium-confirm-modal">
                         <div className="modal-glass-effect"></div>
                         <div className="modal-warning-icon">

@@ -17,6 +17,7 @@ import {
   getPaymentStatus,
   cancelPendingPayment,
 } from "../../../api/paymentService";
+import { useConfirm } from "../../../shared/components/confirmContext.js";
 import "./BillingPage.css";
 
 function readJsonStorage(key) {
@@ -222,6 +223,7 @@ function toPlanForm(plan) {
 
 export default function BillingPage() {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const [clanId, setClanId] = useState(null);
   const [adminClans, setAdminClans] = useState([]);
   const [billing, setBilling] = useState(null);
@@ -488,14 +490,12 @@ const getStatusText = (status) =>
           return;
         }
 
-        const ok = window.confirm(
-          t("billingPayment.messages.replacePendingConfirm", {
+        const ok = await confirm({ message: t("billingPayment.messages.replacePendingConfirm", {
             pending: activePendingPayment.plan_name || activePendingPayment.plan_code || "",
             plan: getPlanNameText(plan),
             quantity: periodQuantity,
             unit: getPlanPeriodUnit(plan),
-          })
-        );
+          }) });
         if (!ok) {
           setSelectedPayment(activePendingPayment);
           return;
@@ -604,7 +604,7 @@ const getStatusText = (status) =>
     return;
   }
 
-  const ok = window.confirm(t("billingPayment.messages.cancelConfirm"));
+  const ok = await confirm({ message: t("billingPayment.messages.cancelConfirm"), tone: "danger" });
 
   if (!ok) {
     return;
@@ -1217,7 +1217,7 @@ const handlePaySelectedPayment = (payment) => {
                     type="button"
                     className="billing-primary-btn"
                     onClick={async () => {
-                      const ok = window.confirm(t("billingPayment.messages.upgradeTestConfirm", { id: clanId, name: getPlanNameText(plan) }));
+                      const ok = await confirm({ message: t("billingPayment.messages.upgradeTestConfirm", { id: clanId, name: getPlanNameText(plan) }) });
                       if (!ok) return;
                       try {
                         setMessage("");

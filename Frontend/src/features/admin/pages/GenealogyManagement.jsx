@@ -11,6 +11,7 @@ import FamilyTreeEditor from "../../genealogy/components/FamilyTreeEditor.jsx";
 import { onSocketEvent } from "../../../services/socket";
 import "./GenealogyManagement.css";
 import { notify } from "../../../shared/utils/toast";
+import { useConfirm } from "../../../shared/components/confirmContext.js";
 
 const emptyClanForm = {
     clan_name: "",
@@ -25,6 +26,7 @@ const emptyClanForm = {
 
 export default function GenealogyManagement() {
     const { t } = useTranslation();
+    const confirm = useConfirm();
     const [clans, setClans] = useState([]);
     const [selectedClanId, setSelectedClanId] = useState(null);
     const [treeData, setTreeData] = useState({ people: [], families: [], children: [] });
@@ -208,7 +210,7 @@ export default function GenealogyManagement() {
 
     const handleDeleteClan = async (clan) => {
         if (!clan?.id) return;
-        const ok = window.confirm(t("admin.genealogy.messages.deleteConfirm", { name: clan.clan_name }));
+        const ok = await confirm({ message: t("admin.genealogy.messages.deleteConfirm", { name: clan.clan_name }), tone: "danger" });
         if (!ok) return;
         try {
             await deleteAdminClan(clan.id);

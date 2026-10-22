@@ -203,7 +203,7 @@ export default function FamilyTreePage() {
     : t("tree.page.currentGenerationPlusMinus");
 
   const renderClanInfoModal = () => (
-    <div className="member-clan-modalOverlay" role="dialog" aria-modal="true">
+    <div className="member-clan-modalOverlay" role="dialog" aria-modal="true" onMouseDown={(event) => { if (event.target === event.currentTarget) setIsClanInfoOpen(false); }}>
       <div className="member-clan-modal">
         <div className="member-clan-modalHead">
           <div>

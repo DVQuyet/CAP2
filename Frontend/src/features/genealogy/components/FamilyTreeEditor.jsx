@@ -34,6 +34,7 @@ import { TREE_CARD_ORIENTATION, TREE_DISPLAY_MODE, TREE_THEME, TREE_THEMES, TREE
 import { DISPLAY_NODE_TYPE, buildDisplayTree, buildDisplayTreeLines } from "../utils/tree-editor/treeDisplayNodes";
 import { FORM_ONLY_FIELDS, historicalPayloadFromForm } from "../utils/tree-editor/historicalDates";
 import { CenterNoticeDialog, CreatePersonDialog, PersonInspector, QuickCreateRelationDialog, RelationSelectDialog, ArchivedMembersDialog } from "./FamilyTreeEditorParts/index.js";
+import { useConfirm } from "../../../shared/components/confirmContext.js";
 import "./FamilyTreeEditor.css";
 import "./FamilyTreeEditor.v2.css";
 
@@ -506,6 +507,7 @@ export default function FamilyTreeEditor({
   }, [isTreeMobile, mobileTreePanel]);
 
   const { t, language } = useLanguage();
+  const confirm = useConfirm();
   const treeRef = useRef(null);
   const viewportRef = useRef(null);
   const transformApiRef = useRef(null);
@@ -1107,7 +1109,7 @@ const coupleActionPerson = useMemo(
 
   const applyAutoLayoutAndSave = useCallback(async () => {
     if (!canEditAll) return;
-    const ok = window.confirm(t("tree.messages.autoLayoutConfirm"));
+    const ok = await confirm({ message: t("tree.messages.autoLayoutConfirm") });
     if (!ok) return;
     setSaving(true);
     setStatus("");
@@ -1611,7 +1613,7 @@ const coupleActionPerson = useMemo(
       people,
     );
 
-    const ok = window.confirm(t("tree.genealogyAi.confirmSave", { count: draftMembers.length, createCount, existingCount }));
+    const ok = await confirm({ message: t("tree.genealogyAi.confirmSave", { count: draftMembers.length, createCount, existingCount }) });
     if (!ok) return;
 
     setGenealogyAiSaving(true);
@@ -2085,7 +2087,7 @@ const coupleActionPerson = useMemo(
       setStatus(t("tree.messages.noPermissionAction"));
       return;
     }
-    const ok = window.confirm(t("tree.messages.deleteConfirm", { name: fullName(person) }));
+    const ok = await confirm({ message: t("tree.messages.deleteConfirm", { name: fullName(person) }), tone: "danger" });
     if (!ok) return;
     setSaving(true);
     setStatus("");
@@ -2557,7 +2559,7 @@ const coupleActionPerson = useMemo(
       setStatus(t("tree.messages.noPermissionAction"));
       return;
     }
-    const ok = window.confirm(t("tree.messages.deleteConfirm", { name: fullName(selectedPerson) }));
+    const ok = await confirm({ message: t("tree.messages.deleteConfirm", { name: fullName(selectedPerson) }), tone: "danger" });
     if (!ok) return;
     setSaving(true);
     setStatus("");

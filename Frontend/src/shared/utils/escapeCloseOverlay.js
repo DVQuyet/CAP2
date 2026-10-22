@@ -16,6 +16,14 @@ export const OVERLAY_SELECTOR = [
   ".pending-pro-preview-overlay",
   ".preview-overlay",
   ".fund-modal-v2",
+  ".clan-modal-backdrop",
+  ".admin-modal-backdrop",
+  ".memory-edit-overlay",
+  ".clan-info-modalOverlay",
+  ".member-clan-modalOverlay",
+  ".tree-fullscreen-overlay",
+  ".avatar-crop-backdrop",
+  ".avatar-editor-modal",
   "[data-modal-overlay]",
 ].join(",");
 

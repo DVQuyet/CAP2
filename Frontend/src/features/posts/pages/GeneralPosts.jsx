@@ -17,6 +17,8 @@ import ErrorState from "../../../shared/components/ErrorState";
 import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 import { formatDateTimeVN } from "../../../shared/utils/dateFormat";
 import { getSocket } from "../../../services/socket";
+import { useConfirm } from "../../../shared/components/confirmContext.js";
+import useDismissable from "../../../shared/hooks/useDismissable";
 import "./GeneralPosts.css";
 
 const emptyPostForm = {
@@ -159,15 +161,19 @@ function FeedComposer({ onOpen, t }) {
 }
 
 function AddPostModal({ form, error, notice, submitting, onChange, onClose, onSubmit, t }) {
+  const { requestClose, backdropProps } = useDismissable();
+  // Có nội dung đang soạn thì hỏi lại trước khi đóng.
+  const dirty = Boolean(form.description?.trim() || form.content?.trim() || form.image_url);
+  const handleClose = () => requestClose(onClose, dirty);
   return (
-    <div className="post-modal-backdrop" onMouseDown={onClose}>
+    <div className="post-modal-backdrop" {...backdropProps(onClose, dirty)}>
       <section className="post-modal post-compose-modal" role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}>
         <header className="post-modal-head">
           <div>
             <h2>{t("posts.modal.create.title")}</h2>
             <p>{t("posts.modal.create.subtitle")}</p>
           </div>
-          <button type="button" className="post-icon-btn" onClick={onClose} aria-label={t("common.close")}>
+          <button type="button" className="post-icon-btn" onClick={handleClose} aria-label={t("common.close")}>
             <span className="material-symbols-outlined">close</span>
           </button>
         </header>
@@ -238,7 +244,7 @@ function AddPostModal({ form, error, notice, submitting, onChange, onClose, onSu
           {(error || notice) && <div className={`post-form-message ${error ? "is-error" : "is-success"}`}>{error || notice}</div>}
 
           <div className="post-modal-actions">
-            <button type="button" className="post-secondary-btn" onClick={onClose} disabled={submitting}>
+            <button type="button" className="post-secondary-btn" onClick={handleClose} disabled={submitting}>
               {t("common.cancel")}
             </button>
             <button type="submit" className="post-primary-btn" disabled={submitting}>
@@ -346,6 +352,7 @@ function PostDetailModal({
 
 export default function GeneralPosts() {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const [searchParams, setSearchParams] = useSearchParams();
   const [posts, setPosts] = useState([]);
   const [nextBeforeId, setNextBeforeId] = useState(null);
@@ -573,7 +580,7 @@ export default function GeneralPosts() {
   };
 
   const handleDeletePost = async (postId) => {
-    if (!window.confirm(t("posts.messages.confirmDelete"))) return;
+    if (!await confirm({ message: t("posts.messages.confirmDelete"), tone: "danger" })) return;
     try {
       await deletePost(postId);
       setPosts((prev) => prev.filter((p) => p.id !== postId));

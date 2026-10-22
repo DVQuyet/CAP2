@@ -8,6 +8,7 @@ import {
   recomputeGenerationsAPI,
   updateGenealogyPolicyAPI,
 } from "../../../../api/managerService";
+import { useConfirm } from "../../../../shared/components/confirmContext.js";
 
 const SEVERITY_ORDER = ["error", "legal", "warning", "notice"];
 const SEVERITY_ICON = { error: "block", legal: "gavel", warning: "warning", notice: "info" };
@@ -23,6 +24,7 @@ const NUMBER_FIELDS = [
 // Kiểm tra toàn cây (lỗi, quan hệ trái luật đã/ chưa xác nhận, cảnh báo, đời lệch), lịch sử xác nhận và cài đặt quy tắc.
 export default function GenealogyAuditDialog({ open, clanId, people = [], canManage = false, onClose, onFocusPerson, onAudit, onChanged }) {
   const { t } = useLanguage();
+  const confirm = useConfirm();
   const [tab, setTab] = useState("issues");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -64,7 +66,7 @@ export default function GenealogyAuditDialog({ open, clanId, people = [], canMan
   const nameOf = (personId) => fullName(peopleById.get(Number(personId)), `#${personId}`);
 
   const fixGenerations = async () => {
-    if (!window.confirm(t("tree.audit.fixGenerationsConfirm", { count: generationChanges.length }))) return;
+    if (!await confirm({ message: t("tree.audit.fixGenerationsConfirm", { count: generationChanges.length }) })) return;
     setSaving(true);
     setMessage("");
     try {

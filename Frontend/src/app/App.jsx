@@ -5,6 +5,7 @@ import { LanguageProvider } from "../i18n/LanguageContext";
 import ColdStartBanner from "../shared/components/ColdStartBanner";
 import { installPendingFetchTracker } from "../services/pendingRequests";
 import { API_BASE_URL } from "../services/api";
+import ConfirmProvider from "../shared/components/ConfirmProvider";
 import "./App.css";
 
 // Đếm request tới backend một lần cho cả app (banner "máy chủ đang khởi động").
@@ -16,7 +17,9 @@ export default function App() {
 
   return (
     <LanguageProvider>
-      <AppRoutes />
+      <ConfirmProvider>
+        <AppRoutes />
+      </ConfirmProvider>
       <ColdStartBanner />
     </LanguageProvider>
   );

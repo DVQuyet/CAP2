@@ -10,6 +10,7 @@ import LoadingState from "../../../shared/components/LoadingState";
 import EmptyState from "../../../shared/components/EmptyState";
 import ErrorState from "../../../shared/components/ErrorState";
 import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
+import { useConfirm } from "../../../shared/components/confirmContext.js";
 import "./TimeCapsulePage.css";
 
 // Số kỉ niệm mỗi lần tải; "Tải thêm" lấy trang cũ hơn.
@@ -135,6 +136,7 @@ function MemoryCard({ memory, isManagerView = false, t, showCarouselControls = f
 
 export default function TimeCapsulePage({ role = "member" }) {
   const { t } = useTranslation();
+  const confirm = useConfirm();
   const isManager = role === "manager" || role === "admin";
   // Lấy currentUserId từ localStorage để kiểm tra quyền sửa/xóa
   const currentUserId = useMemo(() => {
@@ -613,7 +615,7 @@ export default function TimeCapsulePage({ role = "member" }) {
   };
 
   const handleDeleteMemory = async (memoryId) => {
-    if (!window.confirm(t("timeCapsule.messages.confirmDelete"))) return;
+    if (!await confirm({ message: t("timeCapsule.messages.confirmDelete"), tone: "danger" })) return;
     try {
       await deleteMemory(memoryId);
       setMemories((prev) => prev.filter((m) => m.id !== memoryId));

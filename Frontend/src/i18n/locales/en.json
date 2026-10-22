@@ -4,6 +4,15 @@
     "approved": "Approved",
     "back": "Back",
     "cancel": "Cancel",
+    "confirm": {
+      "title": "Confirm",
+      "ok": "OK",
+      "cancel": "Cancel",
+      "discardTitle": "Discard changes?",
+      "discardMessage": "What you just entered has not been saved and will be lost.",
+      "discardOk": "Discard changes",
+      "keepEditing": "Keep editing"
+    },
     "closeCamera": "Close camera",
     "content": "Content",
     "dashboard": "Dashboard",

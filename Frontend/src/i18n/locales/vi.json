@@ -4,6 +4,15 @@
     "approved": "Đã duyệt",
     "back": "Quay lại",
     "cancel": "Hủy",
+    "confirm": {
+      "title": "Xác nhận",
+      "ok": "Đồng ý",
+      "cancel": "Hủy",
+      "discardTitle": "Bỏ thay đổi?",
+      "discardMessage": "Các thông tin vừa nhập chưa được lưu và sẽ bị mất.",
+      "discardOk": "Bỏ thay đổi",
+      "keepEditing": "Tiếp tục chỉnh sửa"
+    },
     "closeCamera": "Đóng camera",
     "content": "Nội dung",
     "dashboard": "Dashboard",

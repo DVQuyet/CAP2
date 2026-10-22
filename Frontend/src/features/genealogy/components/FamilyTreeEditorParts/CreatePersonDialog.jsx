@@ -1,4 +1,5 @@
 import { useLanguage } from "../../../../i18n/LanguageContext";
+import useDismissable from "../../../../shared/hooks/useDismissable";
 import { fullName } from "../../utils/tree-editor/treePersonUtils";
 import ImageUpload from "../../../../shared/components/ImageUpload";
 import HistoricalPersonFields from "./HistoricalPersonFields";
@@ -18,6 +19,10 @@ export default function CreatePersonDialog({
   onRelationOptionsChange,
 }) {
   const { t } = useLanguage();
+  const { requestClose, backdropProps } = useDismissable();
+  // Đã nhập tên thì hỏi lại trước khi đóng (họ có thể được điền sẵn nên không tính).
+  const dirty = Boolean(String(form?.display_name || form?.first_name || form?.middle_name || "").trim());
+  const handleCancel = () => requestClose(onCancel, dirty);
   if (!relation || !form) return null;
 
   const titleMap = {
@@ -95,7 +100,7 @@ export default function CreatePersonDialog({
   };
 
   return (
-    <div className="fte-modalOverlay" role="presentation" onMouseDown={onCancel}>
+    <div className="fte-modalOverlay" role="presentation" {...backdropProps(onCancel, dirty)}>
       <div className="fte-modal" role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}>
         <div className="fte-modalHeader">
           <div>
@@ -107,7 +112,7 @@ export default function CreatePersonDialog({
             <h3>{dialogTitle}</h3>
           </div>
 
-          <button type="button" className="fte-iconButton" onClick={onCancel} title={t("common.close")}>
+          <button type="button" className="fte-iconButton" onClick={handleCancel} title={t("common.close")}>
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
@@ -242,7 +247,7 @@ export default function CreatePersonDialog({
             {saving ? t("tree.createModal.actions.creating") : t("tree.createModal.actions.create")}
           </button>
 
-          <button type="button" className="fte-ghostButton" disabled={saving} onClick={onCancel}>
+          <button type="button" className="fte-ghostButton" disabled={saving} onClick={handleCancel}>
             {t("common.cancel")}
           </button>
         </div>

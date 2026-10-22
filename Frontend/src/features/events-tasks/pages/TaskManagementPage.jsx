@@ -25,6 +25,8 @@ import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 import VoiceRecorder from "../../voice/components/VoiceRecorder";
 import { useLanguage } from "../../../i18n/LanguageContext";
 import { formatDateTimeVN, formatDateVN, isoToVietnamDate, vietnamDateToIso } from "../../../shared/utils/dateFormat";
+import { useConfirm } from "../../../shared/components/confirmContext.js";
+import useDismissable from "../../../shared/hooks/useDismissable";
 import "./TaskManagementPage.css";
 
 // Số sự kiện mỗi lần tải ở danh sách manager/admin; "Tải thêm" lấy trang cũ hơn.
@@ -238,6 +240,8 @@ function MemberCombobox({ members, value, onChange, disabled = false }) {
 export default function TaskManagementPage({ role = "member" }) {
   const { t } = useTranslation();
   const { language } = useLanguage();
+  const confirm = useConfirm();
+  const { requestClose, backdropProps } = useDismissable();
   const { clanId } = useParams();
   const navigate = useNavigate();
   const recognitionRef = useRef(null);
@@ -273,6 +277,9 @@ export default function TaskManagementPage({ role = "member" }) {
   const [form, setForm] = useState({ event_id: "", member_ids: [], title: "", description: "", due_date: "" });
   const [eventForm, setEventForm] = useState({ title: "", start_date: "", end_date: "", description: "" });
   const [editEventForm, setEditEventForm] = useState({ title: "", start_date: "", end_date: "", description: "" });
+  // Form tạo sự kiện: có nhập tiêu đề/mô tả thì hỏi lại trước khi đóng.
+  const createFormDirty = Boolean(eventForm.title.trim() || eventForm.description.trim());
+  const closeCreateForm = () => setShowCreateForm(false);
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiTaskSuggestions, setAiTaskSuggestions] = useState([]);
@@ -1135,7 +1142,7 @@ const deleteAssignedTask = async (task) => {
     return;
   }
 
-  const ok = window.confirm(t("eventsTasks.messages.confirmDeleteTask", { title: task?.title || "" }));
+  const ok = await confirm({ message: t("eventsTasks.messages.confirmDeleteTask", { title: task?.title || "" }), tone: "danger" });
   if (!ok) return;
 
   setSavingTaskId(taskId);
@@ -1724,7 +1731,7 @@ const openEvent = (eventId) => {
 
       {/* 🌟 Premium Glass Confirm Dialog */}
       {confirmDelete.show && (
-          <div className="premium-confirm-overlay">
+          <div className="premium-confirm-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) setConfirmDelete({ show: false, eventId: null }); }}>
               <div className="premium-confirm-modal">
                   <div className="modal-warning-icon">
                       <span className="material-symbols-outlined">warning</span>
@@ -1867,7 +1874,7 @@ const openEvent = (eventId) => {
       )}
 
       {showCreateForm && (
-        <div className="task-modal-backdrop" role="presentation" onMouseDown={() => setShowCreateForm(false)}>
+        <div className="task-modal-backdrop" role="presentation" {...backdropProps(closeCreateForm, createFormDirty)}>
           <form
             className="task-modal-card quick-event-form"
             onSubmit={submitEvent}
@@ -1884,7 +1891,7 @@ const openEvent = (eventId) => {
                   <p>{t("eventsTasks.placeholders.addEventHelp")}</p>
                 </div>
               </div>
-              <button className="task-icon-btn" type="button" onClick={() => setShowCreateForm(false)} aria-label={t("eventsTasks.actions.closeAdd")}>
+              <button className="task-icon-btn" type="button" onClick={() => requestClose(closeCreateForm, createFormDirty)} aria-label={t("eventsTasks.actions.closeAdd")}>
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
@@ -1916,7 +1923,7 @@ const openEvent = (eventId) => {
                 <span className="material-symbols-outlined">add</span>
                 {saving ? t("common.saving") : t("eventsTasks.actions.saveEvent")}
               </button>
-              <button className="task-btn task-btn-ghost" type="button" onClick={() => setShowCreateForm(false)}>
+              <button className="task-btn task-btn-ghost" type="button" onClick={() => requestClose(closeCreateForm, createFormDirty)}>
                 {t("common.cancel")}
               </button>
             </div>

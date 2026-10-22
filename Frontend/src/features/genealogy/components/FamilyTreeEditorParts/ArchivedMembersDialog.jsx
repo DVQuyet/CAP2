@@ -2,9 +2,11 @@ import { useEffect, useState, useMemo } from "react";
 import { useLanguage } from "../../../../i18n/LanguageContext";
 import { getArchivedMembersAPI, restoreArchivedMemberAPI, deleteArchivedMemberAPI, deleteAllArchivedMembersAPI, archiveMemberAPI } from "../../../../api/managerService";
 import { fullName } from "../../utils/tree-editor/treePersonUtils";
+import { useConfirm } from "../../../../shared/components/confirmContext.js";
 
 export default function ArchivedMembersDialog({ people, onClose, onReload }) {
   const { t, language } = useLanguage();
+  const confirm = useConfirm();
   const [activeTab, setActiveTab] = useState("list"); // "list" or "archive"
   const [archivedList, setArchivedList] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -62,7 +64,7 @@ export default function ArchivedMembersDialog({ people, onClose, onReload }) {
   }, [people, archivedList]);
 
   const handleRestore = async (archiveId) => {
-    const ok = window.confirm(t("tree.archive.confirmRestore"));
+    const ok = await confirm({ message: t("tree.archive.confirmRestore") });
     if (!ok) return;
 
     setActionLoading(true);
@@ -80,7 +82,7 @@ export default function ArchivedMembersDialog({ people, onClose, onReload }) {
   };
 
   const handleDeletePermanently = async (archiveId) => {
-    const ok = window.confirm(t("tree.archive.confirmDeletePermanently"));
+    const ok = await confirm({ message: t("tree.archive.confirmDeletePermanently"), tone: "danger" });
     if (!ok) return;
 
     setActionLoading(true);
@@ -98,9 +100,7 @@ export default function ArchivedMembersDialog({ people, onClose, onReload }) {
   const handleDeleteAllPermanently = async () => {
     if (!filteredArchived.length) return;
 
-    const ok = window.confirm(
-      t("tree.archive.confirmDeleteAll", { count: filteredArchived.length })
-    );
+    const ok = await confirm({ message: t("tree.archive.confirmDeleteAll", { count: filteredArchived.length }), tone: "danger" });
     if (!ok) return;
 
     setActionLoading(true);
@@ -128,7 +128,7 @@ export default function ArchivedMembersDialog({ people, onClose, onReload }) {
     }
 
     const memberName = activeMembersWithAccounts.find(m => Number(m.account_id) === Number(selectedAccountId))?.name;
-    const ok = window.confirm(t("tree.archive.confirmArchive", { name: memberName }));
+    const ok = await confirm({ message: t("tree.archive.confirmArchive", { name: memberName }), tone: "danger" });
     if (!ok) return;
 
     setActionLoading(true);

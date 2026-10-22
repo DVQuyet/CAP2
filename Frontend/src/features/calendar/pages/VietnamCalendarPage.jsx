@@ -8,6 +8,7 @@ import { notify } from "../../../shared/utils/toast";
 import { getLunarInfoFromSolar as getLunarInfo } from "../../../shared/utils/lunarCalendar";
 import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 import "../../../shared/components/StateComponents.css";
+import { useConfirm } from "../../../shared/components/confirmContext.js";
 import "./VietnamCalendarPage.css";
 
 function pad2(v) {
@@ -124,6 +125,7 @@ function getDayEvents(date, savedEvents, t) {
 
 export default function VietnamCalendarPage() {
   const { t } = useTranslation();
+  const confirm = useConfirm();
 
   const MONTH_NAMES = useMemo(() => {
     const months = t("vnCalendar.labels.months", { returnObjects: true });
@@ -369,7 +371,7 @@ export default function VietnamCalendarPage() {
     }
 
     const label = event.visibility === "global" ? t("vnCalendar.messages.scopeGlobal") : t("vnCalendar.messages.scopePersonal");
-    if (!window.confirm(t("vnCalendar.messages.deleteConfirm", { label }))) return;
+    if (!await confirm({ message: t("vnCalendar.messages.deleteConfirm", { label }), tone: "danger" })) return;
 
     try {
       await apiRequest(`/api/calendar/events/${event.id}`, { method: "DELETE" });

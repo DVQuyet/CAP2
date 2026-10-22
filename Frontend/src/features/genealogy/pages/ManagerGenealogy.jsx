@@ -459,7 +459,7 @@ export default function GenealogySection() {
       </div>
 
       {keyModalOpen && (
-        <div className="tree-key-modal-overlay" role="dialog" aria-modal="true">
+        <div className="tree-key-modal-overlay" role="dialog" aria-modal="true" onMouseDown={(event) => { if (event.target === event.currentTarget) setKeyModalOpen(false); }}>
           <div className="tree-key-modal">
             <div className="tree-key-modal-head">
               <div>
@@ -495,7 +495,7 @@ export default function GenealogySection() {
           <div className="tree-fullscreen-panel">
             <div className="panel-header">
               <h2>{clan?.clan_name || t("tree.title")}</h2>
-              <button className="mgr-btnGhost" type="button" onClick={() => setIsFullscreen(false)}>
+              <button className="mgr-btnGhost" type="button" data-modal-close onClick={() => setIsFullscreen(false)}>
                 {t("tree.page.exitFullscreen")}
               </button>
             </div>
