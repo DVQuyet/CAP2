@@ -67,13 +67,48 @@ async function loadPersonalizedSuggestions(clanId, currentMemberId) {
     return suggestions;
 }
 
+const PROACTIVE_WINDOW_DAYS = 14;
+const pad2 = (value) => String(value).padStart(2, '0');
+const isoOf = (date) => `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+
+// Gợi ý chủ động: giỗ/sinh nhật gần nhất trong 14 ngày tới. Dùng lại buildYearlyPersonEvents của lịch (không tự tính âm lịch).
+// Câu gợi ý là một lệnh nhắc lịch; khi gửi đi sẽ đi qua eventCommandService, chỉ tạo bản nháp, không tự lưu.
+async function loadUpcomingEventSuggestion(clanId, now = new Date()) {
+    const { buildYearlyPersonEvents } = require('../calendar/calendar.controller');
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + PROACTIVE_WINDOW_DAYS);
+    const items = await buildYearlyPersonEvents({ clanId, from: isoOf(today), to: isoOf(end) });
+    const next = (items || [])
+        .filter((item) => item && (item.type === 'death_anniversary' || item.type === 'birthday') && item.date)
+        .sort((a, b) => String(a.date).localeCompare(String(b.date)))[0];
+    if (!next) return null;
+
+    const name = String(next.title || '').replace(/^(Ngày giỗ|Sinh nhật)\s+/i, '').trim();
+    if (!name) return null;
+    const [y, m, d] = String(next.date).split('-').map(Number);
+    const daysLeft = Math.round((new Date(y, m - 1, d) - today) / 86400000);
+    const hint = `còn ${daysLeft} ngày`;
+    if (next.type === 'death_anniversary') {
+        const lunar = String(next.anniversary_lunar_date || '').match(/^(\d{1,2})\/(\d{1,2})\//);
+        const when = lunar ? `${Number(lunar[1])}/${Number(lunar[2])} âm lịch` : `${d}/${m}`;
+        return { text: `Nhắc tôi giỗ ${name} ngày ${when}, nhắc trước 3 ngày`, intent_hint: 'create_event_draft', hint };
+    }
+    return { text: `Nhắc tôi sinh nhật ${name} ngày ${d}/${m}, nhắc trước 3 ngày`, intent_hint: 'create_event_draft', hint };
+}
+
 // clanId đã được kiểm tra quyền ở controller; không có clanId thì chỉ trả các câu chung.
-async function getSuggestions({ clanId, currentMemberId } = {}) {
+async function getSuggestions({ clanId, currentMemberId, now } = {}) {
     const normalizedClanId = toPositiveId(clanId);
     let personalized = [];
     if (normalizedClanId) {
         try {
-            personalized = await loadPersonalizedSuggestions(normalizedClanId, toPositiveId(currentMemberId));
+            const upcoming = await loadUpcomingEventSuggestion(normalizedClanId, now);
+            if (upcoming) personalized.push(upcoming);
+        } catch (error) {
+            console.error('chatbot upcoming suggestion error:', error.message);
+        }
+        try {
+            personalized = personalized.concat(await loadPersonalizedSuggestions(normalizedClanId, toPositiveId(currentMemberId)));
         } catch (error) {
             console.error('chatbot personalized suggestions error:', error.message);
         }
@@ -83,6 +118,7 @@ async function getSuggestions({ clanId, currentMemberId } = {}) {
         id: index + 1,
         text: item.text,
         intent_hint: item.intent_hint,
+        ...(item.hint ? { hint: item.hint } : {}),
     }));
 }
 
