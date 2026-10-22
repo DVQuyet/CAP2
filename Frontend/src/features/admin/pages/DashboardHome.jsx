@@ -19,7 +19,7 @@ import {
     YAxis,
 } from "recharts";
 import "./DashboardHome.css";
-import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
+import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 import LoadingState from "../../../shared/components/LoadingState";
 import ErrorState from "../../../shared/components/ErrorState";
 

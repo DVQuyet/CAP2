@@ -5,7 +5,7 @@ import { getAdminClans, getAdminPostsByClan, updateAdminPostStatus, deleteAdminP
 import { formatDate } from "../../../shared/utils/dateFormat";
 import { resolveImageUrl } from "../../../shared/utils/media";
 import "./PostsPage.css";
-import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
+import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 import ErrorState from "../../../shared/components/ErrorState";
 
 export default function PostsPage() {

@@ -11,7 +11,7 @@ import {
 import { formatDate } from "../../../shared/utils/dateFormat";
 import { Link } from "react-router-dom";
 import "./MembersPage.css";
-import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
+import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 import ErrorState from "../../../shared/components/ErrorState";
 
 const emptyForm = {

@@ -13,7 +13,7 @@ import "./GenealogyManagement.css";
 import { notify } from "../../../shared/utils/toast";
 import { useConfirm } from "../../../shared/components/confirmContext.js";
 import useDismissable from "../../../shared/hooks/useDismissable";
-import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
+import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 import LoadingState from "../../../shared/components/LoadingState";
 
 const emptyClanForm = {
