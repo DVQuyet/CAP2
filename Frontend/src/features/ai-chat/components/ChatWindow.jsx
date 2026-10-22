@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useLocation, useNavigate } from "react-router-dom";
+import { getStoredUser } from "../../../shared/utils/auth";
+import { buildTreeFocusUrl, isTreePath, TREE_FOCUS_EVENT } from "../../genealogy/utils/treeFocusParams";
 import { askChatbot, getChatbotHistory, getChatbotSuggestions } from "../../../api/chatbotService";
 import MessageBubble from "./MessageBubble";
 import PersonContextSelector from "./PersonContextSelector";
@@ -8,6 +11,8 @@ import TypingIndicator from "./TypingIndicator";
 import VoiceInputButton from "./VoiceInputButton";
 
 const MAX_RENDERED_MESSAGES = 120;
+const COLD_START_DELAY_MS = 5000;
+const MOBILE_QUERY = "(max-width: 480px)";
 
 function makeLocalMessage(role, content, extra = {}) {
   return {
@@ -34,6 +39,10 @@ export default function ChatWindow({
   const [suggestions, setSuggestions] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [coldStart, setColdStart] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
   const listRef = useRef(null);
 
   // Hỏi được ngay khi biết dòng họ; câu cần "tôi" thì trợ lý sẽ nhắc chọn người trong cây.
@@ -75,6 +84,35 @@ export default function ChatWindow({
     if (!node) return;
     node.scrollTop = node.scrollHeight;
   }, [renderedMessages.length, loading]);
+
+  // Chưa có câu trả lời sau 5 giây: báo máy chủ đang khởi động (cold start).
+  useEffect(() => {
+    if (!loading) {
+      setColdStart(false);
+      return undefined;
+    }
+    const timer = window.setTimeout(() => setColdStart(true), COLD_START_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [loading]);
+
+  // "Xem trên cây": đang ở trang cây thì gửi sự kiện, ngược lại chuyển tới trang cây theo vai trò kèm ?focus=&highlight=.
+  const handleViewOnTree = (personIds) => {
+    const url = buildTreeFocusUrl(getStoredUser()?.role, personIds);
+    if (!url) return;
+    if (isTreePath(location.pathname) && url.startsWith(location.pathname)) {
+      window.dispatchEvent(new CustomEvent(TREE_FOCUS_EVENT, { detail: { focus: personIds[0], highlight: personIds } }));
+    } else {
+      navigate(url);
+    }
+    // Điện thoại: chat chiếm toàn màn hình nên đóng lại để thấy cây.
+    if (window.matchMedia?.(MOBILE_QUERY).matches) onClose?.();
+  };
+
+  const handleClearHistory = () => {
+    // Chưa có API xóa lịch sử phía máy chủ: chỉ xóa phần hiển thị trên màn hình này.
+    setMessages([]);
+    setConfirmClear(false);
+  };
 
   // extra: thông tin kèm theo câu hỏi, vd { clarificationChoice } khi người dùng chọn một người lúc được hỏi lại.
   const sendMessage = async (text = input, extra = {}) => {
@@ -161,12 +199,22 @@ export default function ChatWindow({
           <strong>{t("aiChat.title")}</strong>
           <small>{t("aiChat.subtitle")}</small>
         </div>
+        <button type="button" className="ai-icon-btn" onClick={() => setConfirmClear((value) => !value)} aria-label={t("aiChat.clearHistory")} title={t("aiChat.clearHistory")} disabled={!messages.length} aria-expanded={confirmClear}>
+          <span className="material-symbols-outlined" aria-hidden="true">delete_sweep</span>
+        </button>
         <button type="button" className="ai-icon-btn" onClick={onClose} aria-label={t("aiChat.close")} title={t("aiChat.close")}>
           <span className="material-symbols-outlined" aria-hidden="true">close</span>
         </button>
       </header>
 
       <div className="ai-chat-messages" ref={listRef} role="log" aria-live="polite" aria-relevant="additions">
+        {confirmClear ? (
+          <div className="ai-notice is-warning" role="alert">
+            <span>{t("aiChat.clearHistoryConfirm")}</span>
+            <button type="button" className="ai-notice-btn" onClick={handleClearHistory}>{t("aiChat.clearHistoryYes")}</button>
+            <button type="button" className="ai-notice-btn" onClick={() => setConfirmClear(false)}>{t("aiChat.clearHistoryNo")}</button>
+          </div>
+        ) : null}
         {contextLoading ? (
           <div className="ai-empty-state" role="status">{t("aiChat.loadingContext")}</div>
         ) : null}
@@ -207,9 +255,16 @@ export default function ChatWindow({
             message={message}
             onCandidatePick={handleCandidatePick}
             onRetry={(text, extra) => sendMessage(text, extra || {})}
+            onViewOnTree={handleViewOnTree}
           />
         ))}
         {loading ? <TypingIndicator /> : null}
+        {loading && coldStart ? (
+          <div className="ai-notice" role="status">
+            <span className="material-symbols-outlined" aria-hidden="true">hourglass_top</span>
+            <span>{t("aiChat.coldStartNotice")}</span>
+          </div>
+        ) : null}
       </div>
 
       <SuggestionChips suggestions={suggestions} onPick={sendMessage} disabled={!ready || loading} />
@@ -230,7 +285,7 @@ export default function ChatWindow({
           aria-label={t("aiChat.placeholder")}
           autoComplete="off"
           enterKeyHint="send"
-          disabled={!ready || loading}
+          disabled={!ready}
         />
         <button type="submit" className="ai-send-btn" disabled={!input.trim() || !ready || loading} aria-label={t("aiChat.send")} title={t("aiChat.send")}>
           <span className="material-symbols-outlined" aria-hidden="true">send</span>

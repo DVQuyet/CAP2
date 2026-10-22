@@ -25,6 +25,7 @@ import { clearCardSizes, clearLineRoutes, getCardSize, loadCardSizes, loadLineRo
 import { dedupePeopleByAccount, remapChildrenByPeople, remapFamiliesByPeople } from "../utils/tree-editor/treeNormalize";
 import { autoLayoutPeople, computeReferencePlacements, findFounderIds, generationY, mergeManualAndAutoLayout } from "../utils/tree-editor/treeLayout";
 import ReferenceCard from "./ReferenceCard";
+import { parseTreeFocusParams, TREE_FOCUS_EVENT } from "../utils/treeFocusParams";
 import GenealogyAuditDialog from "./FamilyTreeEditorParts/GenealogyAuditDialog";
 import { blankCreateForm, buildCreateRelationFields, buildLinkPayload, defaultRelationOptions, findParentFamilyForChild, findSpouse, findSpouseFamily, getChildOrderMapForFamily, getChildrenForFamily, getFamiliesForPerson, relationCandidates, relationLinkedIds } from "../utils/tree-editor/treeRelations";
 import { downloadBlob, exportFileName, exportPreparedTree, prepareTreeExportPayload } from "../utils/tree-editor/treeExport";
@@ -532,6 +533,7 @@ export default function FamilyTreeEditor({
   const [selectedCoupleId, setSelectedCoupleId] = useState(null);
   // Người vừa được tìm thấy/định vị: chỉ căn giữa và tô sáng, không mở form hồ sơ.
   const [focusedPersonId, setFocusedPersonId] = useState(null);
+  const [chatHighlightIds, setChatHighlightIds] = useState(null); // Set id được trợ lý AI nhắc tới ("Xem trên cây")
   const [couplePersonAction, setCouplePersonAction] = useState(null);
   const [treeDisplayMode, setTreeDisplayMode] = useState(TREE_DISPLAY_MODE.DETAIL);
   const [treeStyle, setTreeStyle] = useState(() => databaseTreeStyle);
@@ -1315,6 +1317,40 @@ const coupleActionPerson = useMemo(
     }
     focusPerson(matched.id, { self: true });
   }, [currentAccount, focusPerson, people, t, treeViewMode, visiblePeople]);
+
+  // "Xem trên cây" từ trợ lý AI: nhảy tới người trọng tâm và làm nổi bật các người được nhắc.
+  const applyChatFocus = useCallback((target) => {
+    if (!target?.focus) return false;
+    if (!people.some((person) => Number(person.id) === target.focus)) return false;
+    setStatus("");
+    setMobileTreePanel(null);
+    if (!visiblePeople.some((person) => Number(person.id) === target.focus)) treeViewMode.setFullMode();
+    setChatHighlightIds(new Set(target.highlight));
+    focusPerson(target.focus, { scale: 1.2 });
+    return true;
+  }, [focusPerson, people, treeViewMode, visiblePeople]);
+  const applyChatFocusRef = useRef(applyChatFocus);
+  useEffect(() => {
+    applyChatFocusRef.current = applyChatFocus;
+  }, [applyChatFocus]);
+  const pendingChatFocusRef = useRef(null);
+
+  // Đang ở trang cây: trợ lý gửi sự kiện; vừa chuyển trang: đọc ?focus=&highlight= khi dữ liệu đã tải.
+  useEffect(() => {
+    pendingChatFocusRef.current = parseTreeFocusParams(window.location.search);
+    const handleEvent = (event) => {
+      pendingChatFocusRef.current = event.detail || null;
+      if (pendingChatFocusRef.current && applyChatFocusRef.current(pendingChatFocusRef.current)) {
+        pendingChatFocusRef.current = null;
+      }
+    };
+    window.addEventListener(TREE_FOCUS_EVENT, handleEvent);
+    return () => window.removeEventListener(TREE_FOCUS_EVENT, handleEvent);
+  }, []);
+  useEffect(() => {
+    if (loading || !pendingChatFocusRef.current || !people.length) return;
+    if (applyChatFocusRef.current(pendingChatFocusRef.current)) pendingChatFocusRef.current = null;
+  }, [loading, people.length, applyChatFocus]);
 
   const handleValidateTree = useCallback(() => {
     const errors = validateTreeData(people, canonicalTree.families, canonicalTree.childRows);
@@ -3402,6 +3438,7 @@ const submitCreateDialog = async () => {
                               onlinePersonIds: treeRealtime.onlinePersonIds,
                               editingPersonIds: treeRealtime.editingPersonIds,
                               searchPersonId: treeSearch.highlightedPersonId,
+                              searchPersonIds: chatHighlightIds,
                               selfPersonId,
                               validationErrors,
                             }}

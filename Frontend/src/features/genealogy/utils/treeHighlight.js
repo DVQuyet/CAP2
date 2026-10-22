@@ -6,7 +6,7 @@ export function getPersonHighlightState(person, options = {}) {
 
   return {
     online: onlineIds.has(id),
-    search: Number(options.searchPersonId) === id,
+    search: Number(options.searchPersonId) === id || Boolean(options.searchPersonIds?.has(id)),
     selected: Number(options.selectedPersonId) === id,
     self: Number(options.selfPersonId) === id,
     editing: editingIds.has(id),

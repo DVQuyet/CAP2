@@ -221,6 +221,77 @@
   color: #7c4a03;
 }
 
+.ai-notice span:first-child:not(.material-symbols-outlined) {
+  flex: 1;
+}
+
+/* Nút nhỏ trong banner (xác nhận xóa lịch sử) */
+.ai-notice-btn {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ai-notice-btn:hover {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+/* Ô góp ý khi bấm 👎 và dòng trạng thái phản hồi */
+.ai-feedback-comment {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.ai-feedback-comment input {
+  flex: 1;
+  min-width: 140px;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid #b6c4cc;
+  border-radius: 12px;
+  font-size: 0.86rem;
+  color: var(--ai-ink);
+  background: var(--ai-surface);
+}
+
+.ai-feedback-comment button {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--ai-chip-bg);
+  color: var(--ai-chip-ink);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ai-feedback-comment button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ai-feedback-note {
+  display: block;
+  margin-top: 2px;
+  padding-left: 2px;
+  color: var(--ai-muted);
+  font-size: 0.8rem;
+}
+
+.ai-feedback-note.is-error {
+  color: var(--ai-danger);
+}
+
 /* ---------- Welcome ---------- */
 .ai-welcome {
   display: flex;

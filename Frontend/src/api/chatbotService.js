@@ -64,6 +64,16 @@ export function getMeContextPeople(params = {}) {
   return apiRequest(`/api/me/context/people${suffix}`);
 }
 
+// Đánh giá câu trả lời của trợ lý: rating 1 (hữu ích) hoặc -1 (chưa đúng), comment tùy chọn.
+export function sendChatbotFeedback(messageId, rating, comment) {
+  const body = { rating };
+  if (comment) body.comment = comment;
+  return apiRequest(`${BASE_URL}/messages/${encodeURIComponent(messageId)}/feedback`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
 export function setCurrentPerson(payload) {
   return apiRequest("/api/me/context/person", {
     method: "POST",
