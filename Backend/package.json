@@ -4,7 +4,7 @@
         "dev": "nodemon server.js",
         "migrate": "node scripts/migrate.js",
         "test": "node --require ./tests/setup.env.js --test \"tests/*.test.js\"",
-        "test:chatbot": "node --require ./tests/setup.env.js --test\"tests/chatbot.*.test.js\""
+        "test:chatbot": "node --require ./tests/setup.env.js --test \"tests/chatbot.*.test.js\""
     },
     "dependencies": {
         "bcryptjs": "^3.0.3",
