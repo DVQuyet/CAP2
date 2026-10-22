@@ -245,6 +245,7 @@ export default function TaskManagementPage({ role = "member" }) {
   const [tasks, setTasks] = useState([]);
   const [events, setEvents] = useState([]);
   const [eventsNextBeforeId, setEventsNextBeforeId] = useState(null);
+  const [eventCounts, setEventCounts] = useState(null);
   const [loadingMoreEvents, setLoadingMoreEvents] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -404,7 +405,11 @@ recognition.onerror = (event) => {
   const isMember = role === "member";
   const canAssign = isManager || (isAdmin && clanId);
   const stats = useMemo(() => summarizeTasks(tasks), [tasks]);
-  const eventStats = useMemo(() => summarizeEvents(events), [events]);
+  const eventStats = useMemo(() => {
+    const local = summarizeEvents(events);
+    if (!eventCounts) return local;
+    return { total: eventCounts.total, active: eventCounts.ongoing, done: eventCounts.ended };
+  }, [events, eventCounts]);
   const speechSupported = useMemo(
     () => typeof window !== "undefined" && Boolean(window.SpeechRecognition || window.webkitSpeechRecognition),
     []
@@ -464,6 +469,7 @@ recognition.onerror = (event) => {
 
   const loadData = useCallback(async () => {
     setLoading(true);
+    setEventCounts(null);
     setError("");
     try {
       if (isAdmin && !clanId) {
@@ -496,6 +502,7 @@ recognition.onerror = (event) => {
         setTasks(asArray(taskData.tasks));
         setEvents(asArray(eventData.events));
         setEventsNextBeforeId(nextCursorOf(eventData));
+        setEventCounts(eventData.counts || null);
         setMembers(
           asArray(memberData.members).filter(
             (member) =>
@@ -510,6 +517,7 @@ recognition.onerror = (event) => {
       setTasks(asArray(taskRows));
       setEvents(asArray(eventData.events));
       setEventsNextBeforeId(nextCursorOf(eventData));
+      setEventCounts(eventData.counts || null);
       setMembers(
         asArray(memberRows).filter(
           (member) => isAssignableMember(member)

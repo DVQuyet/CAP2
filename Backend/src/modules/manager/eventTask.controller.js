@@ -56,6 +56,7 @@ const getManagerEvents = async(req, res) => {
                 params.push(clanId);
             }
         }
+        const scopeParams = [...params]; // Bộ lọc clan/quyền, dùng lại cho truy vấn đếm tổng.
         // Phân trang keyset chỉ bật khi client gửi limit/before_id; không gửi thì giữ nguyên hành vi cũ (trả tất cả).
         const paged = req.query.limit !== undefined || req.query.before_id !== undefined || req.query.beforeId !== undefined;
         const { limit, beforeId } = parsePageParams(req.query, { defaultLimit: 30, maxLimit: 100 });
@@ -75,12 +76,29 @@ const getManagerEvents = async(req, res) => {
         params.push(limit + 1);
         const [fetched] = await db.query(sql, params);
         const page = finishPage(fetched, limit);
-        return res.json({
+        const payload = {
             success: true,
             events: page.items,
             has_more: page.has_more,
             next_before_id: page.next_before_id,
-        });
+        };
+        if (!beforeId) {
+            // Trang đầu kèm số liệu toàn bộ dòng họ (không chỉ các trang đã tải).
+            const scopeSql = scopeParams.length ? ' AND e.clan_id = ?' : '';
+            const [[counts]] = await db.query(
+                `SELECT COUNT(*) AS total,
+                        COALESCE(SUM(${computeManagerEventStatusSql} = 'ongoing'), 0) AS ongoing,
+                        COALESCE(SUM(${computeManagerEventStatusSql} = 'ended'), 0) AS ended
+                 FROM events e WHERE 1=1${scopeSql}`,
+                scopeParams
+            );
+            payload.counts = {
+                total: Number(counts?.total || 0),
+                ongoing: Number(counts?.ongoing || 0),
+                ended: Number(counts?.ended || 0),
+            };
+        }
+        return res.json(payload);
     } catch (error) {
         console.error('getManagerEvents error:', error);
         return res.status(500).json({ success: false, message: 'Lỗi lấy danh sách sự kiện' });
