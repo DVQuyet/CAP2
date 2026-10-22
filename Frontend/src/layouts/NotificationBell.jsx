@@ -5,6 +5,9 @@ import { apiRequest } from "../services/api";
 import { onSocketEvent } from "../services/socket";
 import { formatDateTimeVN } from "../shared/utils/dateFormat";
 import { appendPage, nextCursorOf, refreshHead } from "../shared/utils/pagination";
+import LoadingState from "../shared/components/LoadingState";
+import EmptyState from "../shared/components/EmptyState";
+import ErrorState from "../shared/components/ErrorState";
 import "./NotificationBell.css";
 
 function normalizeLink(linkUrl, role) {
@@ -41,6 +44,7 @@ export default function NotificationBell({ role = "member", buttonClassName = ""
   const wrapperRef = useRef(null);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(null);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -56,12 +60,14 @@ export default function NotificationBell({ role = "member", buttonClassName = ""
   const loadNotifications = useCallback(async () => {
     try {
       setLoading(true);
+      setLoadError(null);
       const data = await apiRequest("/api/member/notifications");
       const items = Array.isArray(data.notifications) ? data.notifications : [];
       setNotifications((current) => refreshHead(current, items));
       if (!loadedMoreRef.current) setNextBeforeId(nextCursorOf(data));
       setUnreadCount(Number(data.unread_count ?? items.filter((item) => Number(item.is_read) === 0).length));
     } catch (error) {
+      setLoadError(error || new Error("load failed"));
       setNotifications([]);
       setNextBeforeId(null);
       loadedMoreRef.current = false;
@@ -213,8 +219,11 @@ export default function NotificationBell({ role = "member", buttonClassName = ""
           </div>
 
           <div className="notification-list">
-            {loading && visibleNotifications.length === 0 && <div className="notification-empty">{t("common.loading")}</div>}
-            {!loading && visibleNotifications.length === 0 && <div className="notification-empty">{t("shared.notification.empty")}</div>}
+            {loading && visibleNotifications.length === 0 && <LoadingState variant="rows" count={3} />}
+            {!loading && loadError && visibleNotifications.length === 0 && <ErrorState error={loadError} onRetry={loadNotifications} />}
+            {!loading && !loadError && visibleNotifications.length === 0 && (
+              <EmptyState icon="notifications_none" title={t("shared.notification.empty")} />
+            )}
             {visibleNotifications.map((item) => (
               <button
                 key={item.id}

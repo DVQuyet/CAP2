@@ -11,6 +11,7 @@ import ManagerDashboardCharts from "../components/ManagerDashboardCharts";
 import { getStoredUser } from "../../../shared/utils/auth";
 import { formatDateTime } from "../utils/managerData";
 import { useLanguage } from "../../../i18n/LanguageContext";
+import ErrorState from "../../../shared/components/ErrorState";
 
 export default function ManagerDashboard() {
   const { t } = useLanguage();
@@ -29,7 +30,7 @@ export default function ManagerDashboard() {
   const [families, setFamilies] = useState([]);
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(null);
 
   const formatMoney = (value) =>
     new Intl.NumberFormat("vi-VN", {
@@ -40,7 +41,7 @@ export default function ManagerDashboard() {
 
   const loadDashboard = useCallback(async () => {
     setLoading(true);
-    setError("");
+    setError(null);
 
     try {
       const [data, memberData, fundData, transactionData, treeData] =
@@ -71,7 +72,7 @@ export default function ManagerDashboard() {
       setFundTransactions(transactionData?.transactions || []);
       setFamilies(treeData?.families || []);
     } catch (err) {
-      setError(err?.message || t("manager.dashboard.messages.loadError"));
+      setError(err || new Error("load failed"));
     } finally {
       setLoading(false);
     }
@@ -209,7 +210,7 @@ export default function ManagerDashboard() {
   </button>
 </div>
 
-      {error && <div className="section-card error-alert">{error}</div>}
+      {error && <ErrorState error={error} onRetry={loadDashboard} />}
 
       <div className="stats-grid-dashboard">
         {statCards.map((stat) => (

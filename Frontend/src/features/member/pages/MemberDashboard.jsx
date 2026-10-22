@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
+import LoadingState from "../../../shared/components/LoadingState";
+import ErrorState from "../../../shared/components/ErrorState";
+import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 import {
   createMemberReminder,
   getGeneralPosts,
@@ -48,12 +51,14 @@ export default function MemberDashboard() {
   const [sendingChat, setSendingChat] = useState(false);
   const [savingReminder, setSavingReminder] = useState(false);
   const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState(null);
   const [notice, setNotice] = useState("");
   const chatListRef = useRef(null);
 
   const loadDashboard = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     setError("");
+    setLoadError(null);
     try {
       const [dashResult, chatResult, postResult] = await Promise.allSettled([
         getMemberDashboard(),
@@ -87,7 +92,9 @@ export default function MemberDashboard() {
         setPosts([]);
       }
     } catch (err) {
-      setError(err?.message || t("member.dashboard.messages.loadError"));
+      // Tải nền (silent) lỗi thì chỉ báo nhẹ, không thay cả trang bằng màn hình lỗi.
+      if (silent) setError(friendlyErrorMessage(err, t));
+      else setLoadError(err || new Error("load failed"));
     } finally {
       if (!silent) setLoading(false);
     }
@@ -304,7 +311,17 @@ export default function MemberDashboard() {
     return (
       <div className="member-portal-page">
         <section className="member-panel">
-          <div className="member-empty">{t("member.dashboard.messages.loading")}</div>
+          <LoadingState variant="cards" />
+        </section>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="member-portal-page">
+        <section className="member-panel">
+          <ErrorState error={loadError} onRetry={() => loadDashboard()} />
         </section>
       </div>
     );

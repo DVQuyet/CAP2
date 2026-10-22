@@ -4,6 +4,9 @@ import { getMemberDashboard, verifyTreeEditSession } from "../../../api/memberSe
 import FamilyTreeEditor from "../components/FamilyTreeEditor.jsx";
 import { onSocketEvent, connectSocketFromStorage } from "../../../services/socket";
 import { clearTreeEditSession, readTreeEditSession, saveTreeEditSession } from "../../../services/treeEditSession";
+import LoadingState from "../../../shared/components/LoadingState";
+import ErrorState from "../../../shared/components/ErrorState";
+import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 import "../../member/pages/MemberDashboard.css";
 
 export default function FamilyTreePage() {
@@ -11,6 +14,7 @@ export default function FamilyTreePage() {
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState(null);
   const [isClanInfoOpen, setIsClanInfoOpen] = useState(false);
   const [keyInput, setKeyInput] = useState("");
   const [keySaving, setKeySaving] = useState(false);
@@ -40,11 +44,14 @@ export default function FamilyTreePage() {
   const loadTree = useCallback(async () => {
     setLoading(true);
     setError("");
+    setLoadError(null);
     try {
       const response = await getMemberDashboard();
       setDashboard(response);
     } catch (err) {
-      setError(err?.message || t("tree.page.errors.loadTree"));
+      // Lỗi tải lần đầu: hiện màn hình lỗi + Thử lại; tải lại nền khi đã có cây thì báo nhẹ.
+      setLoadError(err || new Error("load failed"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setLoading(false);
     }
@@ -233,7 +240,17 @@ export default function FamilyTreePage() {
     return (
       <div className="member-portal-page">
         <section className="member-panel">
-          <div className="member-empty">{t("tree.messages.loading")}</div>
+          <LoadingState variant="block" label={t("tree.messages.loading")} />
+        </section>
+      </div>
+    );
+  }
+
+  if (loadError && !dashboard) {
+    return (
+      <div className="member-portal-page">
+        <section className="member-panel">
+          <ErrorState error={loadError} onRetry={loadTree} />
         </section>
       </div>
     );

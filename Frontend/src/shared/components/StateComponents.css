@@ -1,0 +1,146 @@
+/* Trạng thái chờ / trống / lỗi dùng chung. Dùng currentColor + nền mờ để hợp cả nền sáng lẫn nền tối. */
+.state-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.state-loading {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+}
+
+.state-loading.is-cards {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+}
+
+.state-skeleton {
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 14px;
+  background: rgba(127, 127, 127, 0.12);
+}
+
+.state-loading.is-block .state-skeleton {
+  min-height: 160px;
+}
+
+.state-skeleton-line {
+  display: block;
+  height: 12px;
+  width: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(127, 127, 127, 0.16) 25%, rgba(127, 127, 127, 0.3) 50%, rgba(127, 127, 127, 0.16) 75%);
+  background-size: 200% 100%;
+  animation: state-shimmer 1.4s ease-in-out infinite;
+}
+
+.state-skeleton-line.is-short {
+  width: 45%;
+}
+
+@keyframes state-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.state-box {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 28px 16px;
+  border: 1px dashed rgba(127, 127, 127, 0.45);
+  border-radius: 16px;
+  text-align: center;
+  color: inherit;
+}
+
+.state-box.is-error {
+  border-color: rgba(220, 38, 38, 0.5);
+  background: rgba(220, 38, 38, 0.07);
+}
+
+.state-icon {
+  font-size: 2.4rem;
+  opacity: 0.75;
+}
+
+.state-box.is-error .state-icon {
+  color: #dc2626;
+  opacity: 1;
+}
+
+.state-title {
+  font-size: 1rem;
+}
+
+.state-hint {
+  margin: 0;
+  max-width: 420px;
+  opacity: 0.8;
+  font-size: 0.92rem;
+  overflow-wrap: anywhere;
+}
+
+.state-action {
+  margin-top: 6px;
+  min-height: 40px;
+  padding: 8px 20px;
+  border: 0;
+  border-radius: 999px;
+  background: #c99a2c;
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.state-action:hover {
+  filter: brightness(1.08);
+}
+
+.cold-start-banner {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: max-content;
+  max-width: calc(100vw - 24px);
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: #1f2937;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+
+.cold-start-spinner {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: state-spin 0.8s linear infinite;
+}
+
+@keyframes state-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .state-skeleton-line,
+  .cold-start-spinner {
+    animation: none;
+  }
+}

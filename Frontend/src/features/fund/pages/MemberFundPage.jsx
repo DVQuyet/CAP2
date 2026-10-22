@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { apiRequest } from "../../../services/api";
 import { resolveImageUrl } from "../../../shared/utils/media";
 import { formatDateVN } from "../../../shared/utils/dateFormat";
+import LoadingState from "../../../shared/components/LoadingState";
+import ErrorState from "../../../shared/components/ErrorState";
 import "./FundDesign.css";
 import { notify } from "../../../shared/utils/toast";
 
@@ -12,6 +14,7 @@ export default function MemberFundPage() {
   const [transactions, setTransactions] = useState([]);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const totalIncome = transactions.filter(tx => tx.type === 'income' && tx.status === 'approved').reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
   const totalExpense = transactions.filter(tx => tx.type === 'expense' && tx.status === 'approved').reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
   const currentBalance = totalIncome - totalExpense;
@@ -54,6 +57,7 @@ export default function MemberFundPage() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const campData = await apiRequest("/api/member/fund/campaigns");
       setCampaigns(campData.campaigns);
@@ -61,6 +65,7 @@ export default function MemberFundPage() {
       setTransactions(txData.transactions);
     } catch (error) {
       console.error("Error loading member fund data:", error);
+      setLoadError(error || new Error("load failed"));
     } finally {
       setLoading(false);
     }
@@ -174,6 +179,8 @@ export default function MemberFundPage() {
         {/* Active Campaigns */}
         <section>
           <h2 className="section-title">{t("fund.member.sections.obligations")}</h2>
+          {loading && <LoadingState variant="cards" count={2} />}
+          {!loading && loadError && <ErrorState error={loadError} onRetry={loadData} />}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
             {campaigns.filter(c => c.status === 'open').map(c => (
               <div key={c.id} className="glass-card campaign-member-v2">

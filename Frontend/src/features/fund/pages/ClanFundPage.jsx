@@ -4,6 +4,8 @@ import { apiRequest, buildApiUrl } from "../../../services/api";
 import { resolveImageUrl } from "../../../shared/utils/media";
 import DateInput from "../../../shared/components/DateInput";
 import { formatDateVN, isoToVietnamDate, vietnamDateToIso, pad2 } from "../../../shared/utils/dateFormat";
+import LoadingState from "../../../shared/components/LoadingState";
+import ErrorState from "../../../shared/components/ErrorState";
 import "./FundDesign.css";
 import FundAnalytics from "../components/FundAnalytics";
 import { notify } from "../../../shared/utils/toast";
@@ -37,6 +39,7 @@ export default function ClanFundPage() {
   const [transactions, setTransactions] = useState([]);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [showCampaignModal, setShowCampaignModal] = useState(false);
   const [showLedgerModal, setShowLedgerModal] = useState(false);
   const [showGeneralForm, setShowGeneralForm] = useState(false);
@@ -210,6 +213,7 @@ export default function ClanFundPage() {
 
   const loadData = useCallback(async () => {
     setLoading(true);
+    setLoadError(null);
 
     try {
       const campData = await apiRequest("/api/manager/fund/campaigns");
@@ -253,6 +257,7 @@ export default function ClanFundPage() {
       }
     } catch (error) {
       console.error("Error loading fund data:", error);
+      setLoadError(error || new Error("load failed"));
     } finally {
       setLoading(false);
     }
@@ -629,7 +634,9 @@ export default function ClanFundPage() {
 
           <div className="campaign-grid-v3 vertical-scroll">
             {loading ? (
-              <div className="empty-state-card">{t("common.loading")}</div>
+              <LoadingState variant="cards" count={2} />
+            ) : loadError ? (
+              <ErrorState error={loadError} onRetry={loadData} />
             ) : filteredCampaigns.length ? (
               filteredCampaigns.map((c) => (
                 <div

@@ -11,6 +11,10 @@ import {
   updatePost as updatePostApi,
 } from "../../../api/memberService";
 import ImageUpload from "../../../shared/components/ImageUpload";
+import LoadingState from "../../../shared/components/LoadingState";
+import EmptyState from "../../../shared/components/EmptyState";
+import ErrorState from "../../../shared/components/ErrorState";
+import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 import { formatDateTimeVN } from "../../../shared/utils/dateFormat";
 import { getSocket } from "../../../services/socket";
 import "./GeneralPosts.css";
@@ -348,6 +352,7 @@ export default function GeneralPosts() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [form, setForm] = useState(emptyPostForm);
   const [formError, setFormError] = useState("");
@@ -376,12 +381,13 @@ export default function GeneralPosts() {
   const loadPosts = useCallback(async () => {
     setLoading(true);
     setError("");
+    setLoadError(null);
     try {
       const data = await getGeneralPosts();
       setPosts(data.posts || []);
       setNextBeforeId(data.has_more ? data.next_before_id || null : null);
     } catch (err) {
-      setError(err?.message || t("posts.messages.loadError"));
+      setLoadError(err || new Error("load failed"));
       setPosts([]);
     } finally {
       setLoading(false);
@@ -399,7 +405,7 @@ export default function GeneralPosts() {
       });
       setNextBeforeId(data.has_more ? data.next_before_id || null : null);
     } catch (err) {
-      setError(err?.message || t("posts.messages.loadError"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setLoadingMore(false);
     }
@@ -641,9 +647,11 @@ export default function GeneralPosts() {
           {error && <div className="post-form-message is-error">{error}</div>}
 
           {loading ? (
-            <div className="post-empty-state">{t("common.loading")}</div>
+            <LoadingState variant="cards" count={2} />
+          ) : loadError ? (
+            <ErrorState error={loadError} onRetry={loadPosts} />
           ) : posts.length === 0 ? (
-            <div className="post-empty-state">{t("posts.messages.noPosts")}</div>
+            <EmptyState icon="forum" title={t("posts.messages.noPosts")} />
           ) : (
             <div className="feed-post-list">
               {posts.map((post) => (

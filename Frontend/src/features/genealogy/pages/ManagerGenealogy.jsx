@@ -4,6 +4,8 @@ import { createTreeEditKeyAPI, getActiveTreeEditKeysAPI, getManagerTree, updateM
 import FamilyTreeEditor from "../components/FamilyTreeEditor.jsx";
 import { formatDateTimeVN } from "../../../shared/utils/dateFormat";
 import { onSocketEvent } from "../../../services/socket";
+import ErrorState from "../../../shared/components/ErrorState";
+import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 import "../../manager/pages/manager.css";
 
 export default function GenealogySection() {
@@ -57,7 +59,7 @@ export default function GenealogySection() {
       setLayoutSettings(data.layoutSettings || { line_routes: {}, card_sizes: {} });
       setClan(data.clan || null);
     } catch (err) {
-      setError(err?.message || t("tree.page.errors.loadTree"));
+      setError(friendlyErrorMessage(err, t));
       setLayoutSettings({ line_routes: {}, card_sizes: {} });
     } finally {
       setLoading(false);
@@ -443,7 +445,7 @@ export default function GenealogySection() {
         </div>
       </div>
 
-      {error && <div className="manager-inline-error">{error}</div>}
+      {error && <ErrorState message={error} onRetry={loadTree} />}
       {isClanInfoOpen ? renderClanInfoModal() : null}
 
       <div className="management-grid management-grid--single">

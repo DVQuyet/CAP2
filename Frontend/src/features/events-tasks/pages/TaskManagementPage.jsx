@@ -19,6 +19,9 @@ import { generateEventFormAI } from "../../../api/aiServerService";
 import { getSocket } from "../../../services/socket";
 import { appendPage, nextCursorOf } from "../../../shared/utils/pagination";
 import DateInput from "../../../shared/components/DateInput";
+import LoadingState from "../../../shared/components/LoadingState";
+import ErrorState from "../../../shared/components/ErrorState";
+import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 import VoiceRecorder from "../../voice/components/VoiceRecorder";
 import { useLanguage } from "../../../i18n/LanguageContext";
 import { formatDateTimeVN, formatDateVN, isoToVietnamDate, vietnamDateToIso } from "../../../shared/utils/dateFormat";
@@ -252,6 +255,7 @@ export default function TaskManagementPage({ role = "member" }) {
   const [savingTaskId, setSavingTaskId] = useState(null);
   const [message, setMessageState] = useState("");
   const [error, setErrorState] = useState("");
+  const [loadError, setLoadError] = useState(null);
   // Đếm số lần báo để cùng một thông báo lặp lại (vd. gửi form trống hai lần) vẫn hiện toast.
   const [messageStamp, setMessageStamp] = useState(0);
   const [errorStamp, setErrorStamp] = useState(0);
@@ -471,6 +475,7 @@ recognition.onerror = (event) => {
     setLoading(true);
     setEventCounts(null);
     setError("");
+    setLoadError(null);
     try {
       if (isAdmin && !clanId) {
         const data = await getAdminClans();
@@ -525,7 +530,7 @@ recognition.onerror = (event) => {
       );
       setClan(null);
     } catch (err) {
-      setError(err?.message || t("eventsTasks.errors.loadFailed"));
+      setLoadError(err || new Error("load failed"));
     } finally {
       setLoading(false);
     }
@@ -544,7 +549,7 @@ recognition.onerror = (event) => {
       setEvents((current) => appendPage(current, asArray(eventData.events)));
       setEventsNextBeforeId(nextCursorOf(eventData));
     } catch (err) {
-      setError(err?.message || t("eventsTasks.errors.loadFailed"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setLoadingMoreEvents(false);
     }
@@ -1160,7 +1165,15 @@ const openEvent = (eventId) => {
   if (loading) {
     return (
       <section className="task-page">
-        <div className="task-card task-empty">{t("common.loading")}</div>
+        <LoadingState variant="rows" />
+      </section>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <section className="task-page">
+        <ErrorState error={loadError} onRetry={loadData} />
       </section>
     );
   }

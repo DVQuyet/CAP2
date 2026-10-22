@@ -17,6 +17,23 @@
     "help": "Help",
     "currentPlan": "current plan",
     "loading": "Loading...",
+    "states": {
+      "loading": "Loading data...",
+      "retry": "Try again",
+      "coldStart": "The server is starting up, the first load can take up to 1 minute…",
+      "error": {
+        "title": "Could not load data",
+        "network": "Cannot reach the server. Please check your connection and try again.",
+        "server": "The server is busy or having trouble. Please try again in a few minutes.",
+        "forbidden": "Your session has expired or you do not have access to this content.",
+        "notFound": "The requested content was not found.",
+        "generic": "Something went wrong. Please try again."
+      },
+      "empty": {
+        "title": "No data yet",
+        "hint": "Content will appear here once there is data."
+      }
+    },
     "login": "Log in",
     "logout": "Log out",
     "pending": "Pending",

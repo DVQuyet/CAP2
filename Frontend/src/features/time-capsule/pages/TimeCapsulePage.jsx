@@ -6,6 +6,10 @@ import { deleteMemory, updateMemory } from "../../../api/memberService";
 import { mediaUrlFromId } from "../../../shared/utils/media";
 import { formatDateTimeVN } from "../../../shared/utils/dateFormat";
 import { appendPage, nextCursorOf } from "../../../shared/utils/pagination";
+import LoadingState from "../../../shared/components/LoadingState";
+import EmptyState from "../../../shared/components/EmptyState";
+import ErrorState from "../../../shared/components/ErrorState";
+import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 import "./TimeCapsulePage.css";
 
 // Số kỉ niệm mỗi lần tải; "Tải thêm" lấy trang cũ hơn.
@@ -145,6 +149,7 @@ export default function TimeCapsulePage({ role = "member" }) {
   const [filePreview, setFilePreview] = useState(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [filter, setFilter] = useState("all");
@@ -173,12 +178,13 @@ export default function TimeCapsulePage({ role = "member" }) {
   const loadMemories = useCallback(async () => {
     setLoading(true);
     setError("");
+    setLoadError(null);
     try {
       const result = await apiRequest(`/api/member/memories?includeOwnPending=1&limit=${MEMORIES_PAGE_SIZE}`);
       setMemories(result.memories || []);
       setNextBeforeId(nextCursorOf(result));
     } catch (err) {
-      setError(err?.message || t("timeCapsule.errors.loadMemories"));
+      setLoadError(err || new Error("load failed"));
     } finally {
       setLoading(false);
     }
@@ -192,7 +198,7 @@ export default function TimeCapsulePage({ role = "member" }) {
       setMemories((prev) => appendPage(prev, result.memories || []));
       setNextBeforeId(nextCursorOf(result));
     } catch (err) {
-      setError(err?.message || t("timeCapsule.errors.loadMemories"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setLoadingMore(false);
     }
@@ -881,9 +887,11 @@ export default function TimeCapsulePage({ role = "member" }) {
         </div>
 
         {loading ? (
-          <div className="time-capsule-empty">{t("timeCapsule.list.loading")}</div>
+          <LoadingState variant="cards" label={t("timeCapsule.list.loading")} />
+        ) : loadError ? (
+          <ErrorState error={loadError} onRetry={loadMemories} />
         ) : visibleMemories.length === 0 ? (
-          <div className="time-capsule-empty">{t("timeCapsule.album.empty", { category: albumTabs.find((tab) => tab.value === albumCategory)?.label || t("timeCapsule.album.thisCategory") })}</div>
+          <EmptyState icon="photo_library" title={t("timeCapsule.album.empty", { category: albumTabs.find((tab) => tab.value === albumCategory)?.label || t("timeCapsule.album.thisCategory") })} />
         ) : showCarousel && currentCarouselMemory ? (
           <div className="memory-carousel-stage">
             <MemoryCard

@@ -6,6 +6,8 @@ import { getSocket } from "../../../services/socket";
 import { useLanguage } from "../../../i18n/LanguageContext";
 import { notify } from "../../../shared/utils/toast";
 import { getLunarInfoFromSolar as getLunarInfo } from "../../../shared/utils/lunarCalendar";
+import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
+import "../../../shared/components/StateComponents.css";
 import "./VietnamCalendarPage.css";
 
 function pad2(v) {
@@ -154,6 +156,7 @@ export default function VietnamCalendarPage() {
   const [savedEvents, setSavedEvents] = useState([]);
   const [loadingEvents, setLoadingEvents] = useState(false);
   const [calendarStatus, setCalendarStatus] = useState("");
+  const [loadFailed, setLoadFailed] = useState(false);
   const [showEventForm, setShowEventForm] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
   const emptyEventForm = useMemo(
@@ -196,11 +199,13 @@ export default function VietnamCalendarPage() {
   const loadCalendarEvents = useCallback(async () => {
     try {
       setLoadingEvents(true);
+      setLoadFailed(false);
       const data = await apiRequest(`/api/calendar/events?from=${range.from}&to=${range.to}`);
       setSavedEvents(Array.isArray(data.events) ? data.events : []);
       setCalendarStatus("");
     } catch (error) {
-      setCalendarStatus(error?.message || t("vnCalendar.messages.loadError"));
+      setCalendarStatus(friendlyErrorMessage(error, t));
+      setLoadFailed(true);
       setSavedEvents([]);
     } finally {
       setLoadingEvents(false);
@@ -351,7 +356,7 @@ export default function VietnamCalendarPage() {
       notify(payload.visibility === "global" ? t("vnCalendar.messages.saveSuccessGlobal") : t("vnCalendar.messages.saveSuccessPersonal"), "success");
       await loadCalendarEvents();
     } catch (error) {
-      const failure = error?.message || t("vnCalendar.messages.saveError");
+      const failure = friendlyErrorMessage(error, t);
       setCalendarStatus(failure);
       notify(failure, "error");
     }
@@ -372,7 +377,7 @@ export default function VietnamCalendarPage() {
       if (editingEvent?.id === event.id) resetEventForm();
       await loadCalendarEvents();
     } catch (error) {
-      setCalendarStatus(error?.message || t("vnCalendar.messages.deleteError"));
+      setCalendarStatus(friendlyErrorMessage(error, t));
     }
   };
 
@@ -445,7 +450,14 @@ export default function VietnamCalendarPage() {
           </label>
         </div>
 
-        {calendarStatus ? <div className="vn-calendar-status">{calendarStatus}</div> : null}
+        {calendarStatus ? (
+          <div className="vn-calendar-status">
+            {calendarStatus}
+            {loadFailed && !loadingEvents ? (
+              <button type="button" className="state-action" onClick={loadCalendarEvents}>{t("common.states.retry")}</button>
+            ) : null}
+          </div>
+        ) : null}
         {loadingEvents ? <div className="vn-calendar-status is-loading">{t("vnCalendar.syncing")}</div> : null}
 
         <div className={`vn-calendar-grid ${viewMode === "week" ? "is-week" : ""} ${viewMode === "day" ? "is-day" : ""}`}>

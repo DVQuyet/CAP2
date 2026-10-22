@@ -17,6 +17,23 @@
     "help": "Hỗ trợ",
     "currentPlan": "gói hiện tại",
     "loading": "Đang tải...",
+    "states": {
+      "loading": "Đang tải dữ liệu...",
+      "retry": "Thử lại",
+      "coldStart": "Máy chủ đang khởi động, lần đầu có thể mất tới 1 phút…",
+      "error": {
+        "title": "Không tải được dữ liệu",
+        "network": "Không kết nối được tới máy chủ. Vui lòng kiểm tra mạng rồi thử lại.",
+        "server": "Máy chủ đang bận hoặc gặp sự cố. Vui lòng thử lại sau ít phút.",
+        "forbidden": "Phiên đăng nhập đã hết hạn hoặc bạn không có quyền xem nội dung này.",
+        "notFound": "Không tìm thấy nội dung yêu cầu.",
+        "generic": "Có lỗi xảy ra. Vui lòng thử lại."
+      },
+      "empty": {
+        "title": "Chưa có dữ liệu",
+        "hint": "Nội dung sẽ hiển thị ở đây khi có dữ liệu."
+      }
+    },
     "login": "Đăng nhập",
     "logout": "Đăng xuất",
     "pending": "Chờ duyệt",
