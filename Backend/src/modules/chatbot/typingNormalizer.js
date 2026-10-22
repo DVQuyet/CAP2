@@ -3,6 +3,8 @@
 //
 // Nguyên tắc: thà bỏ sót một từ đệm còn hơn làm hỏng tên người ("Nguyễn Thị Tui", "Đinh Ko", "Trần Văn Với").
 
+const { orderFromWord } = require('./kinshipBirthOrder');
+
 const hasDiacritics = (value) => /[^\u0000-\u007f]/.test(String(value || ''));
 
 // `\b` của JS chỉ hiểu ASCII nên không dùng được trước chữ như "đ"; dùng ranh giới theo Unicode.
@@ -50,6 +52,10 @@ const ABBREVIATIONS = [
     [re(`${B}u(?=\\s+(?:tôi|toi|tui|của|cua|mình|minh))`), 'mẹ', 'me', 'kin'],
     // "ông cố (nội/ngoại)", "bà cố" -> cụ ông/cụ bà. Chữ "cố" phải viết thường và có dấu (không dấu "co" lẫn với "cô").
     [re(`${B}(ông|bà)\\s+(cố)(?:\\s+(nội|ngoại))?${E}`), 'cụ $1 $3', null, 'ancestor'],
+    // "ong co noi/ngoai", "ba co toi/minh/cua" (không dấu) = cụ. Chỉ khi cả câu không dấu, viết thường và có từ đi sau
+    // như trên, tránh nhầm với "ông cô" / "bà cô" (em gái của ông/bà nội).
+    [re(`${B}(ong|ba)\\s+co(?=\\s+(?:noi|ngoai)${E})`), 'cu', null, 'plainCu'],
+    [re(`${B}(ong|ba)\\s+co(?=\\s+(?:toi|minh|cua)${E})`), 'cu $1', null, 'plainCu'],
     // Lỗi chính tả/phương ngữ trong câu hỏi ngày tháng, chức danh.
     [re(`${B}lăm(?=\\s+(?:nào|nao))`), 'năm', 'nam', 'lower'],
     [re(`${B}(ngày|năm|khi|lúc|tháng|đời)\\s+lào${E}`), '$1 nào', null, 'phrase'],
@@ -104,8 +110,14 @@ function stripNarrative(text) {
 }
 
 // Thứ bậc kiểu Nam Bộ đi sau xưng hô ("chú út", "anh hai", "thím ba") không phải tên người và không đổi quan hệ.
-const ORDER_WORDS = '(?:hai|ba|tư|út|sáu|bảy|tám|chín|mười)';
-const NOT_ORDER_FOLLOWER = new Set(['người', 'đời', 'tuổi', 'ngày', 'tháng', 'mươi', 'trăm', 'nghìn', 'con', 'cháu', 'anh', 'chị', 'em']);
+const ORDER_WORDS = '(?:hai|ba|tư|năm|út|cả|trưởng|sáu|bảy|tám|chín|mười)';
+// Thứ bậc được GIỮ LẠI (kinOrder) để chatbot lọc đúng chú/bác/cô... (xem kinshipBirthOrder.js), không còn bị bỏ hẳn.
+const NOT_ORDER_FOLLOWER = new Set(['người', 'đời', 'tuổi', 'ngày', 'tháng', 'mươi', 'trăm', 'nghìn', 'con', 'cháu', 'anh', 'chị', 'em', 'nhà', 'họ', 'chi', 'tộc', 'nhánh', 'phòng', 'dòng', 'gia']);
+// "năm" vừa là thứ bậc ("chú năm") vừa là năm tháng: chỉ nhận khi chữ đi sau không phải từ chỉ thời gian.
+const NOT_NAM_FOLLOWER = new Set(['sinh', 'mất', 'nào', 'nay', 'ngoái', 'trước', 'sau', 'qua', 'tới', 'đó', 'ấy', 'vừa', 'xưa']);
+// Từ Nam Bộ trong câu -> "hai" là con thứ nhất. "anh/chị hai", "mợ", "dượng" bản thân đã là cách gọi miền Nam.
+const SOUTH_MARKER = re(`${B}(tía|má|bầm|dượng|mợ)${E}`, 'iu');
+const SOUTH_KIN = new Set(['anh', 'chị', 'mợ', 'dượng']);
 const KIN_WITH_ORDER = re(`${B}(bác|chú|cô|cậu|dì|mợ|thím|dượng|anh|chị|bac|chu|cau|di|mo|thim|duong|chi)\\s+(${ORDER_WORDS}|ut)${E}`, 'giu');
 const KIN_AFTER = '(bác|chú|cô|cậu|dì|mợ|thím|dượng)';
 const QUESTION_WORD = '(?:là ai|tên gì|tên là gì)';
@@ -115,7 +127,7 @@ const BARE_KIN_SPOUSE = new RegExp(`^${KIN_AFTER}\\s+có\\s+(vợ|chồng)\\s+ch
 
 // Xưng hô miền Nam không kèm "của tôi": "dượng út tên gì" -> "dượng của tôi tên gì". Chỉ đổi khi cả câu đúng mẫu
 // (không có tên riêng đi kèm) nên không ảnh hưởng tên người như "Nguyễn Văn Út".
-function rewriteRegionalKinship(text, plain) {
+function rewriteRegionalKinship(text, plain, info = {}, southHint = false) {
     let hadOrder = false;
     let result = text.replace(KIN_WITH_ORDER, (matched, kin, order, offset, whole) => {
         const word = String(order);
@@ -126,8 +138,13 @@ function rewriteRegionalKinship(text, plain) {
         if (next && (/^\d/.test(next) || NOT_ORDER_FOLLOWER.has(next.toLowerCase()))) return matched;
         // "ut" không dấu chỉ là thứ bậc khi câu không dấu hoàn toàn; "ba/hai" không dấu quá dễ nhầm nên không xét.
         if (word === 'ut' && !plain) return matched;
-        if (/^(?:hai|ba|tư|sáu|bảy|tám|chín|mười)$/.test(word) && plain) return matched;
+        if (/^(?:hai|ba|tư|năm|sáu|bảy|tám|chín|mười|cả|trưởng)$/.test(word) && plain) return matched;
+        if (word === 'năm' && next && NOT_NAM_FOLLOWER.has(next.toLowerCase())) return matched;
         hadOrder = true;
+        if (!info.order) {
+            const kinWord = kin.toLowerCase();
+            info.order = orderFromWord(word, kinWord, southHint || SOUTH_KIN.has(kinWord));
+        }
         return kin;
     });
     const punct = (result.match(/[?.!]*$/) || [''])[0];
@@ -184,10 +201,12 @@ function stripTrailingParticles(text) {
     return stripped ? tokens.join(' ') + punct : text;
 }
 
-function normalizeTyping(message) {
+function normalizeCore(message, info) {
     let text = String(message || '').replace(/\s+/g, ' ').trim();
     if (!text) return text;
     const plain = !hasDiacritics(text);
+    // Từ Nam Bộ phải xét trên câu gốc, trước khi "tía/má" bị đổi thành "bố/mẹ".
+    const southHint = SOUTH_MARKER.test(text);
 
     for (const [pattern, accented, unaccented, guard] of ABBREVIATIONS) {
         text = text.replace(pattern, (...args) => {
@@ -207,6 +226,10 @@ function normalizeTyping(message) {
             }
             if (guard === 'phrase' && matched !== matched.toLowerCase()) return matched;
             if (guard === 'ancestor' && args[2] !== 'cố') return matched;
+            if (guard === 'plainCu') {
+                const prev = lastToken(whole, offset);
+                if (!plain || matched !== matched.toLowerCase() || (prev && isCapitalised(prev))) return matched;
+            }
             if (guard === 'family' || guard === 'familyLower') {
                 if (guard === 'familyLower' && matched !== matched.toLowerCase()) return matched;
                 const prev = (lastToken(whole, offset) || '').toLowerCase();
@@ -221,7 +244,7 @@ function normalizeTyping(message) {
     // "vợ của anh trai bố tôi thì gọi là gì": "thì" đứng trước "là/gọi" chỉ là từ đệm.
     text = text.replace(/\s+thì(?=\s+(?:là|gọi|la|goi)\s)/g, '');
     text = stripNarrative(text);
-    text = rewriteRegionalKinship(text, plain);
+    text = rewriteRegionalKinship(text, plain, info, southHint);
 
     // Chỉ bỏ lời xã giao khi vẫn còn nội dung câu hỏi.
     const withoutLead = text.replace(LEADING_POLITE, '');
@@ -238,4 +261,13 @@ function normalizeTyping(message) {
     return text.replace(/\s+/g, ' ').trim();
 }
 
-module.exports = { normalizeTyping };
+const normalizeTyping = (message) => normalizeCore(message, {});
+
+// Như normalizeTyping nhưng kèm thứ bậc đã nhận ra: { text, kinOrder: { kin, word, kind, n, south } | null }.
+function normalizeTypingDetailed(message) {
+    const info = {};
+    const text = normalizeCore(message, info);
+    return { text, kinOrder: info.order || null };
+}
+
+module.exports = { normalizeTyping, normalizeTypingDetailed };

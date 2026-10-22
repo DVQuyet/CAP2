@@ -23,7 +23,7 @@ jobs:
       - run: npm ci
       - run: npm test
       # Trợ lý AI: chấm câu trả lời trên dòng họ mẫu (DB giả, không gọi Groq). Nâng --min sau mỗi đợt sửa.
-      - run: node scripts/chatbot-e2e-check.js --min 137 --min-conversation 7
+      - run: node scripts/chatbot-e2e-check.js --min 166 --min-conversation 7
 
   frontend:
     runs-on: ubuntu-latest

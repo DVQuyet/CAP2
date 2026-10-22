@@ -16,10 +16,11 @@ const { resolveRelationshipExpression } = require('./relationshipExpressionResol
 const { toPositiveId, queryOptional } = require('./chatbotUtils');
 const { ARCHIVED_MEMBER_JOIN_SQL } = require('../manager/common.service');
 const { canSeeSensitiveRelations } = require('../genealogy/treeVisibility');
-const { normalizeTyping } = require('./typingNormalizer');
+const { normalizeTyping, normalizeTypingDetailed } = require('./typingNormalizer');
+const { runWithKinOrder, getKinOrderContext, filterByKinOrder, anchorsOfMatches, labelWithOrder } = require('./kinshipBirthOrder');
 const { withTreeFields, fallbackFlag } = require('./chatbotResponseMeta');
 const { saveFeedback, ensureChatbotHiddenSchema } = require('./chatbotFeedbackService');
-const { describePersonBrief, capitalizeFirst, formatDateVN, dateParts } = require('./chatbotFormat');
+const { describePersonBrief, capitalizeFirst, formatDateVN, dateParts, birthYearOf } = require('./chatbotFormat');
 const { plainTermToKey, hasVietnameseDiacritics } = require('./kinshipTermService');
 const { findPronoun, rewritePronoun, rewriteEllipsis, selectCandidate, findFocusText } = require('./conversationFlowService');
 
@@ -507,7 +508,7 @@ async function resolveNamedPerson(res, clanId, intent, names, currentMemberId = 
             success: false,
             code: 'PERSON_NOT_FOUND',
             intent,
-            answer: `Theo dữ liệu gia phả hiện tại, tôi chưa tìm thấy ${kinship.label} của bạn.`,
+            answer: `Theo dữ liệu gia phả hiện tại, tôi chưa tìm thấy ${labelWithOrder(kinship.label)} của bạn.`,
             confidence: 0,
         };
         body.personIds = [];
@@ -871,6 +872,8 @@ async function handleFindByKinship({ clanId, currentMemberId, parsed }) {
     }
     const entities = parsed.entities || {};
     const term = entities.kinshipTerm;
+    // "chú út của bạn" thay vì "chú của bạn" khi câu hỏi có thứ bậc.
+    const termText = labelWithOrder(term);
     if (Array.isArray(entities.ambiguousTerms) && entities.ambiguousTerms.length > 1) {
         const options = entities.ambiguousTerms;
         return {
@@ -893,8 +896,8 @@ async function handleFindByKinship({ clanId, currentMemberId, parsed }) {
             success: true,
             intent: parsed.intent,
             answer: entities.count
-                ? `Theo dữ liệu gia phả hiện tại, chưa ghi nhận ${term} nào của bạn.`
-                : `Theo dữ liệu gia phả hiện tại, tôi chưa tìm thấy ${term} của bạn.`,
+                ? `Theo dữ liệu gia phả hiện tại, chưa ghi nhận ${termText} nào của bạn.`
+                : `Theo dữ liệu gia phả hiện tại, tôi chưa tìm thấy ${termText} của bạn.`,
             confidence: 0.5,
             people: [],
         };
@@ -911,14 +914,14 @@ async function handleFindByKinship({ clanId, currentMemberId, parsed }) {
     const grouped = () => [...groups].map(([label, items]) => `${label}: ${names(items)}`).join('; ');
     let answer;
     if (entities.count) {
-        answer = `Theo dữ liệu gia phả hiện tại, bạn có ${matches.length} ${term}: ${groups.size === 1 ? names(matches) : grouped()}.`;
+        answer = `Theo dữ liệu gia phả hiện tại, bạn có ${matches.length} ${termText}: ${groups.size === 1 ? names(matches) : grouped()}.`;
     } else if (groups.size === 1) {
         const [label, items] = [...groups][0];
         answer = label === term
-            ? `Theo dữ liệu gia phả hiện tại, ${term} của bạn là: ${names(items)}.`
-            : `Theo dữ liệu gia phả hiện tại, ${term} của bạn (${label}) là: ${names(items)}.`;
+            ? `Theo dữ liệu gia phả hiện tại, ${termText} của bạn là: ${names(items)}.`
+            : `Theo dữ liệu gia phả hiện tại, ${termText} của bạn (${label}) là: ${names(items)}.`;
     } else {
-        answer = `Theo dữ liệu gia phả hiện tại, ${term} của bạn gồm — ${grouped()}.`;
+        answer = `Theo dữ liệu gia phả hiện tại, ${termText} của bạn gồm — ${grouped()}.`;
     }
     const uncertain = matches.filter((item) => item.uncertain);
     if (uncertain.length) {
@@ -1808,6 +1811,75 @@ const withViewer = (handler) => (req, res) => relationshipEngine.runWithViewer(
     () => handler(req, res)
 );
 
+// Giữ thứ bậc sinh trong câu ("chú út", "thím ba") suốt yêu cầu để lọc đúng người (kinshipBirthOrder).
+const withKinOrder = (handler) => (req, res) => runWithKinOrder(
+    normalizeTypingDetailed(sanitizeMessage(req.body?.message || '')).kinOrder,
+    () => handler(req, res)
+);
+
+// Thứ bậc bằng số ("chú năm") mơ hồ giữa cách đếm Nam Bộ (hai = thứ 1) và Bắc Bộ (hai = thứ 2):
+// chỉ hỏi lại khi dữ liệu cho hai cách hiểu ra hai nhóm người khác nhau; một cách hiểu duy nhất có người thì trả lời luôn.
+async function askKinOrderClarification({ res, clanId, currentMemberId, message }) {
+    const ctx = getKinOrderContext();
+    const order = ctx?.order;
+    if (!order || order.kind !== 'num' || ctx.interp !== 'both' || ctx.pinnedId || !currentMemberId) return null;
+    const graph = await relationshipEngine.loadClanGraph(clanId);
+    const found = await relationshipEngine.findPeopleByKinshipTerm(currentMemberId, order.kin, { clanId, skipKinOrder: true });
+    const pick = (interp) => anchorsOfMatches(graph, order.kin, filterByKinOrder(graph, order.kin, found, order, { interp }));
+    const south = pick('south');
+    const north = pick('north');
+    if (!south.length || !north.length) {
+        // Chỉ một cách hiểu có người: dùng cách đó. Không cách nào có người: để luồng thường báo "chưa thấy".
+        if (south.length) ctx.interp = 'south';
+        else if (north.length) ctx.interp = 'north';
+        return null;
+    }
+    const southIds = new Set(south.map((item) => Number(item.person.id)));
+    if (north.length === south.length && north.every((item) => southIds.has(Number(item.person.id)))) return null;
+
+    const merged = new Map();
+    [...south, ...north].forEach((item) => merged.set(Number(item.person.id), item));
+    const candidates = [...merged.values()];
+    const wordLabel = `${order.kin} ${order.word}`;
+    const described = candidates.map((item) => {
+        const brief = describePersonBrief(item.person, graph, relationshipEngine.personName);
+        // Thím/mợ/dượng: người được chọn là chú/cậu/cô/dì có thứ bậc, người được hỏi là vợ/chồng của họ.
+        const owner = { thím: 'vợ', mợ: 'vợ', dượng: 'chồng' }[order.kin];
+        return { person: item.person, description: `${owner ? `${owner} của ` : ''}${brief} - con thứ ${item.rank}/${item.size} trong gia đình` };
+    });
+    const clarification = buildClarificationResponse({
+        candidates: candidates.map((item) => item.person),
+        reason: 'ambiguous_birth_order',
+        context: { intent: 'kinship_birth_order', subject: wordLabel },
+    });
+    clarification.answer = `Cách gọi "${wordLabel}" khác nhau theo vùng (miền Nam "${order.word}" là con thứ ${order.n}, miền Bắc là con thứ ${order.n + 1}), nên có ${described.length} người: ${described.map((item, index) => `${index + 1}. ${item.description}`).join('; ')}. Bạn muốn hỏi người nào? (bấm chọn hoặc trả lời số thứ tự)`;
+    const turn = res?.locals?.chatbotTurn;
+    const pendingCandidates = described.map((item) => ({
+        id: item.person.id,
+        name: relationshipEngine.personName(item.person),
+        generation: item.person.generation || null,
+        birthYear: birthYearOf(item.person),
+        description: item.description,
+    }));
+    if (turn?.memorySessionId) {
+        turn.pending = { intent: 'kinship_birth_order', subject: wordLabel, message, kinOrder: order, candidates: pendingCandidates };
+        updateConversationMemory(turn.memorySessionId, { pendingClarification: turn.pending });
+    }
+    const body = {
+        success: false,
+        code: 'AMBIGUOUS_BIRTH_ORDER',
+        intent: 'kinship_birth_order',
+        answer: clarification.answer,
+        needsClarification: true,
+        reason: clarification.reason,
+        candidates: pendingCandidates,
+        pendingClarification: { ...clarification.pendingClarification, candidates: pendingCandidates },
+    };
+    Object.assign(body, withTreeFields(body));
+    body.messageId = await storeTurnAnswer(res, body);
+    return res.status(200).json(body);
+}
+
 // POST /api/chatbot/ask  (trả JSON, các trường chính của câu trả lời):
 //   success, intent, answer, confidence, planner, suggestions[], needsClarification? + candidates[]
 //   messageId     id tin nhắn trả lời đã lưu (null nếu không lưu được) -> dùng cho POST /messages/:id/feedback;
@@ -1815,7 +1887,7 @@ const withViewer = (handler) => (req, res) => relationshipEngine.runWithViewer(
 //   personIds     mọi id người được nhắc trong câu trả lời, người trọng tâm đứng đầu (cho nút "Xem trên cây"); [] nếu không có
 //   relationshipPath  (câu hỏi quan hệ) mảng bước quan hệ, [] khi không có một đường duy nhất; kèm pathNodes, relationshipLabel,
 //                 pathVisualizer, evidence, sourcePerson/targetPerson khi có
-exports.ask = withViewer(async (req, res) => {
+exports.ask = withViewer(withKinOrder(async (req, res) => {
     let responsePayload = null;
     const startedAt = Date.now();
     const timings = {};
@@ -1873,7 +1945,15 @@ exports.ask = withViewer(async (req, res) => {
         if (pending) memory = updateConversationMemory(memorySessionId, { pendingClarification: null });
         if (chosen) {
             message = pending.message || message;
-            res.locals.chatbotTurn.forced = { personId: chosen, subject: pending.subject || null };
+            const kinCtx = getKinOrderContext();
+            if (pending.kinOrder && kinCtx) {
+                // Chọn người đúng thứ bậc: hỏi lại câu gốc nhưng ghim đúng chú/bác/cô... đã chọn.
+                kinCtx.order = pending.kinOrder;
+                kinCtx.interp = 'both';
+                kinCtx.pinnedId = chosen;
+            } else {
+                res.locals.chatbotTurn.forced = { personId: chosen, subject: pending.subject || null };
+            }
         } else if (memory) {
             // "Thế còn X?", "Còn con của ông ấy?" rồi "ông ấy/bà ấy" -> tên người vừa nhắc.
             const ellipsis = rewriteEllipsis(message, memory);
@@ -1885,6 +1965,9 @@ exports.ask = withViewer(async (req, res) => {
             }
         }
         res.locals.chatbotTurn.message = message;
+
+        const kinOrderQuestion = await askKinOrderClarification({ res, clanId, currentMemberId, message });
+        if (kinOrderQuestion) return kinOrderQuestion;
 
         if (isCommonChatShortcut(message)) {
             const suggestedQuestions = buildSuggestedQuestions(chatbotContext.userProfile, chatbotContext.clanInfo);
@@ -2174,7 +2257,7 @@ exports.ask = withViewer(async (req, res) => {
             error: process.env.NODE_ENV === 'development' ? error.message : undefined,
         });
     }
-});
+}));
 
 // POST /api/chatbot/messages/:id/feedback  body { rating: 1 | -1, comment? }
 exports.feedback = async (req, res) => {

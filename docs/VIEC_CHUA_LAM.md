@@ -32,7 +32,7 @@ Ký hiệu công sức: **S** < 2 giờ · **M** nửa ngày–1 ngày · **L** 
 - `LoadingState`/`EmptyState`/`ErrorState` dùng chung, lỗi thân thiện (`friendlyError.js`), banner "máy chủ đang khởi động" toàn app (`services/pendingRequests.js`).
 
 Còn mở từ đợt này:
-- Rà lại 4 ca e2e có kỳ vọng tự đặt: "thím ba có mấy người con", "ai qh gan nhat vs toi", "nhánh của ông bình…", "cụ làm quan…". "anh hai/chú út" mới bỏ thứ bậc, chưa lọc theo thứ tự con; "ong co" không dấu chưa bắt.
+- ~~Rà 4 ca e2e tự đặt; lọc thứ bậc "chú út/bác cả/thím ba"; "ong co" không dấu~~ Xong (e2e 166/166): thứ bậc giữ qua chuẩn hóa (`kinshipBirthOrder.js`), "hai/ba/năm…" mơ hồ Nam/Bắc thì hỏi lại khi hai cách hiểu cho hai người khác nhau.
 - Lỗi hành động (like, bình luận, tạo sự kiện, giao việc, quỹ) vẫn hiện `err.message` thô; trang admin chưa có state chung.
 - Danh sách sự kiện của member chưa phân trang (ít khi dài).
 - Chưa ai mở giao diện mới trên trình duyệt thật (390px/1280px).

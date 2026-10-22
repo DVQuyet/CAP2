@@ -2,6 +2,7 @@ const relationshipEngine = require('./relationshipEngine');
 const { parseRelationshipExpression } = require('./relationshipQueryParser');
 const { resolveRelationshipExpression } = require('./relationshipExpressionResolver');
 const { plainTermToKey, splitKinshipTerms } = require('./kinshipTermService');
+const { getKinOrderContext } = require('./kinshipBirthOrder');
 
 const SELF_WORDS = new Set(['tôi', 'toi', 'mình', 'minh', 'tui', 'tớ']);
 
@@ -52,6 +53,12 @@ async function resolveKinshipReference({ clanId, currentMemberId, names = [] }) 
         };
         if (spoken) {
             return (await structural()) || { status: 'not_found', label: spoken.map((term) => term.text).join(' của '), expression };
+        }
+        // Câu có thứ bậc ("thím út", "chú ba"): bảng cụm từ không biết thứ tự anh em nên đi đường cấu trúc,
+        // nơi findPeopleByKinshipTerm đã lọc theo thứ bậc (kinshipBirthOrder).
+        const ordering = getKinOrderContext()?.order;
+        if (ordering && accentedLabel && keys.includes(ordering.kin)) {
+            return (await structural()) || { status: 'not_found', label: accentedLabel, expression };
         }
         const resolved = resolveRelationshipExpression(expression, { sourcePersonId, graph });
         const label = accentedLabel || expression.terms.join(' của ');

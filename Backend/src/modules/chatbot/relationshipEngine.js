@@ -12,6 +12,7 @@ const { pickBestRelationshipPath, scorePath } = require('./relationshipPathRanke
 const { buildRelationshipEvidence } = require('./relationshipEvidenceService');
 const { buildKinshipGraph, describeKinship, normalizePolicy } = require('../genealogy/core');
 const { matchKinshipLabel } = require('./kinshipTermService');
+const { getKinOrderContext, filterByKinOrder } = require('./kinshipBirthOrder');
 const { AsyncLocalStorage } = require('async_hooks');
 const { applyFamilyVisibility } = require('../genealogy/treeVisibility');
 
@@ -698,7 +699,13 @@ async function findPeopleByKinshipTerm(sourcePersonId, termKey, options = {}) {
         });
     }
 
-    return matches.sort((a, b) => a.relativeGeneration - b.relativeGeneration
+    // Câu có thứ bậc ("chú út", "thím ba"): chỉ giữ đúng người theo thứ tự anh chị em (kinshipBirthOrder).
+    const ordering = options.skipKinOrder ? null : getKinOrderContext();
+    const filtered = ordering?.order
+        ? filterByKinOrder(graph, termKey, matches, ordering.order, { interp: ordering.interp, pinnedId: ordering.pinnedId })
+        : matches;
+
+    return filtered.sort((a, b) => a.relativeGeneration - b.relativeGeneration
         || String(a.person.birth_date || '9999').localeCompare(String(b.person.birth_date || '9999'))
         || a.id - b.id);
 }
