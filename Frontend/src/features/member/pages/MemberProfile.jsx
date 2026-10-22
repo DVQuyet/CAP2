@@ -10,6 +10,7 @@ import ImageUpload from "../../../shared/components/ImageUpload";
 import { getStoredUser } from "../../../shared/utils/auth";
 import { resolveImageUrl } from "../../../shared/utils/media";
 import "./MemberDashboard.css";
+import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 
 function personName(person, t) {
   return (
@@ -99,7 +100,7 @@ export default function MemberProfile() {
         children_ids: Array.isArray(nextProfile.children_ids) ? nextProfile.children_ids.map(Number) : [],
       });
     } catch (err) {
-      setError(err?.message || t("member.profile.messages.loadError"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setLoading(false);
     }
@@ -148,7 +149,7 @@ export default function MemberProfile() {
       setNotice(t("member.profile.messages.basicSuccess"));
       await loadProfile();
     } catch (err) {
-      setError(err?.message || t("member.profile.messages.basicError"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setSavingBasic(false);
     }
@@ -168,7 +169,7 @@ export default function MemberProfile() {
       setNotice(t("member.profile.messages.proposeSuccess"));
       await loadProfile();
     } catch (err) {
-      setError(err?.message || t("member.profile.messages.proposeError"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setSavingContent(false);
     }
@@ -189,7 +190,7 @@ export default function MemberProfile() {
       setNotice(t("member.profile.messages.relationsSuccess"));
       await loadProfile();
     } catch (err) {
-      setError(err?.message || t("member.profile.messages.relationsError"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setSavingRelations(false);
     }
@@ -212,7 +213,7 @@ export default function MemberProfile() {
       setPasswordForm({ current: "", next: "", confirm: "" });
       setNotice(t("member.profile.messages.passwordSuccess"));
     } catch (err) {
-      setError(err?.message || t("member.profile.messages.passwordError"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setSavingPassword(false);
     }

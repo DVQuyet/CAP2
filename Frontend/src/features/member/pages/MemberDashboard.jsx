@@ -250,7 +250,7 @@ export default function MemberDashboard() {
       setNotice(status === "completed" ? t("member.dashboard.messages.taskUpdateSuccess") : t("member.dashboard.messages.taskUpdateGeneralSuccess"));
       await loadDashboard(true);
     } catch (err) {
-      setError(err?.message || t("member.dashboard.messages.taskUpdateError"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setSavingTaskId(null);
     }
@@ -276,7 +276,7 @@ export default function MemberDashboard() {
       setNotice(t("member.dashboard.messages.reminderSuccess"));
       await loadDashboard(true);
     } catch (err) {
-      setError(err?.message || t("member.dashboard.messages.reminderError"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setSavingReminder(false);
     }
@@ -301,7 +301,7 @@ export default function MemberDashboard() {
         })),
       );
     } catch (err) {
-      setError(err?.message || t("member.dashboard.messages.chatError"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setSendingChat(false);
     }

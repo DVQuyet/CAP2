@@ -14,6 +14,7 @@ import { isoToVietnamDate, vietnamDateToIso } from "../../../shared/utils/dateFo
 import { compactPayload, fullName } from "../utils/managerData";
 import { useLanguage } from "../../../i18n/LanguageContext";
 import "./manager.css";
+import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 
 const shouldSuppressInlineRelationError = (error) => Boolean(error?.__centeredNoticeShown);
 
@@ -181,7 +182,7 @@ export default function AccountPage() {
       const memberRows = await getMembers();
       setMembers(Array.isArray(memberRows) ? memberRows : []);
     } catch (err) {
-      setError(err?.message || t("manager.accounts.messages.loadError"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setLoading(false);
     }
@@ -366,7 +367,7 @@ export default function AccountPage() {
       } catch (err) {
         setRelationForm(emptyRelationForm);
         setRelationDetails(null);
-        setError(err?.message || t("manager.accounts.messages.loadRelationError"));
+        setError(friendlyErrorMessage(err, t));
       } finally {
         setRelationLoading(false);
       }
@@ -401,7 +402,7 @@ export default function AccountPage() {
       setCreateOpen(false);
       await loadMembers();
     } catch (err) {
-      setError(err?.message || t("manager.accounts.messages.createError"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setSaving(false);
     }
@@ -460,7 +461,7 @@ export default function AccountPage() {
 
       await loadRelationDetails(relationAccountId, t("manager.accounts.messages.saveRelationSuccess"));
     } catch (err) {
-      if (!shouldSuppressInlineRelationError(err)) setError(err?.message || t("manager.accounts.messages.saveRelationError"));
+      if (!shouldSuppressInlineRelationError(err)) setError(friendlyErrorMessage(err, t));
     } finally {
       setRelationSaving(false);
     }
@@ -475,7 +476,7 @@ export default function AccountPage() {
       const data = await getMemberDetail(accountId);
       setEditForm(toEditForm(data.member || {}));
     } catch (err) {
-      setError(err?.message || t("manager.accounts.messages.loadError"));
+      setError(friendlyErrorMessage(err, t));
       setEditAccountId(null);
     }
   };
@@ -504,7 +505,7 @@ export default function AccountPage() {
       setEditAccountId(null);
       await loadMembers();
     } catch (err) {
-      setError(err?.message || t("manager.accounts.messages.editError"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setSaving(false);
     }

@@ -9,6 +9,7 @@ import {
   updateGenealogyPolicyAPI,
 } from "../../../../api/managerService";
 import { useConfirm } from "../../../../shared/components/confirmContext.js";
+import { friendlyErrorMessage } from "../../../../shared/utils/friendlyError";
 
 const SEVERITY_ORDER = ["error", "legal", "warning", "notice"];
 const SEVERITY_ICON = { error: "block", legal: "gavel", warning: "warning", notice: "info" };
@@ -43,7 +44,7 @@ export default function GenealogyAuditDialog({ open, clanId, people = [], canMan
       setAudit(result);
       onAudit?.(result);
     } catch (loadError) {
-      setError(loadError?.message || t("tree.audit.loadError"));
+      setError(friendlyErrorMessage(loadError, t));
     } finally {
       setLoading(false);
     }
@@ -75,7 +76,7 @@ export default function GenealogyAuditDialog({ open, clanId, people = [], canMan
       await onChanged?.();
       await loadAudit();
     } catch (fixError) {
-      setMessage(fixError?.message || t("tree.audit.saveError"));
+      setMessage(friendlyErrorMessage(fixError, t));
     } finally {
       setSaving(false);
     }
@@ -91,7 +92,7 @@ export default function GenealogyAuditDialog({ open, clanId, people = [], canMan
       await loadAudit();
       await onChanged?.();
     } catch (saveError) {
-      setMessage(saveError?.message || t("tree.audit.saveError"));
+      setMessage(friendlyErrorMessage(saveError, t));
     } finally {
       setSaving(false);
     }

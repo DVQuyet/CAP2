@@ -9,6 +9,7 @@ import ErrorState from "../../../shared/components/ErrorState";
 import "./FundDesign.css";
 import FundAnalytics from "../components/FundAnalytics";
 import { notify } from "../../../shared/utils/toast";
+import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 
 const getCurrentUserFromStorage = () => {
   const keys = ["user", "currentUser", "account", "authUser", "profile"];
@@ -282,7 +283,7 @@ export default function ClanFundPage() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || t("fund.messages.exportError"));
+        throw Object.assign(new Error(errorData.message || t("fund.messages.exportError")), { status: response.status });
       }
 
       const blob = await response.blob();
@@ -298,7 +299,7 @@ export default function ClanFundPage() {
       link.remove();
       window.URL.revokeObjectURL(downloadUrl);
     } catch (error) {
-      notify(t("fund.messages.exportError") + ": " + error.message);
+      notify(friendlyErrorMessage(error, t));
     }
   };
 
@@ -321,7 +322,7 @@ export default function ClanFundPage() {
       notify(t("fund.messages.importSuccess"));
       loadData();
     } catch (error) {
-      notify(t("fund.messages.importError") + ": " + error.message);
+      notify(friendlyErrorMessage(error, t));
     } finally {
       setImporting(false);
     }
@@ -369,7 +370,7 @@ export default function ClanFundPage() {
       setShowCampaignModal(false);
       loadData();
     } catch (error) {
-      notify(error.message || t("fund.messages.createCampaignError"));
+      notify(friendlyErrorMessage(error, t));
     } finally {
       setSubmitting(false);
     }
@@ -452,7 +453,7 @@ export default function ClanFundPage() {
       setGeneralTx(initialGeneralTx());
       loadData();
     } catch (error) {
-      notify(error.message || t("fund.messages.expenseError"));
+      notify(friendlyErrorMessage(error, t));
     } finally {
       setSubmitting(false);
     }

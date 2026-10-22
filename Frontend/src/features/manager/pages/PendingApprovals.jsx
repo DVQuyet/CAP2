@@ -15,6 +15,7 @@ import {
 import { onSocketEvent } from "../../../services/socket";
 import { avatarInitial, formatDate, fullName } from "../utils/managerData";
 import "./PendingApprovals.css";
+import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 
 const isVideoUrl = (value = "") =>
   /[?&]media=video(?:&|$)/i.test(String(value)) ||
@@ -108,7 +109,7 @@ export default function PendingApprovals() {
       setPendingProfiles(data.pendingProfiles || []);
       setPendingMemories(data.pendingMemories || []);
     } catch (err) {
-      setError(err?.message || t("manager.pending.loadingDataError"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setLoading(false);
     }
@@ -186,7 +187,7 @@ useEffect(() => {
       setMessage(successMessage);
       await loadPending();
     } catch (err) {
-      setError(err?.message || t("common.operationFailed"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setActingId("");
     }

@@ -13,6 +13,7 @@ import ProfileDrawer from "../shared/components/ProfileDrawer";
 import HelpDialog from "../shared/components/HelpDialog";
 import AIChatGateway from "../features/ai-chat/components/AIChatGateway";
 import "./ManagerLayout.css";
+import { friendlyErrorMessage } from "../shared/utils/friendlyError";
 
 const menuItems = [
   { icon: "dashboard", labelKey: "layout.portalMenu.overview", path: "/manager/dashboard" },
@@ -157,7 +158,7 @@ export default function ManagerLayout() {
       });
       syncStoredUser(profile);
     } catch (error) {
-      setAccountMessage(error?.message || t("layout.accountMessages.loadFailed"));
+      setAccountMessage(friendlyErrorMessage(error, t));
     } finally {
       setAccountLoading(false);
     }
@@ -208,7 +209,7 @@ export default function ManagerLayout() {
       setAccountMessage(t("layout.accountMessages.updated"));
       await loadAccountProfile();
     } catch (error) {
-      setAccountMessage(error?.message || t("layout.accountMessages.saveFailed"));
+      setAccountMessage(friendlyErrorMessage(error, t));
     } finally {
       setAccountSaving(false);
     }
@@ -234,7 +235,7 @@ export default function ManagerLayout() {
       setAccountMessage(t("layout.accountMessages.contentSubmitted"));
       await loadAccountProfile();
     } catch (error) {
-      setAccountMessage(error?.message || t("layout.accountMessages.contentSubmitFailed"));
+      setAccountMessage(friendlyErrorMessage(error, t));
     } finally {
       setAccountSaving(false);
     }
@@ -259,7 +260,7 @@ export default function ManagerLayout() {
       setPasswordForm({ current_password: "", new_password: "", confirm_password: "" });
       setAccountMessage(t("layout.accountMessages.passwordChanged"));
     } catch (error) {
-      setAccountMessage(error?.message || t("layout.accountMessages.passwordChangeFailed"));
+      setAccountMessage(friendlyErrorMessage(error, t));
     } finally {
       setPasswordSaving(false);
     }

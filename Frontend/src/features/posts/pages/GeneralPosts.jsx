@@ -432,7 +432,7 @@ export default function GeneralPosts() {
       const data = await getPostComments(postId);
       setComments(data.comments || []);
     } catch (err) {
-      setCommentError(err?.message || t("posts.messages.loadCommentsError"));
+      setCommentError(friendlyErrorMessage(err, t));
       setComments([]);
     } finally {
       setCommentsLoading(false);
@@ -562,7 +562,7 @@ export default function GeneralPosts() {
       await loadPosts();
       window.setTimeout(closeAddModal, 700);
     } catch (err) {
-      setFormError(err?.message || t("posts.messages.postError"));
+      setFormError(friendlyErrorMessage(err, t));
     } finally {
       setSubmitting(false);
     }
@@ -577,7 +577,7 @@ export default function GeneralPosts() {
         like_count: result.like_count,
       });
     } catch (err) {
-      const message = err?.message || t("posts.messages.likeError");
+      const message = friendlyErrorMessage(err, t);
       // Hiện cả trong cửa sổ chi tiết và ngoài danh sách bài (bấm thích ở feed trước đây lỗi im lặng).
       setCommentError(message);
       setError(message);
@@ -593,7 +593,7 @@ export default function GeneralPosts() {
       setPosts((prev) => prev.filter((p) => p.id !== postId));
       if (selectedPost?.id === postId) setSelectedPost(null);
     } catch (err) {
-      setError(err?.message || t("posts.messages.deleteError"));
+      setError(friendlyErrorMessage(err, t));
     }
   };
 
@@ -604,7 +604,7 @@ export default function GeneralPosts() {
       setPosts((prev) => prev.map((p) => p.id === editingPost.id ? { ...p, description: editingPost.description, content: editingPost.content } : p));
       setEditingPost(null);
     } catch (err) {
-      setError(err?.message || t("posts.messages.updateError"));
+      setError(friendlyErrorMessage(err, t));
     }
   };
 
@@ -639,7 +639,7 @@ export default function GeneralPosts() {
         comment_count: Number(selectedPostData.comment_count || 0) + 1,
       });
     } catch (err) {
-      setCommentError(err?.message || t("posts.messages.commentError"));
+      setCommentError(friendlyErrorMessage(err, t));
     } finally {
       setCommenting(false);
     }

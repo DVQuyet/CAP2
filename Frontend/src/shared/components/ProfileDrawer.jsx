@@ -4,6 +4,7 @@ import { apiRequest } from "../../services/api";
 import { getStoredUser } from "../utils/auth";
 import "./ProfileDrawer.css";
 import { notify } from "../utils/toast";
+import { friendlyErrorMessage } from "../utils/friendlyError";
 
 const buildName = (profile) =>
   profile?.display_name ||
@@ -271,7 +272,7 @@ export default function ProfileDrawer({
       setAvatarEditorOpen(false);
       setMessage(t("shared.profile.avatarApplied"));
     } catch (error) {
-      setMessage(error?.message || t("shared.profile.avatarApplyFailed"));
+      setMessage(friendlyErrorMessage(error, t));
     }
   };
 
@@ -322,7 +323,7 @@ export default function ProfileDrawer({
 
       syncStoredUser(nextProfile, setCurrentUser);
     } catch (error) {
-      setMessage(error?.message || t("shared.profile.loadFailed"));
+      setMessage(friendlyErrorMessage(error, t));
     } finally {
       setLoading(false);
     }
@@ -442,7 +443,7 @@ export default function ProfileDrawer({
 
       await loadProfile();
     } catch (error) {
-      setMessage(error?.message || t("shared.profile.basicSaveFailed"));
+      setMessage(friendlyErrorMessage(error, t));
     } finally {
       setSavingBasic(false);
     }
@@ -538,7 +539,7 @@ export default function ProfileDrawer({
       await loadProfile();
     } catch (error) {
       console.error("Lỗi gửi cập nhật profile:", error);
-      setMessage(error?.message || t("shared.profile.contentSubmitFailed"));
+      setMessage(friendlyErrorMessage(error, t));
     } finally {
       setSavingContent(false);
     }
@@ -576,7 +577,7 @@ export default function ProfileDrawer({
 
       setMessage(t("shared.profile.passwordChanged"));
     } catch (error) {
-      setMessage(error?.message || t("shared.profile.passwordChangeFailed"));
+      setMessage(friendlyErrorMessage(error, t));
     } finally {
       setSavingPassword(false);
     }

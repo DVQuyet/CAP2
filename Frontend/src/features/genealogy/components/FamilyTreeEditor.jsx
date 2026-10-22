@@ -37,6 +37,7 @@ import { CenterNoticeDialog, CreatePersonDialog, PersonInspector, QuickCreateRel
 import { useConfirm } from "../../../shared/components/confirmContext.js";
 import "./FamilyTreeEditor.css";
 import "./FamilyTreeEditor.v2.css";
+import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 
 const shouldSuppressInlineRelationError = (error) => Boolean(error?.__centeredNoticeShown);
 
@@ -675,7 +676,7 @@ export default function FamilyTreeEditor({
       Object.entries(cardSizesPayload).forEach(([personId, size]) => {
         if (!current.cardSizes.has(String(personId))) current.cardSizes.set(String(personId), size);
       });
-      setStatus(error?.message || t("tree.messages.saveLayoutError"));
+      setStatus(friendlyErrorMessage(error, t));
       return false;
     } finally {
       layoutFlushInFlightRef.current = false;
@@ -1102,7 +1103,7 @@ const coupleActionPerson = useMemo(
       }
       return true;
     } catch (error) {
-      setStatus(error?.message || t("tree.messages.saveLayoutError"));
+      setStatus(friendlyErrorMessage(error, t));
       return false;
     }
   }, [canEditAll, cardSizes, clan?.id, lineRoutes, people, treeStyle, treeTitleLabel, t]);
@@ -1525,7 +1526,7 @@ const coupleActionPerson = useMemo(
       setGenealogyAiDraftMembers(draftMembers);
       setGenealogyAiDraftRelationships(normalizeAiDraftRelationships(result?.relationships || [], draftMembers));
     } catch (error) {
-      setGenealogyAiError(error?.message || t("tree.genealogyAi.errors.extractFailed"));
+      setGenealogyAiError(friendlyErrorMessage(error, t));
     } finally {
       setGenealogyAiLoading(false);
     }
@@ -1735,7 +1736,7 @@ const coupleActionPerson = useMemo(
       await onReload?.();
     } catch (error) {
       if (!shouldSuppressInlineRelationError(error)) {
-        setGenealogyAiError(error?.message || t("tree.genealogyAi.errors.saveFailed"));
+        setGenealogyAiError(friendlyErrorMessage(error, t));
       }
     } finally {
       setGenealogyAiSaving(false);
@@ -2098,7 +2099,7 @@ const coupleActionPerson = useMemo(
       setStatus(res?.message || t("tree.messages.deleteSuccess"));
       await onReload?.();
     } catch (error) {
-      setStatus(error?.message || t("tree.messages.deleteError"));
+      setStatus(friendlyErrorMessage(error, t));
     } finally {
       setSaving(false);
     }
@@ -2446,7 +2447,7 @@ const coupleActionPerson = useMemo(
       setExportDialogOpen(false);
     } catch (error) {
       console.error("Export tree failed:", error);
-      setStatus(`${t("tree.messages.exportError")}${error?.message ? `: ${error.message}` : "."}`);
+      setStatus(friendlyErrorMessage(error, t));
     } finally {
       setSaving(false);
     }
@@ -2547,7 +2548,7 @@ const coupleActionPerson = useMemo(
       setSelectedId(null);
       await onReload?.();
     } catch (error) {
-      if (!shouldSuppressInlineRelationError(error)) setConstraintNotice(error?.message || t("tree.messages.saveError"));
+      if (!shouldSuppressInlineRelationError(error)) setConstraintNotice(friendlyErrorMessage(error, t));
     } finally {
       treeRealtime.stopEditing(selectedPerson.id);
       setSaving(false);
@@ -2570,7 +2571,7 @@ const coupleActionPerson = useMemo(
       setStatus(res?.message || t("tree.messages.deleteSuccess"));
       await onReload?.();
     } catch (error) {
-      setStatus(error?.message || t("tree.messages.deleteError"));
+      setStatus(friendlyErrorMessage(error, t));
     } finally {
       setSaving(false);
     }
@@ -2805,7 +2806,7 @@ const submitCreateDialog = async () => {
       return;
     }
 
-    if (!shouldSuppressInlineRelationError(error)) setConstraintNotice(error?.message || t("tree.messages.saveError"));
+    if (!shouldSuppressInlineRelationError(error)) setConstraintNotice(friendlyErrorMessage(error, t));
   } finally {
     setDialogSaving(false);
   }
@@ -2831,7 +2832,7 @@ const submitCreateDialog = async () => {
       setStatus(t("tree.messages.linkSuccess", { relation: t(`tree.relations.${relation}`) }));
       await onReload?.();
     } catch (error) {
-      if (!shouldSuppressInlineRelationError(error)) setConstraintNotice(error?.message || t("tree.messages.linkError"));
+      if (!shouldSuppressInlineRelationError(error)) setConstraintNotice(friendlyErrorMessage(error, t));
     } finally {
       setDialogSaving(false);
     }
@@ -2889,7 +2890,7 @@ const submitCreateDialog = async () => {
       setStatus(t("tree.messages.unlinkSuccess", { relation: t(`tree.relations.${relation}`) }));
       await onReload?.();
     } catch (error) {
-      if (!shouldSuppressInlineRelationError(error)) setConstraintNotice(error?.message || t("tree.messages.unlinkError"));
+      if (!shouldSuppressInlineRelationError(error)) setConstraintNotice(friendlyErrorMessage(error, t));
     } finally {
       setDialogSaving(false);
     }

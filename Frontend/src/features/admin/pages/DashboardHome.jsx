@@ -19,6 +19,9 @@ import {
     YAxis,
 } from "recharts";
 import "./DashboardHome.css";
+import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
+import LoadingState from "../../../shared/components/LoadingState";
+import ErrorState from "../../../shared/components/ErrorState";
 
 const formatNumber = (value, i18n) => 
     Number(value || 0).toLocaleString(i18n?.language === "vi" ? "vi-VN" : "en-US");
@@ -71,7 +74,7 @@ export default function DashboardHome() {
                 const statsRes = await getAdminDashboardStats();
                 setData(statsRes);
             } catch (err) {
-                setError(err.message || t("admin.dashboard.messages.loadError"));
+                setError(friendlyErrorMessage(err, t));
             } finally {
                 setLoading(false);
             }
@@ -130,7 +133,7 @@ export default function DashboardHome() {
     ];
 
     if (loading && !data) {
-        return <div className="loading-container"><div className="loader"></div><p>{t("admin.dashboard.messages.loading")}</p></div>;
+        return <LoadingState variant="cards" label={t("admin.dashboard.messages.loading")} />;
     }
 
     return (
@@ -147,7 +150,7 @@ export default function DashboardHome() {
                 </div>
             </section>
 
-            {error && <div className="dashboard-error">{error}</div>}
+            {error && <ErrorState message={error} />}
 
             <div className={`stats-grid-premium ${loading ? "is-refreshing" : ""}`}>
                 {statItems.map((item) => (

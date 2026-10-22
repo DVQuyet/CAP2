@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getVoiceRecording, uploadVoiceRecording } from "../../../api/voiceService";
 import "./VoiceRecorder.css";
+import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 
 const pickMimeType = () => {
   if (!window.MediaRecorder) return "";
@@ -109,7 +110,7 @@ const VoiceRecorder = ({ disabled = false, maxSeconds = 180, onTranscript }) => 
 
         uploadBlob(blob).catch((error) => {
           setState("failed");
-          setMessage(error?.message || t("voice.recorder.errors.failed"));
+          setMessage(friendlyErrorMessage(error, t));
         });
       };
 
@@ -127,7 +128,7 @@ const VoiceRecorder = ({ disabled = false, maxSeconds = 180, onTranscript }) => 
       }, 500);
     } catch (error) {
       setState("failed");
-      setMessage(error?.message || t("voice.recorder.errors.startFailed"));
+      setMessage(friendlyErrorMessage(error, t));
     }
   };
 

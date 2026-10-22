@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiRequest } from "../../../services/api";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 
 export default function FundAnalytics() {
   const { t } = useTranslation();
@@ -16,7 +17,7 @@ export default function FundAnalytics() {
         setStats(data);
       } catch (error) {
         console.error("Error loading stats:", error);
-        setLoadError(error?.message || t("fund.analytics.loadError"));
+        setLoadError(friendlyErrorMessage(error, t));
       } finally {
         setLoading(false);
       }

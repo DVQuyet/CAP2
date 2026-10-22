@@ -4,6 +4,7 @@ import { apiRequest } from "../../../services/api";
 import { createInvitation, listInvitations } from "../../../api/invitationService";
 import { getStoredUser } from "../../../shared/utils/auth";
 import "../../auth/pages/invite.css";
+import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -47,7 +48,7 @@ export default function InvitationPage() {
       const data = await listInvitations();
       setInvitations(data.invitations || []);
     } catch (loadError) {
-      setError(loadError?.message || t("invitation.loadError"));
+      setError(friendlyErrorMessage(loadError, t));
     } finally {
       setLoading(false);
     }
@@ -111,7 +112,7 @@ export default function InvitationPage() {
       setForm((current) => ({ ...initialForm, clan_id: current.clan_id }));
       await loadInvitations();
     } catch (submitError) {
-      setError(submitError?.message || t("invitation.sendError"));
+      setError(friendlyErrorMessage(submitError, t));
     } finally {
       setSending(false);
     }

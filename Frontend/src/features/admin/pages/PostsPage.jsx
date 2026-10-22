@@ -5,6 +5,8 @@ import { getAdminClans, getAdminPostsByClan, updateAdminPostStatus, deleteAdminP
 import { formatDate } from "../../../shared/utils/dateFormat";
 import { resolveImageUrl } from "../../../shared/utils/media";
 import "./PostsPage.css";
+import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
+import ErrorState from "../../../shared/components/ErrorState";
 
 export default function PostsPage() {
     const { t, i18n } = useTranslation();
@@ -39,7 +41,7 @@ export default function PostsPage() {
                 const res = await getAdminClans();
                 setClans(res.clans || []);
             } catch (err) {
-                setError(err.message || t("admin.posts.messages.loadError"));
+                setError(friendlyErrorMessage(err, t));
             } finally {
                 if (!clanId) setLoading(false);
             }
@@ -56,7 +58,7 @@ export default function PostsPage() {
                     setPosts(res.posts || []);
                     setCurrentPage(1); // Reset về trang 1 khi đổi clan
                 } catch (err) {
-                    setError(err.message);
+                    setError(friendlyErrorMessage(err, t));
                 } finally {
                     setLoading(false);
                 }
@@ -85,7 +87,7 @@ export default function PostsPage() {
         } catch (err) {
             setToast({
                 show: true,
-                message: t("admin.posts.messages.statusUpdateError", { error: err.message }),
+                message: t("admin.posts.messages.statusUpdateError", { error: friendlyErrorMessage(err, t) }),
                 type: "error"
             });
         }
@@ -113,7 +115,7 @@ export default function PostsPage() {
         } catch (err) {
             setToast({
                 show: true,
-                message: t("admin.posts.messages.deleteError", { error: err.message }),
+                message: t("admin.posts.messages.deleteError", { error: friendlyErrorMessage(err, t) }),
                 type: "error"
             });
         }
@@ -145,6 +147,8 @@ export default function PostsPage() {
                 </div>
                 <h1>{clanId ? t("admin.posts.subtitle", { name: selectedClan?.clan_name }) : t("admin.posts.selectClan")}</h1>
             </header>
+
+            {error && <ErrorState message={error} />}
 
             {!clanId ? (
                 <div className="clan-folder-grid">

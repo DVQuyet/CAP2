@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { getGeneralPosts, getMySubmissions } from "../../../api/memberService";
 import { formatDateTimeVN } from "../../../shared/utils/dateFormat";
 import "./MemberDashboard.css";
+import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 
 function formatDate(value, t) {
   if (!value) return t("posts.card.notUpdated");
@@ -41,7 +42,7 @@ export default function MemberSubmissions() {
         profile: submissionResult.value.profile || {},
       });
     } catch (err) {
-      setError(err?.message || t("member.submissions.messages.loadError"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setLoading(false);
     }

@@ -8,6 +8,7 @@ import { vietnamDateToIso } from "../../../shared/utils/dateFormat";
 import termsText from "./terms.txt?raw";
 import privacyText from "./privacy.txt?raw";
 import { notify } from "../../../shared/utils/toast";
+import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 
 const ClanRegister = () => {
   const { t } = useTranslation();
@@ -125,7 +126,7 @@ const ClanRegister = () => {
         navigate("/login");
       }
     } catch (err) {
-      setError(err.message || t("clan.register.failed"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setLoading(false);
     }

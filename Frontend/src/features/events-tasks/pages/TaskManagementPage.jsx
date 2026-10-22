@@ -691,7 +691,7 @@ recognition.onerror = (event) => {
       setShowAssignTaskModal(false);
       await loadData();
     } catch (err) {
-      setError(err?.message || t("eventsTasks.errors.assignFailed"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setSaving(false);
     }
@@ -738,7 +738,7 @@ recognition.onerror = (event) => {
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
     } catch (err) {
-      setError(err?.message || t("eventsTasks.errors.createEventFailed"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setSaving(false);
     }
@@ -775,7 +775,7 @@ recognition.onerror = (event) => {
       setShowEditEventModal(false);
       await loadData();
     } catch (err) {
-      setError(err?.message || t("eventsTasks.errors.updateEventFailed"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setSaving(false);
     }
@@ -795,7 +795,7 @@ recognition.onerror = (event) => {
       setMessage(status === "completed" ? t("eventsTasks.messages.completedSuccess") : t("eventsTasks.messages.statusUpdated"));
       await loadData();
     } catch (err) {
-      setError(err?.message || t("eventsTasks.errors.updateStatusFailed"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setSavingTaskId(null);
     }
@@ -868,7 +868,7 @@ const requestAiEventCreate = async (overridePrompt = "") => {
     setShowAiEventModal(false);
     setMessage(t("eventsTasks.messages.aiFilling"));
   } catch (err) {
-    setError(err?.message || t("eventsTasks.errors.aiFailed"));
+    setError(friendlyErrorMessage(err, t));
   } finally {
     setAiLoading(false);
   }
@@ -932,7 +932,7 @@ const requestAiTaskCreate = async () => {
       ]);
     setMessage(t("eventsTasks.messages.aiSuggestionsReady"));
   } catch (err) {
-    setError(err?.message || t("eventsTasks.errors.aiTaskFailed"));
+    setError(friendlyErrorMessage(err, t));
   } finally {
     setAiLoading(false);
   }
@@ -1036,7 +1036,7 @@ const submitSingleAiTaskSuggestion = async (task) => {
 
     await loadData();
   } catch (err) {
-    setError(err?.message || t("eventsTasks.errors.assignFailed"));
+    setError(friendlyErrorMessage(err, t));
   } finally {
     setBulkAssigning(false);
   }
@@ -1091,7 +1091,7 @@ const submitSelectedAiTaskSuggestions = async () => {
     setAiTaskSuggestions([]);
     await loadData();
   } catch (err) {
-    setError(err?.message || t("eventsTasks.errors.assignFailed"));
+    setError(friendlyErrorMessage(err, t));
   } finally {
     setBulkAssigning(false);
   }
@@ -1128,7 +1128,7 @@ const updateAssignedTask = async (task, draft) => {
     await loadData();
     return true;
   } catch (err) {
-    setError(err?.message || t("eventsTasks.errors.updateTaskFailed"));
+    setError(friendlyErrorMessage(err, t));
     return false;
   } finally {
     setSavingTaskId(null);
@@ -1155,7 +1155,7 @@ const deleteAssignedTask = async (task) => {
     setMessage(result?.message || t("eventsTasks.messages.taskDeleted"));
     await loadData();
   } catch (err) {
-    setError(err?.message || t("eventsTasks.errors.deleteTaskFailed"));
+    setError(friendlyErrorMessage(err, t));
   } finally {
     setSavingTaskId(null);
   }
@@ -1751,7 +1751,7 @@ const openEvent = (eventId) => {
                               setSelectedEventId("");
                               loadData();
                           } catch (err) {
-                              setToast({ show: true, message: err.message, type: "error" });
+                              setToast({ show: true, message: friendlyErrorMessage(err, t), type: "error" });
                           }
                       }}>
                           {t("common.delete")}

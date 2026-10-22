@@ -19,6 +19,7 @@ import {
 } from "../../../api/paymentService";
 import { useConfirm } from "../../../shared/components/confirmContext.js";
 import "./BillingPage.css";
+import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 
 function readJsonStorage(key) {
   try {
@@ -341,12 +342,12 @@ const getStatusText = (status) =>
       setBilling(billingResult.status === "fulfilled" ? billingResult.value?.billing || null : null);
       setPayments(paymentsResult.status === "fulfilled" ? paymentsResult.value?.payments || [] : []);
       const firstError = [billingResult, plansResult, paymentsResult].find((result) => result.status === "rejected");
-      if (firstError) setMessage(firstError.reason?.message || t("billingPayment.messages.loadError"));
+      if (firstError) setMessage(friendlyErrorMessage(firstError.reason, t));
     } catch (error) {
       console.error("loadBillingForClan error:", error);
       setBilling(null);
       setPayments([]);
-      setMessage(error.message || t("billingPayment.messages.loadError"));
+      setMessage(friendlyErrorMessage(error, t));
     } finally {
       setBillingLoading(false);
     }
@@ -399,7 +400,7 @@ const getStatusText = (status) =>
       await loadBillingForClan(resolvedClanId);
     } catch (error) {
       console.error("loadInitialData error:", error);
-      setMessage(error.message || t("billingPayment.messages.loadDataError"));
+      setMessage(friendlyErrorMessage(error, t));
     } finally {
       setLoading(false);
     }
@@ -467,7 +468,7 @@ const getStatusText = (status) =>
       if (clanId) await loadBillingForClan(clanId);
       closePlanEditor();
     } catch (error) {
-      setMessage(error.message || t("billingPayment.messages.planSaveError"));
+      setMessage(friendlyErrorMessage(error, t));
     } finally {
       setPlanSaving(false);
     }
@@ -543,7 +544,7 @@ const getStatusText = (status) =>
         periodMonths: result.period_months,
       });
     } catch (error) {
-      setMessage(error.message || t("billingPayment.messages.createError"));
+      setMessage(friendlyErrorMessage(error, t));
     }
   };
 
@@ -593,7 +594,7 @@ const getStatusText = (status) =>
 
       setMessage(t("billingPayment.messages.payNotConfirmed"));
     } catch (error) {
-      setMessage(error.message || t("billingPayment.messages.checkStatusError"));
+      setMessage(friendlyErrorMessage(error, t));
     } finally {
       setPaymentChecking(false);
     }
@@ -623,7 +624,7 @@ const getStatusText = (status) =>
 
     setMessage(t("billingPayment.messages.cancelSuccess"));
   } catch (error) {
-    setMessage(error.message || t("billingPayment.messages.cancelError"));
+    setMessage(friendlyErrorMessage(error, t));
   } finally {
     setPaymentActionLoading(false);
   }
@@ -1228,7 +1229,7 @@ const handlePaySelectedPayment = (payment) => {
                         await loadBillingForClan(clanId);
                         setMessage(t("billingPayment.messages.upgradeTestSuccess", { id: clanId, name: getPlanNameText(plan) }));
                       } catch (error) {
-                        setMessage(error.message || t("billingPayment.messages.upgradeTestError"));
+                        setMessage(friendlyErrorMessage(error, t));
                       }
                     }}
                   >

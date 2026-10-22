@@ -3,6 +3,7 @@ import { useLanguage } from "../../../../i18n/LanguageContext";
 import { getArchivedMembersAPI, restoreArchivedMemberAPI, deleteArchivedMemberAPI, deleteAllArchivedMembersAPI, archiveMemberAPI } from "../../../../api/managerService";
 import { fullName } from "../../utils/tree-editor/treePersonUtils";
 import { useConfirm } from "../../../../shared/components/confirmContext.js";
+import { friendlyErrorMessage } from "../../../../shared/utils/friendlyError";
 
 export default function ArchivedMembersDialog({ people, onClose, onReload }) {
   const { t, language } = useLanguage();
@@ -27,7 +28,7 @@ export default function ArchivedMembersDialog({ people, onClose, onReload }) {
       setArchivedList(Array.isArray(res) ? res : res?.items || res?.archived || res?.data || []);
     } catch (err) {
       console.error(err);
-      setError(err?.message || t("tree.archive.loadError"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setLoading(false);
     }
@@ -75,7 +76,7 @@ export default function ArchivedMembersDialog({ people, onClose, onReload }) {
       await onReload?.();
       await fetchArchived();
     } catch (err) {
-      setError(err?.message || t("tree.archive.restoreError"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setActionLoading(false);
     }
@@ -91,7 +92,7 @@ export default function ArchivedMembersDialog({ people, onClose, onReload }) {
       await deleteArchivedMemberAPI(archiveId);
       await fetchArchived();
     } catch (err) {
-      setError(err?.message || t("tree.archive.deleteError"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setActionLoading(false);
     }
@@ -110,7 +111,7 @@ export default function ArchivedMembersDialog({ people, onClose, onReload }) {
       await onReload?.();
       await fetchArchived();
     } catch (err) {
-      setError(err?.message || t("tree.archive.deleteAllError"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setActionLoading(false);
     }
@@ -141,7 +142,7 @@ export default function ArchivedMembersDialog({ people, onClose, onReload }) {
       await onReload?.();
       await fetchArchived();
     } catch (err) {
-      setError(err?.message || t("tree.archive.archiveError"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setActionLoading(false);
     }

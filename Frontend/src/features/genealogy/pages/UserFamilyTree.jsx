@@ -159,7 +159,7 @@ export default function FamilyTreePage() {
         setKeyError("");
       } catch (err) {
         resetTemporaryPermission("");
-        setKeyError(err?.message || t("tree.page.errors.invalidTemporaryKey"));
+        setKeyError(friendlyErrorMessage(err, t));
       } finally {
         setKeySaving(false);
       }

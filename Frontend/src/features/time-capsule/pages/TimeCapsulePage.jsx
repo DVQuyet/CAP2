@@ -400,7 +400,7 @@ export default function TimeCapsulePage({ role = "member" }) {
       setMessage(t("timeCapsule.messages.uploaded"));
       return true;
     } catch (err) {
-      setError(err?.message || t("timeCapsule.errors.uploadMemory"));
+      setError(friendlyErrorMessage(err, t));
       return false;
     } finally {
       setUploading(false);
@@ -546,7 +546,7 @@ export default function TimeCapsulePage({ role = "member" }) {
         }
         await uploadMemoryBlob(blob, `ky-niem-${mode === "audio" ? "ghi-am" : "video"}-${Date.now()}.${extension}`);
       } catch (err) {
-        setError(err?.message || t("timeCapsule.errors.saveRecording"));
+        setError(friendlyErrorMessage(err, t));
       } finally {
         stream.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
@@ -628,7 +628,7 @@ export default function TimeCapsulePage({ role = "member" }) {
       await deleteMemory(memoryId);
       setMemories((prev) => prev.filter((m) => m.id !== memoryId));
     } catch (err) {
-      setError(err?.message || t("timeCapsule.errors.deleteMemory"));
+      setError(friendlyErrorMessage(err, t));
     }
   };
 
@@ -639,7 +639,7 @@ export default function TimeCapsulePage({ role = "member" }) {
       setMemories((prev) => prev.map((m) => m.id === editingMemory.id ? { ...m, title: editingMemory.title, content: editingMemory.content } : m));
       setEditingMemory(null);
     } catch (err) {
-      setError(err?.message || t("timeCapsule.errors.updateMemory"));
+      setError(friendlyErrorMessage(err, t));
     }
   };
 
@@ -666,7 +666,7 @@ export default function TimeCapsulePage({ role = "member" }) {
       resetForm();
       await loadMemories();
     } catch (err) {
-      setError(err?.message || t("timeCapsule.errors.submitMemory"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setSubmitting(false);
     }

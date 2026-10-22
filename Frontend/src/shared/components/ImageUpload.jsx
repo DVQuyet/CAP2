@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { uploadImage } from "../../api/memberService";
 import "./ImageUpload.css";
+import { friendlyErrorMessage } from "../utils/friendlyError";
 
 const AVATAR_OUTPUT_SIZE = 512;
 const CROP_VIEWPORT_SIZE = 280;
@@ -83,7 +84,7 @@ const ImageUpload = ({
         setError(result.message || t("shared.upload.failed"));
       }
     } catch (err) {
-      setError(err.message || t("shared.upload.error"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setLoading(false);
     }
@@ -237,7 +238,7 @@ const ImageUpload = ({
       resetCropState();
       await uploadSelectedFile(croppedFile, localPreviewUrl);
     } catch (err) {
-      setError(err.message || t("shared.upload.cropError"));
+      setError(friendlyErrorMessage(err, t));
       setIsCropping(false);
     }
   };

@@ -11,6 +11,8 @@ import {
 import { formatDate } from "../../../shared/utils/dateFormat";
 import { Link } from "react-router-dom";
 import "./MembersPage.css";
+import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
+import ErrorState from "../../../shared/components/ErrorState";
 
 const emptyForm = {
   account_id: null,
@@ -161,7 +163,7 @@ export default function MembersPage() {
       setAccounts(aRes.accounts || []);
       setClans(cRes.clans || []);
     } catch (err) {
-      setError(err.message || t("admin.accounts.messages.loadError"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setLoading(false);
     }
@@ -297,7 +299,7 @@ export default function MembersPage() {
       setForm(emptyForm);
       await fetchData();
     } catch (err) {
-      setToast({ show: true, message: err.message || t("admin.accounts.messages.saveError"), type: "error" });
+      setToast({ show: true, message: friendlyErrorMessage(err, t), type: "error" });
     } finally {
       setSaving(false);
     }
@@ -316,7 +318,7 @@ export default function MembersPage() {
       setToast({ show: true, message: t("admin.accounts.messages.deleted"), type: "success" });
       await fetchData();
     } catch (err) {
-      setToast({ show: true, message: err.message || t("admin.accounts.messages.deleteError"), type: "error" });
+      setToast({ show: true, message: friendlyErrorMessage(err, t), type: "error" });
     }
   };
 
@@ -412,7 +414,7 @@ export default function MembersPage() {
         </>
       )}
 
-      {error && <div className="task-alert is-error">{error}</div>}
+      {error && <ErrorState message={error} />}
 
       {selectedClan !== null && (
       <div className="premium-dark-glass">

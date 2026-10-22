@@ -13,6 +13,8 @@ import "./GenealogyManagement.css";
 import { notify } from "../../../shared/utils/toast";
 import { useConfirm } from "../../../shared/components/confirmContext.js";
 import useDismissable from "../../../shared/hooks/useDismissable";
+import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
+import LoadingState from "../../../shared/components/LoadingState";
 
 const emptyClanForm = {
     clan_name: "",
@@ -60,7 +62,7 @@ export default function GenealogyManagement() {
             }
         } catch (err) {
             console.error(err);
-            notify(err.message || t("admin.genealogy.messages.loadClansError"));
+            notify(friendlyErrorMessage(err, t));
         } finally {
             setLoading(false);
         }
@@ -210,7 +212,7 @@ export default function GenealogyManagement() {
             }
             setModalMode(null);
         } catch (err) {
-            setFormError(err.message || t("admin.genealogy.messages.operationFailed"));
+            setFormError(friendlyErrorMessage(err, t));
         } finally {
             setSaving(false);
         }
@@ -224,11 +226,11 @@ export default function GenealogyManagement() {
             await deleteAdminClan(clan.id);
             await fetchClans();
         } catch (err) {
-            notify(err.message || t("admin.genealogy.messages.deleteError"));
+            notify(friendlyErrorMessage(err, t));
         }
     };
 
-    if (loading && clans.length === 0) return <div className="loading-container"><div className="loader"></div><p>{t("admin.genealogy.messages.loading")}</p></div>;
+    if (loading && clans.length === 0) return <LoadingState variant="cards" label={t("admin.genealogy.messages.loading")} />;
 
     return (
         <div className="genealogy-management premium-page">

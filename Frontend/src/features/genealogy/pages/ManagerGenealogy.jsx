@@ -143,7 +143,7 @@ export default function GenealogySection() {
         }),
       );
     } catch (err) {
-      setKeyError(err?.message || t("tree.page.errors.loadKeys"));
+      setKeyError(friendlyErrorMessage(err, t));
     } finally {
       setActiveKeysLoading(false);
     }
@@ -213,7 +213,7 @@ export default function GenealogySection() {
       setKeyModalOpen(true);
       await loadActiveKeys();
     } catch (err) {
-      setKeyError(err?.message || t("tree.page.errors.createKey"));
+      setKeyError(friendlyErrorMessage(err, t));
     } finally {
       setKeySaving(false);
     }
@@ -292,7 +292,7 @@ export default function GenealogySection() {
       setClanMessage(response?.message || t("tree.page.messages.saveClanSuccess"));
       await loadTree();
     } catch (err) {
-      setClanError(err?.message || t("tree.page.errors.saveClan"));
+      setClanError(friendlyErrorMessage(err, t));
     } finally {
       setClanSaving(false);
     }

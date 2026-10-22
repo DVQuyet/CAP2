@@ -7,6 +7,7 @@ import LoadingState from "../../../shared/components/LoadingState";
 import ErrorState from "../../../shared/components/ErrorState";
 import "./FundDesign.css";
 import { notify } from "../../../shared/utils/toast";
+import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 
 export default function MemberFundPage() {
   const { t } = useTranslation();
@@ -128,7 +129,7 @@ export default function MemberFundPage() {
         loadData();
       }, 2500);
     } catch (error) {
-      notify(error.message || t("fund.member.messages.reportError"));
+      notify(friendlyErrorMessage(error, t));
     } finally {
       setSubmitting(false);
     }
@@ -152,7 +153,7 @@ export default function MemberFundPage() {
         loadData();
       }, 2500);
     } catch (error) {
-      notify(error.message || t("fund.member.messages.reportError"));
+      notify(friendlyErrorMessage(error, t));
     } finally {
       setSubmitting(false);
     }
