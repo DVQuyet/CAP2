@@ -335,6 +335,10 @@ async function handleClanInfoIntent({ parsed, context, planner }) {
         answer = clan.hall_address
             ? `Theo thông tin dòng họ ${clan.clan_name || ''}: ${String(clan.hall_address).trim()}.`.replace(/\s+:/, ':')
             : 'Gia phả hiện chưa ghi địa chỉ nhà thờ họ.';
+    } else if (field === 'notable') {
+        answer = 'Gia phả hiện chưa có dữ liệu về chức vụ, nghề nghiệp hay thành tích của thành viên nên tôi chưa trả lời được. Bạn có thể xem phần tiểu sử trong hồ sơ từng thành viên (nếu có), hoặc hỏi "Đinh Văn A là ai?".';
+    } else if (field === 'eldest_daughter_in_law') {
+        answer = 'Gia phả hiện chưa ghi nhận dâu trưởng của dòng họ (chưa có dữ liệu chi trưởng/trưởng họ). Bạn có thể hỏi "Vợ của X là ai?" nếu biết người con trai trưởng.';
     } else {
         answer = 'Gia phả hiện chưa ghi nhận trưởng họ. Quản lý dòng họ có thể bổ sung khi hệ thống có thông tin này.';
     }

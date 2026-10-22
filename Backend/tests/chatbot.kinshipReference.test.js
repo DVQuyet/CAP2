@@ -59,7 +59,7 @@ assert.strictEqual(edgeMatches('child', 'son'), true, 'chưa rõ giới tính v�
 
     const ongNoi = await ask(['Ông nội tôi']);
     assert.strictEqual(ongNoi.status, 'not_found');
-    assert.strictEqual(ongNoi.label, 'ong noi');
+    assert.strictEqual(ongNoi.label, 'ông nội', 'nhãn hiển thị có dấu');
 
     const plainName = await ask(['Nguyễn Văn Bình']);
     assert.strictEqual(plainName, null, 'tên người thường để bước tìm theo tên xử lý');

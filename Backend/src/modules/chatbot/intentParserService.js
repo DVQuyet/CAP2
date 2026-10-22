@@ -78,7 +78,7 @@ function parsePersonExists(message) {
 
 function parseCompareRelationship(message) {
     const pairText = stripQuestionNoise(message);
-    const pair = pairText.match(/^(.+?)\s+(?:với|voi|và|va)\s+(.+?)\s+(?:là gì của nhau|la gi cua nhau|có quan hệ gì|co quan he gi|quan hệ (?:thế nào|ra sao|gì)|quan he (?:the nao|ra sao|gi)|là họ hàng gì|la ho hang gi|có họ hàng gì không|co ho hang gi khong|có họ với nhau không|co ho voi nhau khong)(?:\s+(?:với nhau|voi nhau))?$/i);
+    const pair = pairText.match(/^(.+?)\s+(?:với|voi|và|va)\s+(.+?)\s+(?:là gì của nhau|la gi cua nhau|ai là anh(?:\s+ai là em)?|ai la anh(?:\s+ai la em)?|ai lớn hơn|ai lon hon|ai nhỏ hơn|ai nho hon|có quan hệ gì|co quan he gi|quan hệ (?:thế nào|ra sao|gì)|quan he (?:the nao|ra sao|gi)|là họ hàng gì|la ho hang gi|có họ hàng gì không|co ho hang gi khong|có họ với nhau không|co ho voi nhau khong)(?:\s+(?:với nhau|voi nhau))?$/i);
     if (pair) {
         const side = (value) => (new RegExp('^' + SELF_WORD_PATTERN + '$', 'i').test(value.trim())
             ? { self: true, names: [] }
@@ -148,6 +148,52 @@ function parseKinshipLookup(message) {
             strict: Boolean(terms[0].strict),
         },
     };
+}
+
+// Cách gọi vợ/chồng của anh chị em cha mẹ hoặc của chính mình, theo cấu trúc quan hệ (không cần dữ liệu gia phả).
+const SPOUSE_CALL_TERMS = {
+    'vo|anh trai|cha': { term: 'bác gái (còn gọi là bác dâu)', phrase: 'vợ của anh trai bố' },
+    'vo|em trai|cha': { term: 'thím', phrase: 'vợ của em trai bố' },
+    'chong|chi gai|cha': { term: 'bác (bác rể)', phrase: 'chồng của chị gái bố' },
+    'chong|em gai|cha': { term: 'dượng (chồng của cô)', phrase: 'chồng của em gái bố' },
+    'vo|anh trai|me': { term: 'mợ', phrase: 'vợ của anh trai mẹ' },
+    'vo|em trai|me': { term: 'mợ', phrase: 'vợ của em trai mẹ' },
+    'chong|chi gai|me': { term: 'dượng (chồng của dì)', phrase: 'chồng của chị gái mẹ' },
+    'chong|em gai|me': { term: 'dượng (chồng của dì)', phrase: 'chồng của em gái mẹ' },
+    'vo|anh trai|toi': { term: 'chị dâu', phrase: 'vợ của anh trai bạn' },
+    'vo|em trai|toi': { term: 'em dâu', phrase: 'vợ của em trai bạn' },
+    'chong|chi gai|toi': { term: 'anh rể', phrase: 'chồng của chị gái bạn' },
+    'chong|em gai|toi': { term: 'em rể', phrase: 'chồng của em gái bạn' },
+};
+
+// "Vợ của anh trai bố tôi thì gọi là gì?" -> bác gái.
+function parseKinshipCallTerm(message) {
+    const normalized = normalizeText(stripQuestionNoise(message));
+    const match = normalized.match(/^(vo|chong) (?:cua )?(anh trai|em trai|chi gai|em gai) (?:cua )?(bo|cha|me|toi|minh)(?: toi| minh)? (?:goi la gi|goi bang gi|xung ho the nao|xung ho ra sao|la gi)$/);
+    if (!match) return null;
+    const owner = match[3] === 'bo' ? 'cha' : (match[3] === 'minh' ? 'toi' : match[3]);
+    const entry = SPOUSE_CALL_TERMS[`${match[1]}|${match[2]}|${owner}`];
+    if (!entry) return null;
+    return { intent: 'kinship_call_term', confidence: 0.84, entities: { term: entry.term, phrase: entry.phrase } };
+}
+
+// "Ai quan hệ gần nhất với tôi?", "Người thân gần nhất của tôi là ai?"
+function parseNearestRelatives(message) {
+    const normalized = normalizeText(stripQuestionNoise(message));
+    if (!/\b(quan he|ho hang|nguoi than)\b/.test(normalized) || !/\b(gan nhat|than nhat|gan gui nhat)\b/.test(normalized)) return null;
+    if (!/\b(toi|minh|tui)\b/.test(normalized)) return null;
+    return { intent: 'nearest_relatives', confidence: 0.8, entities: {} };
+}
+
+// "Nhánh của ông Bình có bao nhiêu người?", "Con cháu của X có bao nhiêu người cả trai lẫn gái?"
+function parseDescendantCount(message) {
+    const text = stripQuestionNoise(message);
+    const match = text.match(/^(?:nhánh|nhanh|con cháu|con chau|hậu duệ|hau due|dòng dõi|dong doi)\s+(?:của|cua)\s+(.+?)\s+(?:có|co)\s+(?:bao nhiêu|bao nhieu|mấy|may)\s+(?:người|nguoi)(?:\s+.*)?$/i);
+    if (!match) return null;
+    // Bỏ phần mô tả thêm sau tên: "ông bình sinh năm 1940".
+    const name = match[1].replace(/\s+(?:sinh|sanh|mất|mat)\s+(?:năm|nam)\s+\d{3,4}$/i, '').trim();
+    if (!name || new RegExp('^' + SELF_WORD_PATTERN + '$', 'i').test(name)) return null;
+    return { intent: 'descendant_count', confidence: 0.82, entities: { targetName: makeNameAlternatives(name) } };
 }
 
 function parseCallTermQuestion(message) {
@@ -255,6 +301,11 @@ function parseSpouse(message) {
             confidence: 0.86,
             entities: { spouseType: normalizeText(count[2]) === 'chong' ? 'husband' : 'wife', targetName: makeNameAlternatives(count[1]), count: true },
         };
+    }
+    // "Đinh Thị Mai lấy ai", "ông Hòa cưới ai": hỏi vợ/chồng của X (giới tính tự suy ra từ dữ liệu).
+    const marry = text.match(/^(.+?)\s+(?:lấy|lay|cưới|cuoi|kết hôn với|ket hon voi)\s+(?:ai|người nào|nguoi nao)$/i);
+    if (marry && !isSelf(marry[1])) {
+        return { intent: 'find_spouse', confidence: 0.84, entities: { spouseType: 'wife', targetName: makeNameAlternatives(marry[1]) } };
     }
     // "Vợ lẽ/vợ cả/vợ hai của X là ai"
     const ranked = text.match(/^(?:ai\s+là\s+|ai\s+la\s+)?((?:vợ|vo)\s+(?:lẽ|le|bé|be|hai|ba|thứ\s+\S+|thu\s+\S+|sau|cả|ca|đầu|dau|trước|truoc))\s+(?:của|cua)\s+(.+?)(?:\s+(?:là ai|la ai|tên gì|ten gi|là những ai|la nhung ai|gồm những ai|gom nhung ai))?$/i);
@@ -409,6 +460,8 @@ function parseStatsCount(message) {
     if (/\bthuoc\s+(?:doi|the he)\b/.test(normalized) && /\bmay\b/.test(normalized)) return null;
     // "Tôi đời thứ mấy" hỏi đời của một người; "Tôi có mấy anh chị em/con" là tra xưng hô.
     if (/\b(doi thu may|the he thu may)\b/.test(normalized)) return null;
+    // "X sinh năm bao nhiêu": hỏi năm sinh/mất của một người ("năm" không dấu trùng "nam" giới tính).
+    if (/\b(sinh|mat|qua doi)\s+nam\b/.test(normalized) || /\bnam\s+(sinh|mat)\b/.test(normalized)) return null;
     if (/^(toi|minh|tui)\s+co\s+(may|bao nhieu)\s+/.test(normalized)) return null;
     const asksCount = /\b(co bao nhieu|bao nhieu|may|so luong|tong so|thong ke|dem)\b/.test(normalized);
     const inFamilyScope = /\b(gia pha|dong ho|ho toc|thanh vien|nguoi|doi|the he|chi|nhanh|nam|nu|con song|da mat|qua doi)\b/.test(normalized);
@@ -503,7 +556,7 @@ const PERSON_FIELD_PATTERNS = [
 ];
 
 // Từ hỏi trường thông tin (có dấu và không dấu), để cắt khỏi câu khi tách tên.
-const PERSON_FIELD_WORDS = '(?:số điện thoại|so dien thoai|điện thoại|dien thoai|sđt|sdt|email|liên lạc|lien lac|zalo|sinh năm nào|sinh nam nao|sinh năm|sinh nam|năm sinh|nam sinh|ngày sinh|ngay sinh|sinh ngày|sinh ngay|mất năm nào|mat nam nao|mất năm|mat nam|năm mất|nam mat|ngày mất|ngay mat|mất khi nào|mat khi nao|qua đời|qua doi|còn sống không|con song khong|còn sống|con song|đã mất chưa|da mat chua|bao nhiêu tuổi|bao nhieu tuoi|mấy tuổi|may tuoi|quê quán|que quan|quê ở đâu|que o dau|quê|que|địa chỉ|dia chi|sống ở đâu|song o dau|tiểu sử|tieu su|cuộc đời|cuoc doi|ghi chú|ghi chu|thông tin|thong tin)';
+const PERSON_FIELD_WORDS = '(?:thọ bao nhiêu tuổi|tho bao nhieu tuoi|thọ bao nhiêu|tho bao nhieu|số điện thoại|so dien thoai|điện thoại|dien thoai|sđt|sdt|email|liên lạc|lien lac|zalo|sinh năm nào|sinh nam nao|sinh năm|sinh nam|năm sinh|nam sinh|ngày sinh|ngay sinh|sinh ngày|sinh ngay|mất năm nào|mat nam nao|mất năm|mat nam|năm mất|nam mat|ngày mất|ngay mat|mất khi nào|mat khi nao|qua đời|qua doi|còn sống không|con song khong|còn sống|con song|đã mất chưa|da mat chua|bao nhiêu tuổi|bao nhieu tuoi|mấy tuổi|may tuoi|quê quán|que quan|quê ở đâu|que o dau|quê|que|địa chỉ|dia chi|sống ở đâu|song o dau|tiểu sử|tieu su|cuộc đời|cuoc doi|ghi chú|ghi chu|thông tin|thong tin)';
 
 function parsePersonInfo(message) {
     const text = stripQuestionNoise(message);
@@ -527,7 +580,7 @@ function parsePersonInfo(message) {
     if (target) {
         const { terms, rest } = splitKinshipTerms(target);
         const onlySelfWords = rest.every((word) => /^(tôi|toi|mình|minh|tui|tớ)$/i.test(word));
-        if (terms.length && onlySelfWords) return null;
+        if (terms.length && onlySelfWords && !field) return null;
     }
 
     if (asksOverview && !field) {
@@ -587,6 +640,14 @@ function parseClanInfo(message) {
     if (/\b(truong ho|toc truong|truong toc|truong chi)\b/.test(normalized)) {
         return { intent: 'clan_info', confidence: 0.86, entities: { field: 'head' } };
     }
+    // Chức vụ, thành tích, "dâu trưởng": gia phả chưa có trường dữ liệu này, trả lời rõ thay vì "chưa hiểu".
+    const inClan = /\b(dong ho|ho toc|ho minh|ho nha|nha minh|nha toi|gia pha|dong toc)\b/.test(normalized);
+    if (inClan && /\b(lam quan|quan to|chuc vu|chuc sac|thanh dat|noi tieng|lam to|giau nhat)\b/.test(normalized)) {
+        return { intent: 'clan_info', confidence: 0.7, entities: { field: 'notable' } };
+    }
+    if (inClan && /\b(dau truong|dau ca|con dau truong)\b/.test(normalized)) {
+        return { intent: 'clan_info', confidence: 0.7, entities: { field: 'eldest_daughter_in_law' } };
+    }
     return null;
 }
 
@@ -597,7 +658,9 @@ function parsePersonAnniversary(message) {
     const text = stripQuestionNoise(message);
     const normalized = normalizeText(text);
     if (!/\b(gio|ky nhat)\b/.test(normalized)) return null;
-    const match = text.match(new RegExp('(?:ngày\\s+giỗ|ngay\\s+gio|giỗ|gio|kỵ\\s+nhật|ky\\s+nhat)\\s+(?:của\\s+|cua\\s+)?(.+?)\\s+' + ANNIVERSARY_TAIL, 'i'));
+    let match = text.match(new RegExp('(?:ngày\\s+giỗ|ngay\\s+gio|giỗ|gio|kỵ\\s+nhật|ky\\s+nhat)\\s+(?:của\\s+|cua\\s+)?(.+?)\\s+' + ANNIVERSARY_TAIL, 'i'));
+    // Nói đảo: "bác Bình giỗ ngày nào", "ông nội tôi giỗ khi nào".
+    if (!match) match = text.match(new RegExp('^(.+?)\\s+(?:giỗ|gio|kỵ\\s+nhật|ky\\s+nhat)\\s+' + ANNIVERSARY_TAIL + '$', 'i'));
     if (!match) return null;
     const subject = match[1].replace(/\s+(năm nay|nam nay|năm tới|nam toi|năm sau|nam sau)$/i, '').trim();
     const plain = normalizeText(subject);
@@ -673,9 +736,12 @@ function parse(message) {
         parsePersonExists,
         parseCompareRelationship,
         parseCallTermQuestion,
+        parseKinshipCallTerm,
         parseRelationshipToCurrentUser,
         parseChildren,
         parseSpouse,
+        parseNearestRelatives,
+        parseDescendantCount,
         parseParents,
         parseKinshipLookup,
         parseAgeRanking,

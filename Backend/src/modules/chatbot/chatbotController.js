@@ -1160,6 +1160,65 @@ async function handleEventLookup({ clanId, accountId, parsed }) {
     };
 }
 
+// "Ai quan hệ gần nhất với tôi": cha mẹ, vợ/chồng, con, anh chị em ruột của người hỏi.
+async function handleNearestRelatives({ clanId, currentMemberId, parsed }) {
+    if (!currentMemberId) {
+        return { success: true, intent: parsed.intent, answer: needsCurrentPersonAnswer(), confidence: 0.2, needsPersonSelection: true };
+    }
+    const groups = [];
+    for (const key of ['cha', 'mẹ', 'vợ', 'chồng', 'con', 'anh chị em']) {
+        const found = await relationshipEngine.findPeopleByKinshipTerm(currentMemberId, key, { clanId });
+        const names = found.filter((item) => !item.label || !/họ/.test(String(item.label))).map((item) => ({ id: item.id, name: item.name }));
+        if (names.length) groups.push({ key, names });
+    }
+    if (!groups.length) {
+        return { success: true, intent: parsed.intent, answer: 'Theo dữ liệu gia phả hiện tại, tôi chưa tìm thấy người thân gần của bạn (cha mẹ, vợ/chồng, con, anh chị em).', confidence: 0.5, people: [] };
+    }
+    return {
+        success: true,
+        intent: parsed.intent,
+        answer: `Theo dữ liệu gia phả hiện tại, những người có quan hệ gần nhất với bạn — ${groups.map((group) => `${group.key}: ${group.names.map((item) => item.name).join(', ')}`).join('; ')}.`,
+        confidence: parsed.confidence || 0.8,
+        people: groups.flatMap((group) => group.names),
+    };
+}
+
+// "Nhánh của ông Bình có bao nhiêu người": đếm con cháu (không tính vợ/chồng) của một người.
+async function handleDescendantCount({ res, clanId, currentMemberId, parsed }) {
+    const person = await resolveNamedPerson(res, clanId, parsed.intent, parsed.entities.targetName, currentMemberId);
+    if (!person) return null;
+    const name = relationshipEngine.personName(person);
+    const seen = new Set([Number(person.id)]);
+    let frontier = [Number(person.id)];
+    const descendants = [];
+    for (let depth = 0; depth < 12 && frontier.length; depth += 1) {
+        const next = [];
+        for (const id of frontier) {
+            for (const child of await relationshipEngine.getChildrenOf(id, { clanId })) {
+                if (seen.has(Number(child.id))) continue;
+                seen.add(Number(child.id));
+                descendants.push(child);
+                next.push(Number(child.id));
+            }
+        }
+        frontier = next;
+    }
+    const subjectPerson = { id: person.id, name };
+    if (!descendants.length) {
+        return { success: true, intent: parsed.intent, answer: `Theo dữ liệu gia phả hiện tại, chưa ghi nhận con cháu của ${name}.`, confidence: 0.6, subjectPerson, people: [] };
+    }
+    const male = descendants.filter((item) => Number(item.gender) === 1).length;
+    const female = descendants.filter((item) => Number(item.gender) === 2).length;
+    return {
+        success: true,
+        intent: parsed.intent,
+        answer: `Theo dữ liệu gia phả hiện tại, con cháu của ${name} có ${descendants.length} người (${male} nam, ${female} nữ${descendants.length - male - female ? `, ${descendants.length - male - female} chưa rõ giới tính` : ''}): ${formatPeopleList(descendants.slice(0, 15))}${descendants.length > 15 ? ', ...' : ''}.`,
+        confidence: parsed.confidence || 0.82,
+        subjectPerson,
+        people: descendants.slice(0, 15).map((item) => ({ id: item.id, name: relationshipEngine.personName(item) })),
+    };
+}
+
 async function handleListAncestors({ res, clanId, currentMemberId, parsed }) {
     if (parsed.entities?.source === 'clan') return handleClanFounders({ clanId, parsed });
     const subject = await resolveSubjectPerson({ res, clanId, currentMemberId, parsed });
@@ -1959,6 +2018,18 @@ exports.ask = withViewer(async (req, res) => {
             responsePayload = await handleFindGeneration({ res, clanId, currentMemberId, parsed });
         } else if (parsed.intent === 'same_generation') {
             responsePayload = await handleSameGeneration({ res, clanId, currentMemberId, parsed });
+        } else if (parsed.intent === 'kinship_call_term') {
+            responsePayload = {
+                success: true,
+                intent: parsed.intent,
+                answer: `${capitalizeFirst(parsed.entities.phrase)} được gọi là ${parsed.entities.term}. Muốn biết người đó trong gia phả, bạn hỏi "${capitalizeFirst(parsed.entities.phrase)} là ai?".`,
+                confidence: parsed.confidence || 0.84,
+                people: [],
+            };
+        } else if (parsed.intent === 'nearest_relatives') {
+            responsePayload = await handleNearestRelatives({ clanId, currentMemberId, parsed });
+        } else if (parsed.intent === 'descendant_count') {
+            responsePayload = await handleDescendantCount({ res, clanId, currentMemberId, parsed });
         } else if (parsed.intent === 'list_ancestors') {
             responsePayload = await handleListAncestors({ res, clanId, currentMemberId, parsed });
         } else if (parsed.intent === 'child_status') {

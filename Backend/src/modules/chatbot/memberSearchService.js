@@ -55,6 +55,13 @@ function scorePerson(row, queryText, aliases = []) {
 
     if (!normalizedQuery) return 0;
     if (normalizedName === normalizedQuery || fullName === normalizedQuery || normalizedAliases.includes(normalizedQuery)) return 1;
+    // Tên một chữ ("Hòa"): gõ đúng dấu và trùng tên gọi thì ưu tiên hơn "Hoa"; chỉ là một phần của chữ khác ("Hoàng") thì hạ điểm.
+    if (!normalizedQuery.includes(' ')) {
+        const typed = String(queryText || '').normalize('NFC').trim().toLowerCase();
+        if (typed !== normalizedQuery && String(row.first_name || '').normalize('NFC').toLowerCase() === typed) return 0.97;
+        const wholeWord = (text) => text.split(' ').includes(normalizedQuery);
+        if (!wholeWord(normalizedName) && !wholeWord(fullName) && (normalizedName.includes(normalizedQuery) || fullName.includes(normalizedQuery))) return 0.7;
+    }
     if (normalizedName.includes(normalizedQuery) || fullName.includes(normalizedQuery)) return 0.88;
     if (normalizedAliases.some((alias) => alias.includes(normalizedQuery) || normalizedQuery.includes(alias))) return 0.9;
 
