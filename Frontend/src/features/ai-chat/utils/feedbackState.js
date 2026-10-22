@@ -10,6 +10,12 @@ export function getFeedbackMessageId(message) {
   return null;
 }
 
+// Đánh giá ban đầu từ lịch sử (feedbackRating: 1, -1 hoặc null); giá trị khác coi như chưa đánh giá.
+export function getInitialFeedbackRating(message) {
+  const value = Number(message?.feedbackRating);
+  return value === 1 || value === -1 ? value : null;
+}
+
 // Bấm lại đúng nút đang chọn thì không làm gì (backend chỉ nhận 1 hoặc -1).
 export function nextFeedbackState(current, clicked) {
   if (clicked !== 1 && clicked !== -1) return { rating: current, send: false };

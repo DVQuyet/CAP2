@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import RelationshipCard from "./RelationshipCard";
 import { apiRequest } from "../../../services/api";
 import { sendChatbotFeedback } from "../../../api/chatbotService";
-import { getFeedbackMessageId, getMessagePersonIds, nextFeedbackState } from "../utils/feedbackState";
+import { getFeedbackMessageId, getInitialFeedbackRating, getMessagePersonIds, nextFeedbackState } from "../utils/feedbackState";
 
 // Nút hành động trợ lý đề xuất (ví dụ "Thêm vào lịch"). Chỉ lưu khi người dùng bấm.
 function AssistantAction({ action }) {
@@ -43,7 +43,7 @@ function MessageActions({ message, onViewOnTree }) {
   const { t } = useTranslation();
   const feedbackId = getFeedbackMessageId(message);
   const personIds = getMessagePersonIds(message);
-  const [rating, setRating] = useState(null);
+  const [rating, setRating] = useState(() => getInitialFeedbackRating(message));
   const [error, setError] = useState("");
   const [askComment, setAskComment] = useState(false);
   const [comment, setComment] = useState("");

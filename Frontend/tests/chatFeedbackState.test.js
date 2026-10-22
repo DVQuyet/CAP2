@@ -22,3 +22,13 @@ test("getMessagePersonIds lọc id hợp lệ", () => {
   assert.deepEqual(getMessagePersonIds({ metadata: { personIds: [3, "4", "x", 0] } }), [3, 4]);
   assert.deepEqual(getMessagePersonIds({ metadata: {} }), []);
 });
+
+import { getInitialFeedbackRating } from "../src/features/ai-chat/utils/feedbackState.js";
+
+test("getInitialFeedbackRating lấy 1/-1 từ lịch sử, còn lại là null", () => {
+  assert.equal(getInitialFeedbackRating({ feedbackRating: 1 }), 1);
+  assert.equal(getInitialFeedbackRating({ feedbackRating: -1 }), -1);
+  assert.equal(getInitialFeedbackRating({ feedbackRating: null }), null);
+  assert.equal(getInitialFeedbackRating({ feedbackRating: 5 }), null);
+  assert.equal(getInitialFeedbackRating({}), null);
+});

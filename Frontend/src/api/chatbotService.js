@@ -25,6 +25,16 @@ export function getChatbotHistory(params = {}) {
   return apiRequest(`${BASE_URL}/history${suffix}`);
 }
 
+// Xóa lịch sử trò chuyện của chính tài khoản trong dòng họ (máy chủ ẩn mềm, chỉ tin của mình).
+export function clearChatbotHistory(params = {}) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") query.set(key, value);
+  });
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+  return apiRequest(`${BASE_URL}/history${suffix}`, { method: "DELETE" });
+}
+
 export function getChatbotSuggestions(params = {}) {
   const query = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {

@@ -18,6 +18,17 @@ async function ensureChatbotFeedbackSchema() {
     `);
 }
 
+// Cột hidden_at cho "xóa lịch sử" (ẩn mềm). Thêm mới, idempotent: chỉ ALTER khi chưa có cột.
+async function ensureChatbotHiddenSchema() {
+    const [tables] = await db.query(
+        "SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'chatbot_messages' LIMIT 1"
+    );
+    if (!tables.length) return;
+    const [columns] = await db.query("SHOW COLUMNS FROM chatbot_messages LIKE 'hidden_at'");
+    if (columns.length) return;
+    await db.query('ALTER TABLE chatbot_messages ADD COLUMN hidden_at TIMESTAMP NULL DEFAULT NULL');
+}
+
 const MAX_COMMENT_LENGTH = 500;
 
 // Trả { ok: true, rating, comment } hoặc { ok: false, message }.
@@ -63,4 +74,4 @@ async function saveFeedback({ messageId, accountId, body }) {
     return { status: 200, body: { success: true, messageId: id, rating: checked.rating, comment: checked.comment } };
 }
 
-module.exports = { ensureChatbotFeedbackSchema, validateFeedbackBody, saveFeedback, MAX_COMMENT_LENGTH };
+module.exports = { ensureChatbotFeedbackSchema, ensureChatbotHiddenSchema, validateFeedbackBody, saveFeedback, MAX_COMMENT_LENGTH };

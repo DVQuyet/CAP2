@@ -18,7 +18,7 @@ const { ARCHIVED_MEMBER_JOIN_SQL } = require('../manager/common.service');
 const { canSeeSensitiveRelations } = require('../genealogy/treeVisibility');
 const { normalizeTyping } = require('./typingNormalizer');
 const { withTreeFields, fallbackFlag } = require('./chatbotResponseMeta');
-const { saveFeedback } = require('./chatbotFeedbackService');
+const { saveFeedback, ensureChatbotHiddenSchema } = require('./chatbotFeedbackService');
 const { describePersonBrief, capitalizeFirst, formatDateVN, dateParts } = require('./chatbotFormat');
 const { plainTermToKey, hasVietnameseDiacritics } = require('./kinshipTermService');
 const { findPronoun, rewritePronoun, rewriteEllipsis, selectCandidate, findFocusText } = require('./conversationFlowService');
@@ -66,7 +66,7 @@ async function restoreMemoryFromHistory(conversationId, memorySessionId) {
     const columns = await getTableColumns('chatbot_messages');
     if (!columns.has('metadata')) return null;
     const rows = await queryOptional(
-        'SELECT metadata FROM chatbot_messages WHERE conversation_id = ? ORDER BY id DESC LIMIT 4',
+        `SELECT metadata FROM chatbot_messages WHERE conversation_id = ?${columns.has('hidden_at') ? ' AND hidden_at IS NULL' : ''} ORDER BY id DESC LIMIT 4`,
         [conversationId]
     );
     for (const row of rows) {
@@ -146,6 +146,7 @@ const {
     buildConversationSessionId,
     getConversationMemory,
     updateConversationMemory,
+    clearUserConversationMemory,
 } = require('./conversationMemoryService');
 const { resolveCoreference } = require('./coreferenceResolver');
 const { buildClarificationResponse } = require('./clarificationService');
@@ -318,7 +319,7 @@ async function loadChatbotContext({ clanId, currentMemberId, conversationId, mes
         history = (await queryOptional(
             `SELECT ${senderSelect}, message, intent
              FROM chatbot_messages
-             WHERE conversation_id = ?
+             WHERE conversation_id = ?${columns.has('hidden_at') ? ' AND hidden_at IS NULL' : ''}
              ORDER BY created_at DESC, id DESC
              LIMIT 10`,
             [conversationId]
@@ -2131,54 +2132,110 @@ exports.history = async (req, res) => {
 
         const columns = await getTableColumns('chatbot_messages');
         const roleSelect = columns.has('role')
-            ? 'role'
+            ? 'm.role'
             : columns.has('sender')
-                ? "CASE WHEN sender = 'bot' THEN 'assistant' ELSE sender END AS role"
+                ? "CASE WHEN m.sender = 'bot' THEN 'assistant' ELSE m.sender END AS role"
                 : "'assistant' AS role";
-        const confidenceSelect = columns.has('confidence') ? 'confidence' : 'NULL AS confidence';
-        const metadataSelect = columns.has('metadata') ? 'metadata' : 'NULL AS metadata';
+        const confidenceSelect = columns.has('confidence') ? 'm.confidence' : 'NULL AS confidence';
+        const metadataSelect = columns.has('metadata') ? 'm.metadata' : 'NULL AS metadata';
         const where = [];
         const params = [];
         if (columns.has('clan_id')) {
-            where.push('clan_id = ?');
+            where.push('m.clan_id = ?');
             params.push(clanId);
         }
         // Lịch sử luôn gắn với tài khoản đang đăng nhập; current_member_id do client gửi
         // lên nên không đủ để phân quyền.
         if (columns.has('account_id') && accountId) {
-            where.push('account_id = ?');
+            where.push('m.account_id = ?');
             params.push(accountId);
         } else {
             return res.json({ success: true, messages: [], pagination: { limit, offset } });
         }
         if (columns.has('current_member_id')) {
-            where.push('current_member_id = ?');
+            where.push('m.current_member_id = ?');
             params.push(currentMemberId);
         }
-        params.push(limit, offset);
+        // Tin đã "xóa lịch sử" (ẩn mềm) không trả về nữa.
+        if (columns.has('hidden_at')) where.push('m.hidden_at IS NULL');
+
+        // Đánh giá 👍/👎 của chính tài khoản này (1, -1 hoặc null).
+        const hasFeedback = await memberSearch.tableExists('chatbot_feedback');
+        const feedbackSelect = hasFeedback ? 'f.rating AS feedback_rating' : 'NULL AS feedback_rating';
+        const feedbackJoin = hasFeedback
+            ? 'LEFT JOIN chatbot_feedback f ON f.message_id = m.id AND f.account_id = ?'
+            : '';
+        const queryParams = hasFeedback ? [accountId, ...params, limit, offset] : [...params, limit, offset];
 
         const [rows] = await db.query(
             `
-            SELECT id, ${roleSelect}, message, intent, ${confidenceSelect}, ${metadataSelect}, created_at
-            FROM chatbot_messages
+            SELECT m.id, ${roleSelect}, m.message, m.intent, ${confidenceSelect}, ${metadataSelect}, m.created_at, ${feedbackSelect}
+            FROM chatbot_messages m
+            ${feedbackJoin}
             WHERE ${where.join(' AND ')}
-            ORDER BY id DESC
+            ORDER BY m.id DESC
             LIMIT ? OFFSET ?
             `,
-            params
+            queryParams
         );
 
         return res.json({
             success: true,
-            messages: rows.reverse().map((row) => ({
+            messages: rows.reverse().map(({ feedback_rating: feedbackRating, ...row }) => ({
                 ...row,
                 metadata: typeof row.metadata === 'string' ? JSON.parse(row.metadata || '{}') : row.metadata,
+                feedbackRating: row.role === 'assistant' && (Number(feedbackRating) === 1 || Number(feedbackRating) === -1)
+                    ? Number(feedbackRating)
+                    : null,
             })),
             pagination: { limit, offset },
         });
     } catch (error) {
         console.error('chatbot history error:', error);
         return res.status(500).json({ success: false, message: 'Không thể tải lịch sử chatbot' });
+    }
+};
+
+// DELETE /api/chatbot/history?clanId=...  Ẩn mềm (hidden_at) tin nhắn của CHÍNH tài khoản trong dòng họ đó.
+// Không xóa hẳn vì chatbot_messages còn phục vụ báo cáo câu chưa hiểu (chatbot-unknown-report) và đánh giá 👍/👎.
+exports.clearHistory = async (req, res) => {
+    try {
+        const clanId = toPositiveId(req.query.clanId || req.query.clan_id || req.user?.clan_id);
+        const currentMemberId = toPositiveId(req.query.currentMemberId || req.query.current_member_id || req.user?.person_id);
+        const accountId = toPositiveId(req.user?.id || req.user?.account_id);
+        if (!accountId) return res.status(401).json({ success: false, message: 'Chưa đăng nhập' });
+        if (!clanId) return res.status(400).json({ success: false, message: 'clanId là bắt buộc' });
+        if (!(await canAccessClan(req, clanId, currentMemberId))) {
+            return res.status(403).json({ success: false, message: 'Bạn không có quyền truy cập dòng họ này' });
+        }
+
+        let cleared = 0;
+        if (await memberSearch.tableExists('chatbot_messages')) {
+            let columns = await getTableColumns('chatbot_messages');
+            if (!columns.has('hidden_at')) {
+                // Chưa chạy migration: tự thêm cột (idempotent) rồi nạp lại danh sách cột.
+                await ensureChatbotHiddenSchema();
+                tableColumnsCache.delete('chatbot_messages');
+                columns = await getTableColumns('chatbot_messages');
+            }
+            if (!columns.has('hidden_at')) {
+                // DISABLE_RUNTIME_DDL có thể đã chặn ALTER: báo lỗi rõ thay vì giả vờ đã xóa.
+                return res.status(500).json({ success: false, message: 'Chưa có cột hidden_at, cần chạy migration 2026_10_22_chatbot_messages_hidden_at.sql' });
+            }
+            if (columns.has('account_id') && columns.has('clan_id')) {
+                const [result] = await db.query(
+                    'UPDATE chatbot_messages SET hidden_at = NOW() WHERE account_id = ? AND clan_id = ? AND hidden_at IS NULL',
+                    [accountId, clanId]
+                );
+                cleared = Number(result?.affectedRows || 0);
+            }
+        }
+        // Trí nhớ hội thoại (RAM) cũng reset để câu hỏi nối tiếp không dùng ngữ cảnh cũ.
+        clearUserConversationMemory(accountId, clanId);
+        return res.json({ success: true, cleared });
+    } catch (error) {
+        console.error('chatbot clear history error:', error);
+        return res.status(500).json({ success: false, message: 'Không thể xóa lịch sử chatbot' });
     }
 };
 

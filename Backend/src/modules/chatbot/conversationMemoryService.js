@@ -148,7 +148,16 @@ function clearConversationMemory(sessionId) {
     memoryStore.delete(key);
 }
 
+// Xóa mọi phiên nhớ của một tài khoản trong một dòng họ (khóa dạng "user:clan:session").
+function clearUserConversationMemory(userId, clanId) {
+    const prefix = `${normalizePart(userId)}:${normalizePart(clanId, 'no-clan')}:`;
+    for (const key of [...memoryStore.keys()]) {
+        if (key.startsWith(prefix)) memoryStore.delete(key);
+    }
+}
+
 module.exports = {
+    clearUserConversationMemory,
     buildConversationSessionId,
     getConversationMemory,
     updateConversationMemory,

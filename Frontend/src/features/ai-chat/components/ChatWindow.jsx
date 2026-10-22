@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import { getStoredUser } from "../../../shared/utils/auth";
 import { buildTreeFocusUrl, isTreePath, TREE_FOCUS_EVENT } from "../../genealogy/utils/treeFocusParams";
-import { askChatbot, getChatbotHistory, getChatbotSuggestions } from "../../../api/chatbotService";
+import { askChatbot, clearChatbotHistory, getChatbotHistory, getChatbotSuggestions } from "../../../api/chatbotService";
 import MessageBubble from "./MessageBubble";
 import PersonContextSelector from "./PersonContextSelector";
 import SuggestionChips from "./SuggestionChips";
@@ -41,6 +41,8 @@ export default function ChatWindow({
   const [loading, setLoading] = useState(false);
   const [coldStart, setColdStart] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
+  const [clearing, setClearing] = useState(false);
+  const [clearError, setClearError] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
   const listRef = useRef(null);
@@ -69,6 +71,7 @@ export default function ChatWindow({
             role: item.role === "assistant" ? "assistant" : "user",
             content: item.message,
             metadata: item.metadata,
+            feedbackRating: item.feedbackRating ?? null,
             created_at: item.created_at,
           })));
         }
@@ -108,10 +111,19 @@ export default function ChatWindow({
     if (window.matchMedia?.(MOBILE_QUERY).matches) onClose?.();
   };
 
-  const handleClearHistory = () => {
-    // Chưa có API xóa lịch sử phía máy chủ: chỉ xóa phần hiển thị trên màn hình này.
-    setMessages([]);
-    setConfirmClear(false);
+  // Gọi API xóa lịch sử trước; lỗi thì giữ nguyên tin nhắn và báo lỗi nhỏ.
+  const handleClearHistory = async () => {
+    setClearError("");
+    setClearing(true);
+    try {
+      await clearChatbotHistory({ clanId: context.clanId, currentMemberId: context.currentMemberId });
+      setMessages([]);
+      setConfirmClear(false);
+    } catch {
+      setClearError(t("aiChat.clearHistoryError"));
+    } finally {
+      setClearing(false);
+    }
   };
 
   // extra: thông tin kèm theo câu hỏi, vd { clarificationChoice } khi người dùng chọn một người lúc được hỏi lại.
@@ -199,7 +211,7 @@ export default function ChatWindow({
           <strong>{t("aiChat.title")}</strong>
           <small>{t("aiChat.subtitle")}</small>
         </div>
-        <button type="button" className="ai-icon-btn" onClick={() => setConfirmClear((value) => !value)} aria-label={t("aiChat.clearHistory")} title={t("aiChat.clearHistory")} disabled={!messages.length} aria-expanded={confirmClear}>
+        <button type="button" className="ai-icon-btn" onClick={() => { setClearError(""); setConfirmClear((value) => !value); }} aria-label={t("aiChat.clearHistory")} title={t("aiChat.clearHistory")} disabled={!messages.length} aria-expanded={confirmClear}>
           <span className="material-symbols-outlined" aria-hidden="true">delete_sweep</span>
         </button>
         <button type="button" className="ai-icon-btn" onClick={onClose} aria-label={t("aiChat.close")} title={t("aiChat.close")}>
@@ -211,8 +223,9 @@ export default function ChatWindow({
         {confirmClear ? (
           <div className="ai-notice is-warning" role="alert">
             <span>{t("aiChat.clearHistoryConfirm")}</span>
-            <button type="button" className="ai-notice-btn" onClick={handleClearHistory}>{t("aiChat.clearHistoryYes")}</button>
-            <button type="button" className="ai-notice-btn" onClick={() => setConfirmClear(false)}>{t("aiChat.clearHistoryNo")}</button>
+            <button type="button" className="ai-notice-btn" onClick={handleClearHistory} disabled={clearing}>{t("aiChat.clearHistoryYes")}</button>
+            <button type="button" className="ai-notice-btn" onClick={() => setConfirmClear(false)} disabled={clearing}>{t("aiChat.clearHistoryNo")}</button>
+            {clearError ? <small className="ai-feedback-note is-error">{clearError}</small> : null}
           </div>
         ) : null}
         {contextLoading ? (
