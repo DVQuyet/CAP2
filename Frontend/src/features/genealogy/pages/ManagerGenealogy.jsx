@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import useDismissable from "../../../shared/hooks/useDismissable";
 import { useTranslation } from "react-i18next";
 import { createTreeEditKeyAPI, getActiveTreeEditKeysAPI, getManagerTree, updateManagerClanInfo } from "../../../api/managerService";
 import FamilyTreeEditor from "../components/FamilyTreeEditor.jsx";
@@ -29,6 +30,11 @@ export default function GenealogySection() {
   const [activeKeysLoading, setActiveKeysLoading] = useState(false);
   const [isClanInfoOpen, setIsClanInfoOpen] = useState(false);
   const [clanForm, setClanForm] = useState({ clan_name: "", history: "", hall_address: "" });
+  const { requestClose, backdropProps } = useDismissable();
+  // Ảnh chụp form thông tin dòng họ lúc mở để biết đã sửa chưa.
+  const [initialClanForm, setInitialClanForm] = useState("");
+  const isClanFormDirty = JSON.stringify(clanForm) !== initialClanForm;
+  const closeClanInfo = () => setIsClanInfoOpen(false);
   const [clanSaving, setClanSaving] = useState(false);
   const [clanMessage, setClanMessage] = useState("");
   const [clanError, setClanError] = useState("");
@@ -259,13 +265,15 @@ export default function GenealogySection() {
     );
 
   const openClanInfo = () => {
-    setClanError("");
-    setClanMessage("");
-    setClanForm({
+    const nextForm = {
       clan_name: clan?.clan_name || "",
       history: clan?.history || "",
       hall_address: clan?.hall_address || "",
-    });
+    };
+    setClanError("");
+    setClanMessage("");
+    setInitialClanForm(JSON.stringify(nextForm));
+    setClanForm(nextForm);
     setIsClanInfoOpen(true);
   };
 
@@ -291,15 +299,15 @@ export default function GenealogySection() {
   };
 
   const renderClanInfoModal = () => (
-    <div className="clan-info-modalOverlay" role="dialog" aria-modal="true">
-      <form className="clan-info-modal" onSubmit={saveClanInfo}>
+    <div className="clan-info-modalOverlay" role="dialog" aria-modal="true" {...backdropProps(closeClanInfo, isClanFormDirty)}>
+      <form className="clan-info-modal" onSubmit={saveClanInfo} onMouseDown={(event) => event.stopPropagation()}>
         <div className="clan-info-modalHead">
           <div>
             <span>{t("tree.page.clanInfo")}</span>
             <h2>{clan?.clan_name || t("tree.page.clanFallback")}</h2>
             <p>{t("tree.page.managerClanInfoHelp")}</p>
           </div>
-          <button className="clan-info-close" type="button" onClick={() => setIsClanInfoOpen(false)} aria-label={t("common.close")}>
+          <button className="clan-info-close" type="button" onClick={() => requestClose(closeClanInfo, isClanFormDirty)} aria-label={t("common.close")}>
             ×
           </button>
         </div>
@@ -328,7 +336,7 @@ export default function GenealogySection() {
         </div>
 
         <div className="clan-info-actions">
-          <button className="mgr-btnGhost" type="button" onClick={() => setIsClanInfoOpen(false)}>{t("common.close")}</button>
+          <button className="mgr-btnGhost" type="button" onClick={() => requestClose(closeClanInfo, isClanFormDirty)}>{t("common.close")}</button>
           <button className="mgr-btnPrimary" type="submit" disabled={clanSaving}>{clanSaving ? t("tree.page.saving") : t("tree.page.saveClanInfo")}</button>
         </div>
       </form>

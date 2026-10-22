@@ -11,7 +11,8 @@ export default function useDismissable() {
   const { t } = useTranslation();
 
   const requestClose = useCallback(async (onClose, dirty = false) => {
-    if (dirty) {
+    // dirty có thể là boolean hoặc hàm (đọc ref/snapshot tại lúc bấm đóng).
+    if (typeof dirty === "function" ? dirty() : dirty) {
       const discard = await confirm({
         title: t("common.confirm.discardTitle"),
         message: t("common.confirm.discardMessage"),

@@ -12,6 +12,7 @@ import { onSocketEvent } from "../../../services/socket";
 import "./GenealogyManagement.css";
 import { notify } from "../../../shared/utils/toast";
 import { useConfirm } from "../../../shared/components/confirmContext.js";
+import useDismissable from "../../../shared/hooks/useDismissable";
 
 const emptyClanForm = {
     clan_name: "",
@@ -27,6 +28,10 @@ const emptyClanForm = {
 export default function GenealogyManagement() {
     const { t } = useTranslation();
     const confirm = useConfirm();
+    const { requestClose, backdropProps } = useDismissable();
+    // Ảnh chụp form lúc mở modal để biết người dùng đã sửa chưa.
+    const [initialForm, setInitialForm] = useState("");
+    const isFormDirty = JSON.stringify(clanForm) !== initialForm;
     const [clans, setClans] = useState([]);
     const [selectedClanId, setSelectedClanId] = useState(null);
     const [treeData, setTreeData] = useState({ people: [], families: [], children: [] });
@@ -148,18 +153,21 @@ export default function GenealogyManagement() {
 
     const openCreateModal = () => {
         setModalMode("create");
+        setInitialForm(JSON.stringify(emptyClanForm));
         setClanForm(emptyClanForm);
         setFormError("");
     };
 
     const openEditModal = (clan) => {
-        setModalMode("edit");
-        setClanForm({
+        const nextForm = {
             ...emptyClanForm,
             clan_name: clan?.clan_name || "",
             history: clan?.history || "",
             hall_address: clan?.hall_address || "",
-        });
+        };
+        setModalMode("edit");
+        setInitialForm(JSON.stringify(nextForm));
+        setClanForm(nextForm);
         setFormError("");
     };
 
@@ -294,9 +302,9 @@ export default function GenealogyManagement() {
             </main>
 
             {modalMode && (
-                <div className="clan-modal-backdrop" onClick={closeModal}>
+                <div className="clan-modal-backdrop" {...backdropProps(closeModal, isFormDirty)}>
                     <form className="clan-modal" onSubmit={handleSubmitClan} onClick={(event) => event.stopPropagation()}>
-                        <button type="button" className="close-modal" onClick={closeModal}>
+                        <button type="button" className="close-modal" onClick={() => requestClose(closeModal, isFormDirty)}>
                             <span className="material-symbols-outlined">close</span>
                         </button>
                         <h3>{modalMode === "edit" ? t("admin.genealogy.modal.editTitle") : t("admin.genealogy.modal.createTitle")}</h3>
@@ -384,7 +392,7 @@ export default function GenealogyManagement() {
                         )}
                         {formError && <p className="clan-form-error">{formError}</p>}
                         <div className="clan-modal-actions">
-                            <button type="button" className="secondary" onClick={closeModal} disabled={saving}>{t("admin.genealogy.modal.actions.cancel")}</button>
+                            <button type="button" className="secondary" onClick={() => requestClose(closeModal, isFormDirty)} disabled={saving}>{t("admin.genealogy.modal.actions.cancel")}</button>
                             <button type="submit" disabled={saving}>
                                 {saving ? t("admin.genealogy.modal.actions.saving") : t("admin.genealogy.modal.actions.save")}
                             </button>

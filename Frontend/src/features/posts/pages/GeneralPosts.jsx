@@ -373,6 +373,13 @@ export default function GeneralPosts() {
   const [commenting, setCommenting] = useState(false);
   const [likingPostId, setLikingPostId] = useState(null);
   const [editingPost, setEditingPost] = useState(null); // { id, description, content }
+  const { requestClose, backdropProps } = useDismissable();
+  const closeEditPost = () => setEditingPost(null);
+  // Đã sửa so với bài đang lưu trong danh sách thì hỏi lại trước khi đóng.
+  const isEditPostDirty = () => {
+    const original = posts.find((p) => p.id === editingPost?.id);
+    return Boolean(original) && ((original.description || "") !== (editingPost.description || "") || (original.content || "") !== (editingPost.content || ""));
+  };
   const currentUserId = useMemo(() => {
     try { return Number(JSON.parse(localStorage.getItem("user") || localStorage.getItem("auth_user") || "{}").id || 0); } catch { return 0; }
   }, []);
@@ -736,11 +743,11 @@ export default function GeneralPosts() {
 
       {/* Modal sửa bài đăng */}
       {editingPost && (
-        <div className="post-modal-backdrop" onMouseDown={() => setEditingPost(null)}>
+        <div className="post-modal-backdrop" {...backdropProps(closeEditPost, isEditPostDirty)}>
           <section className="post-modal post-compose-modal" role="dialog" aria-modal="true" onMouseDown={(e) => e.stopPropagation()}>
             <header className="post-modal-head">
               <h2>{t("posts.modal.edit.title")}</h2>
-              <button type="button" className="post-icon-btn" onClick={() => setEditingPost(null)}><span className="material-symbols-outlined">close</span></button>
+              <button type="button" className="post-icon-btn" onClick={() => requestClose(closeEditPost, isEditPostDirty)}><span className="material-symbols-outlined">close</span></button>
             </header>
             <div className="post-compose-form">
               <label className="post-field">
@@ -752,7 +759,7 @@ export default function GeneralPosts() {
                 <textarea rows={6} value={editingPost.content} onChange={(e) => setEditingPost((p) => ({ ...p, content: e.target.value }))} />
               </label>
               <div className="post-form-actions">
-                <button type="button" className="post-secondary-btn" onClick={() => setEditingPost(null)}>{t("common.cancel")}</button>
+                <button type="button" className="post-secondary-btn" onClick={() => requestClose(closeEditPost, isEditPostDirty)}>{t("common.cancel")}</button>
                 <button type="button" className="post-primary-btn" onClick={handleSaveEditPost}>{t("common.save")}</button>
               </div>
             </div>

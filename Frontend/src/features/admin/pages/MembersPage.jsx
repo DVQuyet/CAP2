@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import useDismissable from "../../../shared/hooks/useDismissable";
 import { useTranslation } from "react-i18next";
 import {
   getAdminAccounts,
@@ -118,6 +119,9 @@ const Pagination = ({ currentPage, totalItems, itemsPerPage, onPageChange, t }) 
 
 export default function MembersPage() {
   const { t, i18n } = useTranslation();
+  const { requestClose, backdropProps } = useDismissable();
+  // Ảnh chụp form lúc mở modal để biết người dùng đã sửa chưa.
+  const [initialForm, setInitialForm] = useState("");
   const [accounts, setAccounts] = useState([]);
   const [clans, setClans] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -241,17 +245,22 @@ export default function MembersPage() {
     setFilterRole("all");
   };
 
+  const isFormDirty = JSON.stringify(form) !== initialForm;
+  const closeFormModal = () => setShowModal(false);
+
   const openAdd = () => {
-    setForm({
+    const nextForm = {
       ...emptyForm,
       role_id: selectedClan === "admin" ? "1" : "3",
       clan_id: selectedClan && selectedClan !== "all" && selectedClan !== "none" && selectedClan !== "admin" ? selectedClan : "",
-    });
+    };
+    setInitialForm(JSON.stringify(nextForm));
+    setForm(nextForm);
     setShowModal(true);
   };
 
   const openEdit = (account) => {
-    setForm({
+    const nextForm = {
       account_id: account.account_id,
       email: account.email || "",
       password: "",
@@ -262,7 +271,9 @@ export default function MembersPage() {
       role_id: String(account.role_id || 3),
       status: account.status || "active",
       clan_id: account.clan_id ? String(account.clan_id) : "",
-    });
+    };
+    setInitialForm(JSON.stringify(nextForm));
+    setForm(nextForm);
     setShowModal(true);
   };
 
@@ -464,14 +475,14 @@ export default function MembersPage() {
       )}
 
       {showModal && (
-        <div className="admin-modal-backdrop" onMouseDown={() => setShowModal(false)}>
+        <div className="admin-modal-backdrop" {...backdropProps(closeFormModal, isFormDirty)}>
           <form className="admin-account-modal" onSubmit={handleSave} onMouseDown={(e) => e.stopPropagation()}>
             <div className="admin-modal-head">
               <div>
                 <h3>{form.account_id ? t("admin.accounts.modal.editTitle") : t("admin.accounts.modal.addTitle")}</h3>
                 <p>{form.account_id ? t("admin.accounts.modal.editSubtitle") : t("admin.accounts.modal.addSubtitle")}</p>
               </div>
-              <button type="button" className="modal-close-btn" onClick={() => setShowModal(false)}>×</button>
+              <button type="button" className="modal-close-btn" onClick={() => requestClose(closeFormModal, isFormDirty)}>×</button>
             </div>
 
             <div className="admin-form-grid">
@@ -487,7 +498,7 @@ export default function MembersPage() {
             </div>
 
             <div className="admin-modal-actions">
-              <button type="button" className="admin-secondary-btn" onClick={() => setShowModal(false)}>{t("admin.accounts.modal.actions.cancel")}</button>
+              <button type="button" className="admin-secondary-btn" onClick={() => requestClose(closeFormModal, isFormDirty)}>{t("admin.accounts.modal.actions.cancel")}</button>
               <button type="submit" className="admin-primary-btn" disabled={saving}>
                 {saving ? t("admin.accounts.modal.actions.saving") : t("admin.accounts.modal.actions.save")}
               </button>

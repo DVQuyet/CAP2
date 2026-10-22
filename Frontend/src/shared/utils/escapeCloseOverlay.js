@@ -22,7 +22,6 @@ export const OVERLAY_SELECTOR = [
   ".clan-info-modalOverlay",
   ".member-clan-modalOverlay",
   ".tree-fullscreen-overlay",
-  ".avatar-crop-backdrop",
   ".avatar-editor-modal",
   "[data-modal-overlay]",
 ].join(",");

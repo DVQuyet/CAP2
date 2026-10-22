@@ -11,6 +11,7 @@ import EmptyState from "../../../shared/components/EmptyState";
 import ErrorState from "../../../shared/components/ErrorState";
 import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 import { useConfirm } from "../../../shared/components/confirmContext.js";
+import useDismissable from "../../../shared/hooks/useDismissable";
 import "./TimeCapsulePage.css";
 
 // Số kỉ niệm mỗi lần tải; "Tải thêm" lấy trang cũ hơn.
@@ -137,6 +138,7 @@ function MemoryCard({ memory, isManagerView = false, t, showCarouselControls = f
 export default function TimeCapsulePage({ role = "member" }) {
   const { t } = useTranslation();
   const confirm = useConfirm();
+  const { requestClose, backdropProps } = useDismissable();
   const isManager = role === "manager" || role === "admin";
   // Lấy currentUserId từ localStorage để kiểm tra quyền sửa/xóa
   const currentUserId = useMemo(() => {
@@ -156,6 +158,12 @@ export default function TimeCapsulePage({ role = "member" }) {
   const [uploading, setUploading] = useState(false);
   const [filter, setFilter] = useState("all");
   const [editingMemory, setEditingMemory] = useState(null); // { id, title, content }
+  const closeMemoryEdit = () => setEditingMemory(null);
+  // Đã sửa so với bản đang lưu trong danh sách thì hỏi lại trước khi đóng.
+  const isMemoryEditDirty = () => {
+    const original = memories.find((m) => m.id === editingMemory?.id);
+    return Boolean(original) && ((original.title || "") !== (editingMemory.title || "") || (original.content || "") !== (editingMemory.content || ""));
+  };
   const [albumCategory, setAlbumCategory] = useState("image");
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [captureMode, setCaptureMode] = useState("none");
@@ -943,7 +951,7 @@ export default function TimeCapsulePage({ role = "member" }) {
 
       {/* Modal sửa kỷ niệm */}
       {editingMemory && (
-        <div className="memory-edit-overlay" onClick={() => setEditingMemory(null)}>
+        <div className="memory-edit-overlay" {...backdropProps(closeMemoryEdit, isMemoryEditDirty)}>
           <div className="memory-edit-modal" onClick={(e) => e.stopPropagation()}>
             <h3>{t("timeCapsule.edit.title")}</h3>
             <label>
@@ -955,7 +963,7 @@ export default function TimeCapsulePage({ role = "member" }) {
               <textarea rows={4} value={editingMemory.content || ""} onChange={(e) => setEditingMemory((prev) => ({ ...prev, content: e.target.value }))} />
             </label>
             <div className="memory-edit-actions">
-              <button type="button" className="time-capsule-secondary" onClick={() => setEditingMemory(null)}>{t("common.cancel")}</button>
+              <button type="button" className="time-capsule-secondary" onClick={() => requestClose(closeMemoryEdit, isMemoryEditDirty)}>{t("common.cancel")}</button>
               <button type="button" className="time-capsule-primary" onClick={handleSaveEditMemory}>{t("common.save")}</button>
             </div>
           </div>
