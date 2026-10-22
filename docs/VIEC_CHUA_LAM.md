@@ -26,7 +26,16 @@ Ký hiệu công sức: **S** < 2 giờ · **M** nửa ngày–1 ngày · **L** 
 
 **Deploy backend lần này cần:** sao lưu DB, rồi `npm run migrate` (bảng `chatbot_feedback`, cột `chatbot_messages.hidden_at`). Chưa migrate thì chat vẫn chạy, chỉ 👍/👎 và xóa lịch sử báo lỗi.
 
-Việc AI tiếp theo: 30 câu kiểu người thật chatbot chưa hiểu trong `docs/report/AGY_REVIEW_S1.md` (tía/má/dượng/mợ/thím, ông cố, teencode j/mik/z, lỗi l/n, câu kể dài). Danh sách sự kiện của member chưa phân trang (ít khi dài).
+Đợt 2 cùng ngày (`d7cec89`..`a3e019a`):
+- Chatbot hiểu 30 câu phương ngữ/teencode/lỗi l-n/câu kể dài (e2e 137/137, test tên người `tests/chatbot.dialectTeencode.test.js`).
+- 2.6/2.7: `ConfirmDialog` + `useConfirm()` thay toàn bộ 17 `window.confirm`; modal có form hỏi "bỏ thay đổi?" khi Esc/bấm nền (`useDismissable`).
+- `LoadingState`/`EmptyState`/`ErrorState` dùng chung, lỗi thân thiện (`friendlyError.js`), banner "máy chủ đang khởi động" toàn app (`services/pendingRequests.js`).
+
+Còn mở từ đợt này:
+- Rà lại 4 ca e2e có kỳ vọng tự đặt: "thím ba có mấy người con", "ai qh gan nhat vs toi", "nhánh của ông bình…", "cụ làm quan…". "anh hai/chú út" mới bỏ thứ bậc, chưa lọc theo thứ tự con; "ong co" không dấu chưa bắt.
+- Lỗi hành động (like, bình luận, tạo sự kiện, giao việc, quỹ) vẫn hiện `err.message` thô; trang admin chưa có state chung.
+- Danh sách sự kiện của member chưa phân trang (ít khi dài).
+- Chưa ai mở giao diện mới trên trình duyệt thật (390px/1280px).
 
 ## P0 — Chặn hoặc rủi ro trên môi trường thật (làm trước khi demo/nộp)
 
