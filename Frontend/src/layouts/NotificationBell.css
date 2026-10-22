@@ -149,3 +149,18 @@
     right: -62px;
   }
 }
+
+.notification-load-more {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: center;
+}
+
+.notification-load-more:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

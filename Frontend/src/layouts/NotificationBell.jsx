@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { apiRequest } from "../services/api";
 import { onSocketEvent } from "../services/socket";
 import { formatDateTimeVN } from "../shared/utils/dateFormat";
+import { appendPage, nextCursorOf, refreshHead } from "../shared/utils/pagination";
 import "./NotificationBell.css";
 
 function normalizeLink(linkUrl, role) {
@@ -31,6 +32,8 @@ function normalizeRealtimeNotification(notification, t) {
 }
 
 const NOTIFICATION_POLL_INTERVAL_MS = 30000;
+const NOTIFICATION_VISIBLE_STEP = 12;
+const NOTIFICATION_LOAD_MORE_LIMIT = 20;
 
 export default function NotificationBell({ role = "member", buttonClassName = "" }) {
   const { t } = useTranslation();
@@ -41,22 +44,54 @@ export default function NotificationBell({ role = "member", buttonClassName = ""
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const visibleNotifications = useMemo(() => notifications.slice(0, 12), [notifications]);
+  const [nextBeforeId, setNextBeforeId] = useState(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(NOTIFICATION_VISIBLE_STEP);
+  // Đã tải thêm trang cũ: polling chỉ làm mới đầu danh sách, không đặt lại con trỏ.
+  const loadedMoreRef = useRef(false);
+
+  const visibleNotifications = useMemo(() => notifications.slice(0, visibleCount), [notifications, visibleCount]);
+  const hasHiddenLoaded = notifications.length > visibleCount;
 
   const loadNotifications = useCallback(async () => {
     try {
       setLoading(true);
       const data = await apiRequest("/api/member/notifications");
       const items = Array.isArray(data.notifications) ? data.notifications : [];
-      setNotifications(items);
+      setNotifications((current) => refreshHead(current, items));
+      if (!loadedMoreRef.current) setNextBeforeId(nextCursorOf(data));
       setUnreadCount(Number(data.unread_count ?? items.filter((item) => Number(item.is_read) === 0).length));
     } catch (error) {
       setNotifications([]);
+      setNextBeforeId(null);
+      loadedMoreRef.current = false;
       setUnreadCount(0);
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const loadMoreNotifications = async () => {
+    // Còn mục đã tải nhưng chưa hiện thì hiện thêm trước, hết mới gọi API.
+    if (hasHiddenLoaded) {
+      setVisibleCount((count) => count + NOTIFICATION_VISIBLE_STEP);
+      return;
+    }
+    if (!nextBeforeId || loadingMore) return;
+    try {
+      setLoadingMore(true);
+      const data = await apiRequest(`/api/member/notifications?limit=${NOTIFICATION_LOAD_MORE_LIMIT}&before_id=${nextBeforeId}`);
+      const items = Array.isArray(data.notifications) ? data.notifications : [];
+      loadedMoreRef.current = true;
+      setNotifications((current) => appendPage(current, items));
+      setNextBeforeId(nextCursorOf(data));
+      setVisibleCount((count) => count + NOTIFICATION_VISIBLE_STEP);
+    } catch (error) {
+      // Giữ nguyên danh sách hiện có; người dùng có thể bấm lại.
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   useEffect(() => {
     const loadWhenVisible = () => {
@@ -195,6 +230,11 @@ export default function NotificationBell({ role = "member", buttonClassName = ""
                 </span>
               </button>
             ))}
+            {(hasHiddenLoaded || nextBeforeId) && (
+              <button type="button" className="notification-load-more" onClick={loadMoreNotifications} disabled={loadingMore}>
+                {loadingMore ? t("common.loading") : t("shared.notification.loadMore")}
+              </button>
+            )}
           </div>
         </div>
       )}

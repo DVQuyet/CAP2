@@ -12,6 +12,7 @@ const {
 const {
     getManagerClanId,
 } = require('./managerClan.service');
+const { parsePageParams, finishPage } = require('../../shared/utils/pagination');
 const {
     emitNotificationToAccount,
     ensureTaskTables,
@@ -55,12 +56,31 @@ const getManagerEvents = async(req, res) => {
                 params.push(clanId);
             }
         }
+        // Phân trang keyset chỉ bật khi client gửi limit/before_id; không gửi thì giữ nguyên hành vi cũ (trả tất cả).
+        const paged = req.query.limit !== undefined || req.query.before_id !== undefined || req.query.beforeId !== undefined;
+        const { limit, beforeId } = parsePageParams(req.query, { defaultLimit: 30, maxLimit: 100 });
+        if (paged && beforeId) {
+            sql += ' AND (COALESCE(e.start_date, e.event_date), e.id) < (SELECT COALESCE(ec.start_date, ec.event_date), ec.id FROM events ec WHERE ec.id = ?)';
+            params.push(beforeId);
+        }
         sql += `
             GROUP BY e.id, e.clan_id, e.title, e.event_date, e.start_date, e.end_date, e.description, c.clan_name
             ORDER BY COALESCE(e.start_date, e.event_date) DESC, e.id DESC
         `;
-        const [rows] = await db.query(sql, params);
-        return res.json({ success: true, events: rows });
+        if (!paged) {
+            const [rows] = await db.query(sql, params);
+            return res.json({ success: true, events: rows });
+        }
+        sql += ' LIMIT ?';
+        params.push(limit + 1);
+        const [fetched] = await db.query(sql, params);
+        const page = finishPage(fetched, limit);
+        return res.json({
+            success: true,
+            events: page.items,
+            has_more: page.has_more,
+            next_before_id: page.next_before_id,
+        });
     } catch (error) {
         console.error('getManagerEvents error:', error);
         return res.status(500).json({ success: false, message: 'Lỗi lấy danh sách sự kiện' });

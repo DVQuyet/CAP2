@@ -565,7 +565,8 @@
       "unread": "{{count}} chưa đọc",
       "noneNew": "Không có thông báo mới",
       "markAllRead": "Đã đọc hết",
-      "empty": "Chưa có thông báo."
+      "empty": "Chưa có thông báo.",
+      "loadMore": "Tải thêm thông báo"
     },
     "upload": {
       "label": "Tải ảnh lên",
@@ -649,6 +650,7 @@
     }
   },
   "timeCapsule": {
+    "loadMore": "Tải thêm kỉ niệm",
     "title": "Kỉ niệm dòng họ",
     "heroDescription": "Lưu giữ câu chuyện, hình ảnh, video và ghi âm của dòng họ. Thành viên gửi kỉ niệm sẽ chờ trưởng họ duyệt trước khi đăng công khai.",
     "defaultMemoryTitle": "Kỉ niệm dòng họ",
@@ -733,6 +735,7 @@
     }
   },
   "eventsTasks": {
+    "loadMoreEvents": "Tải thêm sự kiện",
     "title": "Quản lý công việc",
     "stats": {
       "total": "tổng việc",

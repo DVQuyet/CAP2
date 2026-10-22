@@ -864,6 +864,8 @@ export const getManagerEventsAPI = (params = {}) => {
   const query = new URLSearchParams();
 
   if (params.clan_id) query.set("clan_id", params.clan_id);
+  if (params.limit) query.set("limit", String(params.limit));
+  if (params.beforeId) query.set("before_id", String(params.beforeId));
 
   const suffix = query.toString() ? `?${query.toString()}` : "";
 

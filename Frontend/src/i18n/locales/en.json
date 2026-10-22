@@ -567,7 +567,8 @@
       "unread": "{{count}} unread",
       "noneNew": "No new notifications",
       "markAllRead": "Mark all read",
-      "empty": "No notifications."
+      "empty": "No notifications.",
+      "loadMore": "Load more notifications"
     },
     "upload": {
       "label": "Upload image",
@@ -651,6 +652,7 @@
     }
   },
   "timeCapsule": {
+    "loadMore": "Load more memories",
     "title": "Family memories",
     "heroDescription": "Preserve stories, photos, videos, and audio from your clan. Member memories wait for clan manager approval before being published.",
     "defaultMemoryTitle": "Family memory",
@@ -735,6 +737,7 @@
     }
   },
   "eventsTasks": {
+    "loadMoreEvents": "Load more events",
     "title": "Task Management",
     "stats": {
       "total": "total tasks",

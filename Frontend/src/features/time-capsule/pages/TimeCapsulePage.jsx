@@ -5,7 +5,11 @@ import { uploadImage } from "../../../api/memberService";
 import { deleteMemory, updateMemory } from "../../../api/memberService";
 import { mediaUrlFromId } from "../../../shared/utils/media";
 import { formatDateTimeVN } from "../../../shared/utils/dateFormat";
+import { appendPage, nextCursorOf } from "../../../shared/utils/pagination";
 import "./TimeCapsulePage.css";
+
+// Số kỉ niệm mỗi lần tải; "Tải thêm" lấy trang cũ hơn.
+const MEMORIES_PAGE_SIZE = 30;
 
 const emptyForm = {
   title: "",
@@ -133,6 +137,8 @@ export default function TimeCapsulePage({ role = "member" }) {
     try { return Number(JSON.parse(localStorage.getItem("user") || localStorage.getItem("auth_user") || "{}").id || 0); } catch { return 0; }
   }, []);
   const [memories, setMemories] = useState([]);
+  const [nextBeforeId, setNextBeforeId] = useState(null);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [readerOptions, setReaderOptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState(emptyForm);
@@ -168,14 +174,29 @@ export default function TimeCapsulePage({ role = "member" }) {
     setLoading(true);
     setError("");
     try {
-      const result = await apiRequest("/api/member/memories?includeOwnPending=1");
+      const result = await apiRequest(`/api/member/memories?includeOwnPending=1&limit=${MEMORIES_PAGE_SIZE}`);
       setMemories(result.memories || []);
+      setNextBeforeId(nextCursorOf(result));
     } catch (err) {
       setError(err?.message || t("timeCapsule.errors.loadMemories"));
     } finally {
       setLoading(false);
     }
   }, [t]);
+
+  const loadMoreMemories = useCallback(async () => {
+    if (!nextBeforeId || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const result = await apiRequest(`/api/member/memories?includeOwnPending=1&limit=${MEMORIES_PAGE_SIZE}&before_id=${nextBeforeId}`);
+      setMemories((prev) => appendPage(prev, result.memories || []));
+      setNextBeforeId(nextCursorOf(result));
+    } catch (err) {
+      setError(err?.message || t("timeCapsule.errors.loadMemories"));
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [nextBeforeId, loadingMore, t]);
 
   const loadReaderOptions = useCallback(async () => {
     try {
@@ -895,6 +916,18 @@ export default function TimeCapsulePage({ role = "member" }) {
               />
             ))}
           </div>
+        )}
+
+        {nextBeforeId && !loading && (
+          <button
+            type="button"
+            className="time-capsule-refresh memory-load-more"
+            onClick={loadMoreMemories}
+            disabled={loadingMore}
+            style={{ margin: "16px auto", display: "flex" }}
+          >
+            {loadingMore ? t("common.loading") : t("timeCapsule.loadMore")}
+          </button>
         )}
       </section>
 

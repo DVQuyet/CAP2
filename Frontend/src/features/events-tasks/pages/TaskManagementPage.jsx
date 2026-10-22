@@ -17,11 +17,15 @@ import {
 import { getMemberTasks, getMemberEvents, updateMemberTaskStatus } from "../../../api/memberService";
 import { generateEventFormAI } from "../../../api/aiServerService";
 import { getSocket } from "../../../services/socket";
+import { appendPage, nextCursorOf } from "../../../shared/utils/pagination";
 import DateInput from "../../../shared/components/DateInput";
 import VoiceRecorder from "../../voice/components/VoiceRecorder";
 import { useLanguage } from "../../../i18n/LanguageContext";
 import { formatDateTimeVN, formatDateVN, isoToVietnamDate, vietnamDateToIso } from "../../../shared/utils/dateFormat";
 import "./TaskManagementPage.css";
+
+// Số sự kiện mỗi lần tải ở danh sách manager/admin; "Tải thêm" lấy trang cũ hơn.
+const EVENTS_PAGE_SIZE = 30;
 
 const STATUS_LABELS = {
   assigned: "eventsTasks.status.assigned",
@@ -240,6 +244,8 @@ export default function TaskManagementPage({ role = "member" }) {
   const [members, setMembers] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [events, setEvents] = useState([]);
+  const [eventsNextBeforeId, setEventsNextBeforeId] = useState(null);
+  const [loadingMoreEvents, setLoadingMoreEvents] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingTaskId, setSavingTaskId] = useState(null);
@@ -465,6 +471,7 @@ recognition.onerror = (event) => {
         setClans(asArray(data.clans));
         setTasks([]);
         setEvents([]);
+        setEventsNextBeforeId(null);
         setMembers([]);
         setClan(null);
         return;
@@ -483,11 +490,12 @@ recognition.onerror = (event) => {
         const [taskData, memberData, eventData] = await Promise.all([
           getAdminClanTasks(clanId),
           getAdminMembers(),
-          getManagerEventsAPI({ clan_id: clanId }),
+          getManagerEventsAPI({ clan_id: clanId, limit: EVENTS_PAGE_SIZE }),
         ]);
         setClan(taskData.clan || null);
         setTasks(asArray(taskData.tasks));
         setEvents(asArray(eventData.events));
+        setEventsNextBeforeId(nextCursorOf(eventData));
         setMembers(
           asArray(memberData.members).filter(
             (member) =>
@@ -498,9 +506,10 @@ recognition.onerror = (event) => {
         return;
       }
 
-      const [taskRows, memberRows, eventData] = await Promise.all([getTasksAPI(), getMembers(), getManagerEventsAPI()]);
+      const [taskRows, memberRows, eventData] = await Promise.all([getTasksAPI(), getMembers(), getManagerEventsAPI({ limit: EVENTS_PAGE_SIZE })]);
       setTasks(asArray(taskRows));
       setEvents(asArray(eventData.events));
+      setEventsNextBeforeId(nextCursorOf(eventData));
       setMembers(
         asArray(memberRows).filter(
           (member) => isAssignableMember(member)
@@ -513,6 +522,25 @@ recognition.onerror = (event) => {
       setLoading(false);
     }
   }, [clanId, isAdmin, isMember]);
+
+  // "Tải thêm" danh sách sự kiện (manager/admin): lấy trang cũ hơn theo con trỏ.
+  const loadMoreEvents = useCallback(async () => {
+    if (!eventsNextBeforeId || loadingMoreEvents) return;
+    setLoadingMoreEvents(true);
+    try {
+      const eventData = await getManagerEventsAPI({
+        clan_id: isAdmin && clanId ? clanId : undefined,
+        limit: EVENTS_PAGE_SIZE,
+        beforeId: eventsNextBeforeId,
+      });
+      setEvents((current) => appendPage(current, asArray(eventData.events)));
+      setEventsNextBeforeId(nextCursorOf(eventData));
+    } catch (err) {
+      setError(err?.message || t("eventsTasks.errors.loadFailed"));
+    } finally {
+      setLoadingMoreEvents(false);
+    }
+  }, [eventsNextBeforeId, loadingMoreEvents, isAdmin, clanId, setError, t]);
 
   useEffect(() => {
     loadData();
@@ -1643,6 +1671,17 @@ const openEvent = (eventId) => {
               })}
             </tbody>
           </table>
+        )}
+        {eventsNextBeforeId && (
+          <button
+            type="button"
+            className="task-load-more"
+            onClick={loadMoreEvents}
+            disabled={loadingMoreEvents}
+            style={{ margin: "12px auto", padding: "10px 20px", cursor: "pointer", display: "block" }}
+          >
+            {loadingMoreEvents ? t("common.loading") : t("eventsTasks.loadMoreEvents")}
+          </button>
         )}
       </div>
 
