@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { apiRequest } from "../../../services/api";
 import { createInvitation, listInvitations } from "../../../api/invitationService";
 import { getStoredUser } from "../../../shared/utils/auth";
@@ -13,14 +14,20 @@ const initialForm = {
   generation: "1",
 };
 
-function statusLabel(status) {
-  if (status === "accepted") return "Đã chấp nhận";
-  if (status === "expired") return "Hết hạn";
-  if (status === "revoked") return "Đã thu hồi";
-  return "Đang chờ";
+function statusLabel(status, t) {
+  if (status === "accepted") return t("invitation.status.accepted");
+  if (status === "expired") return t("invitation.status.expired");
+  if (status === "revoked") return t("invitation.status.revoked");
+  return t("invitation.status.pending");
+}
+
+function roleLabel(role, t) {
+  if (role === "member" || role === "manager") return t(`invitation.role.${role}`);
+  return role;
 }
 
 export default function InvitationPage() {
+  const { t, i18n } = useTranslation();
   const currentUser = getStoredUser();
   const isAdmin = Number(currentUser?.role_id) === 1 || currentUser?.role_name === "admin";
   const [form, setForm] = useState(initialForm);
@@ -40,7 +47,7 @@ export default function InvitationPage() {
       const data = await listInvitations();
       setInvitations(data.invitations || []);
     } catch (loadError) {
-      setError(loadError?.message || "Không tải được danh sách lời mời.");
+      setError(loadError?.message || t("invitation.loadError"));
     } finally {
       setLoading(false);
     }
@@ -71,22 +78,22 @@ export default function InvitationPage() {
     setInviteLink("");
 
     if (!form.email.trim()) {
-      setError("Vui lòng nhập email cần mời.");
+      setError(t("invitation.emailRequired"));
       return;
     }
     // Tự kiểm tra (form có noValidate) để thông báo luôn bằng tiếng Việt, không phụ thuộc ngôn ngữ trình duyệt.
     if (!EMAIL_PATTERN.test(form.email.trim())) {
-      setError("Email không hợp lệ. Ví dụ: ten@example.com");
+      setError(t("invitation.emailInvalid"));
       return;
     }
     if (isAdmin && !form.clan_id) {
-      setError("Vui lòng chọn dòng họ cho lời mời.");
+      setError(t("invitation.clanRequired"));
       return;
     }
 
     const generation = Number(form.generation);
     if (!Number.isInteger(generation) || generation <= 0) {
-      setError("Vui lòng chọn đời gia phả hợp lệ.");
+      setError(t("invitation.generationInvalid"));
       return;
     }
 
@@ -99,12 +106,12 @@ export default function InvitationPage() {
         ...(isAdmin ? { clan_id: Number(form.clan_id) } : {}),
       };
       const result = await createInvitation(payload);
-      setMessage(result.message || "Đã tạo lời mời.");
+      setMessage(result.message || t("invitation.created"));
       setInviteLink(result.invite_link || "");
       setForm((current) => ({ ...initialForm, clan_id: current.clan_id }));
       await loadInvitations();
     } catch (submitError) {
-      setError(submitError?.message || "Không gửi được lời mời.");
+      setError(submitError?.message || t("invitation.sendError"));
     } finally {
       setSending(false);
     }
@@ -114,31 +121,31 @@ export default function InvitationPage() {
     <section className="invite-management-page">
       <div className="invite-management-header">
         <div>
-          <span>Mời thành viên</span>
-          <h2>Gửi lời mời đăng ký bằng email</h2>
-          <p>Email nhận lời mời sẽ được khóa trong link, người dùng chỉ tạo mật khẩu rồi hoàn thiện hồ sơ.</p>
+          <span>{t("invitation.kicker")}</span>
+          <h2>{t("invitation.title")}</h2>
+          <p>{t("invitation.description")}</p>
         </div>
         <button type="button" onClick={loadInvitations} disabled={loading}>
           <span className="material-symbols-outlined">refresh</span>
-          {loading ? "Đang tải..." : "Làm mới"}
+          {loading ? t("common.loading") : t("invitation.refresh")}
         </button>
       </div>
 
       <div className="invite-management-grid">
         <form className="invite-management-card invite-form" onSubmit={handleSubmit} noValidate>
-          <h3>Tạo lời mời</h3>
+          <h3>{t("invitation.createTitle")}</h3>
 
           {message ? <div className="invite-alert is-success">{message}</div> : null}
           {error ? <div className="invite-alert is-error">{error}</div> : null}
           {inviteLink ? (
             <label>
-              Link test khi SMTP chưa cấu hình
+              {t("invitation.testLink")}
               <input value={inviteLink} readOnly />
             </label>
           ) : null}
 
           <label>
-            Email người được mời
+            {t("invitation.inviteeEmail")}
             <input
               name="email"
               type="email"
@@ -150,7 +157,7 @@ export default function InvitationPage() {
           </label>
 
           <label>
-            Đời gia phả
+            {t("invitation.generation")}
             <input
               name="generation"
               type="number"
@@ -165,20 +172,20 @@ export default function InvitationPage() {
           {isAdmin ? (
             <>
               <label>
-                Vai trò
+                {t("invitation.roleLabel")}
                 <select name="role" value={form.role} onChange={updateField}>
-                  <option value="member">Member</option>
-                  <option value="manager">Manager</option>
+                  <option value="member">{t("invitation.role.member")}</option>
+                  <option value="manager">{t("invitation.role.manager")}</option>
                 </select>
               </label>
 
               <label>
-                Dòng họ
+                {t("invitation.clan")}
                 <select name="clan_id" value={form.clan_id} onChange={updateField} required>
-                  <option value="">Chọn dòng họ</option>
+                  <option value="">{t("invitation.selectClan")}</option>
                   {clans.map((clan) => (
                     <option key={clan.id} value={clan.id}>
-                      {clan.clan_name || `Dòng họ #${clan.id}`}
+                      {clan.clan_name || t("invitation.clanFallback", { id: clan.id })}
                     </option>
                   ))}
                 </select>
@@ -188,30 +195,30 @@ export default function InvitationPage() {
 
           <button type="submit" disabled={sending}>
             <span className="material-symbols-outlined">{sending ? "progress_activity" : "outgoing_mail"}</span>
-            {sending ? "Đang gửi..." : "Gửi lời mời"}
+            {sending ? t("invitation.sending") : t("invitation.send")}
           </button>
         </form>
 
         <div className="invite-management-card">
-          <h3>Lời mời gần đây</h3>
+          <h3>{t("invitation.recentTitle")}</h3>
           <div className="invite-table">
             <div className="invite-table-head">
               <span>Email</span>
-              <span>Đời</span>
-              <span>Vai trò</span>
-              <span>Trạng thái</span>
-              <span>Hết hạn</span>
+              <span>{t("invitation.table.generation")}</span>
+              <span>{t("invitation.roleLabel")}</span>
+              <span>{t("invitation.table.status")}</span>
+              <span>{t("invitation.table.expires")}</span>
             </div>
             {sortedInvitations.map((invite) => (
               <div className="invite-table-row" key={invite.id}>
                 <span>{invite.email}</span>
                 <span>{invite.generation || "-"}</span>
-                <span>{invite.role}</span>
-                <span>{statusLabel(invite.status)}</span>
-                <span>{invite.expires_at ? new Date(invite.expires_at).toLocaleString("vi-VN") : "-"}</span>
+                <span>{roleLabel(invite.role, t)}</span>
+                <span>{statusLabel(invite.status, t)}</span>
+                <span>{invite.expires_at ? new Date(invite.expires_at).toLocaleString(i18n.language === "en" ? "en-US" : "vi-VN") : "-"}</span>
               </div>
             ))}
-            {!sortedInvitations.length ? <p className="invite-empty">Chưa có lời mời nào.</p> : null}
+            {!sortedInvitations.length ? <p className="invite-empty">{t("invitation.empty")}</p> : null}
           </div>
         </div>
       </div>

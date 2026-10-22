@@ -515,7 +515,7 @@ export default function MembersPage() {
                 <div className="warning-icon-wrapper">
                     <span className="material-symbols-outlined">warning</span>
                 </div>
-                <h3 style={{ color: '#4a160f', fontSize: '1.4rem', margin: '0 0 10px' }}>{t("admin.accounts.modal.deleteTitle") || "Xác nhận xóa"}</h3>
+                <h3 style={{ color: '#4a160f', fontSize: '1.4rem', margin: '0 0 10px' }}>{t("admin.accounts.modal.deleteTitle")}</h3>
                 <p style={{ color: '#7d5b43', lineHeight: 1.5 }}>
                     {t("admin.accounts.messages.deleteConfirm", { email: confirmDelete.account?.email })}
                 </p>

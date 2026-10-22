@@ -12,7 +12,7 @@ export default function HeroBanner() {
       <div className="hero-content">
         <div className="hero-left" data-aos="slide-right" data-aos-delay="120" data-aos-duration="1500">
           <h1 className="hero-title-cinzel" data-aos="slide-right" data-aos-delay="180" data-aos-duration="1500">
-            <Trans i18nKey="public.hero.title">Gìn giữ cội nguồn,<br />Kết nối thế hệ</Trans>
+            <Trans i18nKey="public.hero.title" />
           </h1>
           <p data-aos="slide-right" data-aos-delay="260" data-aos-duration="1500">
             {t("public.hero.subtitle")}

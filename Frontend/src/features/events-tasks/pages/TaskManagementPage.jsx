@@ -221,7 +221,7 @@ function MemberCombobox({ members, value, onChange, disabled = false }) {
         {selectedMembers.map((member) => (
           <span key={member.account_id}>
             {fullName(member)}
-            <button type="button" onClick={() => toggleMember(member.account_id)} aria-label={`Bỏ chọn ${fullName(member)}`}>
+            <button type="button" onClick={() => toggleMember(member.account_id)} aria-label={t("eventsTasks.form.deselectMember", { name: fullName(member) })}>
               <span className="material-symbols-outlined">close</span>
             </button>
           </span>
@@ -371,13 +371,13 @@ recognition.onerror = (event) => {
   } else if (errorName === "no-speech") {
     setError(t("eventsTasks.errors.noSpeechDetected"));
   } else if (errorName === "audio-capture") {
-    setError("Không truy cập được micro. Kiểm tra thiết bị micro hoặc quyền micro của Chrome.");
+    setError(t("eventsTasks.errors.audioCapture"));
   } else if (errorName === "network") {
-    setError("Chrome không kết nối được dịch vụ nhận diện giọng nói. Hãy thử localhost, mạng khác, tắt VPN/proxy.");
+    setError(t("eventsTasks.errors.speechNetwork"));
   } else if (errorName === "aborted") {
-    setError("Quá trình nhận diện giọng nói đã bị dừng.");
+    setError(t("eventsTasks.errors.speechAborted"));
   } else {
-    setError(`Không thể chuyển giọng nói thành văn bản. Lỗi: ${errorName || "unknown"}`);
+    setError(t("eventsTasks.errors.speechFailed", { error: errorName || "unknown" }));
   }
 
   setVoiceListening(false);
@@ -1716,8 +1716,8 @@ const openEvent = (eventId) => {
                   <div className="modal-warning-icon">
                       <span className="material-symbols-outlined">warning</span>
                   </div>
-                  <h2>{t("eventsTasks.messages.confirmDeleteEventTitle") || "Xóa sự kiện?"}</h2>
-                  <p>{t("eventsTasks.messages.confirmDeleteEventSubtitle") || "Hành động này không thể hoàn tác. Tất cả công việc liên quan sẽ bị ảnh hưởng."}</p>
+                  <h2>{t("eventsTasks.messages.confirmDeleteEventTitle")}</h2>
+                  <p>{t("eventsTasks.messages.confirmDeleteEventSubtitle")}</p>
                   <div className="modal-buttons">
                       <button className="modal-btn-cancel" onClick={() => setConfirmDelete({ show: false, eventId: null })}>
                           {t("common.cancel")}

@@ -259,7 +259,7 @@ export default function ManagerDashboard() {
                   <span className="material-symbols-outlined">{item.icon}</span>
                   <h3>{item.label}</h3>
                   <strong>{formatLimit(item.current, item.limit)}</strong>
-                  <small>Còn lại: {getRemaining(item.current, item.limit)}</small>
+                  <small>{t("manager.dashboard.usage.remaining", { value: getRemaining(item.current, item.limit) })}</small>
                 </div>
               </div>
               <div className="manager-usage-bar" aria-label={item.label}>

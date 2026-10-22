@@ -48,7 +48,7 @@ export function CardPersonBody({ person, name, meta, showAvatar, directLineage }
         {meta ? <div className="fte-cardMeta">{meta}</div> : null}
       </div>
       {deceased ? <span className="fte2-deceasedTag" title={t("tree.card.deceased")}>{t("tree.card.deceased")}</span> : null}
-      {directLineage ? <span className="fte2-srOnly">{t("tree.card.badges.directLineage", { defaultValue: "Trực hệ" })}</span> : null}
+      {directLineage ? <span className="fte2-srOnly">{t("tree.card.badges.directLineage")}</span> : null}
     </div>
   );
 }

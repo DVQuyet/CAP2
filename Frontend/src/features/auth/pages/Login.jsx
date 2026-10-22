@@ -147,7 +147,7 @@ export default function Login({ isOpen, onClose, onLoginSuccess, onOpenRegister 
         </button>
       </form>
 
-      <div className="auth-divider"><span>Hoặc</span></div>
+      <div className="auth-divider"><span>{t("auth.login.or")}</span></div>
 
       <div className="social-login-actions">
         <button type="button" className="social-login-btn social-login-btn--google" onClick={() => handleSocialLogin("google")} title="Google">
@@ -163,7 +163,7 @@ export default function Login({ isOpen, onClose, onLoginSuccess, onOpenRegister 
   if (!isModal) {
     return (
       <div className="login-page" data-no-translate="true">
-        <Link to="/" className="back-btn">â† {t("navigation.backHome")}</Link>
+        <Link to="/" className="back-btn">← {t("navigation.backHome")}</Link>
         <div className="login-box">
           <div className="login-header">
             <h2>{t("auth.login.title")}</h2>

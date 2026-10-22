@@ -340,7 +340,7 @@ export default function MemberDashboard() {
         </div>
       </section>
 
-      <section className="member-stats-grid" aria-label="Chỉ số thành viên">
+      <section className="member-stats-grid" aria-label={t("member.dashboard.stats.ariaLabel")}>
         {stats.map((card) => (
           <article className={`member-stat-card tone-${card.tone}`} key={card.label}>
             <span className="material-symbols-outlined">{card.icon}</span>

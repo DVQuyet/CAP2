@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import i18n from "../../../i18n/i18n";
 import { formatDateTimeVN, formatDateVN } from "../../../shared/utils/dateFormat";
 import {
   getBillingPlans,
@@ -154,12 +155,17 @@ function getPlanCodeKey(planCodeOrName) {
   );
 }
 
+// Success messages come from translated strings, so match the wording in both languages.
+function isSuccessMessage(message) {
+  return /thành công|Đã nâng cấp|successful|successfully|upgraded/i.test(String(message || ""));
+}
+
 function formatMoney(value) {
   return `${Number(value || 0).toLocaleString("vi-VN")}đ`;
 }
 
 function getPlanPeriodUnit(plan) {
-  return String(plan?.billing_cycle || "monthly").toLowerCase() === "yearly" ? "năm" : "tháng";
+  return String(plan?.billing_cycle || "monthly").toLowerCase() === "yearly" ? i18n.t("billingPayment.period.year") : i18n.t("billingPayment.period.month");
 }
 
 function getPlanPeriodQuantity(plan, quantities) {
@@ -448,10 +454,10 @@ const getStatusText = (status) =>
 
       if (editingPlan?.id) {
         await updateBillingPlan(editingPlan.id, payload);
-        setMessage("Đã cập nhật gói sử dụng thành công.");
+        setMessage(t("billingPayment.messages.planUpdated"));
       } else {
         await createBillingPlan(payload);
-        setMessage("Đã thêm gói sử dụng thành công.");
+        setMessage(t("billingPayment.messages.planAdded"));
       }
 
       const plansResult = await getBillingPlans();
@@ -459,7 +465,7 @@ const getStatusText = (status) =>
       if (clanId) await loadBillingForClan(clanId);
       closePlanEditor();
     } catch (error) {
-      setMessage(error.message || "Không thể lưu gói sử dụng.");
+      setMessage(error.message || t("billingPayment.messages.planSaveError"));
     } finally {
       setPlanSaving(false);
     }
@@ -483,7 +489,12 @@ const getStatusText = (status) =>
         }
 
         const ok = window.confirm(
-          `Bạn đang có giao dịch chờ thanh toán cho gói ${activePendingPayment.plan_name || activePendingPayment.plan_code || ""}. Hủy giao dịch cũ để tạo mã QR mới cho ${getPlanNameText(plan)} (${periodQuantity} ${getPlanPeriodUnit(plan)})?`
+          t("billingPayment.messages.replacePendingConfirm", {
+            pending: activePendingPayment.plan_name || activePendingPayment.plan_code || "",
+            plan: getPlanNameText(plan),
+            quantity: periodQuantity,
+            unit: getPlanPeriodUnit(plan),
+          })
         );
         if (!ok) {
           setSelectedPayment(activePendingPayment);
@@ -571,12 +582,12 @@ const getStatusText = (status) =>
       );
 
       if (payment?.reconciliation?.reason === "missing_api_token") {
-        setMessage("Thanh toán chưa được xác nhận vì backend chưa cấu hình SEPAY_API_TOKEN để đối soát giao dịch.");
+        setMessage(t("billingPayment.messages.missingApiToken"));
         return;
       }
 
       if (payment?.reconciliation?.reason === "api_error") {
-        setMessage("Không thể đối soát SePay lúc này. Vui lòng kiểm tra API token hoặc nhật ký webhook SePay.");
+        setMessage(t("billingPayment.messages.reconcileError"));
         return;
       }
 
@@ -874,7 +885,7 @@ const handlePaySelectedPayment = (payment) => {
         className="billing-secondary-btn"
         onClick={() => setSelectedPayment(null)}
       >
-        {t("common.close") || "Close"}
+        {t("common.close")}
       </button>
     </div>
 
@@ -897,12 +908,12 @@ const handlePaySelectedPayment = (payment) => {
       </div>
 
       <div>
-        <span>Thời hạn mua</span>
+        <span>{t("billingPayment.periodPurchased")}</span>
         <strong>{selectedPayment.period_quantity || 1} {getPlanPeriodUnit(selectedPayment)}</strong>
       </div>
 
       <div>
-        <span>Hết hạn theo giao dịch</span>
+        <span>{t("billingPayment.periodExpires")}</span>
         <strong>
           {selectedPayment.period_expires_at
             ? formatDateVN(selectedPayment.period_expires_at)
@@ -997,7 +1008,7 @@ const handlePaySelectedPayment = (payment) => {
             <div>
               <div className="billing-info-list is-payment">
                 <div><span>{t("billingPayment.paymentDialog.amount")}</span><strong>{formatMoney(paymentDialog.amountVnd)}</strong></div>
-                <div><span>Thời hạn mua</span><strong>{paymentDialog.periodQuantity || 1} {getPlanPeriodUnit(paymentDialog.plan)}</strong></div>
+                <div><span>{t("billingPayment.periodPurchased")}</span><strong>{paymentDialog.periodQuantity || 1} {getPlanPeriodUnit(paymentDialog.plan)}</strong></div>
                 <div><span>{t("billingPayment.paymentDialog.content")}</span><strong>{paymentDialog.transferContent}</strong></div>
                 <div><span>{t("billingPayment.paymentDialog.recipient")}</span><strong>{paymentDialog.bankAccount || t("billingPayment.paymentDialog.notConfigured")} - {paymentDialog.accountName || t("billingPayment.paymentDialog.notConfigured")}</strong></div>
               </div>
@@ -1006,13 +1017,13 @@ const handlePaySelectedPayment = (payment) => {
                   {paymentChecking ? t("billingPayment.paymentDialog.checking") : t("billingPayment.paymentDialog.verify")}
                 </button>
                 <button type="button" className="billing-secondary-btn" onClick={() => setPaymentDialog(null)}>
-                  {t("common.close") || "Close"}
+                  {t("common.close")}
                 </button>
               </div>
             </div>
             {paymentDialog.qrUrl ? (
               <div className="billing-qr-box">
-                <img src={paymentDialog.qrUrl} alt="QR thanh toán SePay" />
+                <img src={paymentDialog.qrUrl} alt={t("billingPayment.qrAlt")} />
                 <span>{t("billingPayment.paymentDialog.scanQR")}</span>
               </div>
             ) : (
@@ -1024,13 +1035,13 @@ const handlePaySelectedPayment = (payment) => {
       {message && (
         <section
           className={`billing-alert ${
-            message.includes("thành công") || message.includes("Đã nâng cấp")
+            isSuccessMessage(message)
               ? "billing-alert--success"
               : "billing-alert--error"
           }`}
         >
           <span className="material-symbols-outlined">
-            {message.includes("thành công") || message.includes("Đã nâng cấp")
+            {isSuccessMessage(message)
               ? "check_circle"
               : "error"}
           </span>
@@ -1042,12 +1053,12 @@ const handlePaySelectedPayment = (payment) => {
         <section className="billing-card billing-admin-plan-manager">
           <div className="billing-card-head">
             <div>
-              <span className="billing-kicker">Quản trị gói sử dụng</span>
-              <h2>Thêm và sửa gói</h2>
+              <span className="billing-kicker">{t("billingPayment.admin.kicker")}</span>
+              <h2>{t("billingPayment.admin.title")}</h2>
             </div>
             <button type="button" className="billing-primary-btn" onClick={openCreatePlanEditor}>
               <span className="material-symbols-outlined">add</span>
-              Thêm gói
+              {t("billingPayment.admin.addPlan")}
             </button>
           </div>
 
@@ -1055,16 +1066,16 @@ const handlePaySelectedPayment = (payment) => {
             <form className="billing-plan-form" onSubmit={handleSavePlan}>
               <div className="billing-plan-form-grid">
                 <label>
-                  Mã gói
+                  {t("billingPayment.admin.code")}
                   <input
                     value={planForm.code}
                     onChange={(event) => updatePlanFormField("code", event.target.value)}
-                    placeholder="VD: BASIC"
+                    placeholder={t("billingPayment.admin.codePlaceholder")}
                     required
                   />
                 </label>
                 <label>
-                  Tên gói
+                  {t("billingPayment.admin.name")}
                   <input
                     value={planForm.name}
                     onChange={(event) => updatePlanFormField("name", event.target.value)}
@@ -1073,7 +1084,7 @@ const handlePaySelectedPayment = (payment) => {
                   />
                 </label>
                 <label>
-                  Giá VND
+                  {t("billingPayment.admin.priceVnd")}
                   <input
                     type="number"
                     min="0"
@@ -1083,18 +1094,18 @@ const handlePaySelectedPayment = (payment) => {
                   />
                 </label>
                 <label>
-                  Chu kỳ
+                  {t("billingPayment.admin.cycle")}
                   <select
                     value={planForm.billing_cycle}
                     onChange={(event) => updatePlanFormField("billing_cycle", event.target.value)}
                   >
-                    <option value="free">Miễn phí</option>
-                    <option value="monthly">Theo tháng</option>
-                    <option value="yearly">Theo năm</option>
+                    <option value="free">{t("billingPayment.admin.cycleFree")}</option>
+                    <option value="monthly">{t("billingPayment.admin.cycleMonthly")}</option>
+                    <option value="yearly">{t("billingPayment.admin.cycleYearly")}</option>
                   </select>
                 </label>
                 <label>
-                  Giới hạn hồ sơ
+                  {t("billingPayment.admin.personLimit")}
                   <input
                     type="number"
                     min="0"
@@ -1104,7 +1115,7 @@ const handlePaySelectedPayment = (payment) => {
                   />
                 </label>
                 <label>
-                  Giới hạn tài khoản
+                  {t("billingPayment.admin.accountLimit")}
                   <input
                     type="number"
                     min="0"
@@ -1114,12 +1125,12 @@ const handlePaySelectedPayment = (payment) => {
                   />
                 </label>
                 <label className="billing-plan-form-wide">
-                  Mô tả
+                  {t("billingPayment.admin.description")}
                   <textarea
                     rows={3}
                     value={planForm.description}
                     onChange={(event) => updatePlanFormField("description", event.target.value)}
-                    placeholder="Mô tả ngắn về gói"
+                    placeholder={t("billingPayment.admin.descriptionPlaceholder")}
                   />
                 </label>
                 <label className="billing-plan-active-check">
@@ -1128,15 +1139,15 @@ const handlePaySelectedPayment = (payment) => {
                     checked={Boolean(planForm.is_active)}
                     onChange={(event) => updatePlanFormField("is_active", event.target.checked)}
                   />
-                  Đang kích hoạt
+                  {t("billingPayment.admin.active")}
                 </label>
               </div>
               <div className="billing-actions-row">
                 <button type="submit" className="billing-primary-btn" disabled={planSaving}>
-                  {planSaving ? "Đang lưu..." : editingPlan ? "Lưu thay đổi" : "Thêm gói"}
+                  {planSaving ? t("common.saving") : editingPlan ? t("billingPayment.admin.saveChanges") : t("billingPayment.admin.addPlan")}
                 </button>
                 <button type="button" className="billing-secondary-btn" onClick={closePlanEditor} disabled={planSaving}>
-                  Hủy
+                  {t("common.cancel")}
                 </button>
               </div>
             </form>
@@ -1169,7 +1180,7 @@ const handlePaySelectedPayment = (payment) => {
                 {String(plan.billing_cycle || "").toLowerCase() !== "free" && (
                   <div className="billing-period-picker">
                     <label>
-                      <span>Số {getPlanPeriodUnit(plan)} muốn mua</span>
+                      <span>{t("billingPayment.plans.periodsToBuy", { unit: getPlanPeriodUnit(plan) })}</span>
                       <input
                         type="number"
                         min="1"
@@ -1179,14 +1190,14 @@ const handlePaySelectedPayment = (payment) => {
                       />
                     </label>
                     <strong>
-                      Tổng: {formatMoney(getPlanTotalAmount(plan, purchaseQuantities))}
+                      {t("billingPayment.plans.total", { amount: formatMoney(getPlanTotalAmount(plan, purchaseQuantities)) })}
                     </strong>
                   </div>
                 )}
                 <ul>
                   <li><span className="material-symbols-outlined">account_tree</span>{plan.person_limit} {t("billingPayment.plans.recordsUnit")}</li>
                   <li><span className="material-symbols-outlined">group</span>{plan.account_limit} {t("billingPayment.plans.accountsUnit")}</li>
-                  {isAdmin && <li><span className="material-symbols-outlined">toggle_on</span>{plan.is_active === 0 ? "Tạm ẩn" : "Đang kích hoạt"}</li>}
+                  {isAdmin && <li><span className="material-symbols-outlined">toggle_on</span>{plan.is_active === 0 ? t("billingPayment.admin.hidden") : t("billingPayment.admin.active")}</li>}
                 </ul>
 
                 {isAdmin && (
@@ -1195,7 +1206,7 @@ const handlePaySelectedPayment = (payment) => {
                     className="billing-secondary-btn billing-edit-plan-btn"
                     onClick={() => openEditPlanEditor(plan)}
                   >
-                    Sửa gói
+                    {t("billingPayment.admin.editPlan")}
                   </button>
                 )}
 

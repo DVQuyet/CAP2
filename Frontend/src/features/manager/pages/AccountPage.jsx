@@ -101,7 +101,7 @@ const toEditForm = (member) => ({
 
 const idText = (value) => (value == null || value === "" ? "" : String(value));
 
-function LunarDateHint({ value, label = "Âm lịch" }) {
+function LunarDateHint({ value, label }) {
   const text = formatLunarFullFromSolar(value);
   if (!text) return null;
 
@@ -166,10 +166,10 @@ export default function AccountPage() {
   };
 
   const getStatusLabel = (status) => {
-    if (status === "active") return t("common.status.active") || "Active";
-    if (status === "pending") return t("common.status.pending") || "Pending";
-    if (status === "rejected") return t("common.status.rejected") || "Rejected";
-    if (status === "no_account" || !status) return "Chưa có tài khoản";
+    if (status === "active") return t("common.status.active");
+    if (status === "pending") return t("common.status.pending");
+    if (status === "rejected") return t("common.status.rejected");
+    if (status === "no_account" || !status) return t("manager.accounts.status.noAccount");
     return status || t("manager.accounts.form.genderUnknown");
   };
 
@@ -256,7 +256,7 @@ export default function AccountPage() {
         .map((member) => ({
           accountId: member.account_id == null ? "" : String(member.account_id),
           personId: String(member.person_id),
-          label: `${fullName(member)}${member.generation ? ` (${t("manager.accounts.form.placeholderGeneration")} ${member.generation})` : ""}${member.account_id ? "" : " - chưa có tài khoản"}`,
+          label: `${fullName(member)}${member.generation ? ` (${t("manager.accounts.form.placeholderGeneration")} ${member.generation})` : ""}${member.account_id ? "" : t("manager.accounts.status.noAccountSuffix")}`,
         })),
     [members]
   );
@@ -332,7 +332,7 @@ export default function AccountPage() {
   };
 
   const loadRelationDetails = useCallback(
-    async (accountId, nextMessage = t("manager.accounts.messages.loadRelationSuccess") || "Loaded relations.") => {
+    async (accountId, nextMessage = t("manager.accounts.messages.loadRelationSuccess")) => {
       if (!accountId) {
         setRelationForm(emptyRelationForm);
         setRelationDetails(null);
@@ -1078,7 +1078,7 @@ export default function AccountPage() {
             <option value="active">{t("common.status.active")}</option>
             <option value="pending">{t("common.status.pending")}</option>
             <option value="rejected">{t("common.status.rejected")}</option>
-            <option value="no_account">Chưa có tài khoản</option>
+            <option value="no_account">{t("manager.accounts.status.noAccount")}</option>
           </select>
 
           <select
@@ -1117,7 +1117,7 @@ export default function AccountPage() {
 
                     <div>
                       <strong>{fullName(member)}</strong>
-                      <span>{member.email || "Chưa có tài khoản"}</span>
+                      <span>{member.email || t("manager.accounts.status.noAccount")}</span>
                       <small>ID: {member.person_id || member.account_id}</small>
                     </div>
                   </div>
@@ -1150,13 +1150,13 @@ export default function AccountPage() {
                         {t("common.edit")}
                       </button>
                     ) : (
-                      <span className="member-pro-no-account">Chỉ có hồ sơ</span>
+                      <span className="member-pro-no-account">{t("manager.accounts.status.profileOnly")}</span>
                     )}
                   </div>
                 </div>
               ))
             ) : (
-              <div className="mgr-empty">{t("manager.accounts.messages.empty") || "No members found."}</div>
+              <div className="mgr-empty">{t("manager.accounts.messages.empty")}</div>
             )}
           </div>
         </div>
@@ -1184,7 +1184,7 @@ export default function AccountPage() {
             </button>
 
             <h2 className="mgr-modalTitle">{t("manager.accounts.form.editTitle")} #{editAccountId}</h2>
-            <p className="mgr-modalMeta">{t("manager.accounts.form.editDescription") || "Update account and profile info."}</p>
+            <p className="mgr-modalMeta">{t("manager.accounts.form.editDescription")}</p>
 
             <div className="mgr-overviewFormGrid mgr-modalGrid">
               <input className="mgr-field" name="email" type="email" value={editForm.email} onChange={updateEditField} placeholder={t("manager.accounts.form.placeholderEmail")} />
@@ -1233,7 +1233,7 @@ export default function AccountPage() {
               <input className="mgr-field" name="hometown" value={editForm.hometown} onChange={updateEditField} placeholder={t("manager.accounts.form.placeholderHometown")} />
               <input className="mgr-field" name="phone" value={editForm.phone} onChange={updateEditField} placeholder={t("common.phone")} />
               <input className="mgr-field" name="people_email" type="email" value={editForm.people_email} onChange={updateEditField} placeholder={t("common.email") + " (alt)"} />
-              <input className="mgr-field" name="address" value={editForm.address} onChange={updateEditField} placeholder={t("common.address") || "Address"} />
+              <input className="mgr-field" name="address" value={editForm.address} onChange={updateEditField} placeholder={t("common.address")} />
               <input className="mgr-field" name="avatar_url" value={editForm.avatar_url} onChange={updateEditField} placeholder="Avatar URL" />
               <textarea className="mgr-field mgr-fieldTextarea" name="bio" value={editForm.bio} onChange={updateEditField} placeholder="Bio" />
               <textarea className="mgr-field mgr-fieldTextarea" name="note" value={editForm.note} onChange={updateEditField} placeholder={t("manager.accounts.form.note")} />

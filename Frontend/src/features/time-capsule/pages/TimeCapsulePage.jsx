@@ -66,10 +66,10 @@ function MemoryMedia({ memory, t, showCarouselControls = false, onPrevious, onNe
         )}
         {showCarouselControls ? (
           <>
-            <button type="button" className="memory-carousel-arrow is-left" onClick={onPrevious} aria-label="Xem mục trước">
+            <button type="button" className="memory-carousel-arrow is-left" onClick={onPrevious} aria-label={t("timeCapsule.carousel.previous")}>
               <span className="material-symbols-outlined">chevron_left</span>
             </button>
-            <button type="button" className="memory-carousel-arrow is-right" onClick={onNext} aria-label="Xem mục tiếp theo">
+            <button type="button" className="memory-carousel-arrow is-right" onClick={onNext} aria-label={t("timeCapsule.carousel.next")}>
               <span className="material-symbols-outlined">chevron_right</span>
             </button>
           </>
@@ -105,8 +105,8 @@ function MemoryCard({ memory, isManagerView = false, t, showCarouselControls = f
           <span className={`memory-status is-${memory.status || "approved"}`}>{getStatusLabel(memory.status, t)}</span>
           {canModify && (
             <div className="memory-card-actions">
-              {onEdit && <button type="button" className="memory-action-btn" onClick={() => onEdit(memory)} title="Sửa"><span className="material-symbols-outlined">edit</span></button>}
-              <button type="button" className="memory-action-btn is-danger" onClick={() => onDelete(memory.id)} title="Xóa"><span className="material-symbols-outlined">delete</span></button>
+              {onEdit && <button type="button" className="memory-action-btn" onClick={() => onEdit(memory)} title={t("timeCapsule.card.edit")}><span className="material-symbols-outlined">edit</span></button>}
+              <button type="button" className="memory-action-btn is-danger" onClick={() => onDelete(memory.id)} title={t("timeCapsule.card.delete")}><span className="material-symbols-outlined">delete</span></button>
             </div>
           )}
         </div>
@@ -288,12 +288,12 @@ export default function TimeCapsulePage({ role = "member" }) {
   }, [memories]);
 
   const albumTabs = useMemo(() => ([
-    { value: "image", label: "Ảnh", icon: "photo_library" },
-    { value: "video", label: "Video", icon: "video_library" },
-    { value: "audio", label: "Ghi âm", icon: "graphic_eq" },
+    { value: "image", label: t("timeCapsule.album.image"), icon: "photo_library" },
+    { value: "video", label: t("timeCapsule.album.video"), icon: "video_library" },
+    { value: "audio", label: t("timeCapsule.album.audio"), icon: "graphic_eq" },
     // Kỉ niệm chỉ có chữ (không ảnh/video/ghi âm) trước đây được đếm nhưng không hiện ở thẻ nào.
-    { value: "text", label: "Văn bản", icon: "article" },
-  ]), []);
+    { value: "text", label: t("timeCapsule.album.text"), icon: "article" },
+  ]), [t]);
 
   const statusFilteredMemories = useMemo(() => {
     if (filter === "all") return memories;
@@ -607,12 +607,12 @@ export default function TimeCapsulePage({ role = "member" }) {
   };
 
   const handleDeleteMemory = async (memoryId) => {
-    if (!window.confirm("Bạn có chắc muốn xóa kỷ niệm này không?")) return;
+    if (!window.confirm(t("timeCapsule.messages.confirmDelete"))) return;
     try {
       await deleteMemory(memoryId);
       setMemories((prev) => prev.filter((m) => m.id !== memoryId));
     } catch (err) {
-      setError(err?.message || "Không thể xóa kỷ niệm.");
+      setError(err?.message || t("timeCapsule.errors.deleteMemory"));
     }
   };
 
@@ -623,7 +623,7 @@ export default function TimeCapsulePage({ role = "member" }) {
       setMemories((prev) => prev.map((m) => m.id === editingMemory.id ? { ...m, title: editingMemory.title, content: editingMemory.content } : m));
       setEditingMemory(null);
     } catch (err) {
-      setError(err?.message || "Không thể cập nhật kỷ niệm.");
+      setError(err?.message || t("timeCapsule.errors.updateMemory"));
     }
   };
 
@@ -784,7 +784,7 @@ export default function TimeCapsulePage({ role = "member" }) {
                       type="button"
                       className="memory-switch-camera"
                       onClick={switchCamera}
-                      title={facingMode === "environment" ? "Chuyển camera trước" : "Chuyển camera sau"}
+                      title={facingMode === "environment" ? t("timeCapsule.postMemory.switchToFront") : t("timeCapsule.postMemory.switchToBack")}
                     >
                       <span className="material-symbols-outlined">flip_camera_ios</span>
                     </button>
@@ -858,7 +858,7 @@ export default function TimeCapsulePage({ role = "member" }) {
             <span>{t("timeCapsule.list.description")}</span>
           </div>
           <div className="memory-filter-panel">
-            <div className="memory-album-tabs" aria-label="Danh mục album kỉ niệm">
+            <div className="memory-album-tabs" aria-label={t("timeCapsule.album.ariaLabel")}>
               {albumTabs.map((tab) => (
                 <button
                   key={tab.value}
@@ -883,7 +883,7 @@ export default function TimeCapsulePage({ role = "member" }) {
         {loading ? (
           <div className="time-capsule-empty">{t("timeCapsule.list.loading")}</div>
         ) : visibleMemories.length === 0 ? (
-          <div className="time-capsule-empty">Chưa có nội dung trong danh mục {albumTabs.find((tab) => tab.value === albumCategory)?.label || "này"}.</div>
+          <div className="time-capsule-empty">{t("timeCapsule.album.empty", { category: albumTabs.find((tab) => tab.value === albumCategory)?.label || t("timeCapsule.album.thisCategory") })}</div>
         ) : showCarousel && currentCarouselMemory ? (
           <div className="memory-carousel-stage">
             <MemoryCard
@@ -935,18 +935,18 @@ export default function TimeCapsulePage({ role = "member" }) {
       {editingMemory && (
         <div className="memory-edit-overlay" onClick={() => setEditingMemory(null)}>
           <div className="memory-edit-modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Sửa kỷ niệm</h3>
+            <h3>{t("timeCapsule.edit.title")}</h3>
             <label>
-              <span>Tiêu đề</span>
+              <span>{t("timeCapsule.edit.titleField")}</span>
               <input value={editingMemory.title || ""} onChange={(e) => setEditingMemory((prev) => ({ ...prev, title: e.target.value }))} />
             </label>
             <label>
-              <span>Nội dung</span>
+              <span>{t("timeCapsule.edit.contentField")}</span>
               <textarea rows={4} value={editingMemory.content || ""} onChange={(e) => setEditingMemory((prev) => ({ ...prev, content: e.target.value }))} />
             </label>
             <div className="memory-edit-actions">
-              <button type="button" className="time-capsule-secondary" onClick={() => setEditingMemory(null)}>Hủy</button>
-              <button type="button" className="time-capsule-primary" onClick={handleSaveEditMemory}>Lưu</button>
+              <button type="button" className="time-capsule-secondary" onClick={() => setEditingMemory(null)}>{t("common.cancel")}</button>
+              <button type="button" className="time-capsule-primary" onClick={handleSaveEditMemory}>{t("common.save")}</button>
             </div>
           </div>
         </div>

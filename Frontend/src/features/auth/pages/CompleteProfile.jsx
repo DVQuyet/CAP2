@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { completeMyProfile } from "../../../api/invitationService";
 import DateInput from "../../../shared/components/DateInput";
 import { persistAuthSession, getStoredUser } from "../../../shared/utils/auth";
@@ -25,6 +26,7 @@ function dashboardPath(user) {
 }
 
 export default function CompleteProfile() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const user = getStoredUser();
   const [form, setForm] = useState(initialForm);
@@ -43,11 +45,11 @@ export default function CompleteProfile() {
 
     const fullName = form.full_name.trim();
     if (!fullName) {
-      setMessage("Vui lòng nhập họ và tên.");
+      setMessage(t("auth.completeProfile.nameRequired"));
       return;
     }
     if (!form.gender) {
-      setMessage("Vui lòng chọn giới tính.");
+      setMessage(t("auth.completeProfile.genderRequired"));
       return;
     }
 
@@ -61,7 +63,7 @@ export default function CompleteProfile() {
       persistAuthSession(result);
       navigate(dashboardPath(result.user), { replace: true });
     } catch (error) {
-      setMessage(error?.message || "Không thể lưu hồ sơ.");
+      setMessage(error?.message || t("auth.completeProfile.saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -72,8 +74,8 @@ export default function CompleteProfile() {
       <section className="invite-profile-panel">
         <div className="invite-auth-header">
           <span className="material-symbols-outlined">badge</span>
-          <h1>Hoàn thiện hồ sơ cá nhân</h1>
-          <p>{user?.email ? `Tài khoản: ${user.email}` : "Nhập thông tin tối thiểu để vào hệ thống."}</p>
+          <h1>{t("auth.completeProfile.title")}</h1>
+          <p>{user?.email ? t("auth.completeProfile.account", { email: user.email }) : t("auth.completeProfile.subtitle")}</p>
         </div>
 
         {message ? <div className="invite-alert is-error">{message}</div> : null}
@@ -81,13 +83,13 @@ export default function CompleteProfile() {
         <form className="invite-form invite-form-grid" onSubmit={handleSubmit}>
           {user?.invite_generation ? (
             <label className="is-wide">
-              Đời gia phả
-              <input value={`Đời ${user.invite_generation}`} readOnly />
+              {t("auth.completeProfile.generationLabel")}
+              <input value={t("auth.completeProfile.generationValue", { generation: user.invite_generation })} readOnly />
             </label>
           ) : null}
 
           <label className="is-wide">
-            Họ và tên
+            {t("common.fullName")}
             <input
               name="full_name"
               value={form.full_name}
@@ -98,43 +100,43 @@ export default function CompleteProfile() {
           </label>
 
           <label>
-            Giới tính
+            {t("common.gender")}
             <select name="gender" value={form.gender} onChange={updateField} required>
-              <option value="">Chọn giới tính</option>
-              <option value="male">Nam</option>
-              <option value="female">Nữ</option>
-              <option value="other">Khác / chưa rõ</option>
+              <option value="">{t("auth.completeProfile.selectGender")}</option>
+              <option value="male">{t("auth.completeProfile.male")}</option>
+              <option value="female">{t("auth.completeProfile.female")}</option>
+              <option value="other">{t("auth.completeProfile.other")}</option>
             </select>
           </label>
 
           <label>
-            Ngày sinh
+            {t("common.birthDate")}
             <DateInput name="birth_date" value={form.birth_date} onChange={updateField} />
           </label>
 
           <label>
-            Số điện thoại
+            {t("auth.completeProfile.phone")}
             <input name="phone" value={form.phone} onChange={updateField} />
           </label>
 
           <label>
-            Quê quán
+            {t("common.hometown")}
             <input name="hometown" value={form.hometown} onChange={updateField} />
           </label>
 
           <label className="is-wide">
-            Địa chỉ
+            {t("common.address")}
             <input name="address" value={form.address} onChange={updateField} />
           </label>
 
           <label className="is-wide">
-            Mô tả
+            {t("auth.completeProfile.bio")}
             <textarea name="bio" value={form.bio} onChange={updateField} rows={4} />
           </label>
 
           <button type="submit" disabled={saving} className="is-wide">
             <span className="material-symbols-outlined">{saving ? "progress_activity" : "login"}</span>
-            {saving ? "Đang lưu..." : "Hoàn tất và vào hệ thống"}
+            {saving ? t("common.saving") : t("auth.completeProfile.submit")}
           </button>
         </form>
       </section>

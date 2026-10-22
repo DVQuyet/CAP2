@@ -70,28 +70,28 @@ function buildHolidayEvents(date, t) {
   const events = [];
 
   const solarHolidays = {
-    "01-01": t("Tết Dương lịch"),
-    "03-08": t("Quốc tế Phụ nữ"),
-    "04-30": t("Giải phóng miền Nam"),
-    "05-01": t("Quốc tế Lao động"),
-    "06-01": t("Quốc tế Thiếu nhi"),
-    "09-02": t("Quốc khánh Việt Nam"),
-    "10-20": t("Phụ nữ Việt Nam"),
-    "11-20": t("Nhà giáo Việt Nam"),
-    "12-22": t("Quân đội Nhân dân Việt Nam"),
-    "12-25": t("Giáng sinh"),
+    "01-01": t("vnCalendar.holidays.solar.newYear"),
+    "03-08": t("vnCalendar.holidays.solar.womensDay"),
+    "04-30": t("vnCalendar.holidays.solar.reunification"),
+    "05-01": t("vnCalendar.holidays.solar.labourDay"),
+    "06-01": t("vnCalendar.holidays.solar.childrensDay"),
+    "09-02": t("vnCalendar.holidays.solar.nationalDay"),
+    "10-20": t("vnCalendar.holidays.solar.vnWomensDay"),
+    "11-20": t("vnCalendar.holidays.solar.teachersDay"),
+    "12-22": t("vnCalendar.holidays.solar.armyDay"),
+    "12-25": t("vnCalendar.holidays.solar.christmas"),
   };
 
   const lunarHolidays = {
-    "01-01": t("Tết Nguyên Đán"),
-    "01-02": t("Mùng 2 Tết"),
-    "01-03": t("Mùng 3 Tết"),
-    "01-15": t("Rằm tháng Giêng"),
-    "03-10": t("Giỗ Tổ Hùng Vương"),
-    "04-15": t("Phật Đản"),
-    "07-15": t("Vu Lan"),
-    "08-15": t("Tết Trung Thu"),
-    "12-23": t("Ông Công Ông Táo"),
+    "01-01": t("vnCalendar.holidays.lunar.tet"),
+    "01-02": t("vnCalendar.holidays.lunar.tet2"),
+    "01-03": t("vnCalendar.holidays.lunar.tet3"),
+    "01-15": t("vnCalendar.holidays.lunar.firstFullMoon"),
+    "03-10": t("vnCalendar.holidays.lunar.hungKings"),
+    "04-15": t("vnCalendar.holidays.lunar.buddhaBirthday"),
+    "07-15": t("vnCalendar.holidays.lunar.vuLan"),
+    "08-15": t("vnCalendar.holidays.lunar.midAutumn"),
+    "12-23": t("vnCalendar.holidays.lunar.kitchenGods"),
   };
 
   if (solarHolidays[solarKey]) {
@@ -126,16 +126,13 @@ export default function VietnamCalendarPage() {
   const MONTH_NAMES = useMemo(() => {
     const months = t("vnCalendar.labels.months", { returnObjects: true });
     if (Array.isArray(months)) return months;
-    return [
-      "Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6",
-      "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"
-    ];
+    return [];
   }, [t]);
 
   const WEEKDAY_LABELS = useMemo(() => {
     const days = t("vnCalendar.labels.weekdays", { returnObjects: true });
     if (Array.isArray(days)) return days;
-    return ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+    return [];
   }, [t]);
 
   const DEFAULT_EVENT_TEMPLATES = useMemo(
@@ -203,7 +200,7 @@ export default function VietnamCalendarPage() {
       setSavedEvents(Array.isArray(data.events) ? data.events : []);
       setCalendarStatus("");
     } catch (error) {
-      setCalendarStatus(error?.message || "Không thể tải lịch từ hệ thống.");
+      setCalendarStatus(error?.message || t("vnCalendar.messages.loadError"));
       setSavedEvents([]);
     } finally {
       setLoadingEvents(false);
@@ -410,7 +407,7 @@ export default function VietnamCalendarPage() {
                   : `${MONTH_NAMES[selectedDate.getMonth()]} ${selectedDate.getFullYear()}`}</h2>
               <p>{t("vnCalendar.today")}: {formatVietnamDate(today)}</p>
             </div>
-            <button type="button" onClick={() => shiftPeriod(1)} aria-label={t("common.next") || "Next"}>
+            <button type="button" onClick={() => shiftPeriod(1)} aria-label={t("common.next")}>
               <span className="material-symbols-outlined">chevron_right</span>
             </button>
           </div>
@@ -610,7 +607,7 @@ export default function VietnamCalendarPage() {
                       </button>
                     ) : null}
                     {event.can_delete ? (
-                      <button type="button" onClick={() => deleteEvent(event)} title={t("common.delete") || "Delete"}>
+                      <button type="button" onClick={() => deleteEvent(event)} title={t("common.delete")}>
                         <span className="material-symbols-outlined">delete</span>
                       </button>
                     ) : null}

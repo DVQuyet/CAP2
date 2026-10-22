@@ -14,7 +14,7 @@ export default function SiteFooter() {
           <a href="mailto:dinhvietquyet984@gmail.com">{t("layout.footer.contact")}</a>
           <Link to="/privacy-policy">{t("layout.footer.privacy")}</Link>
           <Link to="/terms">{t("layout.footer.terms")}</Link>
-          <Link to="/delete-data">Xóa dữ liệu</Link>
+          <Link to="/delete-data">{t("layout.footer.deleteData")}</Link>
         </nav>
       </div>
     </footer>

@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import ProtectedRoute from "../shared/components/ProtectedRoute";
 import UserLayout from "../layouts/PublicLayout";
 import AdminLayout from "../layouts/AdminLayout";
@@ -46,11 +47,13 @@ const GeneralPosts = lazy(() => import("../features/posts/pages/GeneralPosts"));
 const TimeCapsulePage = lazy(() => import("../features/time-capsule/pages/TimeCapsulePage"));
 const VietnamCalendarPage = lazy(() => import("../features/calendar/pages/VietnamCalendarPage"));
 
-const routeFallback = (
+function RouteFallback() {
+  const { t } = useTranslation();
+  return (
   <div
     role="status"
     aria-busy="true"
-    aria-label="Đang tải"
+    aria-label={t("common.loadingAria")}
     style={{ display: "grid", placeItems: "center", minHeight: "40vh", color: "#9a3412" }}
   >
     <div
@@ -65,11 +68,12 @@ const routeFallback = (
     />
     <style>{"@keyframes route-spin{to{transform:rotate(360deg)}}"}</style>
   </div>
-);
+  );
+}
 
 export default function AppRoutes() {
   return (
-    <Suspense fallback={routeFallback}>
+    <Suspense fallback={<RouteFallback />}>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />

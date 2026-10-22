@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { acceptInvitation, verifyInvitation } from "../../../api/invitationService";
 import { persistAuthSession } from "../../../shared/utils/auth";
 import "./invite.css";
@@ -10,6 +11,7 @@ const initialForm = {
 };
 
 export default function InviteAccept() {
+  const { t } = useTranslation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = searchParams.get("token") || "";
@@ -22,7 +24,7 @@ export default function InviteAccept() {
 
     async function loadInvite() {
       if (!token) {
-        setState({ loading: false, error: "Liên kết lời mời thiếu token.", invitation: null });
+        setState({ loading: false, error: t("auth.invite.missingToken"), invitation: null });
         return;
       }
 
@@ -34,7 +36,7 @@ export default function InviteAccept() {
         if (!cancelled) {
           setState({
             loading: false,
-            error: error?.message || "Lời mời không hợp lệ hoặc đã hết hạn.",
+            error: error?.message || t("auth.invite.invalid"),
             invitation: null,
           });
         }
@@ -45,7 +47,7 @@ export default function InviteAccept() {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, t]);
 
   const updateField = (event) => {
     const { name, value } = event.target;
@@ -57,11 +59,11 @@ export default function InviteAccept() {
     setState((current) => ({ ...current, error: "" }));
 
     if (form.password.length < 6) {
-      setState((current) => ({ ...current, error: "Mật khẩu tối thiểu 6 ký tự." }));
+      setState((current) => ({ ...current, error: t("auth.invite.passwordTooShort") }));
       return;
     }
     if (form.password !== form.confirm_password) {
-      setState((current) => ({ ...current, error: "Mật khẩu xác nhận không khớp." }));
+      setState((current) => ({ ...current, error: t("auth.invite.passwordMismatch") }));
       return;
     }
 
@@ -77,7 +79,7 @@ export default function InviteAccept() {
     } catch (error) {
       setState((current) => ({
         ...current,
-        error: error?.message || "Không thể chấp nhận lời mời.",
+        error: error?.message || t("auth.invite.acceptFailed"),
       }));
     } finally {
       setSubmitting(false);
@@ -86,34 +88,34 @@ export default function InviteAccept() {
 
   return (
     <main className="invite-auth-page">
-      <Link to="/" className="invite-back-link">← Về trang chủ</Link>
+      <Link to="/" className="invite-back-link">← {t("navigation.backHome")}</Link>
 
       <section className="invite-auth-panel">
         <div className="invite-auth-header">
           <span className="material-symbols-outlined">mail_lock</span>
-          <h1>Chấp nhận lời mời</h1>
-          <p>Tạo mật khẩu cho tài khoản được mời vào CAP2/Gia phả Việt.</p>
+          <h1>{t("auth.invite.title")}</h1>
+          <p>{t("auth.invite.subtitle")}</p>
         </div>
 
-        {state.loading ? <div className="invite-alert">Đang kiểm tra lời mời...</div> : null}
+        {state.loading ? <div className="invite-alert">{t("auth.invite.checking")}</div> : null}
         {state.error ? <div className="invite-alert is-error">{state.error}</div> : null}
 
         {!state.loading && state.invitation ? (
           <form className="invite-form" onSubmit={handleSubmit}>
             <label>
-              Email được mời
+              {t("auth.invite.email")}
               <input value={state.invitation.email || ""} readOnly />
             </label>
 
             {state.invitation.generation ? (
               <label>
-                Đời gia phả
-                <input value={`Đời ${state.invitation.generation}`} readOnly />
+                {t("auth.completeProfile.generationLabel")}
+                <input value={t("auth.completeProfile.generationValue", { generation: state.invitation.generation })} readOnly />
               </label>
             ) : null}
 
             <label>
-              Mật khẩu
+              {t("auth.invite.password")}
               <input
                 name="password"
                 type="password"
@@ -126,7 +128,7 @@ export default function InviteAccept() {
             </label>
 
             <label>
-              Xác nhận mật khẩu
+              {t("auth.invite.confirmPassword")}
               <input
                 name="confirm_password"
                 type="password"
@@ -140,7 +142,7 @@ export default function InviteAccept() {
 
             <button type="submit" disabled={submitting}>
               <span className="material-symbols-outlined">{submitting ? "progress_activity" : "check_circle"}</span>
-              {submitting ? "Đang tạo tài khoản..." : "Tạo mật khẩu"}
+              {submitting ? t("auth.invite.creating") : t("auth.invite.createPassword")}
             </button>
           </form>
         ) : null}

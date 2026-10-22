@@ -64,7 +64,8 @@
       "active": "Active",
       "pending": "Pending",
       "rejected": "Rejected"
-    }
+    },
+    "loadingAria": "Loading"
   },
   "navigation": {
     "home": "Home",
@@ -87,9 +88,7 @@
     "hello": "Hello, {{name}}",
     "adminTitle": "Gia Pha Viet Administration",
     "managerTitle": "Gia Pha Administration",
-    "member": {
-      "title": "Member Portal"
-    },
+    "member": "Member",
     "session": "Session: {{date}}",
     "systemAdmin": "System administrator",
     "clanManager": "Clan manager",
@@ -114,7 +113,8 @@
       "contact": "Contact",
       "privacy": "Privacy Policy",
       "terms": "Terms of Use",
-      "faq": "FAQ"
+      "faq": "FAQ",
+      "deleteData": "Delete data"
     },
     "accountMessages": {
       "loadFailed": "Unable to load account information.",
@@ -291,7 +291,8 @@
         "accounts": "Login accounts",
         "nearLimit": "Near limit",
         "normal": "Within limit",
-        "unlimited": "Unlimited"
+        "unlimited": "Unlimited",
+        "remaining": "Remaining: {{value}}"
       }
     },
     "accounts": {
@@ -372,6 +373,11 @@
         "selectFamilyPrompt": "Please select a specific family to add children.",
         "loadRelationSuccess": "Family relations loaded.",
         "empty": "No matching accounts."
+      },
+      "status": {
+        "noAccount": "No account yet",
+        "noAccountSuffix": " - no account yet",
+        "profileOnly": "Profile only"
       }
     }
   },
@@ -476,6 +482,31 @@
       "saving": "Saving event...",
       "scopeGlobal": "Clan-wide",
       "scopePersonal": "Personal"
+    },
+    "holidays": {
+      "solar": {
+        "newYear": "New Year's Day",
+        "womensDay": "International Women's Day",
+        "reunification": "Reunification Day",
+        "labourDay": "International Labour Day",
+        "childrensDay": "International Children's Day",
+        "nationalDay": "Vietnam National Day",
+        "vnWomensDay": "Vietnamese Women's Day",
+        "teachersDay": "Vietnamese Teachers' Day",
+        "armyDay": "Vietnam People's Army Day",
+        "christmas": "Christmas"
+      },
+      "lunar": {
+        "tet": "Lunar New Year",
+        "tet2": "Second day of Tet",
+        "tet3": "Third day of Tet",
+        "firstFullMoon": "First full moon festival",
+        "hungKings": "Hung Kings' Commemoration",
+        "buddhaBirthday": "Buddha's Birthday",
+        "vuLan": "Vu Lan Festival",
+        "midAutumn": "Mid-Autumn Festival",
+        "kitchenGods": "Kitchen Gods Day"
+      }
     }
   },
   "auth": {
@@ -492,7 +523,8 @@
       "forgotTitle": "Receive a 6-digit code via registered email",
       "missingEmail": "Enter your email.",
       "failed": "Login failed.",
-      "missingUser": "Server response is missing account information."
+      "missingUser": "Server response is missing account information.",
+      "or": "Or"
     },
     "register": {
       "title": "Create a new account",
@@ -556,7 +588,49 @@
     },
     "waiting": {
       "title": "Waiting for approval",
-      "backToLogin": "Back to login"
+      "backToLogin": "Back to login",
+      "message": "Your account has been created. Please wait for your clan administrator to approve your access."
+    },
+    "callback": {
+      "accountDisabled": "Your account has been disabled.",
+      "socialLoginFailed": "Social sign-in was not successful.",
+      "noAccountInfo": "Could not retrieve your account information.",
+      "title": "Sign in",
+      "completing": "Completing your social sign-in...",
+      "backToLogin": "Back to sign in",
+      "verifying": "Verifying your account..."
+    },
+    "completeProfile": {
+      "nameRequired": "Please enter your full name.",
+      "genderRequired": "Please select your gender.",
+      "saveFailed": "Could not save your profile.",
+      "title": "Complete your profile",
+      "account": "Account: {{email}}",
+      "subtitle": "Enter the minimum information to get started.",
+      "generationLabel": "Family tree generation",
+      "generationValue": "Generation {{generation}}",
+      "selectGender": "Select gender",
+      "male": "Male",
+      "female": "Female",
+      "other": "Other / unknown",
+      "phone": "Phone number",
+      "bio": "Description",
+      "submit": "Finish and enter"
+    },
+    "invite": {
+      "missingToken": "The invitation link is missing its token.",
+      "invalid": "The invitation is invalid or has expired.",
+      "passwordTooShort": "Password must be at least 6 characters.",
+      "passwordMismatch": "The confirmation password does not match.",
+      "acceptFailed": "Could not accept the invitation.",
+      "title": "Accept invitation",
+      "subtitle": "Create a password for the account you were invited to on CAP2/Gia Pha Viet.",
+      "checking": "Checking the invitation...",
+      "email": "Invited email",
+      "password": "Password",
+      "confirmPassword": "Confirm password",
+      "creating": "Creating account...",
+      "createPassword": "Create password"
     }
   },
   "shared": {
@@ -687,11 +761,14 @@
       "microphoneOpen": "Unable to open the microphone. Check browser microphone permissions.",
       "emptySubmit": "Enter content or upload a photo, video, or audio file.",
       "selectReader": "Select at least one reader for this memory.",
-      "submitMemory": "Unable to submit the family memory."
+      "submitMemory": "Unable to submit the family memory.",
+      "deleteMemory": "Could not delete the memory.",
+      "updateMemory": "Could not update the memory."
     },
     "messages": {
       "uploaded": "The memory file was saved to the database. You can submit the memory for review.",
-      "submitted": "Family memory submitted."
+      "submitted": "Family memory submitted.",
+      "confirmDelete": "Are you sure you want to delete this memory?"
     },
     "postMemory": {
       "title": "Post memory",
@@ -722,7 +799,9 @@
       "recordingAudio": "Recording audio directly from the microphone...",
       "previewAlt": "Preview",
       "clearForm": "Clear form",
-      "submit": "Submit memory"
+      "submit": "Submit memory",
+      "switchToFront": "Switch to front camera",
+      "switchToBack": "Switch to rear camera"
     },
     "stats": {
       "approved": "Approved memories",
@@ -734,6 +813,28 @@
       "description": "Shows approved memories and your own memories waiting for review.",
       "loading": "Loading memories...",
       "empty": "No memories yet."
+    },
+    "carousel": {
+      "previous": "View previous item",
+      "next": "View next item"
+    },
+    "card": {
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "album": {
+      "ariaLabel": "Memory album categories",
+      "image": "Photos",
+      "video": "Videos",
+      "audio": "Recordings",
+      "text": "Text",
+      "thisCategory": "this",
+      "empty": "There is no content in the {{category}} category yet."
+    },
+    "edit": {
+      "title": "Edit memory",
+      "titleField": "Title",
+      "contentField": "Content"
     }
   },
   "eventsTasks": {
@@ -814,7 +915,8 @@
       "event": "Event",
       "manager": "Manager",
       "assignedAt": "Assigned at",
-      "completedAt": "Completed at"
+      "completedAt": "Completed at",
+      "deselectMember": "Deselect {{name}}"
     },
     "messages": {
       "confirmDeleteEvent": "Delete event \"{{title}}\"? Assigned tasks will be kept but no longer linked to this event.",
@@ -863,7 +965,11 @@
       "speechSecureContextRequired": "Browser speech recognition requires HTTPS or localhost.",
       "speechNetworkFailed": "The browser speech recognition service could not connect. Check the network or try HTTPS/localhost.",
       "updateTaskFailed": "Unable to update task.",
-      "deleteTaskFailed": "Unable to delete task."
+      "deleteTaskFailed": "Unable to delete task.",
+      "audioCapture": "Cannot access the microphone. Check your microphone device or Chrome's microphone permission.",
+      "speechNetwork": "Chrome could not reach the speech recognition service. Try localhost, another network, or turn off VPN/proxy.",
+      "speechAborted": "Speech recognition was stopped.",
+      "speechFailed": "Could not convert speech to text. Error: {{error}}"
     },
     "placeholders": {
       "searchEvents": "Search events...",
@@ -1251,7 +1357,9 @@
       "upgradeTest": "Test Upgrade",
       "upgradeNow": "Upgrade Now",
       "pending": "Pending Transaction",
-      "cannotDowngrade": "Cannot downgrade"
+      "cannotDowngrade": "Cannot downgrade",
+      "periodsToBuy": "Number of {{unit}} to buy",
+      "total": "Total: {{amount}}"
     },
     "planCatalog": {
       "free": {
@@ -1306,7 +1414,41 @@
       "expiredAlert": "Transaction older than 24 hours. Please reload the page to update status.",
       "upgradeTestConfirm": "Test upgrade clan tree #{{id}} to plan {{name}}?",
       "upgradeTestSuccess": "Test upgraded clan tree #{{id}} to plan {{name}}.",
-      "upgradeTestError": "Could not perform test upgrade."
+      "upgradeTestError": "Could not perform test upgrade.",
+      "planUpdated": "Usage plan updated successfully.",
+      "planAdded": "Usage plan added successfully.",
+      "planSaveError": "Could not save the usage plan.",
+      "replacePendingConfirm": "You have a pending payment for plan {{pending}}. Cancel the old transaction to create a new QR code for {{plan}} ({{quantity}} {{unit}})?",
+      "missingApiToken": "Payment is not confirmed because the backend has no SEPAY_API_TOKEN configured to reconcile transactions.",
+      "reconcileError": "Cannot reconcile with SePay right now. Please check the API token or the SePay webhook log."
+    },
+    "period": {
+      "year": "years",
+      "month": "months"
+    },
+    "periodPurchased": "Purchased period",
+    "periodExpires": "Expires per transaction",
+    "qrAlt": "SePay payment QR code",
+    "admin": {
+      "kicker": "Usage plan administration",
+      "title": "Add and edit plans",
+      "addPlan": "Add plan",
+      "code": "Plan code",
+      "codePlaceholder": "e.g. BASIC",
+      "name": "Plan name",
+      "priceVnd": "Price (VND)",
+      "cycle": "Billing cycle",
+      "cycleFree": "Free",
+      "cycleMonthly": "Monthly",
+      "cycleYearly": "Yearly",
+      "personLimit": "Profile limit",
+      "accountLimit": "Account limit",
+      "description": "Description",
+      "descriptionPlaceholder": "Short description of the plan",
+      "active": "Active",
+      "hidden": "Temporarily hidden",
+      "editPlan": "Edit plan",
+      "saveChanges": "Save changes"
     }
   },
   "member": {
@@ -1322,7 +1464,8 @@
         "generations": "Generations Recorded",
         "openTasks": "Open Tasks",
         "profileComplete": "Profile Completeness",
-        "unreadNotifications": "Unread Notifications"
+        "unreadNotifications": "Unread Notifications",
+        "ariaLabel": "Member statistics"
       },
       "tasks": {
         "title": "Assigned Tasks",
@@ -1765,7 +1908,9 @@
       "comments": "{{count}} comments",
       "like": "Like",
       "comment": "Comment",
-      "view": "View"
+      "view": "View",
+      "edit": "Edit",
+      "delete": "Delete"
     },
     "modal": {
       "create": {
@@ -1792,6 +1937,11 @@
         "member": "Member",
         "commentPlaceholder": "Write a comment...",
         "submitComment": "Comment"
+      },
+      "edit": {
+        "title": "Edit post",
+        "titleField": "Title",
+        "contentField": "Content"
       }
     },
     "messages": {
@@ -1806,7 +1956,10 @@
       "commentRequired": "Please enter a comment.",
       "commentError": "Cannot send comment.",
       "noPosts": "No approved posts yet.",
-      "loadMore": "Load more posts"
+      "loadMore": "Load more posts",
+      "confirmDelete": "Are you sure you want to delete this post?",
+      "deleteError": "Could not delete the post.",
+      "updateError": "Could not update the post."
     },
     "sidebar": {
       "title": "Newsfeed",
@@ -2414,6 +2567,45 @@
       "nameRequired": "Please enter the member name.",
       "invalidDate": "{{field}} is invalid (dd/mm/yyyy).",
       "invalidPhone": "Invalid phone number (digits only, 8–15 characters)."
+    },
+    "archive": {
+      "loadError": "Could not load the archived members list",
+      "confirmRestore": "Are you sure you want to restore this member to the family tree?",
+      "restoreError": "Could not restore the member",
+      "confirmDeletePermanently": "WARNING: This will permanently delete this member's account and profile from the system. Are you sure you want to continue?",
+      "deleteError": "Could not permanently delete the member",
+      "confirmDeleteAll": "WARNING: This will permanently delete {{count}} records in the archive from the database. This cannot be undone. Are you sure you want to continue?",
+      "deleteAllError": "Could not delete all archived records",
+      "selectMemberRequired": "Please select a member to archive.",
+      "reasonRequired": "Please enter a reason for archiving.",
+      "confirmArchive": "Are you sure you want to archive the member \"{{name}}\"? They will be hidden from the family tree and locked out of signing in.",
+      "archiveError": "Could not archive the member",
+      "kicker": "Clan genealogy management",
+      "title": "Member Archive",
+      "tabList": "Archive list ({{count}})",
+      "tabArchive": "Move to archive",
+      "deleteAllTitle": "Permanently delete all records in the archive",
+      "deleteAll": "Delete all",
+      "searchPlaceholder": "Search members in the archive...",
+      "loading": "Loading the archive list...",
+      "noMatch": "No matching members found.",
+      "empty": "The archive is currently empty.",
+      "memberFallback": "Member",
+      "noEmail": "No email",
+      "unknownDate": "Unknown",
+      "reasonLabel": "Reason: ",
+      "noReason": "No reason given",
+      "archivedAt": "Archived at: {{date}}",
+      "restoreTitle": "Restore the member to the family tree",
+      "restore": "Restore",
+      "deletePermanentlyTitle": "Permanently delete the member's account and profile",
+      "deletePermanently": "Delete permanently",
+      "formHelp": "Move a member who has an account into the archive. They will be hidden from the family tree, the active lists, and locked out of signing in.",
+      "selectMemberLabel": "Select the member to archive",
+      "selectMemberOption": "-- Select a member --",
+      "reasonField": "Reason for archiving",
+      "reasonPlaceholder": "Enter the detailed reason...",
+      "archiveNow": "Archive now"
     }
   },
   "calendar": {
@@ -2427,7 +2619,24 @@
       "form": {
         "clanName": "Clan Name",
         "description": "Clan Description"
-      }
+      },
+      "termsTitle": "Terms of Use",
+      "privacyTitle": "Privacy Policy",
+      "clanNameRequired": "Please enter the clan name",
+      "clanNameMissing": "The clan name is missing, please go back to the previous step",
+      "passwordMismatch": "The confirmation password does not match",
+      "success": "Clan and clan head account registered successfully!",
+      "failed": "Error while creating the clan and its manager",
+      "newClanTitle": "Create a new clan",
+      "newClanSubtitle": "Enter your clan's name.",
+      "clanNamePlaceholder": "Clan name",
+      "nextStep": "Next: Register an account",
+      "managerTitle": "Create the clan head account for the clan",
+      "managerSubtitle": "The registrant will be assigned the \"Clan head\" role of this clan.",
+      "fullNamePlaceholder": "Full name",
+      "finish": "Finish registration",
+      "processing": "Processing...",
+      "backToStep": "← Back to previous step"
     }
   },
   "aiChat": {
@@ -2592,7 +2801,9 @@
           "Han-Nom Translation",
           "Secure Cloud Storage",
           "Access Permissions"
-        ]
+        ],
+        "imageAlt1": "Ancient genealogy documents",
+        "imageAlt2": "Digital data security"
       },
       "cta": {
         "title": "Ready to create a digital heritage for your clan?",
@@ -2736,6 +2947,37 @@
         "rituals": "Rituals & Customs",
         "tech": "Technology & Digitization",
         "people": "Outstanding Figures"
+      },
+      "items": {
+        "f0": {
+          "date": "OCTOBER 01, 2025",
+          "title": "Opening of the Nguyen clan ancestral festival at Co Do Hue",
+          "desc": "The Nguyen clan's biggest event of the year drew many relatives who came to take part and help preserve ancient traditions."
+        },
+        "f1": {
+          "date": "AUGUST 12, 2025",
+          "title": "Using AI to restore old family photographs",
+          "desc": "Artificial intelligence helps restore archival images, building an emotionally rich archive for Vietnamese clans."
+        },
+        "f2": {
+          "date": "JUNE 08, 2025",
+          "title": "Ancient Han-script genealogy discovered in Thanh Hoa",
+          "desc": "A rare document was found within the clan, opening a journey of researching and digitizing the traditional lineage."
+        },
+        "f3": {
+          "date": "JUNE 09, 2025",
+          "title": "A third-generation overseas Vietnamese finds their roots",
+          "desc": "A story of connecting generations far from home with their roots through digital genealogy search and storage tools."
+        },
+        "l0": {
+          "title": "Traditional ancestor commemoration days in the digital age"
+        },
+        "l1": {
+          "title": "A beginner's guide to building a family tree"
+        },
+        "l2": {
+          "title": "Preserving worship legends and village covenants"
+        }
       }
     },
     "notFound": {
@@ -2748,6 +2990,13 @@
       "members": "Members connected",
       "documents": "Documents digitized",
       "provinces": "Provinces covered"
+    },
+    "landingTree": {
+      "ariaLabel": "Sample family tree illustration",
+      "rootTitle": "Ancestor Phuc Khanh",
+      "elder": "Great-grandfather",
+      "generation": "GENERATION {{n}}",
+      "life": "Born: {{birth}} - Died: {{death}}"
     }
   },
   "help": {
@@ -2768,6 +3017,97 @@
     "shortcuts": {
       "title": "Shortcuts",
       "text": "Esc: close the open dialog."
+    }
+  },
+  "invitation": {
+    "status": {
+      "accepted": "Accepted",
+      "expired": "Expired",
+      "revoked": "Revoked",
+      "pending": "Pending"
+    },
+    "role": {
+      "member": "Member",
+      "manager": "Manager"
+    },
+    "loadError": "Could not load the invitation list.",
+    "emailRequired": "Please enter the email to invite.",
+    "emailInvalid": "Invalid email. Example: name@example.com",
+    "clanRequired": "Please select a clan for the invitation.",
+    "generationInvalid": "Please choose a valid family tree generation.",
+    "created": "Invitation created.",
+    "sendError": "Could not send the invitation.",
+    "kicker": "Invite members",
+    "title": "Send registration invitations by email",
+    "description": "The invited email is locked into the link; the user only creates a password and then completes their profile.",
+    "refresh": "Refresh",
+    "createTitle": "Create invitation",
+    "testLink": "Test link when SMTP is not configured",
+    "inviteeEmail": "Invitee's email",
+    "generation": "Family tree generation",
+    "roleLabel": "Role",
+    "clan": "Clan",
+    "selectClan": "Select a clan",
+    "clanFallback": "Clan #{{id}}",
+    "sending": "Sending...",
+    "send": "Send invitation",
+    "recentTitle": "Recent invitations",
+    "table": {
+      "generation": "Gen.",
+      "status": "Status",
+      "expires": "Expires"
+    },
+    "empty": "No invitations yet."
+  },
+  "legal": {
+    "privacy": {
+      "title": "Privacy Policy",
+      "body": [
+        "The Family Tree Login app uses basic information from Facebook such as your name, email and profile picture to support signing in to the genealogy/clan system.",
+        "We only use this data to:"
+      ],
+      "bullets": [
+        "Authenticate user accounts",
+        "Manage access to the system",
+        "Display account information in the app"
+      ],
+      "closing": [
+        "We do not sell, share or use user data for advertising purposes.",
+        "Users can request data deletion by contacting us by email: dinhvietquyet984@gmail.com"
+      ]
+    },
+    "terms": {
+      "title": "Terms of Service",
+      "body": [
+        "Users sign in to the system to view and manage genealogy/clan information according to the permissions granted.",
+        "Users must not:"
+      ],
+      "bullets": [
+        "Post false information",
+        "Share genealogy data with people who do not have access",
+        "Use the system for unlawful purposes",
+        "Violate the privacy of other members"
+      ],
+      "closing": [
+        "The system may lock or restrict accounts if violations are detected."
+      ]
+    },
+    "deleteData": {
+      "title": "Delete User Data",
+      "body": [
+        "If you want to delete the data used to sign in with Facebook, please send a request to the email: dinhvietquyet984@gmail.com.",
+        "The data that can be deleted includes:"
+      ],
+      "bullets": [
+        "Name",
+        "Email",
+        "Profile picture",
+        "Facebook account linking information",
+        "Sign-in data related to the account"
+      ],
+      "closing": [
+        "We will process data deletion requests as soon as possible."
+      ]
     }
   }
 }

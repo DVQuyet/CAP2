@@ -172,11 +172,11 @@ export default function FeatureDetailPage() {
           <div className="preservation-media">
             <img
               src="https://images.unsplash.com/photo-1516410529446-2c777cb7366d?auto=format&fit=crop&w=900&q=80"
-              alt="Tư liệu gia phả cổ"
+              alt={t("public.features.preservation.imageAlt1")}
             />
             <img
               src="https://images.unsplash.com/photo-1614064641938-3bbee52942c7?auto=format&fit=crop&w=900&q=80"
-              alt="Bảo mật dữ liệu số"
+              alt={t("public.features.preservation.imageAlt2")}
             />
           </div>
 

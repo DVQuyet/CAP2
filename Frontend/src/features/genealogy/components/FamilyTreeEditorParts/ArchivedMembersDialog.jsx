@@ -4,7 +4,7 @@ import { getArchivedMembersAPI, restoreArchivedMemberAPI, deleteArchivedMemberAP
 import { fullName } from "../../utils/tree-editor/treePersonUtils";
 
 export default function ArchivedMembersDialog({ people, onClose, onReload }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState("list"); // "list" or "archive"
   const [archivedList, setArchivedList] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -25,7 +25,7 @@ export default function ArchivedMembersDialog({ people, onClose, onReload }) {
       setArchivedList(Array.isArray(res) ? res : res?.items || res?.archived || res?.data || []);
     } catch (err) {
       console.error(err);
-      setError(err?.message || "Không thể lấy danh sách thành viên lưu trữ");
+      setError(err?.message || t("tree.archive.loadError"));
     } finally {
       setLoading(false);
     }
@@ -62,7 +62,7 @@ export default function ArchivedMembersDialog({ people, onClose, onReload }) {
   }, [people, archivedList]);
 
   const handleRestore = async (archiveId) => {
-    const ok = window.confirm("Bạn có chắc chắn muốn phục hồi thành viên này trở lại cây gia phả?");
+    const ok = window.confirm(t("tree.archive.confirmRestore"));
     if (!ok) return;
 
     setActionLoading(true);
@@ -73,14 +73,14 @@ export default function ArchivedMembersDialog({ people, onClose, onReload }) {
       await onReload?.();
       await fetchArchived();
     } catch (err) {
-      setError(err?.message || "Không thể phục hồi thành viên");
+      setError(err?.message || t("tree.archive.restoreError"));
     } finally {
       setActionLoading(false);
     }
   };
 
   const handleDeletePermanently = async (archiveId) => {
-    const ok = window.confirm("CẢNH BÁO: Hành động này sẽ xóa vĩnh viễn tài khoản và hồ sơ thành viên này khỏi hệ thống. Bạn có chắc muốn tiếp tục?");
+    const ok = window.confirm(t("tree.archive.confirmDeletePermanently"));
     if (!ok) return;
 
     setActionLoading(true);
@@ -89,7 +89,7 @@ export default function ArchivedMembersDialog({ people, onClose, onReload }) {
       await deleteArchivedMemberAPI(archiveId);
       await fetchArchived();
     } catch (err) {
-      setError(err?.message || "Không thể xóa vĩnh viễn thành viên");
+      setError(err?.message || t("tree.archive.deleteError"));
     } finally {
       setActionLoading(false);
     }
@@ -99,7 +99,7 @@ export default function ArchivedMembersDialog({ people, onClose, onReload }) {
     if (!filteredArchived.length) return;
 
     const ok = window.confirm(
-      `CẢNH BÁO: Hành động này sẽ xóa vĩnh viễn ${filteredArchived.length} bản ghi trong kho lưu trữ khỏi database. Không thể phục hồi. Bạn có chắc muốn tiếp tục?`
+      t("tree.archive.confirmDeleteAll", { count: filteredArchived.length })
     );
     if (!ok) return;
 
@@ -110,7 +110,7 @@ export default function ArchivedMembersDialog({ people, onClose, onReload }) {
       await onReload?.();
       await fetchArchived();
     } catch (err) {
-      setError(err?.message || "Không thể xóa tất cả bản ghi lưu trữ");
+      setError(err?.message || t("tree.archive.deleteAllError"));
     } finally {
       setActionLoading(false);
     }
@@ -119,16 +119,16 @@ export default function ArchivedMembersDialog({ people, onClose, onReload }) {
   const handleArchiveSubmit = async (e) => {
     e.preventDefault();
     if (!selectedAccountId) {
-      setError("Vui lòng chọn một thành viên để lưu trữ.");
+      setError(t("tree.archive.selectMemberRequired"));
       return;
     }
     if (!archiveReason.trim()) {
-      setError("Vui lòng nhập lý do lưu trữ.");
+      setError(t("tree.archive.reasonRequired"));
       return;
     }
 
     const memberName = activeMembersWithAccounts.find(m => Number(m.account_id) === Number(selectedAccountId))?.name;
-    const ok = window.confirm(`Bạn có chắc chắn muốn lưu trữ thành viên "${memberName}"? Họ sẽ bị ẩn khỏi cây phả hệ và bị khóa đăng nhập.`);
+    const ok = window.confirm(t("tree.archive.confirmArchive", { name: memberName }));
     if (!ok) return;
 
     setActionLoading(true);
@@ -141,7 +141,7 @@ export default function ArchivedMembersDialog({ people, onClose, onReload }) {
       await onReload?.();
       await fetchArchived();
     } catch (err) {
-      setError(err?.message || "Không thể lưu trữ thành viên");
+      setError(err?.message || t("tree.archive.archiveError"));
     } finally {
       setActionLoading(false);
     }
@@ -152,10 +152,10 @@ export default function ArchivedMembersDialog({ people, onClose, onReload }) {
       <div className="fte-modal fte-archiveDialog" role="dialog" aria-modal="true" onMouseDown={(e) => e.stopPropagation()}>
         <div className="fte-modalHeader">
           <div>
-            <span>Quản lý gia phả dòng họ</span>
-            <h3>Kho Lưu Trữ Thành Viên</h3>
+            <span>{t("tree.archive.kicker")}</span>
+            <h3>{t("tree.archive.title")}</h3>
           </div>
-          <button type="button" className="fte-iconButton" onClick={onClose} title={t("common.close") || "Đóng"}>
+          <button type="button" className="fte-iconButton" onClick={onClose} title={t("common.close")}>
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
@@ -167,7 +167,7 @@ export default function ArchivedMembersDialog({ people, onClose, onReload }) {
             onClick={() => { setActiveTab("list"); setError(""); }}
           >
             <span className="material-symbols-outlined">inventory_2</span>
-            Danh sách lưu trữ ({archivedList.length})
+            {t("tree.archive.tabList", { count: archivedList.length })}
           </button>
           <button 
             type="button" 
@@ -175,7 +175,7 @@ export default function ArchivedMembersDialog({ people, onClose, onReload }) {
             onClick={() => { setActiveTab("archive"); setError(""); }}
           >
             <span className="material-symbols-outlined">archive</span>
-            Đưa vào lưu trữ
+            {t("tree.archive.tabArchive")}
           </button>
         </div>
 
@@ -194,17 +194,17 @@ export default function ArchivedMembersDialog({ people, onClose, onReload }) {
                 className="fte-deleteAllPermanentlyBtn"
                 disabled={actionLoading || archivedList.length === 0}
                 onClick={handleDeleteAllPermanently}
-                title="Xóa vĩnh viễn tất cả bản ghi trong kho lưu trữ"
+                title={t("tree.archive.deleteAllTitle")}
               >
                 <span className="material-symbols-outlined">delete_sweep</span>
-                Xóa tất cả
+                {t("tree.archive.deleteAll")}
               </button>
             </div>
             <div className="fte-archiveSearch">
               <span className="material-symbols-outlined search-icon">search</span>
               <input 
                 type="text" 
-                placeholder="Tìm thành viên trong kho lưu trữ..." 
+                placeholder={t("tree.archive.searchPlaceholder")} 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -218,21 +218,21 @@ export default function ArchivedMembersDialog({ people, onClose, onReload }) {
             {loading ? (
               <div className="fte-archiveLoading">
                 <span className="material-symbols-outlined spinning-icon">sync</span>
-                Đang tải danh sách lưu trữ...
+                {t("tree.archive.loading")}
               </div>
             ) : filteredArchived.length === 0 ? (
               <div className="fte-archiveEmpty">
                 <span className="material-symbols-outlined">folder_open</span>
-                <p>{searchQuery ? "Không tìm thấy thành viên trùng khớp." : "Kho lưu trữ hiện tại đang trống."}</p>
+                <p>{searchQuery ? t("tree.archive.noMatch") : t("tree.archive.empty")}</p>
               </div>
             ) : (
               <div className="fte-archiveList">
                 {filteredArchived.map((item) => {
                   const personObj = typeof item.person_json === "string" ? JSON.parse(item.person_json) : item.person_json;
                   const accountObj = typeof item.account_json === "string" ? JSON.parse(item.account_json) : item.account_json;
-                  const name = personObj ? fullName(personObj) : "Thành viên";
-                  const email = accountObj?.email || item.email || "Không có email";
-                  const dateStr = item.archived_at ? new Date(item.archived_at).toLocaleString("vi-VN") : "Không rõ";
+                  const name = personObj ? fullName(personObj) : t("tree.archive.memberFallback");
+                  const email = accountObj?.email || item.email || t("tree.archive.noEmail");
+                  const dateStr = item.archived_at ? new Date(item.archived_at).toLocaleString(language === "en" ? "en-US" : "vi-VN") : t("tree.archive.unknownDate");
 
                   return (
                     <div key={item.id} className="fte-archiveItem">
@@ -243,11 +243,11 @@ export default function ArchivedMembersDialog({ people, onClose, onReload }) {
                         </div>
                         <div className="fte-archiveItemDetails">
                           <p>
-                            <strong>Lý do: </strong>
-                            <span className="reason-text">{item.archived_reason || "Không có lý do"}</span>
+                            <strong>{t("tree.archive.reasonLabel")}</strong>
+                            <span className="reason-text">{item.archived_reason || t("tree.archive.noReason")}</span>
                           </p>
                           <p className="archived-meta">
-                            <span>Lưu trữ lúc: {dateStr}</span>
+                            <span>{t("tree.archive.archivedAt", { date: dateStr })}</span>
                           </p>
                         </div>
                       </div>
@@ -257,20 +257,20 @@ export default function ArchivedMembersDialog({ people, onClose, onReload }) {
                           className="fte-restoreBtn" 
                           disabled={actionLoading}
                           onClick={() => handleRestore(item.id)}
-                          title="Phục hồi thành viên về cây phả hệ"
+                          title={t("tree.archive.restoreTitle")}
                         >
                           <span className="material-symbols-outlined">settings_backup_restore</span>
-                          Phục hồi
+                          {t("tree.archive.restore")}
                         </button>
                         <button 
                           type="button" 
                           className="fte-deletePermanentlyBtn" 
                           disabled={actionLoading}
                           onClick={() => handleDeletePermanently(item.id)}
-                          title="Xóa vĩnh viễn tài khoản và hồ sơ thành viên"
+                          title={t("tree.archive.deletePermanentlyTitle")}
                         >
                           <span className="material-symbols-outlined">delete_forever</span>
-                          Xóa vĩnh viễn
+                          {t("tree.archive.deletePermanently")}
                         </button>
                       </div>
                     </div>
@@ -282,17 +282,17 @@ export default function ArchivedMembersDialog({ people, onClose, onReload }) {
         ) : (
           <form className="fte-archiveForm" onSubmit={handleArchiveSubmit}>
             <div className="fte-archiveFormHelp">
-              Đưa thành viên có tài khoản vào kho lưu trữ. Họ sẽ bị ẩn khỏi sơ đồ cây gia phả, danh sách hoạt động, và bị khóa quyền đăng nhập vào hệ thống.
+              {t("tree.archive.formHelp")}
             </div>
 
             <label className="fte-archiveFormLabel">
-              Chọn thành viên cần lưu trữ
+              {t("tree.archive.selectMemberLabel")}
               <select 
                 value={selectedAccountId} 
                 onChange={(e) => setSelectedAccountId(e.target.value)}
                 required
               >
-                <option value="">-- Chọn thành viên --</option>
+                <option value="">{t("tree.archive.selectMemberOption")}</option>
                 {activeMembersWithAccounts.map((m) => (
                   <option key={m.account_id} value={m.account_id}>
                     {m.name} ({m.email})
@@ -302,12 +302,12 @@ export default function ArchivedMembersDialog({ people, onClose, onReload }) {
             </label>
 
             <label className="fte-archiveFormLabel">
-              Lý do lưu trữ
+              {t("tree.archive.reasonField")}
               <textarea 
                 rows={4}
                 value={archiveReason}
                 onChange={(e) => setArchiveReason(e.target.value)}
-                placeholder="Nhập lý do chi tiết..."
+                placeholder={t("tree.archive.reasonPlaceholder")}
                 required
               />
             </label>
@@ -319,7 +319,7 @@ export default function ArchivedMembersDialog({ people, onClose, onReload }) {
                 disabled={actionLoading || !selectedAccountId || !archiveReason.trim()}
               >
                 <span className="material-symbols-outlined">archive</span>
-                Lưu trữ ngay
+                {t("tree.archive.archiveNow")}
               </button>
             </div>
           </form>

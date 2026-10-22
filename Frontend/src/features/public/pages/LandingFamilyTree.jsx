@@ -1,12 +1,15 @@
+import { useTranslation } from "react-i18next";
+
 export default function LandingFamilyTree({ compact = false }) {
+  const { t } = useTranslation();
   const people = [
-    { className: "landing-tree-root", name: "THỦY TỔ NGUYỄN TRÍ", title: "Tổ Phúc Khánh", gen: "ĐỜI 1", life: "Sinh: 1800 - Mất: 1875" },
-    { className: "landing-tree-child", name: "NGUYỄN TRÍ CƯỜNG", title: "Cụ Ông", gen: "ĐỜI 2", life: "Sinh: 1830 - Mất: 1908" },
-    { className: "landing-tree-child", name: "NGUYỄN TRÍ NAM", title: "Cụ Ông", gen: "ĐỜI 2", life: "Sinh: 1850 - Mất: 1920" },
+    { className: "landing-tree-root", name: "THỦY TỔ NGUYỄN TRÍ", title: t("public.landingTree.rootTitle"), gen: t("public.landingTree.generation", { n: 1 }), life: t("public.landingTree.life", { birth: 1800, death: 1875 }) },
+    { className: "landing-tree-child", name: "NGUYỄN TRÍ CƯỜNG", title: t("public.landingTree.elder"), gen: t("public.landingTree.generation", { n: 2 }), life: t("public.landingTree.life", { birth: 1830, death: 1908 }) },
+    { className: "landing-tree-child", name: "NGUYỄN TRÍ NAM", title: t("public.landingTree.elder"), gen: t("public.landingTree.generation", { n: 2 }), life: t("public.landingTree.life", { birth: 1850, death: 1920 }) },
   ];
 
   return (
-    <div className={`landing-tree-mockup${compact ? " compact" : ""}`} aria-label="Mẫu sơ đồ gia phả minh họa">
+    <div className={`landing-tree-mockup${compact ? " compact" : ""}`} aria-label={t("public.landingTree.ariaLabel")}>
       <div className="landing-tree-root-wrap">
         <article className={`landing-person-card ${people[0].className}`}>
           <div className="landing-person-icon"><span className="material-symbols-outlined">person</span></div>

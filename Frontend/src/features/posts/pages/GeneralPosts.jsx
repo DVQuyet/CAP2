@@ -89,8 +89,8 @@ function PostCard({ post, onOpen, onLike, liking, onDelete, onEdit, canModify, t
         </button>
         {canModify && (
           <div className="feed-post-card-actions">
-            <button type="button" className="feed-post-action-btn" onClick={() => onEdit(post)} title="Sửa"><span className="material-symbols-outlined">edit</span></button>
-            <button type="button" className="feed-post-action-btn is-danger" onClick={() => onDelete(post.id)} title="Xóa"><span className="material-symbols-outlined">delete</span></button>
+            <button type="button" className="feed-post-action-btn" onClick={() => onEdit(post)} title={t("posts.card.edit")}><span className="material-symbols-outlined">edit</span></button>
+            <button type="button" className="feed-post-action-btn is-danger" onClick={() => onDelete(post.id)} title={t("posts.card.delete")}><span className="material-symbols-outlined">delete</span></button>
           </div>
         )}
       </header>
@@ -163,7 +163,7 @@ function AddPostModal({ form, error, notice, submitting, onChange, onClose, onSu
             <h2>{t("posts.modal.create.title")}</h2>
             <p>{t("posts.modal.create.subtitle")}</p>
           </div>
-          <button type="button" className="post-icon-btn" onClick={onClose} aria-label={t("common.close") || "Close"}>
+          <button type="button" className="post-icon-btn" onClick={onClose} aria-label={t("common.close")}>
             <span className="material-symbols-outlined">close</span>
           </button>
         </header>
@@ -567,13 +567,13 @@ export default function GeneralPosts() {
   };
 
   const handleDeletePost = async (postId) => {
-    if (!window.confirm("Bạn có chắc muốn xóa bài đăng này không?")) return;
+    if (!window.confirm(t("posts.messages.confirmDelete"))) return;
     try {
       await deletePost(postId);
       setPosts((prev) => prev.filter((p) => p.id !== postId));
       if (selectedPost?.id === postId) setSelectedPost(null);
     } catch (err) {
-      setError(err?.message || "Không thể xóa bài đăng.");
+      setError(err?.message || t("posts.messages.deleteError"));
     }
   };
 
@@ -584,7 +584,7 @@ export default function GeneralPosts() {
       setPosts((prev) => prev.map((p) => p.id === editingPost.id ? { ...p, description: editingPost.description, content: editingPost.content } : p));
       setEditingPost(null);
     } catch (err) {
-      setError(err?.message || "Không thể cập nhật bài đăng.");
+      setError(err?.message || t("posts.messages.updateError"));
     }
   };
 
@@ -724,21 +724,21 @@ export default function GeneralPosts() {
         <div className="post-modal-backdrop" onMouseDown={() => setEditingPost(null)}>
           <section className="post-modal post-compose-modal" role="dialog" aria-modal="true" onMouseDown={(e) => e.stopPropagation()}>
             <header className="post-modal-head">
-              <h2>Sửa bài đăng</h2>
+              <h2>{t("posts.modal.edit.title")}</h2>
               <button type="button" className="post-icon-btn" onClick={() => setEditingPost(null)}><span className="material-symbols-outlined">close</span></button>
             </header>
             <div className="post-compose-form">
               <label className="post-field">
-                <span>Tiêu đề</span>
+                <span>{t("posts.modal.edit.titleField")}</span>
                 <input value={editingPost.description} onChange={(e) => setEditingPost((p) => ({ ...p, description: e.target.value }))} />
               </label>
               <label className="post-field">
-                <span>Nội dung</span>
+                <span>{t("posts.modal.edit.contentField")}</span>
                 <textarea rows={6} value={editingPost.content} onChange={(e) => setEditingPost((p) => ({ ...p, content: e.target.value }))} />
               </label>
               <div className="post-form-actions">
-                <button type="button" className="post-secondary-btn" onClick={() => setEditingPost(null)}>Hủy</button>
-                <button type="button" className="post-primary-btn" onClick={handleSaveEditPost}>Lưu</button>
+                <button type="button" className="post-secondary-btn" onClick={() => setEditingPost(null)}>{t("common.cancel")}</button>
+                <button type="button" className="post-primary-btn" onClick={handleSaveEditPost}>{t("common.save")}</button>
               </div>
             </div>
           </section>

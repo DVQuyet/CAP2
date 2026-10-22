@@ -8,10 +8,7 @@ const Waiting = () => {
     <div className="waiting-page" data-no-translate="true">
       <div className="waiting-card">
         <h2>{t("auth.waiting.title")}</h2>
-        <p>
-          Tài khoản của bạn đã được tạo. Vui lòng chờ quản trị viên dòng họ
-          duyệt quyền truy cập.
-        </p>
+        <p>{t("auth.waiting.message")}</p>
         <Link to="/login">{t("auth.waiting.backToLogin")}</Link>
       </div>
     </div>

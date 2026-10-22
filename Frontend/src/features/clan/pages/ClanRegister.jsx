@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import "./clanRegister.css";
 import { registerClanManagerAPI } from "../../../api/authService";
 import DateInput from "../../../shared/components/DateInput";
@@ -9,6 +10,7 @@ import privacyText from "./privacy.txt?raw";
 import { notify } from "../../../shared/utils/toast";
 
 const ClanRegister = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -33,10 +35,10 @@ const ClanRegister = () => {
 
   const openModal = (type) => {
     if (type === "terms") {
-      setModalTitle("Điều khoản sử dụng");
+      setModalTitle(t("clan.register.termsTitle"));
       setModalContent(termsText);
     } else if (type === "privacy") {
-      setModalTitle("Chính sách bảo mật");
+      setModalTitle(t("clan.register.privacyTitle"));
       setModalContent(privacyText);
     }
     setModalOpen(true);
@@ -53,7 +55,7 @@ const ClanRegister = () => {
     setError("");
 
     if (!clanName || String(clanName).trim() === "") {
-      setError("Vui lòng nhập tên dòng họ");
+      setError(t("clan.register.clanNameRequired"));
       return;
     }
 
@@ -98,12 +100,12 @@ const ClanRegister = () => {
     setError("");
 
     if (!clanName || String(clanName).trim() === "") {
-      setError("Tên dòng họ bị mất, vui lòng quay lại bước trước");
+      setError(t("clan.register.clanNameMissing"));
       return;
     }
 
     if (managerForm.password !== managerForm.confirm_password) {
-      setError("Mật khẩu xác nhận không khớp");
+      setError(t("clan.register.passwordMismatch"));
       return;
     }
 
@@ -119,11 +121,11 @@ const ClanRegister = () => {
       });
 
       if (res.success) {
-        notify("Đăng ký dòng họ và tài khoản Trưởng họ thành công!");
+        notify(t("clan.register.success"));
         navigate("/login");
       }
     } catch (err) {
-      setError(err.message || "Lỗi trong quá trình tạo dòng họ và quản lý");
+      setError(err.message || t("clan.register.failed"));
     } finally {
       setLoading(false);
     }
@@ -132,14 +134,14 @@ const ClanRegister = () => {
   return (
     <div className="clan-register-page">
       <Link to="/" className="back-btn">
-        ← Về trang chủ
+        ← {t("navigation.backHome")}
       </Link>
 
       <div className="clan-register-container">
         {step === 1 ? (
           <>
-            <h2>Tạo dòng họ mới</h2>
-            <p className="subtitle">Nhập tên dòng họ của bạn.</p>
+            <h2>{t("clan.register.newClanTitle")}</h2>
+            <p className="subtitle">{t("clan.register.newClanSubtitle")}</p>
 
             {error && <div className="error-box">{error}</div>}
 
@@ -147,25 +149,25 @@ const ClanRegister = () => {
               <input
                 name="clan_name"
                 value={clanName}
-                placeholder="Tên dòng họ"
+                placeholder={t("clan.register.clanNamePlaceholder")}
                 onChange={(e) => setClanName(e.target.value)}
                 required
               />
 
               <button type="submit" className="submit-btn">
-                Tiếp theo: Đăng ký tài khoản
+                {t("clan.register.nextStep")}
               </button>
             </form>
 
             <p className="footer-link">
-              Đã có tài khoản? <Link to="/login">Đăng nhập</Link>
+              {t("auth.register.hasAccount")} <Link to="/login">{t("common.login")}</Link>
             </p>
           </>
         ) : (
           <>
-            <h2>Tạo tài khoản Trưởng họ cho dòng họ</h2>
+            <h2>{t("clan.register.managerTitle")}</h2>
             <h2>"{clanName}"</h2>
-            <p className="subtitle">Người đăng ký sẽ được gán quyền "Trưởng họ" của dòng họ này.</p>
+            <p className="subtitle">{t("clan.register.managerSubtitle")}</p>
 
             {error && <div className="error-box">{error}</div>}
 
@@ -173,7 +175,7 @@ const ClanRegister = () => {
               <input
                 name="display_name"
                 value={managerForm.display_name}
-                placeholder="Họ tên đầy đủ"
+                placeholder={t("clan.register.fullNamePlaceholder")}
                 onChange={handleFullNameChange}
                 required
               />
@@ -182,20 +184,20 @@ const ClanRegister = () => {
                 <input
                   name="surname"
                   value={managerForm.surname}
-                  placeholder="Họ"
+                  placeholder={t("auth.register.surname")}
                   onChange={handleManagerChange}
                   required
                 />
                 <input
                   name="middle_name"
                   value={managerForm.middle_name}
-                  placeholder="Tên đệm"
+                  placeholder={t("auth.register.middleName")}
                   onChange={handleManagerChange}
                 />
                 <input
                   name="first_name"
                   value={managerForm.first_name}
-                  placeholder="Tên"
+                  placeholder={t("auth.register.firstName")}
                   onChange={handleManagerChange}
                   required
                 />
@@ -203,8 +205,8 @@ const ClanRegister = () => {
 
               <div className="input-row">
                 <select name="gender" value={managerForm.gender} onChange={handleManagerChange} required>
-                  <option value="1">Nam</option>
-                  <option value="2">Nữ</option>
+                  <option value="1">{t("auth.register.male")}</option>
+                  <option value="2">{t("auth.register.female")}</option>
                 </select>
                 <DateInput
                   name="birth_date"
@@ -217,7 +219,7 @@ const ClanRegister = () => {
               <input
                 name="email"
                 value={managerForm.email}
-                placeholder="Email đăng nhập"
+                placeholder={t("auth.register.emailPlaceholder")}
                 type="email"
                 onChange={handleManagerChange}
                 required
@@ -227,7 +229,7 @@ const ClanRegister = () => {
                 name="password"
                 value={managerForm.password}
                 type="password"
-                placeholder="Mật khẩu"
+                placeholder={t("auth.register.passwordPlaceholder")}
                 onChange={handleManagerChange}
                 required
               />
@@ -236,7 +238,7 @@ const ClanRegister = () => {
                 name="confirm_password"
                 value={managerForm.confirm_password}
                 type="password"
-                placeholder="Xác nhận mật khẩu"
+                placeholder={t("auth.invite.confirmPassword")}
                 onChange={handleManagerChange}
                 required
               />
@@ -244,7 +246,7 @@ const ClanRegister = () => {
               <input
                 name="hometown"
                 value={managerForm.hometown}
-                placeholder="Quê quán"
+                placeholder={t("auth.register.hometownPlaceholder")}
                 onChange={handleManagerChange}
                 required
               />
@@ -252,7 +254,7 @@ const ClanRegister = () => {
               <div className="checkbox-group">
                 <input type="checkbox" id="terms" required />
                 <label htmlFor="terms">
-                  Tôi đồng ý
+                  {t("auth.register.agreePrefix")}
                   <a
                     href="#"
                     className="policy-link"
@@ -262,9 +264,9 @@ const ClanRegister = () => {
                     }}
                   >
                     {" "}
-                    Điều khoản sử dụng
+                    {t("auth.register.terms")}
                   </a>
-                  và
+                  {t("auth.register.and")}
                   <a
                     href="#"
                     className="policy-link"
@@ -274,24 +276,24 @@ const ClanRegister = () => {
                     }}
                   >
                     {" "}
-                    Chính sách bảo mật
+                    {t("auth.register.privacy")}
                   </a>
                 </label>
               </div>
 
               <button type="submit" className="submit-btn" disabled={loading}>
-                {loading ? "Đang xử lý..." : "Hoàn tất đăng ký"}
+                {loading ? t("clan.register.processing") : t("clan.register.finish")}
               </button>
             </form>
 
             <p className="footer-link">
               <button type="button" className="link-button" onClick={() => setStep(1)}>
-                ← Quay về bước trước
+                {t("clan.register.backToStep")}
               </button>
             </p>
 
             <p className="footer-link">
-              Đã có tài khoản? <Link to="/login">Đăng nhập</Link>
+              {t("auth.register.hasAccount")} <Link to="/login">{t("common.login")}</Link>
             </p>
           </>
         )}
