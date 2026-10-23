@@ -4011,3 +4011,42 @@ body.fte-bodyFullscreen {
 
 /* Toolbar repair: override older desktop ordering and prevent right-side overflow. */
 
+
+/* Nút thu gọn/mở nhánh luôn hiện trên thẻ có con cháu; vùng chạm mở rộng tới 32px. */
+.fte-branchToggle {
+    position: absolute;
+    right: 6px;
+    bottom: 4px;
+    z-index: 9;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 6px;
+    border: 1px solid rgba(183, 106, 66, 0.5);
+    border-radius: 999px;
+    background: rgba(255, 250, 243, 0.96);
+    color: #7b5338;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1;
+    display: inline-grid;
+    place-items: center;
+    cursor: pointer;
+}
+
+.fte-branchToggle::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    min-width: 32px;
+    min-height: 32px;
+}
+
+.fte-branchToggle.is-collapsed {
+    background: #8b1e13;
+    border-color: #8b1e13;
+    color: #fff;
+}
+
+.fte-branchToggle .material-symbols-outlined {
+    font-size: 18px;
+}

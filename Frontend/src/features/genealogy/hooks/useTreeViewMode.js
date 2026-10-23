@@ -1,13 +1,36 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { computeDefaultCollapseState, computeExpandForTarget, loadCollapseState, saveCollapseState } from "../utils/tree-editor/treeCollapse";
 import { buildFamilyIndexes, filterTreeData, getAncestorPathIds, getDescendantIds, getHiddenDescendantIds, getRelatedRootViewIds } from "../utils/treeFilter";
 
 const asArray = (value) => (Array.isArray(value) ? value : []);
 
-export function useTreeViewMode({ people = [], families = [], childRows = [] }) {
+export function useTreeViewMode({ people = [], families = [], childRows = [], storageKey = null, selfPersonId = null }) {
   const [mode, setMode] = useState("full");
   const [rootPersonId, setRootPersonId] = useState(null);
   const [collapsedIds, setCollapsedIds] = useState(() => new Set());
   const [hiddenAncestorIds, setHiddenAncestorIds] = useState(() => new Set());
+
+  // Khởi tạo một lần cho mỗi khóa (người dùng + dòng họ): đọc trạng thái đã nhớ, không có thì mặc định 3 đời quanh "tôi".
+  const [initKey, setInitKey] = useState(null);
+  if (storageKey && initKey !== storageKey && asArray(people).length) {
+    const state = loadCollapseState(storageKey, people) || computeDefaultCollapseState({ people, families, childRows, selfId: selfPersonId });
+    setCollapsedIds(state.collapsed);
+    setHiddenAncestorIds(state.hiddenAncestors);
+    setInitKey(storageKey);
+  }
+  useEffect(() => {
+    if (storageKey && initKey === storageKey) saveCollapseState(storageKey, { collapsed: collapsedIds, hiddenAncestors: hiddenAncestorIds });
+  }, [collapsedIds, hiddenAncestorIds, initKey, storageKey]);
+
+  const expandAll = useCallback(() => {
+    setCollapsedIds(new Set());
+    setHiddenAncestorIds(new Set());
+  }, []);
+  const resetCollapse = useCallback(() => {
+    const state = computeDefaultCollapseState({ people, families, childRows, selfId: selfPersonId });
+    setCollapsedIds(state.collapsed);
+    setHiddenAncestorIds(state.hiddenAncestors);
+  }, [childRows, families, people, selfPersonId]);
 
   const baseVisibleIds = useMemo(() => {
     if (mode === "root" && rootPersonId) {
@@ -81,16 +104,16 @@ export function useTreeViewMode({ people = [], families = [], childRows = [] }) 
   }, [childRows, families, people]);
 
   const expandPathToPerson = useCallback((personId) => {
-    const path = getAncestorPathIds(personId, people, families, childRows);
-    if (!path.size) return;
+    const target = computeExpandForTarget(personId, people, families, childRows);
+    if (!target.hiddenAncestors.size) return;
     setCollapsedIds((current) => {
       const next = new Set(current);
-      path.forEach((id) => next.delete(id));
+      target.collapse.forEach((id) => next.delete(id));
       return next;
     });
     setHiddenAncestorIds((current) => {
       const next = new Set(current);
-      path.forEach((id) => next.delete(id));
+      target.hiddenAncestors.forEach((id) => next.delete(id));
       return next;
     });
   }, [childRows, families, people]);
@@ -107,5 +130,7 @@ export function useTreeViewMode({ people = [], families = [], childRows = [] }) 
     toggleDescendantBranch,
     toggleAncestorBranch,
     expandPathToPerson,
+    expandAll,
+    resetCollapse,
   };
 }

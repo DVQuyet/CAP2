@@ -9,6 +9,7 @@ function PersonHalf({
   selected,
   directLineage,
   hasChildren,
+  descendantCount = 0,
   hasAncestors,
   descendantsCollapsed,
   ancestorsCollapsed,
@@ -35,6 +36,18 @@ function PersonHalf({
       data-person-id={person?.id || ""}
       title={[name, directLineage ? t("tree.card.directLineageHint") : t("tree.card.inLawHint")].join("\n")}
     >
+      {person && hasChildren ? (
+        <button
+          type="button"
+          className={`fte-branchToggle ${descendantsCollapsed ? "is-collapsed" : ""}`}
+          title={descendantsCollapsed ? t("tree.card.branchBadge", { count: descendantCount }) : t("tree.card.branchCollapse")}
+          aria-expanded={!descendantsCollapsed}
+          onPointerDown={stopActionPointer}
+          onClick={(event) => { event.stopPropagation(); onToggleDescendants?.(person.id); }}
+        >
+          {descendantsCollapsed ? <span>+{descendantCount}</span> : <span className="material-symbols-outlined" aria-hidden="true">expand_more</span>}
+        </button>
+      ) : null}
       {person && (hasChildren || hasAncestors) ? (
         <div className="fte-coupleHalfActions">
           {hasChildren ? (
@@ -156,6 +169,7 @@ export default function CoupleCard({
         selected={orderedHalves[0].selected}
         directLineage={orderedHalves[0].directLineage}
         hasChildren={orderedHalves[0].lineage?.hasDescendants}
+        descendantCount={orderedHalves[0].lineage?.descendantIds?.length}
         hasAncestors={orderedHalves[0].lineage?.hasAncestors}
         descendantsCollapsed={orderedHalves[0].descendantsCollapsed}
         ancestorsCollapsed={orderedHalves[0].ancestorsCollapsed}
@@ -174,6 +188,7 @@ export default function CoupleCard({
         selected={orderedHalves[1].selected}
         directLineage={orderedHalves[1].directLineage}
         hasChildren={orderedHalves[1].lineage?.hasDescendants}
+        descendantCount={orderedHalves[1].lineage?.descendantIds?.length}
         hasAncestors={orderedHalves[1].lineage?.hasAncestors}
         descendantsCollapsed={orderedHalves[1].descendantsCollapsed}
         ancestorsCollapsed={orderedHalves[1].ancestorsCollapsed}

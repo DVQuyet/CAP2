@@ -25,6 +25,7 @@ import { clearCardSizes, clearLineRoutes, getCardSize, loadCardSizes, loadLineRo
 import { dedupePeopleByAccount, remapChildrenByPeople, remapFamiliesByPeople } from "../utils/tree-editor/treeNormalize";
 import { autoLayoutPeople, computeReferencePlacements, findFounderIds, generationY, mergeManualAndAutoLayout } from "../utils/tree-editor/treeLayout";
 import ReferenceCard from "./ReferenceCard";
+import { buildCollapseStorageKey, resolveSelfPersonId } from "../utils/tree-editor/treeCollapse";
 import { parseTreeFocusParams, TREE_FOCUS_EVENT } from "../utils/treeFocusParams";
 import GenealogyAuditDialog from "./FamilyTreeEditorParts/GenealogyAuditDialog";
 import { blankCreateForm, buildCreateRelationFields, buildLinkPayload, defaultRelationOptions, findParentFamilyForChild, findSpouse, findSpouseFamily, getChildOrderMapForFamily, getChildrenForFamily, getFamiliesForPerson, relationCandidates, relationLinkedIds } from "../utils/tree-editor/treeRelations";
@@ -953,10 +954,13 @@ const coupleActionPerson = useMemo(
     [allowedNodeSet, canEditAll, canEditLimited],
   );
   const treeSearch = useTreeSearch(people);
+  const collapseStorageKey = buildCollapseStorageKey(currentAccount?.account_id ?? currentAccount?.accountId ?? currentAccount?.id, clan?.id);
   const treeViewMode = useTreeViewMode({
     people,
     families: canonicalTree.families,
     childRows: canonicalTree.childRows,
+    storageKey: collapseStorageKey,
+    selfPersonId: resolveSelfPersonId(currentAccount, people),
   });
   const treeRealtime = useTreeRealtime({
     clanId: clan?.id,
@@ -1000,6 +1004,10 @@ const coupleActionPerson = useMemo(
   );
   const displayNodes = displayTree.nodes;
   const displayNodeByPersonId = displayTree.nodeByPersonId;
+  const displayNodeByPersonIdRef = useRef(displayNodeByPersonId);
+  useEffect(() => {
+    displayNodeByPersonIdRef.current = displayNodeByPersonId;
+  }, [displayNodeByPersonId]);
 
   useEffect(() => {
     if (!import.meta.env.DEV) return;
@@ -1265,7 +1273,7 @@ const coupleActionPerson = useMemo(
     const id = Number(personId);
     if (!Number.isFinite(id) || id <= 0) return false;
     const target = renderPersonById.get(id) || people.find((person) => Number(person.id) === id);
-    const targetNode = displayNodeByPersonId.get(id);
+    const initialTargetNode = displayNodeByPersonId.get(id);
     if (!target) return false;
     treeViewMode.expandPathToPerson(id);
     setSelectedType("person");
@@ -1285,6 +1293,7 @@ const coupleActionPerson = useMemo(
       if (api?.setTransform && viewport) {
         const rect = viewport.getBoundingClientRect();
         const nextScale = options.scale || 1.25;
+        const targetNode = displayNodeByPersonIdRef.current.get(id) || initialTargetNode;
         const targetCenterX = targetNode ? targetNode.x + targetNode.width / 2 : toInt(target.tree_x, 0) + CARD_WIDTH / 2;
         const targetCenterY = targetNode ? targetNode.y + targetNode.height / 2 : toInt(target.tree_y, 0) + CARD_HEIGHT / 2;
         const nextX = rect.width / 2 - targetCenterX * nextScale;
@@ -3124,6 +3133,14 @@ const submitCreateDialog = async () => {
     { key: "export", icon: "download", label: t("tree.toolbar.exportPng"), onClick: openExportDialog, disabled: busy },
   ];
   const toolbarToolGroups = [
+    {
+      key: "branches",
+      label: t("tree.toolbar.groupBranches"),
+      items: [
+        { key: "expandAll", icon: "unfold_more", label: t("tree.toolbar.expandAll"), onClick: treeViewMode.expandAll },
+        { key: "collapseDefault", icon: "unfold_less", label: t("tree.toolbar.collapseDefault"), onClick: treeViewMode.resetCollapse },
+      ],
+    },
     {
       key: "layout",
       label: t("tree.toolbar.groupLayout"),
