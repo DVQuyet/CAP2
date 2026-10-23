@@ -4049,4 +4049,42 @@ body.fte-bodyFullscreen {
 
 .fte-branchToggle .material-symbols-outlined {
     font-size: 18px;
+
+.fte-exportModal.is-compact {
+    width: min(440px, 100%);
+}
+
+.fte-exportHint {
+    color: #73512c;
+}
+
+.fte-exportProgress {
+    position: relative;
+    height: 22px;
+    margin-top: 14px;
+    border-radius: 999px;
+    background: #f3e6c8;
+    overflow: hidden;
+}
+
+.fte-exportProgress span {
+    position: absolute;
+    inset: 0 auto 0 0;
+    background: #7c9b8a;
+    transition: width 0.25s ease;
+}
+
+.fte-exportProgress small {
+    position: relative;
+    display: block;
+    text-align: center;
+    line-height: 22px;
+    color: #311b08;
+    font-weight: 700;
+}
+
+.fte-exportError {
+    margin: 12px 0 0;
+    color: #a1261b;
+    font-weight: 700;
 }

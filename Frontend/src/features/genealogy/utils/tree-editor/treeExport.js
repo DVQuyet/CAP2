@@ -1,13 +1,13 @@
-import { CARD_HEIGHT, CARD_WIDTH, CHILD_LINE_COLOR, LINE_COLOR, MAIN_LINE_WIDTH, SPOUSE_LINE_COLOR } from "./treeConstants";
-import { DEFAULT_TREE_EXPORT_OPTIONS, TREE_EXPORT_CONFIG, TREE_EXPORT_DETAIL_CONFIG, TREE_EXPORT_FORMAT, TREE_EXPORT_MODE, TREE_EXPORT_OVERVIEW_CONFIG } from "./treeExportConfig";
-import { asArray, formatDisplayDate, fullName, toInt } from "./treePersonUtils";
-import { getCardSize } from "./treeStorage";
-import { numbersFromPath } from "./treeLines";
-import { DISPLAY_NODE_TYPE, buildDisplayTree, buildDisplayTreeLines } from "./treeDisplayNodes";
+import { DEFAULT_TREE_EXPORT_OPTIONS, TREE_EXPORT_FORMAT, TREE_EXPORT_MODE } from "./treeExportConfig";
+import { asArray } from "./treePersonUtils";
+import { buildDisplayTree, buildDisplayTreeLines } from "./treeDisplayNodes";
 import { TREE_CARD_ORIENTATION, TREE_THEME, TREE_THEMES } from "./treeDisplayConfig";
-import { EXPORT_FRAME_PADDING, drawDecorativeFrame, drawThemedLine, drawThemedNode, drawThemedTitle, paletteFor } from "./treeExportTheme";
+import { computeContentBounds, decideRasterScale, exportFileName, normalizeExportScale } from "./treeExportMath";
+import { buildTreeSvg } from "./treeExportSvg";
+import { loadEmbeddedFontCss, svgToPngBlob, waitForExportFonts } from "./treeExportRaster";
 
-const EXPORT_FONT_FAMILY = TREE_EXPORT_CONFIG.fontFamily;
+export { exportFileName };
+
 const DEFAULT_EXPORT_TREE_STYLE = {
   cardOrientation: TREE_CARD_ORIENTATION.HORIZONTAL,
   theme: TREE_THEME.TRADITIONAL,
@@ -33,70 +33,6 @@ function normalizeExportTreeStyle(value = {}) {
   };
 }
 
-function withTreeStyleFont(config = TREE_EXPORT_DETAIL_CONFIG, treeStyle = DEFAULT_EXPORT_TREE_STYLE) {
-  const fontSize = Number(treeStyle.fontSize);
-  if (!Number.isFinite(fontSize)) return config;
-  const metaFontSize = Math.max(9, Math.round(fontSize * 0.7));
-  return {
-    ...config,
-    nameFontSize: fontSize,
-    singleNameFontSize: fontSize,
-    metaFontSize,
-    singleMetaFontSize: metaFontSize,
-  };
-}
-
-function getExportCardSize(cardSizes = {}, personId, config = TREE_EXPORT_DETAIL_CONFIG) {
-  const raw = cardSizes?.[Number(personId)];
-  if (raw && typeof raw === "object") {
-    const width = Number(raw.width);
-    const height = Number(raw.height);
-    return {
-      width: Number.isFinite(width) && width > 0 ? width : config.cardWidth || CARD_WIDTH,
-      height: Number.isFinite(height) && height > 0 ? height : config.cardHeight || CARD_HEIGHT,
-    };
-  }
-  if (cardSizes && Object.keys(cardSizes).length) return getCardSize(cardSizes, personId);
-  return {
-    width: config.cardWidth || CARD_WIDTH,
-    height: config.cardHeight || CARD_HEIGHT,
-  };
-}
-
-function escapeXml(value) {
-  return String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-function slug(value, fallback = "gia-pha") {
-  const normalized = String(value || fallback)
-    .trim()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[\\/:*?"<>|]+/g, "-")
-    .replace(/\s+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "")
-    .toLowerCase();
-  return normalized || fallback;
-}
-
-function timestampName(date = new Date()) {
-  const yyyy = date.getFullYear();
-  const MM = String(date.getMonth() + 1).padStart(2, "0");
-  const dd = String(date.getDate()).padStart(2, "0");
-  const hh = String(date.getHours()).padStart(2, "0");
-  const mm = String(date.getMinutes()).padStart(2, "0");
-  return `${yyyy}${MM}${dd}-${hh}${mm}`;
-}
-
-export function exportFileName(familyName, extension = "png") {
-  return `gia-pha-${slug(familyName)}-${timestampName()}.${String(extension || "png").replace(/^\./, "")}`;
-}
-
 export function downloadBlob(blob, fileName) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -108,471 +44,77 @@ export function downloadBlob(blob, fileName) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-export async function saveCanvasImage(blob, fileName) {
-  const safeFileName = fileName || exportFileName("gia-pha", "png");
-  downloadBlob(blob, safeFileName);
-  return "downloaded";
-}
-
-export function canvasToBlob(canvas, t, type = "image/png", quality = 0.96) {
-  return new Promise((resolve, reject) => {
-    try {
-      canvas.toBlob((blob) => {
-        if (blob) resolve(blob);
-        else reject(new Error(t ? t("tree.messages.exportError") : "Export failed"));
-      }, type, quality);
-    } catch (error) {
-      reject(error);
-    }
-  });
-}
-
-export function drawRoundRect(ctx, x, y, width, height, radius = 8) {
-  const r = Math.max(0, Math.min(radius, width / 2, height / 2));
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + width - r, y);
-  ctx.quadraticCurveTo(x + width, y, x + width, y + r);
-  ctx.lineTo(x + width, y + height - r);
-  ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
-  ctx.lineTo(x + r, y + height);
-  ctx.quadraticCurveTo(x, y + height, x, y + height - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
-}
-
-function splitTextToLines(ctx, text, maxWidth, maxLines = 2) {
-  const words = String(text || "").trim().split(/\s+/).filter(Boolean);
-  if (!words.length) return [];
-  const lines = [];
-  let current = "";
-  words.forEach((word) => {
-    const next = current ? `${current} ${word}` : word;
-    if (!current || ctx.measureText(next).width <= maxWidth) {
-      current = next;
-      return;
-    }
-    lines.push(current);
-    current = word;
-  });
-  if (current) lines.push(current);
-  if (lines.length <= maxLines) return lines;
-
-  const clipped = lines.slice(0, maxLines);
-  let last = clipped[maxLines - 1];
-  while (last.length > 1 && ctx.measureText(`${last}...`).width > maxWidth) {
-    last = last.slice(0, -1).trim();
-  }
-  clipped[maxLines - 1] = `${last || clipped[maxLines - 1].slice(0, 1)}...`;
-  return clipped;
-}
-
-function splitSvgText(text, maxChars = 24, maxLines = 2) {
-  const words = String(text || "").trim().split(/\s+/).filter(Boolean);
-  const lines = [];
-  let current = "";
-  words.forEach((word) => {
-    const next = current ? `${current} ${word}` : word;
-    if (next.length <= maxChars || !current) {
-      current = next;
-      return;
-    }
-    lines.push(current);
-    current = word;
-  });
-  if (current) lines.push(current);
-  if (lines.length <= maxLines) return lines;
-  const clipped = lines.slice(0, maxLines);
-  clipped[maxLines - 1] = `${clipped[maxLines - 1].slice(0, Math.max(1, maxChars - 3)).trim()}...`;
-  return clipped;
-}
-
-function yearOnly(value) {
-  const match = String(value || "").match(/\d{4}/);
-  return match ? match[0] : "";
-}
-
-export function drawSvgPathFallback(ctx, pathText) {
-  const nums = numbersFromPath(pathText);
-  if (nums.length < 4) return;
-  ctx.beginPath();
-  ctx.moveTo(nums[0], nums[1]);
-  for (let index = 2; index < nums.length; index += 2) {
-    if (Number.isFinite(nums[index]) && Number.isFinite(nums[index + 1])) {
-      ctx.lineTo(nums[index], nums[index + 1]);
-    }
-  }
-  ctx.stroke();
-}
-
-function strokeTreePath(ctx, pathText) {
-  try {
-    ctx.stroke(new Path2D(pathText));
-  } catch {
-    drawSvgPathFallback(ctx, pathText);
-  }
-}
-
-export function drawTreeLine(ctx, line, exportConfig = TREE_EXPORT_DETAIL_CONFIG) {
-  if (!line?.d || line.type === "route-control") return;
-  ctx.save();
-  ctx.fillStyle = "transparent";
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  ctx.strokeStyle = line.type === "spouse" ? SPOUSE_LINE_COLOR : line.color || CHILD_LINE_COLOR || LINE_COLOR;
-  ctx.globalAlpha = line.type === "spouse" ? 0.9 : line.branchLevel === 0 ? 0.96 : 0.82;
-  ctx.lineWidth = line.type === "spouse" ? exportConfig.lineWidth : line.branchLevel === 0 ? Math.max(exportConfig.lineWidth, MAIN_LINE_WIDTH) : exportConfig.lineWidth;
-  strokeTreePath(ctx, line.d);
-  ctx.restore();
-}
-
-function drawExportCard(ctx, person, cardSizes, config, t, options = {}) {
-  const size = getExportCardSize(cardSizes, person.id, config);
-  const x = toInt(person.tree_x, 0);
-  const y = toInt(person.tree_y, 0);
-  const width = size.width;
-  const height = size.height;
-  const name = fullName(person, t ? t("tree.card.fallbackName") : "Thành viên");
-  const birthText = yearOnly(person.birth_date || formatDisplayDate(person.birth_date));
-  const deathText = yearOnly(person.death_date || formatDisplayDate(person.death_date));
-  const deceased = Number(person.is_living) === 0;
-  const lifeText = birthText && deceased && deathText ? `${birthText}-${deathText}` : birthText || (deceased ? deathText : "");
-  const generationText = t ? t("tree.card.generation", { count: person.generation || 1 }) : `Đời ${person.generation || 1}`;
-  const metaItems = [
-    generationText,
-    lifeText,
-    person.branch ? `Chi ${person.branch}` : "",
-    Number(person.role_id) === 2 ? (t ? t("tree.card.chief") : "Trưởng họ") : "",
-  ].filter(Boolean);
-  const isFounder = Number(person.generation) === 1 || Number(person.role_id) === 1;
-
-  ctx.save();
-  ctx.shadowColor = "rgba(71, 50, 32, 0.14)";
-  ctx.shadowBlur = 10;
-  ctx.shadowOffsetY = 4;
-  drawRoundRect(ctx, x, y, width, height, 8);
-  const grad = ctx.createLinearGradient(x, y, x, y + height);
-  grad.addColorStop(0, isFounder ? "#fff7ea" : "#ffffff");
-  grad.addColorStop(1, isFounder ? "#ead6bd" : "#fffaf1");
-  ctx.fillStyle = grad;
-  ctx.fill();
-  ctx.shadowColor = "transparent";
-  ctx.strokeStyle = isFounder ? "#a85f39" : "#c97b4d";
-  ctx.lineWidth = isFounder ? 2.2 : 1.8;
-  ctx.stroke();
-
-  if (options.directLineagePersonIds?.has?.(Number(person.id))) {
-    ctx.fillStyle = "#8b1e13";
-    ctx.font = `900 ${Math.max(12, Math.round(config.metaFontSize * 1.2))}px ${EXPORT_FONT_FAMILY}`;
-    ctx.textAlign = "right";
-    ctx.textBaseline = "top";
-    ctx.fillText("◎", x + width - 10, y + 8);
-  }
-
-  const textLeft = x + 18;
-  const textWidth = width - 36;
-
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillStyle = "#2f241b";
-  const nameFontSize = config.singleNameFontSize || config.nameFontSize;
-  const metaFontSize = config.singleMetaFontSize || config.metaFontSize;
-  ctx.font = `800 ${nameFontSize}px ${EXPORT_FONT_FAMILY}`;
-  const nameLines = splitTextToLines(ctx, name, textWidth, 2);
-  const nameLineHeight = Math.round(nameFontSize * 1.18);
-  const nameCenterY = metaItems.length ? y + height * 0.38 : y + height * 0.5;
-  const firstNameY = nameCenterY - ((nameLines.length - 1) * nameLineHeight) / 2;
-  nameLines.forEach((line, index) => {
-    ctx.fillText(line, textLeft + textWidth / 2, firstNameY + index * nameLineHeight);
-  });
-
-  if (metaItems.length) {
-    ctx.fillStyle = "#6f6257";
-    ctx.font = `500 ${metaFontSize}px ${EXPORT_FONT_FAMILY}`;
-    ctx.fillText(metaItems.join(" · "), textLeft + textWidth / 2, y + height * 0.72);
-  }
-  ctx.restore();
-}
-
-function orderedCouplePeople(node, directLineagePersonIds, vertical = false) {
-  const husbandDirect = directLineagePersonIds?.has?.(Number(node?.husband?.id));
-  const wifeDirect = directLineagePersonIds?.has?.(Number(node?.wife?.id));
-  if (vertical && wifeDirect && !husbandDirect) return [node.wife, node.husband];
-  return [node.husband, node.wife];
-}
-
-function exportConfigForMode(mode) {
-  return mode === TREE_EXPORT_MODE.OVERVIEW ? TREE_EXPORT_OVERVIEW_CONFIG : TREE_EXPORT_DETAIL_CONFIG;
-}
-
-function shiftPathText(pathText, dx = 0, dy = 0) {
-  let index = 0;
-  return String(pathText || "").replace(/-?\d+(?:\.\d+)?/g, (match) => {
-    const value = Number(match);
-    if (!Number.isFinite(value)) return match;
-    const shifted = index % 2 === 0 ? value + dx : value + dy;
-    index += 1;
-    return String(Math.round(shifted * 100) / 100);
-  });
-}
-
 function normalizeExportOptions(options = {}) {
-  const legacyScope = options.scope;
-  const mode = options.mode || (legacyScope === "full-overview" || legacyScope === TREE_EXPORT_MODE.OVERVIEW
-    ? TREE_EXPORT_MODE.OVERVIEW
-    : TREE_EXPORT_MODE.DETAIL);
+  const format = Object.values(TREE_EXPORT_FORMAT).includes(options.format) ? options.format : DEFAULT_TREE_EXPORT_OPTIONS.format;
   return {
     ...DEFAULT_TREE_EXPORT_OPTIONS,
-    ...options,
-    mode,
-    quality: Number(options.quality) || DEFAULT_TREE_EXPORT_OPTIONS.quality,
+    format: format === TREE_EXPORT_FORMAT.PDF ? TREE_EXPORT_FORMAT.PNG : format,
+    mode: options.mode === TREE_EXPORT_MODE.OVERVIEW ? TREE_EXPORT_MODE.OVERVIEW : TREE_EXPORT_MODE.DETAIL,
+    quality: normalizeExportScale(options.quality),
     treeStyle: normalizeExportTreeStyle(options.treeStyle),
   };
 }
 
+// Lấy đúng các thẻ và đường nối đang hiển thị trên màn hình (nhánh đang thu gọn sẽ không có trong danh sách).
 export function prepareTreeExportPayload({ people = [], families = [], childRows = [], nodePositions = {}, options = {}, t } = {}) {
   const exportOptions = normalizeExportOptions(options);
-  const exportConfig = withTreeStyleFont(exportConfigForMode(exportOptions.mode), exportOptions.treeStyle);
-  const allPeople = asArray(people);
-  const sourcePeople = allPeople;
   const providedNodes = asArray(options.displayNodes);
   const providedLines = asArray(options.displayLines);
-  const lineRoutes = options.lineRoutes || {};
   const directLineagePersonIds = asArray(options.directLineagePersonIds).map(Number).filter(Number.isFinite);
-  const titleOffsetY = exportOptions.includeTitle ? 110 : 0;
-  const displayTree = providedNodes.length
-    ? (() => {
-      const exportNodes = providedNodes.map((node) => ({
-        ...node,
-        y: node.y + titleOffsetY,
-      }));
-      const nodeByPersonId = new Map();
-      const nodeByFamilyId = new Map();
-      exportNodes.forEach((node) => {
-        asArray(node.personIds).forEach((personId) => nodeByPersonId.set(Number(personId), node));
-        if (node.familyId) nodeByFamilyId.set(Number(node.familyId), node);
-      });
-      return { nodes: exportNodes, nodeByPersonId, nodeByFamilyId };
-    })()
-    : buildDisplayTree(sourcePeople, families, childRows, {
+  let nodes;
+  let lines;
+  if (providedNodes.length) {
+    nodes = providedNodes;
+    lines = providedLines;
+  } else {
+    const displayTree = buildDisplayTree(asArray(people), families, childRows, {
       exportMode: true,
       exportModeName: exportOptions.mode,
       cardOrientation: exportOptions.treeStyle.cardOrientation,
       nodePositions,
       packRows: true,
     });
-  const exportNodes = displayTree.nodes.map((node) => ({
-    ...node,
-    y: providedNodes.length ? node.y : node.y + titleOffsetY,
-  }));
-  const nodeByPersonId = new Map();
-  const nodeByFamilyId = new Map();
-  exportNodes.forEach((node) => {
-    node.personIds.forEach((personId) => nodeByPersonId.set(Number(personId), node));
-    if (node.familyId) nodeByFamilyId.set(Number(node.familyId), node);
-  });
-  const exportDisplayTree = { nodes: exportNodes, nodeByPersonId, nodeByFamilyId };
-  const exportLines = providedNodes.length && providedLines.length
-    ? providedLines.map((line) => ({
-      ...line,
-      d: shiftPathText(line.d, 0, titleOffsetY),
-    }))
-    : buildDisplayTreeLines(exportDisplayTree, families, childRows, lineRoutes);
-
-  return {
-    people: sourcePeople,
-    nodes: exportNodes,
-    families,
-    childRows,
-    lines: exportLines,
-    cardSizes: {},
-    directLineagePersonIds,
-    exportOptions,
-    exportConfig,
-    title: t ? t("tree.title") : "Gia phả",
-  };
-}
-
-export function getTreeExportBounds(items, lines = [], cardSizes = {}, padding = TREE_EXPORT_CONFIG.padding) {
-  if (!asArray(items).length) {
-    return { x: 0, y: 0, width: 1200, height: 800 };
+    nodes = displayTree.nodes;
+    lines = buildDisplayTreeLines(displayTree, families, childRows, options.lineRoutes || {});
   }
-
-  const xs = [];
-  const ys = [];
-  asArray(items).forEach((item) => {
-    if (item.type) {
-      xs.push(item.x, item.x + item.width);
-      ys.push(item.y, item.y + item.height);
-      return;
-    }
-    const size = getExportCardSize(cardSizes, item.id);
-    const x = toInt(item.tree_x, 0);
-    const y = toInt(item.tree_y, 0);
-    xs.push(x, x + size.width);
-    ys.push(y, y + size.height);
-  });
-  asArray(lines).forEach((line) => {
-    numbersFromPath(line.d).forEach((value, index) => {
-      if (index % 2 === 0) xs.push(value);
-      else ys.push(value);
-    });
-  });
-
-  const minX = Math.floor(Math.min(...xs) - padding);
-  const minY = Math.floor(Math.min(...ys) - padding);
-  const maxX = Math.ceil(Math.max(...xs) + padding);
-  const maxY = Math.ceil(Math.max(...ys) + padding);
-  return {
-    x: minX,
-    y: minY,
-    width: Math.max(1, maxX - minX),
-    height: Math.max(1, maxY - minY),
-  };
+  return { nodes, lines, directLineagePersonIds, exportOptions, title: t ? t("tree.title") : "Gia phả" };
 }
 
-export function getExportPixelRatio(bounds, requestedScale = TREE_EXPORT_CONFIG.scale) {
-  const largestEdge = Math.max(bounds.width, bounds.height);
-  const area = Math.max(1, bounds.width * bounds.height);
-  if (!largestEdge) return requestedScale;
-
-  const edgeLimitedRatio = TREE_EXPORT_CONFIG.maxCanvasEdge / largestEdge;
-  const areaLimitedRatio = Math.sqrt(TREE_EXPORT_CONFIG.maxCanvasPixels / area);
-  const ratio = Math.min(requestedScale, edgeLimitedRatio, areaLimitedRatio);
-  return Math.max(1, Math.floor(ratio * 100) / 100);
-}
-
-export async function renderFamilyTreePngBlob({ people, nodes, lines, cardSizes, clan, t, exportOptions = {}, exportConfig = TREE_EXPORT_DETAIL_CONFIG, directLineagePersonIds: rawDirectLineagePersonIds = [] }) {
+// Dựng SVG đầy đủ: chờ font, nhúng font, đo khung bao trọn thẻ + đường nối (không bị cắt mép).
+export async function renderTreeSvg({ nodes, lines, directLineagePersonIds = [], exportOptions = {}, t, onProgress }) {
   const options = normalizeExportOptions(exportOptions);
-  const styledExportConfig = withTreeStyleFont(exportConfig, options.treeStyle);
-  const directLineagePersonIds = new Set(asArray(rawDirectLineagePersonIds).map(Number).filter(Number.isFinite));
-  const drawableNodes = asArray(nodes).length ? nodes : asArray(people);
-  const palette = paletteFor(options.treeStyle.theme);
-  const framePadding = options.includeFrame ? EXPORT_FRAME_PADDING : 0;
-  const bounds = getTreeExportBounds(drawableNodes, lines, cardSizes, TREE_EXPORT_CONFIG.padding + framePadding);
-  const pixelRatio = getExportPixelRatio(bounds, options.quality || TREE_EXPORT_CONFIG.scale);
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.ceil(bounds.width * pixelRatio));
-  canvas.height = Math.max(1, Math.ceil(bounds.height * pixelRatio));
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error(t ? t("tree.messages.exportError") : "Export failed");
-
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = "high";
-  ctx.save();
-  ctx.scale(pixelRatio, pixelRatio);
-  if (options.includeBackground) {
-    ctx.fillStyle = options.treeStyle.backgroundColor || palette.canvas;
-    ctx.fillRect(0, 0, bounds.width, bounds.height);
-  } else {
-    ctx.clearRect(0, 0, bounds.width, bounds.height);
-  }
-  ctx.translate(-bounds.x, -bounds.y);
-  if (options.includeFrame) drawDecorativeFrame(ctx, bounds, palette);
-  if (options.includeTitle) {
-    drawThemedTitle(ctx, bounds, clan, t, palette, { centered: options.includeFrame, inset: options.includeFrame ? 30 : 0 });
-  }
-  const overview = options.mode === TREE_EXPORT_MODE.OVERVIEW;
-  const lineWidth = overview ? 2 : 2.4;
-  asArray(lines).forEach((line) => drawThemedLine(ctx, line, palette, lineWidth));
-  const nameSize = Math.round((Number(options.treeStyle.fontSize) || 17) * 0.88);
-  asArray(drawableNodes).forEach((node) => (node.type ? drawThemedNode(ctx, node, {
-    palette,
-    t,
-    overview,
-    nameSize,
-    directIds: directLineagePersonIds,
-  }) : drawExportCard(ctx, node, cardSizes, styledExportConfig, t, {
+  onProgress?.("fonts", 0.1);
+  await waitForExportFonts();
+  const fontCss = await loadEmbeddedFontCss();
+  onProgress?.("render", 0.4);
+  const drawable = asArray(nodes).filter((node) => node?.type);
+  const drawLines = asArray(lines).filter((line) => line?.d && line.type !== "route-control");
+  const bounds = computeContentBounds(drawable, drawLines.map((line) => line.d));
+  const measureCtx = document.createElement("canvas").getContext("2d");
+  return buildTreeSvg({
+    nodes: drawable,
+    lines: drawLines,
+    bounds,
+    treeStyle: options.treeStyle,
     overview: options.mode === TREE_EXPORT_MODE.OVERVIEW,
-    directLineagePersonIds,
-  })));
-  ctx.restore();
-
-  return canvasToBlob(canvas, t);
+    directIds: new Set(asArray(directLineagePersonIds).map(Number)),
+    t,
+    fontCss,
+    measureCtx,
+  });
 }
 
-export function renderFamilyTreeSvgString({ people, nodes, lines, cardSizes, clan, t, exportOptions = {}, exportConfig = TREE_EXPORT_DETAIL_CONFIG, directLineagePersonIds: rawDirectLineagePersonIds = [] }) {
-  const options = normalizeExportOptions(exportOptions);
-  const styledExportConfig = withTreeStyleFont(exportConfig, options.treeStyle);
-  const directLineagePersonIds = new Set(asArray(rawDirectLineagePersonIds).map(Number).filter(Number.isFinite));
-  const drawableNodes = asArray(nodes).length ? nodes : asArray(people);
-  const palette = paletteFor(options.treeStyle.theme);
-  const bounds = getTreeExportBounds(drawableNodes, lines, cardSizes, TREE_EXPORT_CONFIG.padding);
-  const title = escapeXml(String(clan?.clan_name || "Dòng họ").toLocaleUpperCase("vi-VN"));
-  const background = options.includeBackground
-    ? `<rect x="0" y="0" width="${bounds.width}" height="${bounds.height}" fill="${escapeXml(options.treeStyle.backgroundColor || palette.canvas)}" />`
-    : "";
-  const titleSvg = options.includeTitle
-    ? `<text x="${bounds.x + 42}" y="${bounds.y + 58}" font-family="${escapeXml(EXPORT_FONT_FAMILY)}" font-size="16" font-weight="800" fill="${palette.muted}">${escapeXml((t ? t("tree.title") : "Gia phả").toLocaleUpperCase("vi-VN"))}</text><text x="${bounds.x + 42}" y="${bounds.y + 96}" font-family="${escapeXml(EXPORT_FONT_FAMILY)}" font-size="34" font-weight="900" fill="${palette.accent}">${title}</text>`
-    : "";
-  const lineSvg = asArray(lines)
-    .filter((line) => line?.d && line.type !== "route-control")
-    .map((line) => `<path d="${escapeXml(line.d)}"${line.variant === "ended" || line.variant === "adoptive" ? ' stroke-dasharray="8 6"' : line.variant ? ' stroke-dasharray="2 6"' : ""} fill="none" stroke="${line.type === "spouse" || line.branchLevel === 0 ? palette.lineStrong : palette.line}" stroke-width="${line.branchLevel === 0 ? Math.max(styledExportConfig.lineWidth, MAIN_LINE_WIDTH) : styledExportConfig.lineWidth}" stroke-linecap="round" stroke-linejoin="round" opacity="${line.type === "spouse" ? "0.9" : "0.86"}" />`)
-    .join("");
-  const cardSvg = asArray(drawableNodes).map((item) => {
-    if (item.type === DISPLAY_NODE_TYPE.COUPLE) {
-      const x = item.x;
-      const y = item.y;
-      const width = item.width;
-      const height = item.height;
-      const isVertical = item.cardOrientation === TREE_CARD_ORIENTATION.VERTICAL;
-      const halfWidth = isVertical ? width : width / 2;
-      const halfHeight = isVertical ? height / 2 : height;
-      const husbandCenterX = x + halfWidth / 2;
-      const husbandCenterY = y + halfHeight * 0.42;
-      const wifeCenterX = isVertical ? husbandCenterX : x + halfWidth + halfWidth / 2;
-      const wifeCenterY = isVertical ? y + halfHeight + halfHeight * 0.42 : husbandCenterY;
-      const [firstPerson, secondPerson] = orderedCouplePeople(item, directLineagePersonIds, isVertical);
-      const coupleChars = Math.max(10, Math.floor((halfWidth - 28) / (styledExportConfig.nameFontSize * 0.55)));
-      const husbandName = splitSvgText(fullName(firstPerson, t ? t("tree.card.fallbackName") : "Thành viên"), coupleChars, 2)
-        .map((line, index) => `<text x="${husbandCenterX}" y="${husbandCenterY + index * styledExportConfig.nameFontSize * 1.12}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(EXPORT_FONT_FAMILY)}" font-size="${styledExportConfig.nameFontSize}" font-weight="800" fill="${palette.ink}">${escapeXml(line)}</text>`)
-        .join("");
-      const wifeName = splitSvgText(fullName(secondPerson, t ? t("tree.card.fallbackName") : "Thành viên"), coupleChars, 2)
-        .map((line, index) => `<text x="${wifeCenterX}" y="${wifeCenterY + index * styledExportConfig.nameFontSize * 1.12}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(EXPORT_FONT_FAMILY)}" font-size="${styledExportConfig.nameFontSize}" font-weight="800" fill="${palette.ink}">${escapeXml(line)}</text>`)
-        .join("");
-      const divider = isVertical
-        ? `<line x1="${x + 12}" y1="${y + halfHeight}" x2="${x + width - 12}" y2="${y + halfHeight}" stroke="${palette.border}" />`
-        : `<line x1="${x + halfWidth}" y1="${y + 12}" x2="${x + halfWidth}" y2="${y + height - 12}" stroke="${palette.border}" />`;
-      return `<g transform="translate(${-bounds.x}, ${-bounds.y})"><rect x="${x}" y="${y}" width="${width}" height="${height}" rx="12" fill="${palette.surface}" stroke="${palette.border}" stroke-width="1.5" />${divider}${husbandName}${wifeName}</g>`;
-    }
-    // Thẻ một người và thẻ tham chiếu đều vẽ theo người trong thẻ.
-    const isPersonNode = item.type === DISPLAY_NODE_TYPE.SINGLE || item.type === DISPLAY_NODE_TYPE.REFERENCE;
-    const person = isPersonNode ? { ...item.person, tree_x: item.x, tree_y: item.y } : item;
-    const localCardSizes = isPersonNode ? { [Number(item.person.id)]: { width: item.width, height: item.height } } : cardSizes;
-    const size = getExportCardSize(localCardSizes, person.id, styledExportConfig);
-    const x = toInt(person.tree_x, 0);
-    const y = toInt(person.tree_y, 0);
-    const width = size.width;
-    const height = size.height;
-    const name = fullName(person, t ? t("tree.card.fallbackName") : "Thành viên");
-    const generationText = t ? t("tree.card.generation", { count: person.generation || 1 }) : `Đời ${person.generation || 1}`;
-    const isFounder = Number(person.generation) === 1 || Number(person.role_id) === 1;
-    const textLeft = x + width / 2;
-    const singleNameSize = styledExportConfig.singleNameFontSize || styledExportConfig.nameFontSize;
-    const singleMetaSize = styledExportConfig.singleMetaFontSize || styledExportConfig.metaFontSize;
-    const textWidthChars = Math.max(12, Math.floor((width - 36) / (singleNameSize * 0.55)));
-    const nameLines = splitSvgText(name, textWidthChars, 2);
-    const nameStartY = y + height * 0.36 - ((nameLines.length - 1) * singleNameSize * 1.15) / 2;
-    const nameText = nameLines.map((line, index) => `<text x="${textLeft}" y="${nameStartY + index * singleNameSize * 1.15}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(EXPORT_FONT_FAMILY)}" font-size="${singleNameSize}" font-weight="800" fill="${palette.ink}">${escapeXml(line)}</text>`).join("");
-    return `<g transform="translate(${-bounds.x}, ${-bounds.y})"><rect x="${x}" y="${y}" width="${width}" height="${height}" rx="12" fill="${palette.surface}" stroke="${isFounder ? palette.gold : palette.border}" stroke-width="1.5" />${nameText}<text x="${textLeft}" y="${y + height * 0.72}" text-anchor="middle" dominant-baseline="middle" font-family="${escapeXml(EXPORT_FONT_FAMILY)}" font-size="${singleMetaSize}" font-weight="500" fill="${palette.muted}">${escapeXml(generationText)}</text></g>`;
-  }).join("");
-
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${bounds.width}" height="${bounds.height}" viewBox="0 0 ${bounds.width} ${bounds.height}">${background}<g transform="translate(${-bounds.x}, ${-bounds.y})">${titleSvg}${lineSvg}</g>${cardSvg}</svg>`;
-}
-
-export async function exportTreeSvg(options) {
-  const svg = renderFamilyTreeSvgString(options);
-  return new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
-}
-
-export async function exportTreePdf() {
-  throw new Error("PDF export is not implemented in this build.");
-}
-
+// Trả về { blob, extension, scaleInfo }. SVG là vector; PNG rasterize từ SVG, tự giảm tỉ lệ nếu vượt giới hạn canvas.
 export async function exportPreparedTree(payload) {
-  const format = payload?.exportOptions?.format || TREE_EXPORT_FORMAT.PNG;
-  if (format === TREE_EXPORT_FORMAT.SVG) return exportTreeSvg(payload);
-  if (format === TREE_EXPORT_FORMAT.PDF) return exportTreePdf(payload);
-  return renderFamilyTreePngBlob(payload);
+  const options = normalizeExportOptions(payload?.exportOptions);
+  const onProgress = payload?.onProgress;
+  const { svg, width, height } = await renderTreeSvg(payload);
+  if (options.format === TREE_EXPORT_FORMAT.SVG) {
+    onProgress?.("encode", 0.95);
+    return { blob: new Blob([svg], { type: "image/svg+xml;charset=utf-8" }), extension: "svg", scaleInfo: null };
+  }
+  const scaleInfo = decideRasterScale({ width, height, scale: options.quality });
+  onProgress?.("encode", 0.7);
+  const blob = await svgToPngBlob(svg, scaleInfo);
+  return { blob, extension: "png", scaleInfo };
 }

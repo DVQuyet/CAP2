@@ -2421,21 +2421,21 @@
       "generation": "Đời {{count}}"
     },
     "export": {
-      "frame": "Khung trang trí",
-      "frameHint": "Thêm viền hoa văn và tên dòng họ khi xuất ảnh",
       "eyebrow": "Xuất ảnh",
       "title": "Xuất ảnh cây gia phả",
-      "mode": "Kiểu xuất",
       "format": "Định dạng",
-      "pdfSoon": "PDF (sắp có)",
-      "quality": "Chất lượng",
-      "options": "Tuỳ chọn",
-      "background": "Có màu nền",
-      "includeTitle": "Có tiêu đề gia phả",
-      "appearance": "Giao diện cây",
+      "quality": "Độ nét",
+      "pngHint": "PNG nét cao, tự giảm tỉ lệ nếu cây quá lớn.",
+      "svgHint": "SVG là ảnh vector, phóng to không vỡ nét.",
       "svgDone": "Đã xuất SVG.",
       "exporting": "Đang xuất...",
-      "submit": "Xuất"
+      "submit": "Xuất",
+      "scaleLimited": "Cây rất lớn nên ảnh được xuất ở {{scale}}x (giới hạn {{width}}×{{height}} px). Dùng SVG để giữ độ nét tối đa.",
+      "steps": {
+        "fonts": "Đang tải font...",
+        "render": "Đang dựng ảnh...",
+        "encode": "Đang mã hoá..."
+      }
     },
     "couple": {
       "eyebrow": "Cặp vợ chồng",

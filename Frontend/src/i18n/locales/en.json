@@ -2421,21 +2421,21 @@
       "generation": "Generation {{count}}"
     },
     "export": {
-      "frame": "Decorative frame",
-      "frameHint": "Add an ornamental border and clan name when exporting",
       "eyebrow": "Export",
       "title": "Export family tree image",
-      "mode": "Style",
       "format": "Format",
-      "pdfSoon": "PDF (coming soon)",
-      "quality": "Quality",
-      "options": "Options",
-      "background": "Include background",
-      "includeTitle": "Include clan title",
-      "appearance": "Tree appearance",
+      "quality": "Sharpness",
+      "pngHint": "High-resolution PNG, scaled down automatically for very large trees.",
+      "svgHint": "SVG is vector: zoom in without losing sharpness.",
       "svgDone": "SVG exported.",
       "exporting": "Exporting...",
-      "submit": "Export"
+      "submit": "Export",
+      "scaleLimited": "The tree is very large, so the image was exported at {{scale}}x (limit {{width}}×{{height}} px). Use SVG for maximum sharpness.",
+      "steps": {
+        "fonts": "Loading fonts...",
+        "render": "Rendering...",
+        "encode": "Encoding..."
+      }
     },
     "couple": {
       "eyebrow": "Couple",

@@ -30,7 +30,7 @@ import { parseTreeFocusParams, TREE_FOCUS_EVENT } from "../utils/treeFocusParams
 import GenealogyAuditDialog from "./FamilyTreeEditorParts/GenealogyAuditDialog";
 import { blankCreateForm, buildCreateRelationFields, buildLinkPayload, defaultRelationOptions, findParentFamilyForChild, findSpouse, findSpouseFamily, getChildOrderMapForFamily, getChildrenForFamily, getFamiliesForPerson, relationCandidates, relationLinkedIds } from "../utils/tree-editor/treeRelations";
 import { downloadBlob, exportFileName, exportPreparedTree, prepareTreeExportPayload } from "../utils/tree-editor/treeExport";
-import { DEFAULT_TREE_EXPORT_OPTIONS, TREE_EXPORT_FORMAT, TREE_EXPORT_MODE } from "../utils/tree-editor/treeExportConfig";
+import TreeExportDialog from "./FamilyTreeEditorParts/TreeExportDialog";
 import { TREE_CARD_ORIENTATION, TREE_DISPLAY_MODE, TREE_THEME, TREE_THEMES, TREE_THEME_BACKGROUNDS } from "../utils/tree-editor/treeDisplayConfig";
 import { DISPLAY_NODE_TYPE, buildDisplayTree, buildDisplayTreeLines } from "../utils/tree-editor/treeDisplayNodes";
 import { FORM_ONLY_FIELDS, historicalPayloadFromForm } from "../utils/tree-editor/historicalDates";
@@ -542,7 +542,6 @@ export default function FamilyTreeEditor({
   const [treeDisplayMode, setTreeDisplayMode] = useState(TREE_DISPLAY_MODE.DETAIL);
   const [treeStyle, setTreeStyle] = useState(() => databaseTreeStyle);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
-  const [exportOptions, setExportOptions] = useState(DEFAULT_TREE_EXPORT_OPTIONS);
   const [bulkMoveMode, setBulkMoveMode] = useState(false);
   const [bulkSelectionRect, setBulkSelectionRect] = useState(null);
   const [selectedDisplayNodeIds, setSelectedDisplayNodeIds] = useState(() => new Set());
@@ -2420,45 +2419,33 @@ const coupleActionPerson = useMemo(
     setStatus("");
   }, []);
 
-  const updateExportOptions = useCallback((patch) => {
-    setExportOptions((current) => ({ ...current, ...patch }));
-  }, []);
-
   const updateTreeStyle = useCallback((patch) => {
     setTreeStyle((current) => normalizeTreeStyle({ ...current, ...patch }));
   }, []);
 
-  const handleExport = async (nextOptions = exportOptions) => {
-    setSaving(true);
-    setStatus("");
-    try {
-      const normalizedOptions = { ...exportOptions, ...nextOptions };
-      const payload = prepareTreeExportPayload({
-        people: renderPeople,
-        families: visibleFamilies,
-        childRows: visibleChildRows,
-        nodePositions: displayNodePositions,
-        options: {
-          ...normalizedOptions,
-          lineRoutes,
-          directLineagePersonIds: Array.from(bloodLinePersonIds),
-          displayNodes,
-          displayLines: lines,
-          treeStyle,
-        },
-        clan,
-        t,
-      });
-      const blob = await exportPreparedTree({ ...payload, clan, t });
-      const extension = normalizedOptions.format === TREE_EXPORT_FORMAT.SVG ? "svg" : normalizedOptions.format === TREE_EXPORT_FORMAT.PDF ? "pdf" : "png";
-      downloadBlob(blob, exportFileName(clan?.clan_name, extension));
-      setStatus(normalizedOptions.format === TREE_EXPORT_FORMAT.SVG ? t("tree.export.svgDone") : t("tree.messages.exportSuccess"));
-      setExportDialogOpen(false);
-    } catch (error) {
-      console.error("Export tree failed:", error);
-      setStatus(friendlyErrorMessage(error, t));
-    } finally {
-      setSaving(false);
+  const handleExport = async (exportChoice, onProgress) => {
+    const payload = prepareTreeExportPayload({
+      people: renderPeople,
+      families: visibleFamilies,
+      childRows: visibleChildRows,
+      nodePositions: displayNodePositions,
+      options: {
+        ...exportChoice,
+        lineRoutes,
+        directLineagePersonIds: Array.from(bloodLinePersonIds),
+        displayNodes,
+        displayLines: lines,
+        treeStyle,
+      },
+      t,
+    });
+    const result = await exportPreparedTree({ ...payload, t, onProgress });
+    downloadBlob(result.blob, exportFileName(clan?.clan_name, result.extension));
+    const info = result.scaleInfo;
+    if (info?.limited) {
+      setStatus(t("tree.export.scaleLimited", { scale: Math.round(info.scale * 100) / 100, width: info.pixelWidth, height: info.pixelHeight }));
+    } else {
+      setStatus(result.extension === "svg" ? t("tree.export.svgDone") : t("tree.messages.exportSuccess"));
     }
   };
 
@@ -3502,132 +3489,7 @@ const submitCreateDialog = async () => {
         )}
       </TransformWrapper>
 
-      {exportDialogOpen && (
-        <div className="fte-modalOverlay" role="presentation" onMouseDown={() => !saving && setExportDialogOpen(false)}>
-          <div className="fte-modal fte-exportModal" role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}>
-            <div className="fte-modalHeader">
-              <div>
-                <span>{t("tree.export.eyebrow")}</span>
-                <h3>{t("tree.export.title")}</h3>
-              </div>
-              <button
-                type="button"
-                className="fte-iconButton"
-                onClick={() => setExportDialogOpen(false)}
-                disabled={saving}
-                title={t("common.close")}
-              >
-                <span className="material-symbols-outlined">close</span>
-              </button>
-            </div>
-
-            <div className="fte-exportGrid">
-              <section>
-                <h4>{t("tree.export.mode")}</h4>
-                {[
-                  { value: TREE_EXPORT_MODE.OVERVIEW, label: t("tree.toolbar.overview") },
-                  { value: TREE_EXPORT_MODE.DETAIL, label: t("tree.toolbar.detail") },
-                ].map((item) => (
-                  <label key={item.value} className="fte-radioRow">
-                    <input
-                      type="radio"
-                      name="exportMode"
-                      value={item.value}
-                      checked={(exportOptions.mode || TREE_EXPORT_MODE.DETAIL) === item.value}
-                      disabled={saving}
-                      onChange={() => updateExportOptions({ mode: item.value })}
-                    />
-                    <span>{item.label}</span>
-                  </label>
-                ))}
-              </section>
-
-              <section>
-                <h4>{t("tree.export.format")}</h4>
-                <div className="fte-segmented">
-                  {[TREE_EXPORT_FORMAT.PNG, TREE_EXPORT_FORMAT.SVG].map((format) => (
-                    <button
-                      key={format}
-                      type="button"
-                      className={exportOptions.format === format ? "is-active" : ""}
-                      onClick={() => updateExportOptions({ format })}
-                      disabled={saving}
-                    >
-                      {format.toUpperCase()}
-                    </button>
-                  ))}
-                </div>
-                <button type="button" className="fte-pdfStub" disabled>
-                  {t("tree.export.pdfSoon")}
-                </button>
-              </section>
-
-              <section>
-                <h4>{t("tree.export.quality")}</h4>
-                <div className="fte-segmented">
-                  {[1, 2, 3, 4].map((quality) => (
-                    <button
-                      key={quality}
-                      type="button"
-                      className={Number(exportOptions.quality) === quality ? "is-active" : ""}
-                      onClick={() => updateExportOptions({ quality })}
-                      disabled={saving || exportOptions.format === TREE_EXPORT_FORMAT.SVG}
-                    >
-                      {quality}x
-                    </button>
-                  ))}
-                </div>
-              </section>
-
-              <section>
-                <h4>{t("tree.export.options")}</h4>
-                <label className="fte-checkRow">
-                  <input
-                    type="checkbox"
-                    checked={exportOptions.includeBackground}
-                    onChange={(event) => updateExportOptions({ includeBackground: event.target.checked })}
-                    disabled={saving}
-                  />
-                  <span>{t("tree.export.background")}</span>
-                </label>
-                <label className="fte-checkRow">
-                  <input
-                    type="checkbox"
-                    checked={exportOptions.includeTitle}
-                    onChange={(event) => updateExportOptions({ includeTitle: event.target.checked })}
-                    disabled={saving}
-                  />
-                  <span>{t("tree.export.includeTitle")}</span>
-                </label>
-                <label className="fte-checkRow" title={t("tree.export.frameHint")}>
-                  <input
-                    type="checkbox"
-                    checked={Boolean(exportOptions.includeFrame)}
-                    onChange={(event) => updateExportOptions({ includeFrame: event.target.checked })}
-                    disabled={saving}
-                  />
-                  <span>{t("tree.export.frame")}</span>
-                </label>
-              </section>
-
-              <section className="fte2 fte2-exportAppearance" data-tree-theme={treeStyle.theme}>
-                <h4>{t("tree.export.appearance")}</h4>
-                <TreeStyleControls treeStyle={treeStyle} onChange={updateTreeStyle} />
-              </section>
-            </div>
-
-            <div className="fte-modalFooter">
-              <button type="button" className="fte-ghostButton" onClick={() => setExportDialogOpen(false)} disabled={saving}>
-                {t("common.cancel")}
-              </button>
-              <button type="button" className="fte-primaryButton" onClick={() => handleExport(exportOptions)} disabled={saving}>
-                <span className="material-symbols-outlined">{saving ? "progress_activity" : "download"}</span>
-                {saving ? t("tree.export.exporting") : t("tree.export.submit")}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {exportDialogOpen && <TreeExportDialog onClose={() => setExportDialogOpen(false)} onExport={handleExport} />}
 
       {coupleActionPerson ? (
         <div className="fte-modalOverlay" role="presentation" onMouseDown={() => setCouplePersonAction(null)}>
