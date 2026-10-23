@@ -25,6 +25,8 @@ const v = {
     // Id nguyên dương; null/'' được giữ nguyên khi không bắt buộc.
     id: (o) => rule('int', { min: 1, ...o }),
     array: (item, o) => rule('array', { ...o, item }),
+    // Object lồng nhau: kiểm tra các trường khai báo trong shape, giữ nguyên trường lạ.
+    object: (shape, o) => rule('object', { ...o, shape }),
     ids: (o) => rule('array', { ...o, item: rule('int', { min: 1 }) }),
 };
 
@@ -87,6 +89,12 @@ const checkOne = (r, raw, label) => {
                 out.push(res.value);
             }
             return { value: out };
+        }
+        case 'object': {
+            if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { error: `${label} không hợp lệ.` };
+            const inner = validateObject(raw, r.shape || {});
+            if (inner.errors.length) return { error: `${label}: ${inner.errors[0].message}` };
+            return { value: { ...raw, ...inner.values } };
         }
         default:
             return { error: `${label} không hợp lệ.` };

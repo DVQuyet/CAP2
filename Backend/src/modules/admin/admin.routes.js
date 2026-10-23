@@ -11,10 +11,10 @@ router.delete("/clans/:clanId", verifyToken, checkRole(["admin"]), adminControll
 router.get("/clans/:clanId/tree", verifyToken, checkRole(["admin"]), adminController.getClanTree);
 router.get("/clans/:clanId/tasks", verifyToken, checkRole(["admin"]), adminController.getTasksByClan);
 router.get("/accounts", verifyToken, checkRole(["admin"]), adminController.listAccounts);
-router.post("/accounts", verifyToken, checkRole(["admin"]), adminController.createAccount);
+router.post("/accounts", verifyToken, checkRole(["admin"]), schemas.adminCreateAccount, adminController.createAccount);
 router.put("/accounts/:id", verifyToken, checkRole(["admin"]), schemas.updateAccountAccess, adminController.updateAccountAccess);
-router.delete("/accounts/:id", verifyToken, checkRole(["admin"]), adminController.deleteAccount);
-router.post("/managers", verifyToken, checkRole(["admin"]), adminController.createManagerAccount);
+router.delete("/accounts/:id", verifyToken, checkRole(["admin"]), schemas.adminDeleteAccount, adminController.deleteAccount);
+router.post("/managers", verifyToken, checkRole(["admin"]), schemas.adminCreateManager, adminController.createManagerAccount);
 
 // Quản lý Thành viên
 router.get("/members", verifyToken, checkRole(["admin"]), adminController.getMembers);

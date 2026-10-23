@@ -13,7 +13,7 @@
     router.get('/stats', verifyToken, checkRole(['admin', 'manager']), managerController.getStats);
     router.get('/tree', verifyToken, checkRole(['admin', 'manager']), managerController.getFamilyTree);
     router.get('/clan-info', verifyToken, checkRole(['admin', 'manager']), managerController.getClanInfo);
-    router.put('/clan-info', verifyToken, checkRole(['admin', 'manager']), managerController.updateClanInfo);
+    router.put('/clan-info', verifyToken, checkRole(['admin', 'manager']), schemas.updateClanInfo, managerController.updateClanInfo);
     router.get('/members', verifyToken, checkRole(['admin', 'manager']), managerController.getAllMembers);
     router.get('/tree-edit-keys', verifyToken, checkRole(['admin', 'manager']), managerController.getActiveTreeEditKeys);
     router.post('/tree-edit-keys', verifyToken, checkRole(['admin', 'manager']), managerController.createTemporaryTreeEditKey);
@@ -22,9 +22,9 @@
     router.put('/members/:id/relations', verifyToken, checkRole(['admin', 'manager']), managerController.updateMemberRelations);
     router.get('/members/:id', verifyToken, checkRole(['admin', 'manager']), managerController.getMemberDetail);
     router.put('/members/:id', verifyToken, checkRole(['admin', 'manager']), managerController.updateMemberByManager);
-    router.post('/members/:id/archive', verifyToken, checkRole(['admin', 'manager']), managerController.archiveMember);
+    router.post('/members/:id/archive', verifyToken, checkRole(['admin', 'manager']), schemas.archiveMember, managerController.archiveMember);
     router.get('/members-archive', verifyToken, checkRole(['admin', 'manager']), managerController.getArchivedMembers);
-    router.post('/members-archive/:id/restore', verifyToken, checkRole(['admin', 'manager']), managerController.restoreArchivedMember);
+    router.post('/members-archive/:id/restore', verifyToken, checkRole(['admin', 'manager']), schemas.restoreArchivedMember, managerController.restoreArchivedMember);
     router.delete('/members-archive', verifyToken, checkRole(['admin', 'manager']), managerController.deleteAllArchivedMembersPermanently);
     router.delete('/members-archive/:id', verifyToken, checkRole(['admin', 'manager']), managerController.deleteArchivedMemberPermanently);
     router.get('/pending', verifyToken, checkRole(['admin', 'manager']), managerController.getPendingUsers);
@@ -55,14 +55,14 @@
     router.post('/events', verifyToken, checkRole(['admin', 'manager']), managerController.createManagerEvent);
     router.put('/events/:id', verifyToken, checkRole(['admin', 'manager']), managerController.updateManagerEvent);
     router.delete('/events/:id', verifyToken, checkRole(['admin', 'manager']), managerController.deleteManagerEvent);
-    router.post('/events/:eventId/tasks', verifyToken, checkRole(['admin', 'manager']), managerController.createTaskForEvent);
+    router.post('/events/:eventId/tasks', verifyToken, checkRole(['admin', 'manager']), schemas.createEventTask, managerController.createTaskForEvent);
 
-    router.post('/assign-task', verifyToken, checkRole(['admin', 'manager']), managerController.assignTask);
-    router.post('/tasks/bulk-assign', verifyToken, checkRole(['admin', 'manager']), managerController.bulkAssignTasks);
+    router.post('/assign-task', verifyToken, checkRole(['admin', 'manager']), schemas.assignTask, managerController.assignTask);
+    router.post('/tasks/bulk-assign', verifyToken, checkRole(['admin', 'manager']), schemas.bulkAssignTasks, managerController.bulkAssignTasks);
     router.get('/tasks', verifyToken, checkRole(['admin', 'manager']), managerController.getAssignedTasks);
-    router.put('/tasks/:id', verifyToken, checkRole(['admin', 'manager']), managerController.updateAssignedTask);
+    router.put('/tasks/:id', verifyToken, checkRole(['admin', 'manager']), schemas.updateAssignedTask, managerController.updateAssignedTask);
     router.delete('/tasks/:id', verifyToken, checkRole(['admin', 'manager']), managerController.deleteAssignedTask);
-    router.patch('/tasks/:id/complete', verifyToken, checkRole(['admin', 'manager']), managerController.completeTask);
+    router.patch('/tasks/:id/complete', verifyToken, checkRole(['admin', 'manager']), schemas.taskIdParam, managerController.completeTask);
     // 2. Quản lý Gia phả (Lineage)
     router.get('/clans/:clanId/family-tree', verifyToken, checkRole(['admin', 'manager']), managerController.getFamilyTree);
     router.patch('/clans/:clanId/family-tree/layout', verifyToken, checkRole(['admin', 'manager']), managerController.saveTreeLayout);

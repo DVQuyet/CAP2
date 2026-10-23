@@ -172,7 +172,7 @@ router.get('/me', authController.me);
 router.get('/social-registration', authController.getSocialRegistrationProfile);
 router.post('/forgot-password', forgotPasswordRateLimit, schemas.forgotPassword, authController.requestPasswordReset);
 router.post('/reset-password', resetPasswordRateLimit, schemas.resetPassword, authController.resetPasswordWithCode);
-router.post('/register-clan', registerRateLimit, clanController.registerClan);
-router.post('/register-clan-manager', registerRateLimit, clanController.registerClanWithManager);
+router.post('/register-clan', registerRateLimit, schemas.registerClan, clanController.registerClan);
+router.post('/register-clan-manager', registerRateLimit, schemas.registerClanWithManager, clanController.registerClanWithManager);
 
 module.exports = router;

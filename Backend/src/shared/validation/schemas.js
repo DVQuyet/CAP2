@@ -175,7 +175,183 @@ const updateAccountAccess = validate({
     },
 });
 
+// ---- Công việc (task) ----
+const taskText = {
+    description: v.string({ max: 5000, label: 'mô tả' }),
+    due_date: v.string({ max: 40, label: 'hạn hoàn thành' }),
+};
+const assignTask = validate({
+    body: {
+        title: v.string({ required: true, max: 255, label: 'tiêu đề', message: 'Tiêu đề công việc là bắt buộc' }),
+        ...taskText,
+        event_id: nullableId('sự kiện'),
+        member_account_ids: v.ids({ max: 1000, label: 'danh sách thành viên' }),
+    },
+});
+const createEventTask = validate({
+    params: { eventId: v.id({ label: 'event_id', message: 'event_id không hợp lệ' }) },
+    body: {
+        title: v.string({ required: true, max: 255, label: 'tiêu đề', message: 'Tiêu đề công việc là bắt buộc' }),
+        ...taskText,
+        member_account_ids: v.ids({ max: 1000, label: 'danh sách thành viên' }),
+    },
+});
+const bulkAssignTasks = validate({
+    body: {
+        event_id: nullableId('sự kiện'),
+        tasks: v.array(
+            v.object({
+                title: v.string({ max: 255, label: 'tiêu đề' }),
+                ...taskText,
+                member_account_ids: v.ids({ max: 1000, label: 'danh sách thành viên' }),
+                member_ids: v.ids({ max: 1000, label: 'danh sách thành viên' }),
+            }),
+            { max: 50, label: 'danh sách công việc', message: 'Không được giao quá 50 công việc trong một lần' }
+        ),
+    },
+});
+const updateAssignedTask = validate({
+    params: { id: v.id({ label: 'ID công việc', message: 'ID công việc không hợp lệ' }) },
+    body: {
+        title: v.string({ required: true, max: 255, label: 'tên công việc', message: 'Tên công việc không được để trống' }),
+        ...taskText,
+        clan_id: nullableId('dòng họ'),
+    },
+});
+const taskIdParam = validate({
+    params: { id: v.id({ label: 'ID công việc', message: 'ID công việc không hợp lệ' }) },
+});
+const updateTaskStatus = validate({
+    params: { id: v.id({ label: 'ID công việc', message: 'ID công việc không hợp lệ' }) },
+    body: { status: v.enum(['in_progress', 'completed'], { required: true, label: 'trạng thái', message: 'Trạng thái không hợp lệ' }) },
+});
+
+// ---- Kỷ niệm / time capsule ----
+const memoryReader = v.object({
+    account_id: nullableId('account_id'),
+    person_id: nullableId('person_id'),
+});
+const createFamilyMemory = validate({
+    body: {
+        title: v.string({ max: 255, label: 'tiêu đề' }),
+        content: v.string({ max: 20000, label: 'nội dung' }),
+        media_url: v.string({ max: 2048, label: 'URL tệp' }),
+        mime_type: v.string({ max: 100, label: 'mime_type' }),
+        original_filename: v.string({ max: 255, label: 'tên tệp' }),
+        visibility: v.string({ max: 20, label: 'quyền xem' }),
+        scheduled_publish_at: v.string({ max: 40, label: 'thời điểm công khai' }),
+        readers: v.array(memoryReader, { max: 500, label: 'người được đọc' }),
+    },
+});
+const updateFamilyMemory = validate({
+    params: { id: v.id({ label: 'ID kỷ niệm', message: 'ID kỷ niệm không hợp lệ.' }) },
+    body: {
+        title: v.string({ max: 255, label: 'tiêu đề' }),
+        content: v.string({ max: 20000, label: 'nội dung' }),
+        visibility: v.string({ max: 20, label: 'quyền xem' }),
+    },
+});
+
+// ---- Hồ sơ cá nhân ----
+const updateMemberProfile = validate({
+    body: {
+        surname: name('họ'),
+        middle_name: name('tên đệm'),
+        first_name: name('tên'),
+        email: name('email', EMAIL_MAX),
+        hometown: name('quê quán', 255),
+        generation: v.int({ min: 0, max: 1000, label: 'đời' }),
+    },
+});
+const updateMyProfile = validate({
+    body: {
+        full_name: name('họ và tên', 150),
+        display_name: name('họ và tên', 150),
+        gender: v.string({ max: 20, label: 'giới tính' }),
+        birth_date: v.string({ max: 32, label: 'ngày sinh' }),
+        phone: name('số điện thoại', 30),
+        address: name('địa chỉ', 255),
+        hometown: name('quê quán', 255),
+        bio: v.string({ max: 5000, label: 'tiểu sử' }),
+        avatar_url: v.string({ max: 500000, label: 'ảnh đại diện' }), // có thể là data URL
+    },
+});
+
+// ---- Dòng họ ----
+const updateClanInfo = validate({
+    body: {
+        clan_name: v.string({ required: true, max: 255, label: 'tên dòng họ', message: 'Tên dòng họ không được để trống' }),
+        history: v.string({ max: 50000, label: 'lịch sử' }),
+        hall_address: v.string({ max: 500, label: 'địa chỉ nhà thờ họ' }),
+    },
+});
+const registerClan = validate({
+    body: {
+        clan_name: v.string({ required: true, max: 255, label: 'tên dòng họ', message: 'Thiếu tên dòng họ (clan_name)' }),
+        chief_account_id: v.id({ required: true, label: 'chief_account_id', message: 'Thiếu id trưởng họ (chief_account_id) hoặc không hợp lệ' }),
+    },
+});
+const registerClanWithManager = validate({
+    body: {
+        clan_name: v.string({ required: true, max: 255, label: 'tên dòng họ', message: 'Thiếu tên dòng họ' }),
+        email: v.string({ required: true, max: EMAIL_MAX, label: 'email', message: 'Thiếu email' }),
+        password: password({ required: true, message: 'Thiếu mật khẩu' }),
+        display_name: v.string({ required: true, max: 150, label: 'tên hiển thị', message: 'Thiếu tên hiển thị' }),
+        first_name: name('tên'),
+        middle_name: name('tên đệm'),
+        surname: name('họ'),
+        birth_date: v.string({ max: 32, label: 'ngày sinh' }),
+        gender: v.string({ max: 20, label: 'giới tính' }),
+        hometown: name('quê quán', 255),
+    },
+});
+
+// ---- Tài khoản (admin, trừ đổi vai trò) ----
+const adminCreateAccount = validate({
+    body: {
+        email: v.string({ max: EMAIL_MAX, label: 'email' }),
+        password: password(),
+        role_id: v.int({ min: 0, label: 'vai trò' }),
+        status: v.string({ max: 20, label: 'trạng thái' }),
+        display_name: name('tên hiển thị', 150),
+        first_name: name('tên'),
+        middle_name: name('tên đệm'),
+        surname: name('họ'),
+        clan_id: nullableId('ID dòng họ'),
+    },
+});
+const adminCreateManager = validate({
+    body: {
+        email: v.string({ max: EMAIL_MAX, label: 'email' }),
+        password: password(),
+        surname: name('họ'),
+        middle_name: name('tên đệm'),
+        first_name: name('tên'),
+        gender: v.string({ max: 20, label: 'giới tính' }),
+        birth_date: v.string({ max: 32, label: 'ngày sinh' }),
+        hometown: name('quê quán', 255),
+        generation: v.int({ min: 0, max: 1000, label: 'đời' }),
+        clan_id: v.id({ required: true, label: 'clan_id', message: 'Cần clan_id (dòng họ) hợp lệ' }),
+    },
+});
+const adminDeleteAccount = validate({
+    params: { id: v.id({ label: 'account_id', message: 'account_id không hợp lệ' }) },
+});
+
+// ---- Lưu trữ thành viên ----
+const archiveMember = validate({
+    params: { id: v.id({ label: 'account_id', message: 'account_id không hợp lệ' }) },
+    body: { reason: v.string({ max: 1000, label: 'lý do' }) },
+});
+const restoreArchivedMember = validate({
+    params: { id: v.id({ label: 'archive_id', message: 'archive_id không hợp lệ' }) },
+});
+
 module.exports = {
+    assignTask, createEventTask, bulkAssignTasks, updateAssignedTask, taskIdParam, updateTaskStatus,
+    createFamilyMemory, updateFamilyMemory, updateMemberProfile, updateMyProfile,
+    updateClanInfo, registerClan, registerClanWithManager,
+    adminCreateAccount, adminCreateManager, adminDeleteAccount, archiveMember, restoreArchivedMember,
     register, login, forgotPassword, resetPassword,
     createPerson, updatePerson, linkRelations, createFamily, updateFamily, addFamilyChild,
     fundIncome, fundExpense, fundReportPayment,

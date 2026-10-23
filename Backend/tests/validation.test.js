@@ -173,3 +173,88 @@ test('tree + role: id cha/mẹ rác bị chặn, cập nhật một phần khôn
     assert.ok(run(schemas.updateAccountAccess, { params: { id: '2' }, body: { role_id: 3 } }).nextCalled);
     assert.strictEqual(run(schemas.createInvitation, { body: { email: '' , role: 'member' } }).nextCalled, true);
 });
+
+// ---- Đợt 2: task, kỷ niệm, hồ sơ, dòng họ, tài khoản admin, lưu trữ ----
+test('v.object: kiểm tra trường khai báo, giữ trường lạ, từ chối không phải object', () => {
+    const rules = { list: v.array(v.object({ id: v.int({ min: 1 }) }), { max: 2 }) };
+    const ok = validateObject({ list: [{ id: '3', keep: 'x' }] }, rules);
+    assert.deepStrictEqual(ok.errors, []);
+    assert.deepStrictEqual(ok.values.list, [{ id: 3, keep: 'x' }]);
+    assert.strictEqual(validateObject({ list: ['a'] }, rules).errors.length, 1);
+    assert.strictEqual(validateObject({ list: [{ id: 0 }] }, rules).errors.length, 1);
+    assert.strictEqual(validateObject({ list: [{}, {}, {}] }, rules).errors.length, 1);
+});
+
+test('task schemas: tiêu đề/ids/trạng thái sai bị 400 với thông báo cũ', () => {
+    let r = run(schemas.assignTask, { body: { title: '   ', member_account_ids: [1] } });
+    assert.strictEqual(r.res.body.message, 'Tiêu đề công việc là bắt buộc');
+    assert.strictEqual(run(schemas.assignTask, { body: { title: 'A', member_account_ids: [1, 'x'] } }).res.statusCode, 400);
+    assert.strictEqual(run(schemas.assignTask, { body: { title: 'a'.repeat(300) } }).res.statusCode, 400);
+    const ok = run(schemas.assignTask, { body: { title: ' Dọn nhà thờ ', event_id: '4', member_account_ids: ['1', 2], extra: 1 } });
+    assert.ok(ok.nextCalled);
+    assert.deepStrictEqual(ok.req.body, { title: 'Dọn nhà thờ', event_id: 4, member_account_ids: [1, 2], extra: 1 });
+    assert.strictEqual(run(schemas.createEventTask, { params: { eventId: 'x' }, body: { title: 'A' } }).res.statusCode, 400);
+    r = run(schemas.updateAssignedTask, { params: { id: '2' }, body: { title: '' } });
+    assert.strictEqual(r.res.body.message, 'Tên công việc không được để trống');
+    assert.strictEqual(run(schemas.updateAssignedTask, { params: { id: 'abc' }, body: { title: 'A' } }).res.body.message, 'ID công việc không hợp lệ');
+    assert.strictEqual(run(schemas.taskIdParam, { params: { id: '0' } }).res.statusCode, 400);
+    assert.strictEqual(run(schemas.updateTaskStatus, { params: { id: '1' }, body: { status: 'done' } }).res.body.message, 'Trạng thái không hợp lệ');
+    assert.ok(run(schemas.updateTaskStatus, { params: { id: '1' }, body: { status: 'completed' } }).nextCalled);
+    const many = Array.from({ length: 51 }, () => ({ title: 't' }));
+    assert.strictEqual(run(schemas.bulkAssignTasks, { body: { tasks: many } }).res.body.message, 'Không được giao quá 50 công việc trong một lần');
+    const bulk = run(schemas.bulkAssignTasks, { body: { tasks: [{ title: ' A ', dueDate: '2025-01-01', member_ids: ['5'] }] } });
+    assert.ok(bulk.nextCalled);
+    assert.deepStrictEqual(bulk.req.body.tasks, [{ title: 'A', dueDate: '2025-01-01', member_ids: [5] }]);
+});
+
+test('memory/profile/clan/admin/archive schemas', () => {
+    assert.strictEqual(run(schemas.createFamilyMemory, { body: { title: 'x', readers: 'nope' } }).res.statusCode, 400);
+    assert.strictEqual(run(schemas.createFamilyMemory, { body: { readers: [{ account_id: 'abc' }] } }).res.statusCode, 400);
+    const mem = run(schemas.createFamilyMemory, { body: { visibility: 'selected', readers: [{ account_id: '3' }, { person_id: 4 }] } });
+    assert.ok(mem.nextCalled);
+    assert.deepStrictEqual(mem.req.body.readers, [{ account_id: 3 }, { person_id: 4 }]);
+    assert.strictEqual(run(schemas.updateFamilyMemory, { params: { id: 'x' }, body: {} }).res.body.message, 'ID kỷ niệm không hợp lệ.');
+    assert.strictEqual(run(schemas.updateMyProfile, { body: { full_name: 'a'.repeat(200) } }).res.statusCode, 400);
+    assert.strictEqual(run(schemas.updateMyProfile, { body: { phone: '1'.repeat(40) } }).res.statusCode, 400);
+    assert.ok(run(schemas.updateMyProfile, { body: { full_name: 'Nguyễn A', avatar_url: 'data:image/png;base64,AAAA' } }).nextCalled);
+    assert.strictEqual(run(schemas.updateMemberProfile, { body: { generation: 'abc' } }).res.statusCode, 400);
+    assert.ok(run(schemas.updateMemberProfile, { body: { generation: '', family_id: 'zzz' } }).nextCalled);
+    assert.strictEqual(run(schemas.updateClanInfo, { body: { clan_name: '  ' } }).res.body.message, 'Tên dòng họ không được để trống');
+    assert.strictEqual(run(schemas.registerClan, { body: { clan_name: 'A', chief_account_id: 'x' } }).res.body.message, 'Thiếu id trưởng họ (chief_account_id) hoặc không hợp lệ');
+    assert.strictEqual(run(schemas.registerClanWithManager, { body: { clan_name: 'A', email: 'a@b.vn' } }).res.body.message, 'Thiếu mật khẩu');
+    assert.strictEqual(run(schemas.adminCreateAccount, { body: { email: 'a@b.vn', password: 'x', role_id: 'admin' } }).res.statusCode, 400);
+    assert.ok(run(schemas.adminCreateAccount, { body: { email: 'a@b.vn', password: 'secret1', role_id: '3', clan_id: '' } }).nextCalled);
+    assert.strictEqual(run(schemas.adminCreateManager, { body: { email: 'a@b.vn', password: 'secret1' } }).res.body.message, 'Cần clan_id (dòng họ) hợp lệ');
+    assert.strictEqual(run(schemas.adminDeleteAccount, { params: { id: 'x' } }).res.body.message, 'account_id không hợp lệ');
+    assert.strictEqual(run(schemas.archiveMember, { params: { id: '1' }, body: { reason: 'x'.repeat(1001) } }).res.statusCode, 400);
+    assert.strictEqual(run(schemas.restoreArchivedMember, { params: { id: 'q' } }).res.body.message, 'archive_id không hợp lệ');
+});
+
+const memberCtl = require('../src/modules/member/member.controller');
+const clanCtl = require('../src/modules/clan/clan.controller');
+
+test('POST /member/memories: readers sai bị 400 trước mọi truy vấn DB; hợp lệ vào controller', async () => {
+    const mock = createMockDb(async () => [[]]);
+    const user = { id: 9, role_id: 3 };
+    for (const body of [{ title: 'x', readers: 'abc' }, { title: 'x', readers: [{ account_id: 'zz' }] }, { title: 'x'.repeat(300) }]) {
+        const r = await runRoute(schemas.createFamilyMemory, memberCtl.createFamilyMemory, { user, body });
+        assert.strictEqual(r.res.statusCode, 400, JSON.stringify(body));
+        assert.strictEqual(r.passed, false);
+    }
+    assert.strictEqual(mock.calls.length, 0, 'không được query DB khi dữ liệu sai');
+    const good = await runRoute(schemas.createFamilyMemory, memberCtl.createFamilyMemory, { user, body: { title: 'x' } });
+    assert.ok(good.passed);
+    assert.ok(mock.calls.length > 0);
+});
+
+test('POST /auth/register-clan: thiếu tên/chief sai bị 400 với thông báo cũ trước DB', async () => {
+    const mock = createMockDb(async () => [[]]);
+    const a = await runRoute(schemas.registerClan, clanCtl.registerClan, { body: { chief_account_id: 1 } });
+    assert.strictEqual(a.res.statusCode, 400);
+    assert.strictEqual(a.res.body.message, 'Thiếu tên dòng họ (clan_name)');
+    const b = await runRoute(schemas.registerClan, clanCtl.registerClan, { body: { clan_name: 'Họ Nguyễn', chief_account_id: 'abc' } });
+    assert.strictEqual(b.res.statusCode, 400);
+    const c = await runRoute(schemas.registerClan, clanCtl.registerClan, { body: { clan_name: 'x'.repeat(256), chief_account_id: 1 } });
+    assert.strictEqual(c.res.statusCode, 400);
+    assert.strictEqual(mock.calls.length, 0, 'không được query DB khi dữ liệu sai');
+});

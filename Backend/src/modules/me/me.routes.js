@@ -2,11 +2,13 @@ const express = require("express");
 const router = express.Router();
 const meController = require("./me.controller");
 const { verifyToken, checkRole } = require("../../middleware/authMiddleware");
+const schemas = require("../../shared/validation/schemas");
 
 router.put(
   "/profile",
   verifyToken,
   checkRole(["admin", "manager", "member"]),
+  schemas.updateMyProfile,
   meController.updateMyProfile
 );
 

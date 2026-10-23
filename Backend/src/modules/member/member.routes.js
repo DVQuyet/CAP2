@@ -10,7 +10,7 @@ router.get("/notifications", verifyToken, checkRole(["admin", "manager", "member
 router.patch("/notifications/read-all", verifyToken, checkRole(["admin", "manager", "member"]), memberController.markAllNotificationsRead);
 router.patch("/notifications/:id/read", verifyToken, checkRole(["admin", "manager", "member"]), memberController.markNotificationRead);
 router.get("/profile", verifyToken, checkRole(["admin", "manager", "member"]), memberController.getProfile);
-router.put("/profile", verifyToken, checkRole(["admin", "manager", "member"]), memberController.updateProfile);
+router.put("/profile", verifyToken, checkRole(["admin", "manager", "member"]), schemas.updateMemberProfile, memberController.updateProfile);
 router.put("/password", verifyToken, checkRole(["admin", "manager", "member"]), memberController.changePassword);
 router.post("/tree-edit-session", verifyToken, checkRole(["admin", "manager", "member"]), memberController.verifyTreeEditSession);
 
@@ -20,7 +20,7 @@ router.post("/chat", verifyToken, checkRole(["admin", "manager", "member"]), mem
 router.post("/reminders", verifyToken, checkRole(["manager", "member"]), memberController.createReminder);
 router.get("/tasks", verifyToken, checkRole(["member"]), memberController.getAssignedTasks);
 router.get("/events", verifyToken, checkRole(["member"]), memberController.getAssignedEvents);
-router.patch("/tasks/:id/status", verifyToken, checkRole(["member"]), memberController.updateTaskStatus);
+router.patch("/tasks/:id/status", verifyToken, checkRole(["member"]), schemas.updateTaskStatus, memberController.updateTaskStatus);
 
 router.post("/content/profile", verifyToken, checkRole(["admin", "manager", "member"]), memberController.proposeProfileUpdate);
 router.post("/content/post", verifyToken, checkRole(["admin", "manager", "member"]), schemas.postCreate, memberController.submitMaterial);
@@ -33,8 +33,8 @@ router.post("/posts/:id/like", verifyToken, checkRole(["admin", "manager", "memb
 router.get("/submissions", verifyToken, checkRole(["admin", "manager", "member"]), memberController.getMySubmissions);
 router.get("/memories", verifyToken, checkRole(["admin", "manager", "member"]), memberController.getFamilyMemories);
 router.get("/memories/reader-options", verifyToken, checkRole(["admin", "manager", "member"]), memberController.getMemoryReaderOptions);
-router.post("/memories", verifyToken, checkRole(["admin", "manager", "member"]), memberController.createFamilyMemory);
-router.patch("/memories/:id", verifyToken, checkRole(["admin", "manager", "member"]), memberController.updateFamilyMemory);
+router.post("/memories", verifyToken, checkRole(["admin", "manager", "member"]), schemas.createFamilyMemory, memberController.createFamilyMemory);
+router.patch("/memories/:id", verifyToken, checkRole(["admin", "manager", "member"]), schemas.updateFamilyMemory, memberController.updateFamilyMemory);
 router.delete("/memories/:id", verifyToken, checkRole(["admin", "manager", "member"]), memberController.deleteFamilyMemory);
 
 router.delete("/posts/:id", verifyToken, checkRole(["admin", "manager", "member"]), memberController.deletePost);
