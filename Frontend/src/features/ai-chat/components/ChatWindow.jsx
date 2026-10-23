@@ -7,6 +7,21 @@ import { askChatbot, clearChatbotHistory, getChatbotHistory, getChatbotSuggestio
 import MessageBubble from "./MessageBubble";
 import PersonContextSelector from "./PersonContextSelector";
 import SuggestionChips from "./SuggestionChips";
+
+// Giữ nguyên hint / intent_hint backend gửi kèm để chip hiển thị nhãn phụ và biểu tượng lịch.
+function normalizeSuggestions(list, prefix) {
+  return (Array.isArray(list) ? list : [])
+    .map((item, index) => {
+      const isText = typeof item === "string";
+      return {
+        id: (!isText && item?.id) || `${prefix}-${index}`,
+        text: isText ? item : item?.text,
+        hint: isText ? undefined : item?.hint,
+        intent_hint: isText ? undefined : item?.intent_hint,
+      };
+    })
+    .filter((item) => item.text);
+}
 import TypingIndicator from "./TypingIndicator";
 import VoiceInputButton from "./VoiceInputButton";
 
@@ -60,7 +75,7 @@ export default function ChatWindow({
     let cancelled = false;
     getChatbotSuggestions({ clanId: context.clanId, currentMemberId: context.currentMemberId })
       .then((data) => {
-        if (!cancelled) setSuggestions(data.suggestions || []);
+        if (!cancelled) setSuggestions(normalizeSuggestions(data.suggestions, "init"));
       })
       .catch(() => {});
     getChatbotHistory({ clanId: context.clanId, currentMemberId: context.currentMemberId, limit: 40 })
@@ -141,9 +156,7 @@ export default function ChatWindow({
         ...extra,
       });
       // Gợi ý câu hỏi tiếp theo theo câu trả lời vừa nhận (vd về người vừa hỏi tới).
-      const nextSuggestions = (Array.isArray(data.suggestions) ? data.suggestions : [])
-        .map((item, index) => ({ id: `reply-${Date.now()}-${index}`, text: typeof item === "string" ? item : item?.text }))
-        .filter((item) => item.text);
+      const nextSuggestions = normalizeSuggestions(data.suggestions, `reply-${Date.now()}`);
       if (nextSuggestions.length) setSuggestions(nextSuggestions);
       setMessages((prev) => [
         ...prev,

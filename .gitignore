@@ -14,3 +14,7 @@ backend/.env
 # File tạm / scratch
 *.tmp
 brain/
+
+# Agent worktrees / khóa lịch Claude
+.claude/worktrees/
+.claude/scheduled_tasks.lock
