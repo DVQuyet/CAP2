@@ -2421,6 +2421,14 @@
       "generation": "Đời {{count}}"
     },
     "export": {
+      "frame": "Khung trang trí",
+      "frameHint": "Thêm viền hoa văn và tên dòng họ khi xuất ảnh",
+      "mode": "Kiểu xuất",
+      "pdfSoon": "PDF (sắp có)",
+      "options": "Tuỳ chọn",
+      "background": "Có màu nền",
+      "includeTitle": "Có tiêu đề gia phả",
+      "appearance": "Giao diện cây",
       "eyebrow": "Xuất ảnh",
       "title": "Xuất ảnh cây gia phả",
       "format": "Định dạng",

@@ -4049,9 +4049,6 @@ body.fte-bodyFullscreen {
 
 .fte-branchToggle .material-symbols-outlined {
     font-size: 18px;
-
-.fte-exportModal.is-compact {
-    width: min(440px, 100%);
 }
 
 .fte-exportHint {

@@ -2439,7 +2439,7 @@ const coupleActionPerson = useMemo(
       },
       t,
     });
-    const result = await exportPreparedTree({ ...payload, t, onProgress });
+    const result = await exportPreparedTree({ ...payload, t, clan, onProgress });
     downloadBlob(result.blob, exportFileName(clan?.clan_name, result.extension));
     const info = result.scaleInfo;
     if (info?.limited) {
@@ -3489,7 +3489,7 @@ const submitCreateDialog = async () => {
         )}
       </TransformWrapper>
 
-      {exportDialogOpen && <TreeExportDialog onClose={() => setExportDialogOpen(false)} onExport={handleExport} />}
+      {exportDialogOpen && <TreeExportDialog treeStyle={treeStyle} onTreeStyleChange={updateTreeStyle} onClose={() => setExportDialogOpen(false)} onExport={handleExport} />}
 
       {coupleActionPerson ? (
         <div className="fte-modalOverlay" role="presentation" onMouseDown={() => setCouplePersonAction(null)}>

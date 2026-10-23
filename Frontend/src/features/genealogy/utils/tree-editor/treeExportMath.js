@@ -6,6 +6,8 @@ export const MAX_CANVAS_PIXELS = 250000000;
 export const EXPORT_SCALES = [1, 2, 3, 4];
 export const DEFAULT_EXPORT_SCALE = 3;
 export const EXPORT_PADDING = 120;
+export const EXPORT_FRAME_PADDING = 56;
+export const EXPORT_TITLE_HEIGHT = 110;
 
 export function normalizeExportScale(value) {
   const n = Number(value);

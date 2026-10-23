@@ -78,4 +78,7 @@ export const DEFAULT_TREE_EXPORT_OPTIONS = {
   mode: TREE_EXPORT_MODE.DETAIL,
   format: TREE_EXPORT_FORMAT.PNG,
   quality: 3,
+  includeBackground: true,
+  includeTitle: true,
+  includeFrame: false,
 };

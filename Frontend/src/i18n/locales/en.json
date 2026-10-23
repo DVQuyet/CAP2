@@ -2421,6 +2421,14 @@
       "generation": "Generation {{count}}"
     },
     "export": {
+      "frame": "Decorative frame",
+      "frameHint": "Add an ornamental border and clan name when exporting",
+      "mode": "Style",
+      "pdfSoon": "PDF (coming soon)",
+      "options": "Options",
+      "background": "Include background",
+      "includeTitle": "Include clan title",
+      "appearance": "Tree appearance",
       "eyebrow": "Export",
       "title": "Export family tree image",
       "format": "Format",

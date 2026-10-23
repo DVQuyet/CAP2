@@ -2,7 +2,7 @@ import { DEFAULT_TREE_EXPORT_OPTIONS, TREE_EXPORT_FORMAT, TREE_EXPORT_MODE } fro
 import { asArray } from "./treePersonUtils";
 import { buildDisplayTree, buildDisplayTreeLines } from "./treeDisplayNodes";
 import { TREE_CARD_ORIENTATION, TREE_THEME, TREE_THEMES } from "./treeDisplayConfig";
-import { computeContentBounds, decideRasterScale, exportFileName, normalizeExportScale } from "./treeExportMath";
+import { EXPORT_FRAME_PADDING, EXPORT_PADDING, EXPORT_TITLE_HEIGHT, computeContentBounds, decideRasterScale, exportFileName, normalizeExportScale } from "./treeExportMath";
 import { buildTreeSvg } from "./treeExportSvg";
 import { loadEmbeddedFontCss, svgToPngBlob, waitForExportFonts } from "./treeExportRaster";
 
@@ -51,6 +51,9 @@ function normalizeExportOptions(options = {}) {
     format: format === TREE_EXPORT_FORMAT.PDF ? TREE_EXPORT_FORMAT.PNG : format,
     mode: options.mode === TREE_EXPORT_MODE.OVERVIEW ? TREE_EXPORT_MODE.OVERVIEW : TREE_EXPORT_MODE.DETAIL,
     quality: normalizeExportScale(options.quality),
+    includeBackground: options.includeBackground ?? DEFAULT_TREE_EXPORT_OPTIONS.includeBackground,
+    includeTitle: options.includeTitle ?? DEFAULT_TREE_EXPORT_OPTIONS.includeTitle,
+    includeFrame: Boolean(options.includeFrame),
     treeStyle: normalizeExportTreeStyle(options.treeStyle),
   };
 }
@@ -81,7 +84,7 @@ export function prepareTreeExportPayload({ people = [], families = [], childRows
 }
 
 // Dựng SVG đầy đủ: chờ font, nhúng font, đo khung bao trọn thẻ + đường nối (không bị cắt mép).
-export async function renderTreeSvg({ nodes, lines, directLineagePersonIds = [], exportOptions = {}, t, onProgress }) {
+export async function renderTreeSvg({ nodes, lines, directLineagePersonIds = [], exportOptions = {}, clan, t, onProgress }) {
   const options = normalizeExportOptions(exportOptions);
   onProgress?.("fonts", 0.1);
   await waitForExportFonts();
@@ -89,13 +92,18 @@ export async function renderTreeSvg({ nodes, lines, directLineagePersonIds = [],
   onProgress?.("render", 0.4);
   const drawable = asArray(nodes).filter((node) => node?.type);
   const drawLines = asArray(lines).filter((line) => line?.d && line.type !== "route-control");
-  const bounds = computeContentBounds(drawable, drawLines.map((line) => line.d));
+  const content = computeContentBounds(drawable, drawLines.map((line) => line.d), EXPORT_PADDING + (options.includeFrame ? EXPORT_FRAME_PADDING : 0));
+  // Khối tiêu đề nằm phía trên cây nên mở rộng khung lên trên thay vì dịch thẻ.
+  const titleHeight = options.includeTitle ? EXPORT_TITLE_HEIGHT : 0;
+  const bounds = { ...content, y: content.y - titleHeight, height: content.height + titleHeight };
   const measureCtx = document.createElement("canvas").getContext("2d");
   return buildTreeSvg({
     nodes: drawable,
     lines: drawLines,
     bounds,
     treeStyle: options.treeStyle,
+    options,
+    clan,
     overview: options.mode === TREE_EXPORT_MODE.OVERVIEW,
     directIds: new Set(asArray(directLineagePersonIds).map(Number)),
     t,

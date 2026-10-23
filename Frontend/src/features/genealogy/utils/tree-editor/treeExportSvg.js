@@ -30,11 +30,23 @@ function renderLine(line, palette, lineWidth) {
   return `<path d="${escapeXml(line.d)}" fill="none" stroke="${stroke}" stroke-width="${lineWidth}" stroke-linecap="round" stroke-linejoin="round"${dash ? ` stroke-dasharray="${dash}"` : ""}/>`;
 }
 
-function textEl(x, y, content, { size, weight, fill, anchor = "start", family = BODY_FONT }) {
-  return `<text x="${num(x)}" y="${num(y)}" font-size="${size}" font-weight="${weight}" fill="${fill}" text-anchor="${anchor}" dominant-baseline="central" font-family="${escapeXml(family)}">${escapeXml(content)}</text>`;
+function textEl(x, y, content, { size, weight, fill, anchor = "start", family = BODY_FONT, baseline = "central" }) {
+  return `<text x="${num(x)}" y="${num(y)}" font-size="${size}" font-weight="${weight}" fill="${fill}" text-anchor="${anchor}" dominant-baseline="${baseline}" font-family="${escapeXml(family)}">${escapeXml(content)}</text>`;
 }
 
-export function buildTreeSvg({ nodes = [], lines = [], bounds, treeStyle = {}, overview = false, directIds = new Set(), t, fontCss = "", measureCtx }) {
+function frameSvg(bounds, palette) {
+  const { x, y, width, height } = bounds;
+  const outer = 18;
+  const inner = 30;
+  let out = `<rect x="${x + outer}" y="${y + outer}" width="${width - outer * 2}" height="${height - outer * 2}" rx="18" fill="none" stroke="${palette.accent}" stroke-width="3"/>`;
+  out += `<rect x="${x + inner}" y="${y + inner}" width="${width - inner * 2}" height="${height - inner * 2}" rx="12" fill="none" stroke="${palette.gold}" stroke-width="1.2"/>`;
+  [[x + inner, y + inner, 1, 1], [x + width - inner, y + inner, -1, 1], [x + inner, y + height - inner, 1, -1], [x + width - inner, y + height - inner, -1, -1]].forEach(([cx, cy, dx, dy]) => {
+    out += `<g transform="translate(${cx} ${cy}) scale(${dx} ${dy})"><path d="M22 0A22 22 0 0 1 0 22M12 0A12 12 0 0 1 0 12" fill="none" stroke="${palette.gold}" stroke-width="1.6"/><path d="M30 0L36 6L30 12L24 6ZM0 30L6 36L12 30L6 24Z" fill="${palette.accent}"/></g>`;
+  });
+  return out;
+}
+
+export function buildTreeSvg({ nodes = [], lines = [], bounds, treeStyle = {}, options = {}, clan, overview = false, directIds = new Set(), t, fontCss = "", measureCtx }) {
   const palette = paletteFor(treeStyle.theme);
   const background = treeStyle.backgroundColor || palette.canvas;
   const nameSize = Math.round((Number(treeStyle.fontSize) || 17) * 0.88);
@@ -155,8 +167,16 @@ export function buildTreeSvg({ nodes = [], lines = [], bounds, treeStyle = {}, o
   });
 
   const { x, y, width, height } = bounds;
+  const inset = options.includeFrame ? 30 : 0;
+  const titleX = options.includeFrame ? x + width / 2 : x + inset + 42;
+  const titleAnchor = options.includeFrame ? "middle" : "start";
+  const title = options.includeTitle
+    ? textEl(titleX, y + inset + 54, tr("tree.title", undefined, "Gia phả").toLocaleUpperCase("vi-VN"), { size: 15, weight: 700, fill: palette.muted, anchor: titleAnchor, family: palette.titleFont, baseline: "alphabetic" })
+      + textEl(titleX, y + inset + 96, String(clan?.clan_name || "Dòng họ").toLocaleUpperCase("vi-VN"), { size: 36, weight: 800, fill: palette.accent, anchor: titleAnchor, family: palette.titleFont, baseline: "alphabetic" })
+    : "";
+  const backgroundRect = options.includeBackground === false ? "" : `<rect x="${x}" y="${y}" width="${width}" height="${height}" fill="${escapeXml(background)}"/>`;
   const style = fontCss ? `<style><![CDATA[${fontCss}]]></style>` : "";
   const defs = `<defs>${style}<filter id="sh" x="-10%" y="-10%" width="120%" height="140%"><feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="#000" flood-opacity="0.12"/></filter></defs>`;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="${x} ${y} ${width} ${height}" text-rendering="geometricPrecision" shape-rendering="geometricPrecision">${defs}<rect x="${x}" y="${y}" width="${width}" height="${height}" fill="${escapeXml(background)}"/>${lineSvg}${parts.join("")}</svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="${x} ${y} ${width} ${height}" text-rendering="geometricPrecision" shape-rendering="geometricPrecision">${defs}${backgroundRect}${options.includeFrame ? frameSvg(bounds, palette) : ""}${title}${lineSvg}${parts.join("")}</svg>`;
   return { svg, width, height };
 }
