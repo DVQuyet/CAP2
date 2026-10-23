@@ -96,7 +96,7 @@ Prefix: `/api/chatbot` (role admin, manager, member; có rate limit)
 
 ## Phân trang và lỗi validation
 
-- Phân trang keyset cho `GET /api/member/notifications`, `GET /api/member/memories`, `GET /api/manager/events`, `GET /api/member/events`: query `limit`, `before_id`; response thêm `has_more`, `next_before_id`. Riêng manager/member events chỉ phân trang khi client gửi `limit` hoặc `before_id`, không gửi thì trả tất cả như cũ. Thông báo vẫn trả `unread_count`.
+- Phân trang keyset cho `GET /api/member/notifications`, `GET /api/member/memories`, `GET /api/manager/events`, `GET /api/member/events`: query `limit`, `before_id`; response thêm `has_more`, `next_before_id`. Riêng manager/member events chỉ phân trang khi client gửi `limit` hoặc `before_id`, không gửi thì trả tất cả như cũ. Thông báo vẫn trả `unread_count`. `GET /api/manager/events` trang đầu (không có `before_id`) trả thêm `counts: { total, ongoing, ended }` cho cả dòng họ.
 - Route ghi có validate đầu vào (`Backend/src/shared/validation/`). Dữ liệu sai trả 400:
 
 ```json
