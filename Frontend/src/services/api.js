@@ -1,4 +1,3 @@
-import { logout } from "../shared/utils/auth";
 // Trang mở từ máy cá nhân (localhost) thì gọi backend local, kể cả khi chạy bản build (npm run preview);
 // chỉ bản triển khai thật mới gọi backend Render. Đặt VITE_API_BASE_URL nếu muốn trỏ chỗ khác.
 const IS_LOCAL_PAGE = typeof window !== "undefined" && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname);
@@ -16,33 +15,6 @@ export function buildApiUrl(path = "") {
 
   const normalizedPath = value.startsWith("/") ? value : `/${value}`;
   return API_BASE_URL ? `${API_BASE_URL}${normalizedPath}` : normalizedPath;
-}
-
-async function parseResponse(response) {
-  const contentType = response.headers.get("content-type") || "";
-  if (contentType.includes("application/json")) {
-    return response.json();
-  }
-  return response.text();
-}
-
-// Phiên không còn hợp lệ (token hết hạn, tài khoản bị xóa/khóa): xóa phiên và đưa về trang phù hợp.
-// Chỉ áp dụng khi request có gửi token và không phải chính các endpoint đăng nhập.
-const SESSION_LOSS_CODES = new Set(["TOKEN_INVALID", "ACCOUNT_NOT_FOUND", "ACCOUNT_DISABLED"]);
-let redirectingForSession = false;
-
-function handleSessionLoss(status, data, hadToken, path) {
-  if (!hadToken || redirectingForSession || typeof window === "undefined") return;
-  if (String(path || "").startsWith("/api/auth/")) return;
-
-  const code = data?.code || null;
-  const lost = SESSION_LOSS_CODES.has(code) || (status === 401 && code === "NO_TOKEN");
-  if (!lost) return;
-
-  redirectingForSession = true;
-  logout();
-  const target = code === "ACCOUNT_DISABLED" ? "/account-disabled" : "/login";
-  if (window.location.pathname !== target) window.location.assign(target);
 }
 
 export async function apiRequest(path, options = {}) {
@@ -63,7 +35,6 @@ export async function apiRequest(path, options = {}) {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    handleSessionLoss(response.status, data, Boolean(token), path);
     const error = new Error(data.message || data.error || "Có lỗi xảy ra.");
     error.status = response.status;
     error.data = data;

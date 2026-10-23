@@ -537,6 +537,7 @@
   },
   "auth": {
     "close": "Close",
+    "sessionExpired": "Your session has expired, please sign in again",
     "login": {
       "title": "Welcome to Gia Pha Viet!",
       "subtitle": "Log in to continue",

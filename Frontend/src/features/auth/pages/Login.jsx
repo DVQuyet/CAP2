@@ -1,10 +1,11 @@
 ﻿import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import "./login.css";
 import { loginAPI } from "../../../api/authService";
 import { buildApiUrl } from "../../../services/api";
 import { persistAuthSession } from "../../../shared/utils/auth";
+import { safeRedirectPath } from "../../../shared/utils/sessionExpiry";
 
 const initialLoginForm = {
   email: "",

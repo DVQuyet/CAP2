@@ -4,6 +4,7 @@ import { installEscapeCloseOverlay } from "../shared/utils/escapeCloseOverlay";
 import { LanguageProvider } from "../i18n/LanguageContext";
 import ColdStartBanner from "../shared/components/ColdStartBanner";
 import { installPendingFetchTracker } from "../services/pendingRequests";
+import { installSessionGuard } from "../services/sessionGuard";
 import { API_BASE_URL } from "../services/api";
 import ConfirmProvider from "../shared/components/ConfirmProvider";
 import "./App.css";

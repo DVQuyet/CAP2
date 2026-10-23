@@ -537,6 +537,7 @@
   },
   "auth": {
     "close": "Đóng",
+    "sessionExpired": "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại",
     "login": {
       "title": "Chào mừng đến với Gia Phả Việt!",
       "subtitle": "Hãy đăng nhập để tiếp tục",

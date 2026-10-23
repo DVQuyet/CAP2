@@ -1,8 +1,15 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { isAuthenticated, getCurrentUser } from "../utils/auth";
+import { isAuthenticated, getCurrentUser, getAuthToken, logout } from "../utils/auth";
+import { isTokenExpired, buildLoginRedirect } from "../utils/sessionExpiry";
 
 export default function ProtectedRoute({ allowedRoles }) {
   const location = useLocation();
+
+  // Token đã hết hạn từ trước khi mở app: xóa phiên và về đăng nhập (kèm trang định quay lại).
+  if (isAuthenticated() && isTokenExpired(getAuthToken())) {
+    logout();
+    return <Navigate to={buildLoginRedirect(location.pathname, location.search)} replace />;
+  }
 
   if (!isAuthenticated()) {
     return <Navigate to="/" replace />;
