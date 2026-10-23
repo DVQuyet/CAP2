@@ -63,3 +63,15 @@
   color: #4b5563;
   line-height: 1.5;
 }
+
+@media (max-width: 640px) {
+  .help-dialog {
+    max-height: 100dvh;
+    padding: 16px;
+  }
+
+  .help-dialog-head button {
+    width: 40px;
+    height: 40px;
+  }
+}

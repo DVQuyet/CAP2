@@ -115,3 +115,29 @@ textarea {
 *::-webkit-scrollbar-thumb:hover {
   background-color: rgba(92, 37, 23, 0.62);
 }
+
+/* Mobile audit: touch targets, long text, input sizing */
+@media (max-width: 760px) {
+  p,
+  li,
+  h1,
+  h2,
+  h3,
+  h4,
+  label,
+  small,
+  a {
+    overflow-wrap: anywhere;
+  }
+
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="tel"],
+  input[type="search"],
+  input[type="number"],
+  input[type="date"],
+  select {
+    min-height: 44px;
+  }
+}

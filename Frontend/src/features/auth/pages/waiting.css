@@ -29,3 +29,16 @@
     font-size: 50px;
     color: #ffc107;
 }
+
+@media (max-width: 480px) {
+    .waiting-page,
+    .waiting-container {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+    .waiting-card {
+        display: block;
+        padding: 24px 18px;
+        max-width: 100%;
+    }
+}
