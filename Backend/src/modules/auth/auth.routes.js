@@ -5,6 +5,7 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const FacebookStrategy = require('passport-facebook').Strategy;
 const authController = require('./auth.controller');
 const clanController = require('../clan/clan.controller');
+const schemas = require('../../shared/validation/schemas');
 const {
     loginRateLimit,
     registerRateLimit,
@@ -161,16 +162,16 @@ function oauthCallback(provider) {
     };
 }
 
-router.post('/register', registerRateLimit, authController.register);
-router.post('/login', loginRateLimit, authController.login);
+router.post('/register', registerRateLimit, schemas.register, authController.register);
+router.post('/login', loginRateLimit, schemas.login, authController.login);
 router.get('/google', requireOAuthConfig('google'), passport.authenticate('google', { scope: ['profile', 'email'], session: false }));
 router.get('/google/callback', oauthCallback('google'));
 router.get('/facebook', requireOAuthConfig('facebook'), passport.authenticate('facebook', facebookAuthOptions));
 router.get('/facebook/callback', oauthCallback('facebook'));
 router.get('/me', authController.me);
 router.get('/social-registration', authController.getSocialRegistrationProfile);
-router.post('/forgot-password', forgotPasswordRateLimit, authController.requestPasswordReset);
-router.post('/reset-password', resetPasswordRateLimit, authController.resetPasswordWithCode);
+router.post('/forgot-password', forgotPasswordRateLimit, schemas.forgotPassword, authController.requestPasswordReset);
+router.post('/reset-password', resetPasswordRateLimit, schemas.resetPassword, authController.resetPasswordWithCode);
 router.post('/register-clan', registerRateLimit, clanController.registerClan);
 router.post('/register-clan-manager', registerRateLimit, clanController.registerClanWithManager);
 

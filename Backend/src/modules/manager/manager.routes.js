@@ -7,6 +7,7 @@
         verifyToken,
         checkRole
     } = require('../../middleware/authMiddleware');
+    const schemas = require('../../shared/validation/schemas');
 
     // Chỉ Admin (1) và Manager (2) mới được truy cập manager dashboard
     router.get('/stats', verifyToken, checkRole(['admin', 'manager']), managerController.getStats);
@@ -66,10 +67,10 @@
     router.get('/clans/:clanId/family-tree', verifyToken, checkRole(['admin', 'manager']), managerController.getFamilyTree);
     router.patch('/clans/:clanId/family-tree/layout', verifyToken, checkRole(['admin', 'manager']), managerController.saveTreeLayout);
     router.post('/tree/layout/batch', verifyToken, checkRole(['admin', 'manager', 'member']), managerController.saveTreeLayoutBatch);
-    router.post('/people', verifyToken, checkRole(['admin', 'manager', 'member']), managerController.createPerson);
-    router.post('/people/create', verifyToken, checkRole(['admin', 'manager', 'member']), managerController.createPerson);
-    router.patch('/people/link', verifyToken, checkRole(['admin', 'manager', 'member']), managerController.linkRelations);
-    router.post('/people/link/preview', verifyToken, checkRole(['admin', 'manager', 'member']), managerController.previewRelations);
+    router.post('/people', verifyToken, checkRole(['admin', 'manager', 'member']), schemas.createPerson, managerController.createPerson);
+    router.post('/people/create', verifyToken, checkRole(['admin', 'manager', 'member']), schemas.createPerson, managerController.createPerson);
+    router.patch('/people/link', verifyToken, checkRole(['admin', 'manager', 'member']), schemas.linkRelations, managerController.linkRelations);
+    router.post('/people/link/preview', verifyToken, checkRole(['admin', 'manager', 'member']), schemas.linkRelations, managerController.previewRelations);
     // Kiểm tra toàn cây, sửa đời hàng loạt, chính sách gia phả, lịch sử xác nhận, tra xưng hô.
     router.get('/tree/audit', verifyToken, checkRole(['admin', 'manager']), managerController.auditFamilyTree);
     router.post('/tree/recompute-generations', verifyToken, checkRole(['admin', 'manager']), managerController.recomputeGenerations);
@@ -79,10 +80,10 @@
     router.get('/tree/kinship', verifyToken, checkRole(['admin', 'manager']), managerController.describeKinshipBetween);
     router.patch('/people/layout', verifyToken, checkRole(['admin', 'manager', 'member']), managerController.saveTreeLayout);
     router.patch('/people/:id/position', verifyToken, checkRole(['admin', 'manager', 'member']), managerController.updatePersonPosition);
-    router.patch('/people/:id', verifyToken, checkRole(['admin', 'manager', 'member']), managerController.updateTreePerson);
-    router.post('/families', verifyToken, checkRole(['admin', 'manager', 'member']), managerController.createFamily);
-    router.patch('/families/:familyId', verifyToken, checkRole(['admin', 'manager', 'member']), managerController.updateFamily);
-    router.post('/families/:familyId/children', verifyToken, checkRole(['admin', 'manager', 'member']), managerController.addFamilyChild);
+    router.patch('/people/:id', verifyToken, checkRole(['admin', 'manager', 'member']), schemas.updatePerson, managerController.updateTreePerson);
+    router.post('/families', verifyToken, checkRole(['admin', 'manager', 'member']), schemas.createFamily, managerController.createFamily);
+    router.patch('/families/:familyId', verifyToken, checkRole(['admin', 'manager', 'member']), schemas.updateFamily, managerController.updateFamily);
+    router.post('/families/:familyId/children', verifyToken, checkRole(['admin', 'manager', 'member']), schemas.addFamilyChild, managerController.addFamilyChild);
     router.delete('/people/:id', verifyToken, checkRole(['admin', 'manager', 'member']), managerController.deleteTreePerson);
     
     // --- 💰 QUẢN LÝ QUỸ DÒNG HỌ (CLAN FUND) 💰 ---
@@ -97,7 +98,7 @@
     router.get('/fund/campaigns/:id', verifyToken, checkRole(['admin', 'manager']), fundController.getCampaignDetails);
     router.post('/fund/approve', verifyToken, checkRole(['admin', 'manager']), fundController.approvePayment);
     router.get('/fund/stats', verifyToken, checkRole(['admin', 'manager']), fundController.getFundStats);
-    router.post('/fund/income', verifyToken, checkRole(['admin', 'manager']), fundController.addIncome);
-    router.post('/fund/expense', verifyToken, checkRole(['admin', 'manager']), fundController.addExpense);
+    router.post('/fund/income', verifyToken, checkRole(['admin', 'manager']), schemas.fundIncome, fundController.addIncome);
+    router.post('/fund/expense', verifyToken, checkRole(['admin', 'manager']), schemas.fundExpense, fundController.addExpense);
 
     module.exports = router;

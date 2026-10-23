@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const invitationController = require("./invitation.controller");
 const { verifyToken, checkRole } = require("../../middleware/authMiddleware");
+const schemas = require("../../shared/validation/schemas");
 
 // Health check - không cần token
 router.get("/health", (req, res) => {
@@ -22,6 +23,7 @@ router.post(
   "/",
   verifyToken,
   checkRole(["admin", "manager"]),
+  schemas.createInvitation,
   invitationController.createInvitation
 );
 

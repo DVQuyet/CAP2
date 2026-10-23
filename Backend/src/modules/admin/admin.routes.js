@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const adminController = require("./admin.controller");
+const schemas = require("../../shared/validation/schemas");
 const { verifyToken, checkRole } = require("../../middleware/authMiddleware");
 
 router.get("/clans", verifyToken, checkRole(["admin"]), adminController.listClans);
@@ -11,7 +12,7 @@ router.get("/clans/:clanId/tree", verifyToken, checkRole(["admin"]), adminContro
 router.get("/clans/:clanId/tasks", verifyToken, checkRole(["admin"]), adminController.getTasksByClan);
 router.get("/accounts", verifyToken, checkRole(["admin"]), adminController.listAccounts);
 router.post("/accounts", verifyToken, checkRole(["admin"]), adminController.createAccount);
-router.put("/accounts/:id", verifyToken, checkRole(["admin"]), adminController.updateAccountAccess);
+router.put("/accounts/:id", verifyToken, checkRole(["admin"]), schemas.updateAccountAccess, adminController.updateAccountAccess);
 router.delete("/accounts/:id", verifyToken, checkRole(["admin"]), adminController.deleteAccount);
 router.post("/managers", verifyToken, checkRole(["admin"]), adminController.createManagerAccount);
 
