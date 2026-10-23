@@ -56,6 +56,8 @@ Prefix: `/api/calendar`
 | POST | `/api/calendar/events` | admin, manager, member | Tạo sự kiện lịch |
 | PUT | `/api/calendar/events/:id` | admin, manager, member | Cập nhật sự kiện lịch |
 | DELETE | `/api/calendar/events/:id` | admin, manager, member | Xóa sự kiện lịch |
+
+Sự kiện lịch có thêm `person_id` (gắn với người trên cây, có thể null) và `repeat_yearly` (boolean, lặp hằng năm: giỗ, sinh nhật). Cần migrate cột `calendar_events.person_id`, `calendar_events.repeat_yearly`.
 | POST | `/api/calendar/reminders/run` | admin, manager | Chạy xử lý reminder đến hạn |
 
 ## Billing
@@ -79,6 +81,27 @@ Prefix: `/api/payments`
 | POST | `/api/payments/sepay/webhook` | Public/webhook | Nhận webhook SePay |
 | GET | `/api/payments/status/:orderCode` | manager, admin | Kiểm tra trạng thái thanh toán |
 | PATCH | `/api/payments/:paymentId/cancel` | manager, admin | Hủy giao dịch đang chờ |
+
+## Chatbot
+
+Prefix: `/api/chatbot` (role admin, manager, member; có rate limit)
+
+| Method | Endpoint | Mô tả ngắn |
+|---|---|---|
+| POST | `/api/chatbot/ask` (alias `/message`) | Hỏi chatbot. Response thêm `messageId` (id tin trả lời đã lưu, null nếu lưu lỗi), `personIds` (mọi id người được nhắc, người trọng tâm đứng đầu; `[]` nếu không có), `relationshipPath` (câu hỏi quan hệ; `[]` khi không có đường duy nhất) |
+| GET | `/api/chatbot/history` | Lịch sử chat; mỗi tin trả lời có `feedbackRating` (1, -1 hoặc null) |
+| DELETE | `/api/chatbot/history?clanId=` | Xóa lịch sử chat (ẩn mềm bằng `hidden_at`); bắt buộc `clanId` |
+| POST | `/api/chatbot/messages/:id/feedback` | Đánh giá tin trả lời, body `{ rating: 1 \| -1, comment? }` |
+| GET | `/api/chatbot/suggestions` | Gợi ý câu hỏi; mỗi gợi ý có `text`, `intent_hint`, và `hint` (vd "còn 5 ngày") cho gợi ý giỗ/sinh nhật sắp tới |
+
+## Phân trang và lỗi validation
+
+- Phân trang keyset cho `GET /api/member/notifications`, `GET /api/member/memories`, `GET /api/manager/events`, `GET /api/member/events`: query `limit`, `before_id`; response thêm `has_more`, `next_before_id`. Riêng manager/member events chỉ phân trang khi client gửi `limit` hoặc `before_id`, không gửi thì trả tất cả như cũ. Thông báo vẫn trả `unread_count`.
+- Route ghi có validate đầu vào (`Backend/src/shared/validation/`). Dữ liệu sai trả 400:
+
+```json
+{ "success": false, "message": "<lỗi đầu tiên>", "errors": [{ "field": "email", "message": "..." }] }
+```
 
 ## AI qua Backend
 

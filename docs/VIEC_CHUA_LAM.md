@@ -1,6 +1,6 @@
 # Việc chưa làm — CAP2 (Gia Phả Việt)
 
-Cập nhật 22/10/2026, quét lại mã ở commit `f41159b`. Đây là **danh sách duy nhất** các việc còn mở; gộp từ
+Cập nhật 23/10/2026, quét lại mã ở commit `03e5681`. Đây là **danh sách duy nhất** các việc còn mở; gộp từ
 `CAI_THIEN_HE_THONG.md` (mục "Chưa làm"), `TOI_UU_AI_VA_GIA_PHA.md` (mục 2–6) và `TIEP_TUC_AI_TRA_LOI.md` (mục "Chờ nhóm quyết định").
 Các file đó giữ làm nhật ký; việc mới thêm vào đây.
 
@@ -45,6 +45,23 @@ Còn mở từ đợt này:
 - "ba co toi" không dấu nay hiểu là cụ (mơ hồ với "bà cô"); "chu ba/thim ba" không dấu chưa nhận thứ bậc.
 - Chưa ai mở giao diện mới trên trình duyệt thật (390px/1280px).
 
+Đợt 4 (23/10) — commit `fb6587f`..`03e5681` (chưa push):
+- Hết phiên đăng nhập thì chuyển về `/login?redirect=...`, đăng nhập xong quay lại trang cũ.
+- Validate đầu vào (`Backend/src/shared/validation/`) cho route ghi: auth, tree, fund, post, invitation, đổi role, task, kỷ niệm, hồ sơ, thông tin/đăng ký dòng họ, tài khoản admin, lưu trữ. Lỗi trả 400 dạng `{success:false,message,errors:[{field,message}]}`.
+- Cây gia phả thu gọn/mở rộng nhánh: mặc định 3 đời quanh người đang xem, nhớ theo từng người dùng + dòng họ, có "mở hết/đặt lại" và badge +N.
+- Trang "Sổ gia phả" in/lưu PDF (`/user|/manager/genealogy-book`): gom theo đời, lọc nhanh, chỉ người còn sống; có link từ trang cây.
+- Xuất cây bằng SVG vector: PNG 1–4x rasterize từ SVG, nhúng font, thẻ tham chiếu; giữ các tùy chọn cũ (chế độ, nền, tiêu đề, khung, giao diện).
+- Chatbot: giỗ/sinh nhật gắn `person_id`, lặp hằng năm (tự điền ngày từ hồ sơ); sửa/xóa lịch qua chat có thẻ xác nhận, chỉ lịch của chính mình. Từ thứ bậc sinh không dấu ("chu ba", "thim nam"...).
+- CSS mobile: panel thông báo, modal/bảng quỹ-thành viên-bài viết, cỡ input/nút chạm, xuống dòng chữ dài. Admin có nút "Thử lại" ở `ErrorState`.
+
+**Deploy backend đợt này cần:** sao lưu DB, rồi `npm run migrate` (bảng `chatbot_feedback`; cột `chatbot_messages.hidden_at`, `calendar_events.person_id`, `calendar_events.repeat_yearly`).
+
+Còn mở từ đợt 4:
+- Chưa QA trên trình duyệt thật: agent Chrome không gõ mật khẩu production, người dùng phải tự đăng nhập.
+- Ảnh đại diện khi xuất cây vẫn là chữ cái đầu, chưa nhúng ảnh thật.
+- Validate chưa phủ route calendar/events.
+- "ba co toi" vẫn mơ hồ (cụ vs bà cô).
+
 ## P0 — Chặn hoặc rủi ro trên môi trường thật (làm trước khi demo/nộp)
 
 Không làm được từ máy local vì `Backend/.env` trỏ vào DB thật; cần người có quyền Render/Aiven.
@@ -74,14 +91,14 @@ Không làm được từ máy local vì `Backend/.env` trỏ vào DB thật; c�
 | 2.3 | "Tải thêm" cho thông báo, sự kiện, kỷ niệm | `member.controller.js:798` lấy thông báo `LIMIT 50`, `:745` lấy sự kiện `LIMIT 50`, kỷ niệm có trần; dùng lại mẫu `beforeId` của bảng tin | Fullstack | M |
 | 2.4 | Ghi log câu chatbot không hiểu (`intent = 'unknown'` hoặc phải nhờ LLM) + script lấy top 20 câu mỗi tuần | Chưa có log hay script nào | Backend | S |
 | 2.5 | Nút 👍/👎 cho câu trả lời của chatbot (lưu vào `chatbot_messages`) | Chưa có | Fullstack | S |
-| 2.6 | Rà UI mobile 390px: tràn ngang, modal không đóng bằng Esc/click ra ngoài, nút bị che | Lấy danh sách từ lần chạy `KICH_BAN_TEST_FULL.md` | Design | M |
-| 2.7 | Thay 17 chỗ `window.confirm` bằng dialog chung của app | Giữ lại có chủ đích vì handler phải chuyển sang async; nên làm cùng 2.6 | Design | M |
+| 2.6 ✅ | Rà UI mobile 390px: tràn ngang, modal không đóng bằng Esc/click ra ngoài, nút bị che | Lấy danh sách từ lần chạy `KICH_BAN_TEST_FULL.md` | Design | M |
+| 2.7 ✅ | Thay 17 chỗ `window.confirm` bằng dialog chung của app | Giữ lại có chủ đích vì handler phải chuyển sang async; nên làm cùng 2.6 | Design | M |
 
 ## P3 — Chất lượng mã (làm khi đã có test bảo vệ)
 
 | # | Việc | Hiện trạng | Công sức |
 |---|---|---|---|
-| 3.1 | Validate đầu vào bằng zod cho các route ghi (auth, tree, fund, payment, calendar) | Chưa dùng thư viện nào | M |
+| 3.1 ✅ | Validate đầu vào bằng zod cho các route ghi (auth, tree, fund, payment, calendar) | Chưa dùng thư viện nào | M |
 | 3.2 | Tách `FamilyTreeEditor.jsx` | **4142 dòng**; trước khi tách cần test giao diện cho thêm, sửa, xóa người và lưu bố cục | L |
 | 3.3 | Tách `ClanFundPage.jsx` (2756 dòng) và `modules/member/member.controller.js` (2374 dòng) | Tách theo nhóm route hoặc tab, không đổi API | M–L |
 | 3.4 | Giảm cảnh báo ESLint ở frontend | Lần đo trước có 145 cảnh báo | S–M |
@@ -91,10 +108,10 @@ Không làm được từ máy local vì `Backend/.env` trỏ vào DB thật; c�
 
 | # | Việc | Ghi chú | Công sức |
 |---|---|---|---|
-| 4.1 | Sự kiện gắn với người, lặp hằng năm (giỗ, sinh nhật) | Lịch đã tự tính từ hồ sơ; còn thiếu bước gắn sự kiện do người dùng tạo với `person_id` | M |
-| 4.2 | Sửa/xóa sự kiện qua chat, gợi ý chủ động ("sắp tới giỗ cụ X") | Luôn có bước xác nhận; chỉ trên sự kiện do chính người dùng tạo | M |
-| 4.3 | Thu gọn/mở rộng nhánh, nhớ theo từng người dùng | Mặc định mở 3 đời quanh người đang xem | M |
-| 4.4 | Xuất báo cáo PDF gia phả | | M |
+| 4.1 ✅ | Sự kiện gắn với người, lặp hằng năm (giỗ, sinh nhật) | Lịch đã tự tính từ hồ sơ; còn thiếu bước gắn sự kiện do người dùng tạo với `person_id` | M |
+| 4.2 ✅ | Sửa/xóa sự kiện qua chat, gợi ý chủ động ("sắp tới giỗ cụ X") | Luôn có bước xác nhận; chỉ trên sự kiện do chính người dùng tạo | M |
+| 4.3 ✅ | Thu gọn/mở rộng nhánh, nhớ theo từng người dùng | Mặc định mở 3 đời quanh người đang xem | M |
+| 4.4 một phần | Xuất báo cáo PDF gia phả | Đã có trang in "Sổ gia phả" (in/lưu PDF bằng trình duyệt); chưa tạo file PDF thật | M |
 | 4.5 | Nhập/xuất GEDCOM | | L |
 | 4.6 | Hoàn tác thay đổi cây | Cần bảng lịch sử trước/sau | L |
 | 4.7 | Đối soát quỹ qua SePay, web push | | L |
