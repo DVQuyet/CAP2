@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useDismissable from "../../../shared/hooks/useDismissable";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { createTreeEditKeyAPI, getActiveTreeEditKeysAPI, getManagerTree, updateManagerClanInfo } from "../../../api/managerService";
 import FamilyTreeEditor from "../components/FamilyTreeEditor.jsx";
@@ -450,6 +451,9 @@ export default function GenealogySection() {
           <button className="mgr-btnGhost" type="button" onClick={loadTree} disabled={loading}>
             {t("common.reload")}
           </button>
+          <Link className="mgr-btnGhost" to="/manager/genealogy-book">
+            {t("genealogyBook.entryLink")}
+          </Link>
         </div>
       </div>
 

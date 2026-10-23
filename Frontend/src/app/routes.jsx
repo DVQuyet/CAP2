@@ -39,6 +39,7 @@ const ClanFundPage = lazy(() => import("../features/fund/pages/ClanFundPage"));
 const MemberFundPage = lazy(() => import("../features/fund/pages/MemberFundPage"));
 
 const FamilyTreePage = lazy(() => import("../features/genealogy/pages/UserFamilyTree"));
+const GenealogyBookPage = lazy(() => import("../features/genealogy-book/pages/GenealogyBookPage"));
 const MemberDashboard = lazy(() => import("../features/member/pages/MemberDashboard"));
 const MemberProfile = lazy(() => import("../features/member/pages/MemberProfile"));
 const MemberSubmissions = lazy(() => import("../features/member/pages/MemberSubmissions"));
@@ -106,6 +107,7 @@ export default function AppRoutes() {
           <Route element={<MemberLayout />}>
             <Route path="/user/dashboard" element={<MemberDashboard />} />
             <Route path="/user/family-tree" element={<FamilyTreePage />} />
+            <Route path="/user/genealogy-book" element={<GenealogyBookPage role="member" />} />
             <Route path="/user/posts" element={<GeneralPosts />} />
             <Route path="/posts/general" element={<GeneralPosts />} />
             <Route path="/user/tasks" element={<TaskManagementPage role="member" />} />
@@ -126,6 +128,7 @@ export default function AppRoutes() {
             <Route path="/manager/account" element={<AccountPage />} />
             <Route path="/manager/invitations" element={<InvitationPage />} />
             <Route path="/manager/genealogy" element={<GenealogySection />} />
+            <Route path="/manager/genealogy-book" element={<GenealogyBookPage role="manager" />} />
             <Route path="/manager/tasks" element={<TaskManagementPage role="manager" />} />
             <Route path="/manager/tasks/:taskId" element={<TaskManagementPage role="manager" />} />
             <Route path="/manager/time-capsule" element={<TimeCapsulePage role="manager" />} />

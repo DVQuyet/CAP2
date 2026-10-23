@@ -3141,5 +3141,45 @@
         "Chúng tôi sẽ xử lý yêu cầu xóa dữ liệu trong thời gian sớm nhất."
       ]
     }
+  },
+  "genealogyBook": {
+    "title": "Sổ gia phả",
+    "defaultClan": "Dòng họ",
+    "entryLink": "Sổ gia phả (in/PDF)",
+    "loading": "Đang tải sổ gia phả...",
+    "toolbar": "Công cụ sổ gia phả",
+    "backToTree": "Về cây gia phả",
+    "branchFilter": "Lọc theo nhánh (người gốc)",
+    "allBranches": "Toàn bộ dòng họ",
+    "optionLabel": "{{name}} (đời {{generation}})",
+    "livingOnly": "Chỉ người còn sống",
+    "print": "In / Lưu PDF",
+    "emptyTitle": "Chưa có dữ liệu gia phả",
+    "emptyHint": "Hãy thêm thành viên vào cây gia phả để lập sổ.",
+    "noMatch": "Không có ai khớp bộ lọc",
+    "generatedOn": "Lập ngày {{date}}",
+    "generation": "Đời {{generation}}",
+    "stats": {
+      "people": "Số người",
+      "generations": "Số đời",
+      "living": "Còn sống",
+      "deceased": "Đã mất"
+    },
+    "gender": {
+      "male": "Nam",
+      "female": "Nữ",
+      "unknown": "Chưa rõ giới"
+    },
+    "born": "Sinh",
+    "died": "Mất",
+    "anniversary": "Ngày giỗ",
+    "lunarDate": "{{date}} (âm lịch)",
+    "spouses": "Vợ/chồng",
+    "parents": "Cha mẹ",
+    "children": "Con",
+    "unknown": "Chưa rõ",
+    "stillLiving": "Còn sống",
+    "deceasedNoDate": "Đã mất (chưa rõ ngày)",
+    "index": "Phả hệ (mục lục theo tên)"
   }
 }

@@ -3141,5 +3141,45 @@
         "We will process data deletion requests as soon as possible."
       ]
     }
+  },
+  "genealogyBook": {
+    "title": "Family Record Book",
+    "defaultClan": "Clan",
+    "entryLink": "Family book (print/PDF)",
+    "loading": "Loading the family book...",
+    "toolbar": "Family book tools",
+    "backToTree": "Back to family tree",
+    "branchFilter": "Filter by branch (root person)",
+    "allBranches": "Entire clan",
+    "optionLabel": "{{name}} (generation {{generation}})",
+    "livingOnly": "Living members only",
+    "print": "Print / Save PDF",
+    "emptyTitle": "No genealogy data yet",
+    "emptyHint": "Add members to the family tree to compile the book.",
+    "noMatch": "No one matches the filter",
+    "generatedOn": "Generated on {{date}}",
+    "generation": "Generation {{generation}}",
+    "stats": {
+      "people": "People",
+      "generations": "Generations",
+      "living": "Living",
+      "deceased": "Deceased"
+    },
+    "gender": {
+      "male": "Male",
+      "female": "Female",
+      "unknown": "Gender unknown"
+    },
+    "born": "Born",
+    "died": "Died",
+    "anniversary": "Death anniversary",
+    "lunarDate": "{{date}} (lunar)",
+    "spouses": "Spouse(s)",
+    "parents": "Parents",
+    "children": "Children",
+    "unknown": "Unknown",
+    "stillLiving": "Living",
+    "deceasedNoDate": "Deceased (date unknown)",
+    "index": "Index of names"
   }
 }

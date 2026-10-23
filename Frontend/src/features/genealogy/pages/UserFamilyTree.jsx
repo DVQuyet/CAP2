@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { getMemberDashboard, verifyTreeEditSession } from "../../../api/memberService";
 import FamilyTreeEditor from "../components/FamilyTreeEditor.jsx";
@@ -279,6 +280,9 @@ export default function FamilyTreePage() {
         <button className="member-btn member-btn-ghost" type="button" onClick={() => setIsClanInfoOpen(true)}>
           {t("tree.page.clanInfo")}
         </button>
+        <Link className="member-btn member-btn-ghost" to="/user/genealogy-book">
+          {t("genealogyBook.entryLink")}
+        </Link>
         <div className="member-tree-keyBox">
         <input
           className="member-tree-keyInput"
