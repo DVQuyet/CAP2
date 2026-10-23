@@ -205,6 +205,15 @@ const calendarEvents = [
     { id: 3, clan_id: CLAN_ID, creator_account_id: 77, title: 'Việc riêng của người khác', event_date: daysFromToday(3), event_time: '', visibility: 'personal' },
 ];
 
+// Lịch dùng cho câu sửa/xóa qua chat (không lẫn vào calendarEvents để không đổi câu trả lời các nhóm khác).
+// Ngày cố định quanh "hôm nay" 15/10/2026 (thứ năm): 18/10/2026 là chủ nhật.
+const editableEvents = [
+    ...calendarEvents,
+    { id: 11, clan_id: CLAN_ID, creator_account_id: ACCOUNT_ID, title: 'Họp họ chi', event_date: '2026-10-18', event_time: '08:00', visibility: 'personal', type: 'family', person_id: null, repeat_yearly: 0 },
+    { id: 12, clan_id: CLAN_ID, creator_account_id: ACCOUNT_ID, title: 'Giỗ Đinh Văn Hòa', event_date: '2026-11-21', event_time: '', visibility: 'personal', type: 'death_anniversary', person_id: 3, repeat_yearly: 1 },
+    { id: 13, clan_id: CLAN_ID, creator_account_id: 77, title: 'Sinh nhật Đinh Văn Bình', event_date: '2026-10-25', event_time: '', visibility: 'global', type: 'birthday', person_id: 5, repeat_yearly: 1 },
+];
+
 // ---------------- DB giả: trả dữ liệu mẫu theo từng câu SQL mà luồng hỏi đáp dùng ----------------
 const unhandledSql = new Map();
 const byId = (id) => people.find((row) => row.id === Number(id));
@@ -258,6 +267,12 @@ async function fakeQuery(rawSql, params = []) {
     if (has(/death_anniversary_lunar FROM people WHERE clan_id = \?/)) {
         return [people.filter((row) => (row.is_living === 1 && row.birth_date && row.birth_date_precision === 'exact')
             || (row.is_living !== 1 && ((row.death_date && row.death_date_precision === 'exact') || row.death_anniversary_lunar)))];
+    }
+    if (has(/^SHOW COLUMNS FROM calendar_events/)) return [[{ Field: 'person_id' }, { Field: 'repeat_yearly' }]];
+    if (has(/FROM calendar_events WHERE clan_id = \? AND \(visibility = 'global' OR creator_account_id = \?\) AND \(event_date >= \?/)) {
+        const [, accountId, since] = params;
+        return [editableEvents.filter((row) => (row.visibility === 'global' || row.creator_account_id === Number(accountId))
+            && (row.event_date >= since || row.repeat_yearly === 1))];
     }
     if (has(/FROM events WHERE clan_id = \? AND title LIKE \?/)) {
         const needle = strip(String(params[1] || '').replace(/%/g, ''));
@@ -381,6 +396,23 @@ const CASES = [
     ['Tạo lịch', 'Nhắc tôi giỗ ông nội ngày 20/11', /Thêm vào lịch/],
     ['Tạo lịch', 'Thêm lịch họp họ thứ bảy tuần sau lúc 8h', /Thêm vào lịch/],
     ['Tạo lịch', 'Nhắc tôi gọi điện cho bác Bình', /ngày nào/i],
+    // Sự kiện gắn người: nhận người theo xưng hô/tên, tự điền ngày từ hồ sơ, lặp hằng năm.
+    ['Lịch gắn người', 'Nhắc tôi giỗ ông nội', /Giỗ Đinh Văn Hòa[\s\S]*21\/11\/2026[\s\S]*Ngày lấy từ hồ sơ[\s\S]*lặp lại hằng năm/, 'ông nội = Hòa, ngày giỗ lấy từ ngày mất'],
+    ['Lịch gắn người', 'Nhắc sinh nhật chú út trước 2 ngày', /Sinh nhật Đinh Văn Hùng[\s\S]*08\/08\/2027[\s\S]*nhắc trước 2 ngày/, 'chú út = Hùng (sinh 1965), không cần gõ ngày', /người nào/],
+    ['Lịch gắn người', 'Nhắc tôi giỗ cụ Đinh Công Thành', /Giỗ Đinh Công Thành[\s\S]*16\/04\/2027[\s\S]*10\/03 âm lịch/, 'ngày giỗ âm lịch đã ghi trong hồ sơ'],
+    ['Lịch gắn người', 'Nhắc tôi giỗ ông nội ngày 20/11', /Giỗ Đinh Văn Hòa[\s\S]*20\/11\/2026/, 'ngày gõ trong câu thắng ngày trong hồ sơ', /Ngày lấy từ hồ sơ/],
+    ['Lịch gắn người', 'Nhắc sinh nhật tôi', /Sinh nhật Đinh Văn Quyết[\s\S]*08\/03\/2027/],
+    ['Lịch gắn người', 'Nhắc tôi giỗ Đinh Thị Mai', /chưa ghi ngày mất hoặc ngày giỗ của Đinh Thị Mai/, 'hồ sơ không có ngày giỗ thì hỏi ngày', /Thêm vào lịch/],
+    ['Lịch gắn người', 'Nhắc tôi sinh nhật chú Hùng', /Có 2 người khớp[\s\S]*Đinh Văn Hùng/, 'trùng tên thì hỏi lại', /Thêm vào lịch/, undefined, 'event-pick'],
+    ['Lịch gắn người', '2', /Sinh nhật Đinh Văn Hùng[\s\S]*08\/08\/2027/, 'chọn người thứ hai rồi tạo bản nháp cho đúng người', /Có 2 người/, undefined, 'event-pick'],
+    // Sửa/xóa lịch qua chat: luôn hỏi xác nhận, chỉ trên lịch do chính người dùng tạo.
+    ['Sửa/xóa lịch', 'Đổi giờ họp họ chi chủ nhật sang 9h', /đổi giờ thành 09:00[\s\S]*Họp họ chi[\s\S]*Bấm "Xác nhận"[\s\S]*chưa thay đổi gì/, 'chỉ dựng thẻ xác nhận'],
+    ['Sửa/xóa lịch', 'Dời họp họ chi sang 25/10', /đổi ngày thành 25\/10\/2026[\s\S]*Họp họ chi/],
+    ['Sửa/xóa lịch', 'Xóa nhắc giỗ ông nội', /xóa lịch "Giỗ Đinh Văn Hòa" \(21\/11\/2026\)[\s\S]*Xác nhận xóa/, 'tìm lịch theo người đã gắn'],
+    ['Sửa/xóa lịch', 'Xóa lịch Đi tảo mộ', /xóa lịch "Đi tảo mộ"[\s\S]*Xác nhận xóa/],
+    ['Sửa/xóa lịch', 'Xóa lịch Lễ mừng thọ ông Bình', /do người khác tạo[\s\S]*không thực hiện/, 'lịch của tài khoản khác bị từ chối', /Xác nhận/],
+    ['Sửa/xóa lịch', 'Xóa nhắc sinh nhật bác Bình', /do người khác tạo/, 'sinh nhật chung do người khác tạo cũng bị từ chối', /Xác nhận/],
+    ['Sửa/xóa lịch', 'Xóa lịch Chuyến đi Đà Lạt', /không tìm thấy lịch/i],
     ['Dòng họ', 'Giới thiệu về dòng họ', /Đinh Công Thành/],
     ['Dòng họ', 'Nhà thờ họ ở đâu?', /thôn Yên Lạc|Thạch Lạc/],
     ['Dòng họ', 'Dòng họ có nguồn gốc từ đâu?', /Nghệ An/],

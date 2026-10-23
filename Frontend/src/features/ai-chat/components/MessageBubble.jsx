@@ -38,6 +38,57 @@ function AssistantAction({ action }) {
   );
 }
 
+// Thẻ xác nhận sửa/xóa lịch do trợ lý dựng: không bao giờ tự áp dụng. "Xác nhận" gọi API lịch có sẵn
+// (PUT/DELETE /api/calendar/events/:id) bằng token của chính người dùng; backend vẫn kiểm tra chỉ chủ lịch mới được sửa/xóa.
+function EventChangeCard({ confirm, cancel }) {
+  const { t } = useTranslation();
+  const [state, setState] = useState("idle");
+  const [error, setError] = useState("");
+  const isDelete = confirm.type === "delete_calendar_event";
+  const eventId = confirm.payload?.id;
+  if (!eventId) return null;
+
+  const run = async () => {
+    setState("saving");
+    setError("");
+    try {
+      await apiRequest(`/api/calendar/events/${encodeURIComponent(eventId)}`, isDelete
+        ? { method: "DELETE" }
+        : { method: "PUT", body: JSON.stringify(confirm.payload.changes || {}) });
+      setState("done");
+    } catch (actionError) {
+      setState("idle");
+      setError(actionError?.message || t("aiChat.eventFailed"));
+    }
+  };
+
+  const finished = state === "done" || state === "cancelled";
+  let doneText = "";
+  if (state === "done") doneText = isDelete ? t("aiChat.eventDeleted") : t("aiChat.eventUpdated");
+  if (state === "cancelled") doneText = t("aiChat.eventCancelled");
+
+  return (
+    <div className="ai-message-action ai-event-confirm">
+      {finished ? (
+        <small role="status" className="ai-event-confirm-note">{doneText}</small>
+      ) : (
+        <div className="ai-event-confirm-buttons">
+          <button type="button" onClick={run} disabled={state === "saving"}>
+            <span className="material-symbols-outlined" aria-hidden="true">{isDelete ? "delete" : "check"}</span>
+            {state === "saving" ? t("aiChat.eventWorking") : isDelete ? t("aiChat.eventConfirmDelete") : t("aiChat.eventConfirm")}
+          </button>
+          {cancel ? (
+            <button type="button" className="is-secondary" onClick={() => setState("cancelled")} disabled={state === "saving"}>
+              {t("aiChat.eventCancel")}
+            </button>
+          ) : null}
+        </div>
+      )}
+      {error ? <small role="alert">{error}</small> : null}
+    </div>
+  );
+}
+
 // Hàng nút dưới bong bóng trợ lý: 👍/👎 (kèm ô góp ý khi 👎) và "Xem trên cây".
 function MessageActions({ message, onViewOnTree }) {
   const { t } = useTranslation();
@@ -129,6 +180,8 @@ export default function MessageBubble({ message, onCandidatePick, onRetry, onVie
   const isUser = message.role === "user";
   const candidates = message.candidates || message.metadata?.candidates || [];
   const actions = message.actions || message.metadata?.actions || [];
+  const eventConfirm = actions.find((action) => action?.type === "update_calendar_event" || action?.type === "delete_calendar_event");
+  const eventCancel = actions.find((action) => action?.type === "cancel_calendar_action");
 
   return (
     <div className={`ai-message-row ${isUser ? "from-user" : "from-assistant"}`}>
@@ -161,6 +214,7 @@ export default function MessageBubble({ message, onCandidatePick, onRetry, onVie
           {!isUser && actions.length ? actions.map((action, index) => (
             <AssistantAction key={`${action.type}-${index}`} action={action} />
           )) : null}
+          {!isUser && eventConfirm ? <EventChangeCard confirm={eventConfirm} cancel={eventCancel} /> : null}
         </div>
         {!isUser ? <MessageActions message={message} onViewOnTree={onViewOnTree} /> : null}
       </div>

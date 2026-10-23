@@ -12,6 +12,7 @@ const { sanitizeMessage, looksLikePromptInjection } = require('./chatbotSecurity
 const { parseRelationshipExpression, parseNamedRelationshipExpression } = require('./relationshipQueryParser');
 const { resolveKinshipReference } = require('./kinshipReferenceService');
 const { parseEventCommand } = require('./eventCommandService');
+const { parseEventEditCommand } = require('./eventEditCommandService');
 const { resolveRelationshipExpression } = require('./relationshipExpressionResolver');
 const { toPositiveId, queryOptional } = require('./chatbotUtils');
 const { ARCHIVED_MEMBER_JOIN_SQL } = require('../manager/common.service');
@@ -1343,13 +1344,96 @@ const formatIsoVN = (iso) => {
     return match ? `${match[3]}/${match[2]}/${match[1]}` : String(iso || '');
 };
 
+const eventLunarToSolar = (day, month, year) => require('../calendar/calendar.controller').convertLunar2SolarDate(day, month, year, 0, 7);
+
+// Ngày dương sắp tới (từ hôm nay) của ngày giỗ/sinh nhật ghi trong hồ sơ; null nếu hồ sơ chưa đủ dữ liệu để tính.
+//   giỗ: ngày giỗ âm lịch đã ghi hoặc ngày mất chính xác (lặp theo âm lịch);  sinh nhật: ngày sinh dương lịch chính xác.
+function personEventDate(person, type, now = new Date()) {
+    if (type === 'death_anniversary') {
+        if (Number(person.is_living) === 1) return null;
+        const anniversary = anniversaryOf(person);
+        const date = anniversary && nextAnniversarySolar(anniversary, now);
+        return date ? { date, lunarText: `${String(anniversary.day).padStart(2, '0')}/${String(anniversary.month).padStart(2, '0')} âm lịch` } : null;
+    }
+    const parts = dateParts(person.birth_date);
+    if (!parts || (person.birth_date_precision && person.birth_date_precision !== 'exact')) return null;
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const { sameDayInYear } = require('../calendar/calendarRecurrence');
+    const base = `${parts.year}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`;
+    const thisYear = sameDayInYear(base, now.getFullYear());
+    return { date: thisYear >= today ? thisYear : sameDayInYear(base, now.getFullYear() + 1), lunarText: null };
+}
+
+// Tìm người được nhắc trong câu lệnh sự kiện ("giỗ ông nội", "sinh nhật chú út", "giỗ cụ Đinh Văn A") bằng cùng cơ chế
+// tra xưng hô/tên của hỏi đáp gia phả (kể cả thứ bậc sinh và hỏi lại khi trùng).
+// Trả { status: 'resolved', person } | { status: 'none' } (không thấy, cứ tạo lịch thường) | { status: 'responded' } (đã hỏi lại người dùng).
+async function resolveEventPerson(res, { clanId, currentMemberId, phrase, intent }) {
+    const turn = res?.locals?.chatbotTurn;
+    if (turn?.forced?.personId && (!turn.forced.subject || normalizeName(turn.forced.subject) === normalizeName(phrase))) {
+        const forcedId = turn.forced.personId;
+        turn.forced = null;
+        const chosen = await relationshipEngine.getPerson(forcedId, { clanId });
+        if (chosen) return { status: 'resolved', person: chosen };
+    }
+    // "sinh nhật tôi": chính người đang hỏi.
+    if (/^(tôi|toi|mình|minh|tui)$/i.test(phrase.trim())) {
+        const self = currentMemberId ? await relationshipEngine.getPerson(currentMemberId, { clanId }) : null;
+        return self ? { status: 'resolved', person: self } : { status: 'none' };
+    }
+    if (normalizeName(phrase).length < 3) return { status: 'none' };
+    // Xưng hô không kèm "tôi" ("ông nội") vẫn được hiểu là của người đang hỏi.
+    const hasSelf = /(^|\s)(tôi|toi|mình|minh)(\s|$)/i.test(phrase);
+    const kinship = await resolveKinshipReference({ clanId, currentMemberId, names: hasSelf ? [phrase] : [`${phrase} tôi`, phrase] });
+    if (kinship?.status === 'resolved') return { status: 'resolved', person: kinship.person };
+    if (kinship?.status === 'ambiguous') {
+        await ambiguityResponse(res, intent, kinship.candidates, phrase, clanId);
+        return { status: 'responded' };
+    }
+    // Không có xưng hô khớp ("bác Bình" là tên chứ không phải chú/bác ruột): vẫn thử tìm theo tên.
+    // "bác Bình": bỏ từ xưng hô đứng đầu khi phần còn lại là tên một từ (memberSearch chỉ bỏ khi còn từ 2 từ trở lên).
+    const bare = phrase.replace(/^(ông|bà|anh|chị|em|cô|chú|bác|cậu|dì|cháu|cụ)\s+/i, '').trim();
+    const result = await memberSearch.resolvePerson({ clanId, names: bare && bare !== phrase ? [phrase, bare] : [phrase] });
+    if (result.status === 'ambiguous') {
+        await ambiguityResponse(res, intent, result.candidates, phrase, clanId);
+        return { status: 'responded' };
+    }
+    return result.status === 'resolved' && result.person ? { status: 'resolved', person: result.person } : { status: 'none' };
+}
+
 // Bản nháp sự kiện từ câu tự nhiên. AI không tự ghi vào lịch: trả nút "Thêm vào lịch" để người dùng xác nhận.
-function buildEventDraftPayload(message) {
-    const { convertLunar2SolarDate } = require('../calendar/calendar.controller');
-    const draft = parseEventCommand(message, {
-        lunarToSolar: (day, month, year) => convertLunar2SolarDate(day, month, year, 0, 7),
-    });
+// Giỗ/sinh nhật của một người trong gia phả: gắn person_id, lặp hằng năm và tự lấy ngày từ hồ sơ nếu câu không nêu ngày.
+// ctx = { res, clanId, currentMemberId }; trả { responded: true } khi đã hỏi lại chọn người (res đã được gửi).
+async function buildEventDraftPayload(message, ctx = null) {
+    const draft = parseEventCommand(message, { lunarToSolar: eventLunarToSolar });
     if (!draft) return null;
+
+    let person = null;
+    if (draft.personPhrase && ctx?.res) {
+        const found = await resolveEventPerson(ctx.res, { ...ctx, phrase: draft.personPhrase, intent: 'create_event_draft' });
+        if (found.status === 'responded') return { responded: true };
+        if (found.status === 'resolved') person = found.person;
+    }
+    const personName = person ? relationshipEngine.personName(person) : null;
+    const people = person ? [{ id: person.id, name: personName }] : undefined;
+    if (person) {
+        draft.title = `${draft.type === 'birthday' ? 'Sinh nhật' : 'Giỗ'} ${personName}`;
+        if (draft.needsDate) {
+            const auto = personEventDate(person, draft.type);
+            if (auto) {
+                Object.assign(draft, { date: auto.date, lunar: Boolean(auto.lunarText), lunarText: auto.lunarText, needsDate: false, autoDate: true });
+            } else {
+                return {
+                    success: true,
+                    intent: 'create_event_draft',
+                    answer: `Gia phả chưa ghi ${draft.type === 'birthday' ? 'ngày sinh chính xác' : 'ngày mất hoặc ngày giỗ'} của ${personName}. Bạn muốn đặt "${draft.title}" vào ngày nào? Ví dụ: "${draft.title} ngày 15/3 âm lịch".`,
+                    confidence: 0.6,
+                    needsClarification: true,
+                    eventDraft: draft,
+                    people,
+                };
+            }
+        }
+    }
     if (draft.needsDate) {
         return {
             success: true,
@@ -1368,15 +1452,117 @@ function buildEventDraftPayload(message) {
         reminder_days: draft.reminderDays,
         visibility: 'personal',
         note: draft.lunar ? `Ngày âm lịch: ${draft.lunarText}. Tạo từ trợ lý AI.` : 'Tạo từ trợ lý AI.',
+        ...(person ? { person_id: person.id, repeat_yearly: 1 } : {}),
     };
+    const autoNote = draft.autoDate ? ` Ngày lấy từ hồ sơ gia phả${draft.lunarText ? ` (${draft.lunarText})` : ''}.` : '';
+    const recurNote = person ? ' Lịch này lặp lại hằng năm.' : '';
     return {
         success: true,
         intent: 'create_event_draft',
-        answer: `Tôi đã chuẩn bị lịch "${draft.title}" vào ngày ${formatIsoVN(draft.date)}${draft.lunar ? ` (${draft.lunarText})` : ''}${draft.time ? ` lúc ${draft.time}` : ''}, nhắc trước ${draft.reminderDays} ngày. Bấm "Thêm vào lịch" để lưu, hoặc sửa lại câu nếu chưa đúng.`,
+        answer: `Tôi đã chuẩn bị lịch "${draft.title}" vào ngày ${formatIsoVN(draft.date)}${draft.lunar ? ` (${draft.lunarText})` : ''}${draft.time ? ` lúc ${draft.time}` : ''}, nhắc trước ${draft.reminderDays} ngày.${autoNote}${recurNote} Bấm "Thêm vào lịch" để lưu, hoặc sửa lại câu nếu chưa đúng.`,
         confidence: 0.85,
         eventDraft: event,
+        ...(people ? { people } : {}),
         actions: [{ type: 'create_calendar_event', label: 'Thêm vào lịch', payload: event }],
     };
+}
+
+const stripAccents = (value) => String(value || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase();
+const isoOfDate = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+// Sửa/xóa sự kiện qua chat: chỉ dựng thẻ xác nhận ("Xác nhận"/"Hủy"); việc ghi do giao diện gọi API lịch bằng token của chính người dùng.
+// Chỉ đụng tới sự kiện do chính tài khoản này tạo (kể cả quản lý/admin); sự kiện người khác tạo bị từ chối.
+async function buildEventEditPayload(message, ctx) {
+    const edit = parseEventEditCommand(message, { lunarToSolar: eventLunarToSolar });
+    if (!edit) return null;
+    const intent = 'edit_event_draft';
+    const reply = (answer, extra = {}) => ({ success: true, intent, answer, confidence: 0.8, ...extra });
+    const verb = edit.action === 'delete' ? 'xóa' : 'sửa';
+    if (!ctx.accountId) return reply('Bạn cần đăng nhập để sửa hoặc xóa lịch.', { confidence: 0.3 });
+    if (edit.action === 'update' && !edit.hasChange) {
+        return reply(`Bạn muốn đổi "${edit.keyword}" sang giờ hoặc ngày nào? Ví dụ: "đổi giờ ${edit.keyword} sang 9h" hoặc "dời ${edit.keyword} sang 25/10".`, { confidence: 0.5 });
+    }
+
+    let person = null;
+    if (edit.personPhrase && ctx.res) {
+        const found = await resolveEventPerson(ctx.res, { ...ctx, phrase: edit.personPhrase, intent });
+        if (found.status === 'responded') return { responded: true };
+        if (found.status === 'resolved') person = found.person;
+    }
+
+    const { hasPersonLinkColumns } = require('../calendar/calendar.controller');
+    const linked = await hasPersonLinkColumns();
+    const now = new Date();
+    const today = isoOfDate(now);
+    const sinceIso = isoOfDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30));
+    const visible = await queryOptional(
+        `SELECT * FROM calendar_events WHERE clan_id = ? AND (visibility = 'global' OR creator_account_id = ?) AND (event_date >= ?${linked ? ' OR repeat_yearly = 1' : ''}) ORDER BY event_date ASC LIMIT 200`,
+        [ctx.clanId, ctx.accountId, sinceIso]
+    );
+
+    const tokens = stripAccents(edit.keyword).split(/\s+/).filter(Boolean);
+    const dateIso = (value) => {
+        const parts = dateParts(value);
+        return parts ? `${parts.year}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}` : null;
+    };
+    const matches = visible.filter((row) => {
+        const byPerson = person && linked && Number(row.person_id) === Number(person.id) && (!edit.type || row.type === edit.type);
+        // Chưa có cột person_id (production chưa migrate) thì người được nhận ra qua tên trong tiêu đề ("Giỗ Đinh Văn Hòa").
+        const byTitle = person
+            ? stripAccents(row.title).includes(stripAccents(relationshipEngine.personName(person))) && (!edit.type || row.type === edit.type)
+            : tokens.length && tokens.every((token) => stripAccents(row.title).includes(token));
+        if (!byPerson && !byTitle) return false;
+        const iso = dateIso(row.event_date);
+        if (edit.filter?.weekday != null) return iso && new Date(`${iso}T00:00:00`).getDay() === edit.filter.weekday;
+        if (edit.filter?.date) return iso === edit.filter.date;
+        return true;
+    });
+    const mine = matches.filter((row) => Number(row.creator_account_id) === Number(ctx.accountId));
+    if (!matches.length) {
+        return reply(`Tôi không tìm thấy lịch "${edit.keyword}" nào của bạn để ${verb}.`, { confidence: 0.5 });
+    }
+    if (!mine.length) {
+        return reply(`Lịch "${matches[0].title}" do người khác tạo, bạn chỉ ${verb} được lịch do chính mình tạo nên tôi không thực hiện.`, { confidence: 0.7, code: 'EVENT_NOT_OWNED' });
+    }
+    // Ưu tiên sự kiện sắp tới; nhiều sự kiện cùng khớp thì hỏi lại để người dùng nói rõ, không đoán.
+    const upcoming = mine.filter((row) => dateIso(row.event_date) >= today);
+    const pool = upcoming.length ? upcoming : mine;
+    if (pool.length > 1) {
+        const list = pool.slice(0, 5).map((row) => `${row.title} (${formatIsoVN(dateIso(row.event_date))}${row.event_time ? ` ${row.event_time}` : ''})`).join('; ');
+        return reply(`Có ${pool.length} lịch của bạn khớp "${edit.keyword}": ${list}. Bạn nói rõ hơn (thêm ngày hoặc thứ) để tôi ${verb} đúng lịch.`, { confidence: 0.6 });
+    }
+    const target = pool[0];
+    const targetDate = dateIso(target.event_date);
+    const label = `"${target.title}" (${formatIsoVN(targetDate)}${target.event_time ? ` lúc ${target.event_time}` : ''})`;
+    const cancel = { type: 'cancel_calendar_action', label: 'Hủy', payload: { id: target.id } };
+    const people = person ? [{ id: person.id, name: relationshipEngine.personName(person) }] : undefined;
+
+    if (edit.action === 'delete') {
+        return reply(`Bạn muốn xóa lịch ${label}? Bấm "Xác nhận xóa" để xóa, tôi chưa thay đổi gì.`, {
+            ...(people ? { people } : {}),
+            eventEdit: { action: 'delete', id: target.id, title: target.title, date: targetDate },
+            actions: [{ type: 'delete_calendar_event', label: 'Xác nhận xóa', payload: { id: target.id } }, cancel],
+        });
+    }
+    const changes = {};
+    if (edit.changes.date && edit.changes.date !== targetDate) changes.date = edit.changes.date;
+    if (edit.changes.time && edit.changes.time !== (target.event_time || '')) changes.time = edit.changes.time;
+    if (!Object.keys(changes).length) {
+        return reply(`Lịch ${label} đã đúng như bạn muốn, không cần đổi.`, { confidence: 0.7 });
+    }
+    const parts = [];
+    if (changes.date) parts.push(`ngày thành ${formatIsoVN(changes.date)}`);
+    if (changes.time) parts.push(`giờ thành ${changes.time}`);
+    return reply(`Bạn muốn đổi ${parts.join(' và ')} cho lịch ${label}? Bấm "Xác nhận" để áp dụng, tôi chưa thay đổi gì.`, {
+        ...(people ? { people } : {}),
+        eventEdit: { action: 'update', id: target.id, title: target.title, date: targetDate, changes },
+        actions: [{ type: 'update_calendar_event', label: 'Xác nhận', payload: { id: target.id, changes } }, cancel],
+    });
+}
+
+// Lệnh sự kiện trong chat: sửa/xóa kiểm tra trước (câu như "xóa nhắc giỗ ông nội" cũng chứa từ khóa tạo lịch), rồi tạo mới.
+async function buildEventCommandPayload(message, ctx) {
+    return (await buildEventEditPayload(message, ctx)) || buildEventDraftPayload(message, ctx);
 }
 
 // "<quan hệ> của <tên người>": tìm người theo tên rồi đi theo chuỗi quan hệ từ người đó.
@@ -2042,7 +2228,10 @@ exports.ask = withViewer(withKinOrder(async (req, res) => {
             updateConversationMemory(memorySessionId, { pendingClarification: res.locals.chatbotTurn.pending });
         }
         // Yêu cầu tạo sự kiện/lời nhắc ("nhắc tôi giỗ ông nội 15/3 âm lịch"): dựng bản nháp để người dùng bấm lưu.
-        const eventDraftPayload = namedRelationshipPayload ? null : buildEventDraftPayload(message);
+        // Giỗ/sinh nhật của một người và sửa/xóa lịch cần tra gia phả nên đây là hàm async; có thể đã hỏi lại chọn người (res đã gửi).
+        const eventDraftPayload = namedRelationshipPayload ? null
+            : await buildEventCommandPayload(message, { res, clanId, currentMemberId, accountId });
+        if (eventDraftPayload?.responded || res.headersSent) return;
         const ruleFastPath = namedRelationshipPayload || eventDraftPayload;
         const planning = ruleFastPath ? {
             plan: { intent: ruleFastPath.intent, confidence: ruleFastPath.confidence, entities: {} },
@@ -2483,4 +2672,4 @@ exports.voice = async (req, res) => {
 };
 
 // Chỉ để test.
-exports.__test = { ambiguityResponse };
+exports.__test = { ambiguityResponse, buildEventCommandPayload, personEventDate };

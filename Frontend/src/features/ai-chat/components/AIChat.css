@@ -866,6 +866,29 @@
   color: var(--ai-danger);
 }
 
+/* Thẻ xác nhận sửa/xóa lịch: nút Xác nhận + Hủy cạnh nhau */
+.ai-event-confirm-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ai-message-action button.is-secondary {
+  background: transparent;
+  color: #7c2d12;
+  border: 1px solid #7c2d12;
+}
+
+.ai-message-action button.is-secondary:disabled,
+.ai-event-confirm-buttons button:disabled {
+  opacity: 0.6;
+}
+
+.ai-message-action .ai-event-confirm-note {
+  color: inherit;
+  font-weight: 600;
+}
+
 /* ---------- Tablet / mobile nhỏ ---------- */
 @media (max-width: 640px) {
   .ai-chat-widget {

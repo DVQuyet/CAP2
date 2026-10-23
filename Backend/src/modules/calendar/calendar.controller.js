@@ -2,9 +2,12 @@ const db = require('../../config/db');
 const { createNotification } = require('../../shared/utils/notifications');
 const { sendMail, isSmtpConfigured } = require('../../shared/utils/email');
 const { ensureGenealogySchema } = require('../genealogy/genealogySchema.service');
+const { applyYearlyRecurrence } = require('./calendarRecurrence');
 
 let schemaReady = false;
 let schedulerStarted = false;
+let personLinkSupport = null;
+let personLinkCheckedAt = 0;
 
 const EVENT_TYPES = new Set(['family', 'study', 'holiday', 'personal', 'lunar', 'birthday', 'death_anniversary', 'manager_event']);
 const EVENT_VISIBILITIES = new Set(['personal', 'global']);
@@ -416,7 +419,33 @@ const ensureCalendarSchema = async () => {
     if (error?.code !== 'ER_DUP_KEYNAME') throw error;
   }
 
+  // Sự kiện gắn với một người (giỗ, sinh nhật) và lặp hằng năm: thêm 2 cột nullable/mặc định 0, chỉ thêm khi chưa có.
+  const [personColumns] = await db.query("SHOW COLUMNS FROM calendar_events LIKE 'person_id'");
+  if (!personColumns.length) {
+    await db.query('ALTER TABLE calendar_events ADD COLUMN person_id INT NULL AFTER note');
+  }
+  const [repeatColumns] = await db.query("SHOW COLUMNS FROM calendar_events LIKE 'repeat_yearly'");
+  if (!repeatColumns.length) {
+    await db.query('ALTER TABLE calendar_events ADD COLUMN repeat_yearly TINYINT(1) NOT NULL DEFAULT 0 AFTER person_id');
+  }
+  personLinkSupport = null;
+
   schemaReady = true;
+};
+
+// Cột person_id/repeat_yearly có thể chưa tồn tại (production chưa chạy migration, DISABLE_RUNTIME_DDL bỏ qua ALTER):
+// kiểm tra bằng SHOW COLUMNS, nhớ kết quả "có" mãi, kết quả "chưa có" chỉ nhớ 60 giây để migration xong là dùng được.
+const hasPersonLinkColumns = async () => {
+  if (personLinkSupport === true) return true;
+  if (personLinkSupport === false && Date.now() - personLinkCheckedAt < 60000) return false;
+  try {
+    const [rows] = await db.query("SHOW COLUMNS FROM calendar_events WHERE Field IN ('person_id', 'repeat_yearly')");
+    personLinkSupport = Array.isArray(rows) && rows.length >= 2;
+  } catch (error) {
+    personLinkSupport = false;
+  }
+  personLinkCheckedAt = Date.now();
+  return personLinkSupport;
 };
 
 const getUserContext = async (accountId) => {
@@ -502,6 +531,8 @@ const mapEventRow = (row, req = null) => {
     event_time: row.event_time || '',
     type: row.type || 'personal',
     note: row.note || '',
+    person_id: row.person_id ?? null,
+    repeat_yearly: Boolean(Number(row.repeat_yearly || 0)),
     visibility,
     scope: visibility,
     is_global: visibility === 'global',
@@ -842,6 +873,8 @@ exports.listEvents = async (req, res) => {
     const from = toIsoDate(req.query.from || req.query.date_from) || `${new Date().getFullYear()}-01-01`;
     const to = toIsoDate(req.query.to || req.query.date_to) || `${new Date().getFullYear()}-12-31`;
 
+    // Sự kiện lặp hằng năm có ngày gốc trước `from` vẫn phải được lấy để sinh bản cho năm đang xem.
+    const withRecurrence = await hasPersonLinkColumns();
     const [rows] = await db.query(
       `
       SELECT
@@ -852,17 +885,19 @@ exports.listEvents = async (req, res) => {
       LEFT JOIN accounts a ON a.id = e.creator_account_id
       LEFT JOIN people p ON p.id = a.person_id
       WHERE e.clan_id = ?
-        AND e.event_date BETWEEN ? AND ?
+        AND ${withRecurrence ? '(e.event_date BETWEEN ? AND ? OR (e.repeat_yearly = 1 AND e.event_date < ?))' : 'e.event_date BETWEEN ? AND ?'}
         AND (COALESCE(e.visibility, 'global') = 'global' OR e.creator_account_id = ?)
       ORDER BY e.event_date ASC, e.event_time ASC, e.id ASC
       `,
-      [clanId, from, to, req.user.id]
+      withRecurrence ? [clanId, from, to, from, req.user.id] : [clanId, from, to, req.user.id]
     );
 
     const dbEvents = rows.map((row) => mapEventRow(row, req));
-    const personEvents = await buildYearlyPersonEvents({ clanId, from, to });
+    const autoPersonEvents = await buildYearlyPersonEvents({ clanId, from, to });
+    // Lặp hằng năm cho sự kiện gắn người, đồng thời không trùng ngày giỗ/sinh nhật tự tính (theo người + loại + năm).
+    const { userEvents, autoEvents: personEvents } = applyYearlyRecurrence({ userEvents: dbEvents, autoEvents: autoPersonEvents, from, to });
     const managerEvents = await buildManagerEventsForCalendar({ clanId, from, to });
-    const events = [...dbEvents, ...personEvents, ...managerEvents].sort((a, b) => {
+    const events = [...userEvents, ...personEvents, ...managerEvents].sort((a, b) => {
       const dateCompare = String(a.event_date || a.date).localeCompare(String(b.event_date || b.date));
       if (dateCompare !== 0) return dateCompare;
       return String(a.title || '').localeCompare(String(b.title || ''), 'vi');
@@ -901,13 +936,38 @@ exports.createEvent = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Ngày lịch không hợp lệ.' });
     }
 
+    // Gắn người + lặp hằng năm: chỉ ghi khi DB đã có cột; người phải thuộc đúng dòng họ.
+    let personId = null;
+    let repeatYearly = 0;
+    const supportsPersonLink = await hasPersonLinkColumns();
+    if (supportsPersonLink) {
+      const requestedPerson = Number(req.body.person_id ?? req.body.personId);
+      if (Number.isInteger(requestedPerson) && requestedPerson > 0) {
+        const [personRows] = await db.query('SELECT id FROM people WHERE id = ? AND clan_id = ? LIMIT 1', [requestedPerson, clanId]);
+        if (!personRows.length) {
+          return res.status(400).json({ success: false, message: 'Người được gắn với lịch không thuộc dòng họ này.' });
+        }
+        personId = requestedPerson;
+      }
+      const repeatInput = req.body.repeat_yearly ?? req.body.repeatYearly;
+      repeatYearly = repeatInput === true || repeatInput === 1 || repeatInput === '1' || repeatInput === 'true' ? 1 : 0;
+    }
+
     const [result] = await db.query(
+      supportsPersonLink
+        ? `
+      INSERT INTO calendar_events
+        (clan_id, creator_account_id, title, event_date, event_time, type, note, visibility, reminder_days, person_id, repeat_yearly)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `
+        : `
       INSERT INTO calendar_events
         (clan_id, creator_account_id, title, event_date, event_time, type, note, visibility, reminder_days)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
-      [clanId, req.user.id, title, eventDate, eventTime, type, note, visibility, reminderDays]
+      supportsPersonLink
+        ? [clanId, req.user.id, title, eventDate, eventTime, type, note, visibility, reminderDays, personId, repeatYearly]
+        : [clanId, req.user.id, title, eventDate, eventTime, type, note, visibility, reminderDays]
     );
 
     const [rows] = await db.query('SELECT * FROM calendar_events WHERE id = ? LIMIT 1', [result.insertId]);
@@ -1057,6 +1117,7 @@ exports.startCalendarReminderScheduler = (app) => {
 };
 
 exports.ensureCalendarSchema = ensureCalendarSchema;
+exports.hasPersonLinkColumns = hasPersonLinkColumns;
 exports.processDueReminders = processDueReminders;
 
 exports.buildYearlyPersonEvents = buildYearlyPersonEvents;

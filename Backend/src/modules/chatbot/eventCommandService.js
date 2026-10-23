@@ -3,7 +3,7 @@
 //   "đặt lịch đi tảo mộ ngày mai".
 // Chỉ dựng bản nháp; người dùng bấm "Thêm vào lịch" thì giao diện mới gọi API lịch để lưu.
 
-const TRIGGER_PATTERN = /(^|\s)(nhắc\s+(tôi|mình|em|giúp)|nhac\s+(toi|minh|em|giup)|thêm\s+(sự kiện|lịch|lời nhắc|nhắc)|them\s+(su kien|lich|loi nhac|nhac)|tạo\s+(sự kiện|lịch|lời nhắc|nhắc)|tao\s+(su kien|lich|loi nhac|nhac)|đặt\s+lịch|dat\s+lich|lên\s+lịch|len\s+lich|ghi\s+nhớ\s+ngày|ghi\s+nho\s+ngay|hẹn(?=\s+(?:họp|gặp|lịch))|hen(?=\s+(?:hop|gap|lich)))(\s|$)/i;
+const TRIGGER_PATTERN = /(^|\s)(nhắc\s+(tôi|mình|em|giúp)|nhac\s+(toi|minh|em|giup)|thêm\s+(sự kiện|lịch|lời nhắc|nhắc)|them\s+(su kien|lich|loi nhac|nhac)|tạo\s+(sự kiện|lịch|lời nhắc|nhắc)|tao\s+(su kien|lich|loi nhac|nhac)|đặt\s+lịch|dat\s+lich|lên\s+lịch|len\s+lich|ghi\s+nhớ\s+ngày|ghi\s+nho\s+ngay|hẹn(?=\s+(?:họp|gặp|lịch))|hen(?=\s+(?:hop|gap|lich))|nhắc(?=\s+(?:giỗ|sinh\s+nhật))|nhac(?=\s+(?:gio|sinh\s+nhat)))(\s|$)/i;
 
 const pad2 = (value) => String(value).padStart(2, '0');
 const isoOf = (date) => `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
@@ -64,9 +64,11 @@ function extractDate(text, now, lunarToSolar) {
     const weekday = extractWeekday(text, now);
     if (weekday) return weekday;
 
+    // Câu giỗ/sinh nhật có thể chứa tên người ("giỗ Đinh Thị Mai"): chỉ nhận "ngày mai", không nhận "mai" đứng một mình.
+    const bareMai = /giỗ|sinh nhật|sinh nhat/i.test(text) ? '' : '|\\bmai\\b';
     const relative = [
         [/\bhôm nay\b|\bhom nay\b/i, 0],
-        [/\bngày mai\b|\bngay mai\b|\bmai\b/i, 1],
+        [new RegExp(`\\bngày mai\\b|\\bngay mai\\b${bareMai}`, 'i'), 1],
         [/\bngày kia\b|\bngay kia\b|\bngày mốt\b|\bmốt\b/i, 2],
         [/\btuần sau\b|\btuan sau\b/i, 7],
     ];
@@ -129,7 +131,8 @@ function extractTime(text) {
 }
 
 function extractReminder(text) {
-    const match = text.match(/nhắc\s+trước\s+(\d{1,2})\s+ngày|nhac\s+truoc\s+(\d{1,2})\s+ngay/i);
+    // "nhắc trước 3 ngày" hoặc chỉ "trước 2 ngày" ("nhắc sinh nhật chú út trước 2 ngày").
+    const match = text.match(/(?:nhắc\s+)?trước\s+(\d{1,2})\s+ngày|(?:nhac\s+)?truoc\s+(\d{1,2})\s+ngay/i);
     if (!match) return null;
     return { days: Math.min(30, Number(match[1] || match[2])), consumed: match[0] };
 }
@@ -147,6 +150,16 @@ function cleanTitle(text, consumedParts) {
     return title.charAt(0).toLocaleUpperCase('vi-VN') + title.slice(1);
 }
 
+// Cụm chỉ người trong tiêu đề giỗ/sinh nhật: "Giỗ ông nội" -> "ông nội", "Sinh nhật chú út" -> "chú út".
+// Chỉ lấy với loại giỗ/sinh nhật; việc tìm người trong gia phả do chatbot làm (cần dữ liệu).
+function extractPersonPhrase(title, type) {
+    if (type !== 'death_anniversary' && type !== 'birthday') return null;
+    const match = String(title || '').match(/^(?:giỗ|gio|kỵ nhật|ky nhat|sinh nhật|sinh nhat)\s+(?:của\s+|cua\s+)?(.+)$/i);
+    if (!match) return null;
+    const phrase = match[1].replace(/\s+(nhé|nha|nhá|giúp|giùm|với)$/i, '').trim();
+    return phrase && /[\p{L}]/u.test(phrase) ? phrase : null;
+}
+
 // lunarToSolar(day, month, year) -> 'YYYY-MM-DD' (dương lịch) hoặc null.
 function parseEventCommand(message, { now = new Date(), lunarToSolar } = {}) {
     const text = String(message || '').normalize('NFC').trim();
@@ -155,18 +168,26 @@ function parseEventCommand(message, { now = new Date(), lunarToSolar } = {}) {
     const time = extractTime(text.replace(/(\d{1,2})[/-](\d{1,2})([/-]\d{4})?/g, ' '));
     const reminder = extractReminder(text);
     const title = cleanTitle(text, [...(date?.consumed || []), time?.consumed, reminder?.consumed]);
+    const type = detectType(text);
     return {
         title: title || 'Sự kiện gia đình',
+        personPhrase: extractPersonPhrase(title, type),
         date: date?.isoDate || null,
         lunar: Boolean(date?.lunar),
         lunarText: date?.lunarText || null,
         time: time?.time || null,
         reminderDays: reminder?.days ?? 1,
-        type: detectType(text),
+        type,
         needsDate: !date,
     };
 }
 
 module.exports = {
     parseEventCommand,
+    extractDate,
+    extractTime,
+    detectType,
+    extractPersonPhrase,
+    pad2,
+    isoOf,
 };
