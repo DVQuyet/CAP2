@@ -35,3 +35,20 @@ test('"ong co"/"ba co" không dấu chỉ là cụ khi theo sau là noi/ngoai/to
     assert.equal(normalizeTyping('ông cô của tôi là ai'), 'ông cô của tôi là ai');
     assert.equal(normalizeTyping('Ong Co toi la ai'), 'Ong Co toi la ai');
 });
+
+test('thứ bậc không dấu chỉ nhận khi cả câu không dấu, viết thường, đúng ngữ cảnh', () => {
+    const ut = normalizeTypingDetailed('chu ut cua toi la ai');
+    assert.equal(ut.text, 'chu cua toi la ai');
+    assert.deepEqual({ kin: ut.kinOrder.kin, kind: ut.kinOrder.kind }, { kin: 'chú', kind: 'youngest' });
+    const thim = normalizeTypingDetailed('thim ba co may nguoi con');
+    assert.equal(thim.text, 'con cua thím toi la ai');
+    assert.deepEqual({ kin: thim.kinOrder.kin, n: thim.kinOrder.n }, { kin: 'thím', n: 2 });
+    assert.equal(normalizeTypingDetailed('con cua bac ca la ai').kinOrder.kind, 'eldest');
+    assert.equal(normalizeTypingDetailed('co ba cua toi la ai').kinOrder.kin, 'cô');
+    for (const text of [
+        'chu nam sinh nam nao', 'chu nam nao', 'toi co hai chu', 'ai co ba chu', 'co hai nguoi con', 'Chu Ba cua toi',
+        'Nguyen Van Ba la ai', 'chu ba nguoi con', 'anh hai cua toi la ai',
+    ]) {
+        assert.equal(normalizeTypingDetailed(text).kinOrder, null, text);
+    }
+});

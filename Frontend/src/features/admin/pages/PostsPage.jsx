@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { getAdminClans, getAdminPostsByClan, updateAdminPostStatus, deleteAdminPost } from "../../../api/adminService";
@@ -35,37 +35,45 @@ export default function PostsPage() {
         }
     }, [toast.show]);
 
-    useEffect(() => {
-        const fetchClans = async () => {
-            try {
-                const res = await getAdminClans();
-                setClans(res.clans || []);
-            } catch (err) {
-                setError(friendlyErrorMessage(err, t));
-            } finally {
-                if (!clanId) setLoading(false);
-            }
-        };
-        fetchClans();
+    const fetchClans = useCallback(async () => {
+        try {
+            const res = await getAdminClans();
+            setClans(res.clans || []);
+        } catch (err) {
+            setError(friendlyErrorMessage(err, t));
+        } finally {
+            if (!clanId) setLoading(false);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [clanId]);
+
+    const fetchPosts = useCallback(async () => {
+        setLoading(true);
+        try {
+            const res = await getAdminPostsByClan(clanId);
+            setPosts(res.posts || []);
+            setCurrentPage(1); // Reset về trang 1 khi đổi clan
+        } catch (err) {
+            setError(friendlyErrorMessage(err, t));
+        } finally {
+            setLoading(false);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [clanId]);
 
     useEffect(() => {
-        if (clanId) {
-            const fetchPosts = async () => {
-                setLoading(true);
-                try {
-                    const res = await getAdminPostsByClan(clanId);
-                    setPosts(res.posts || []);
-                    setCurrentPage(1); // Reset về trang 1 khi đổi clan
-                } catch (err) {
-                    setError(friendlyErrorMessage(err, t));
-                } finally {
-                    setLoading(false);
-                }
-            };
-            fetchPosts();
-        }
-    }, [clanId]);
+        fetchClans();
+    }, [fetchClans]);
+
+    useEffect(() => {
+        if (clanId) fetchPosts();
+    }, [clanId, fetchPosts]);
+
+    const retryLoad = () => {
+        setError("");
+        fetchClans();
+        if (clanId) fetchPosts();
+    };
 
     const handleUpdateStatus = async (postId, newStatus) => {
         try {
@@ -148,7 +156,7 @@ export default function PostsPage() {
                 <h1>{clanId ? t("admin.posts.subtitle", { name: selectedClan?.clan_name }) : t("admin.posts.selectClan")}</h1>
             </header>
 
-            {error && <ErrorState message={error} />}
+            {error && <ErrorState message={error} onRetry={retryLoad} />}
 
             {!clanId ? (
                 <div className="clan-folder-grid">

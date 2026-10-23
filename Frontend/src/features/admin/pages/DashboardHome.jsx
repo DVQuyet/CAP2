@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getAdminDashboardStats } from "../../../api/adminService";
 import {
@@ -66,21 +66,23 @@ export default function DashboardHome() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setLoading(true);
-                setError("");
-                const statsRes = await getAdminDashboardStats();
-                setData(statsRes);
-            } catch (err) {
-                setError(friendlyErrorMessage(err, t));
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchData();
+    const fetchData = useCallback(async () => {
+        try {
+            setLoading(true);
+            setError("");
+            const statsRes = await getAdminDashboardStats();
+            setData(statsRes);
+        } catch (err) {
+            setError(friendlyErrorMessage(err, t));
+        } finally {
+            setLoading(false);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     const stats = data?.stats || {};
     const planDistribution = data?.plan_distribution || [];
@@ -150,7 +152,7 @@ export default function DashboardHome() {
                 </div>
             </section>
 
-            {error && <ErrorState message={error} />}
+            {error && <ErrorState message={error} onRetry={fetchData} />}
 
             <div className={`stats-grid-premium ${loading ? "is-refreshing" : ""}`}>
                 {statItems.map((item) => (

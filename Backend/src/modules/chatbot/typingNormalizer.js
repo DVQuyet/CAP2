@@ -118,9 +118,20 @@ const NOT_NAM_FOLLOWER = new Set(['sinh', 'mất', 'nào', 'nay', 'ngoái', 'tr�
 // Từ Nam Bộ trong câu -> "hai" là con thứ nhất. "anh/chị hai", "mợ", "dượng" bản thân đã là cách gọi miền Nam.
 const SOUTH_MARKER = re(`${B}(tía|má|bầm|dượng|mợ)${E}`, 'iu');
 const SOUTH_KIN = new Set(['anh', 'chị', 'mợ', 'dượng']);
-const KIN_WITH_ORDER = re(`${B}(bác|chú|cô|cậu|dì|mợ|thím|dượng|anh|chị|bac|chu|cau|di|mo|thim|duong|chi)\\s+(${ORDER_WORDS}|ut)${E}`, 'giu');
+const PLAIN_ORDER = 'ca|truong|hai|ba|tu|nam|sau|bay|tam|chin|muoi';
+const KIN_WITH_ORDER = re(`${B}(bác|chú|cô|cậu|dì|mợ|thím|dượng|anh|chị|bac|chu|co|cau|di|mo|thim|duong|chi)\\s+(${ORDER_WORDS}|ut|${PLAIN_ORDER})${E}`, 'giu');
+// Thứ bậc không dấu: chỉ cho xưng hô thật sự (không gồm anh/chị) và chỉ khi cả câu không dấu, viết thường.
+const PLAIN_KIN_ACCENT = { bac: 'bác', chu: 'chú', co: 'cô', cau: 'cậu', di: 'dì', mo: 'mợ', thim: 'thím', duong: 'dượng' };
+const PLAIN_ORDER_ACCENT = { ca: 'cả', truong: 'trưởng', ut: 'út', hai: 'hai', ba: 'ba', tu: 'tư', nam: 'năm', sau: 'sáu', bay: 'bảy', tam: 'tám', chin: 'chín', muoi: 'mười' };
+const PLAIN_CONTEXT_PREV = new Set(['cua', 'toi', 'minh', 'tui', 'la']);
+const PLAIN_NOT_FOLLOWER = new Set(['nguoi', 'doi', 'tuoi', 'ngay', 'thang', 'muoi', 'tram', 'nghin', 'con', 'chau', 'anh', 'chi', 'em', 'nha', 'ho', 'toc', 'nhanh', 'phong', 'dong', 'gia', 'sinh', 'mat', 'nao', 'nay', 'ngoai', 'truoc', 'sau', 'qua', 'toi', 'do', 'ay', 'vua', 'xua']);
 const KIN_AFTER = '(bác|chú|cô|cậu|dì|mợ|thím|dượng)';
 const QUESTION_WORD = '(?:là ai|tên gì|tên là gì)';
+// Dạng không dấu của ba mẫu câu trống dưới đây (chỉ dùng khi cả câu không dấu).
+const PLAIN_KIN_AFTER = '(bac|chu|co|cau|di|mo|thim|duong|thím|dượng)';
+const PLAIN_WHO = new RegExp(`^${PLAIN_KIN_AFTER}\\s+(la ai|ten gi|ten la gi)$`, 'u');
+const PLAIN_CHILDREN = new RegExp(`^${PLAIN_KIN_AFTER}\\s+co\\s+(?:may|bao nhieu)\\s+(?:nguoi\\s+)?con(?:\\s+khong)?$`, 'u');
+const PLAIN_SPOUSE = new RegExp(`^${PLAIN_KIN_AFTER}\\s+co\\s+(vo|chong)\\s+chua$`, 'u');
 const BARE_KIN_WHO = new RegExp(`^${KIN_AFTER}\\s+${QUESTION_WORD}(?:\\s+trong\\s+(?:họ|nhà|gia đình)(?:\\s+(?:mình|tôi))?)?$`, 'iu');
 const BARE_KIN_CHILDREN = new RegExp(`^${KIN_AFTER}\\s+có\\s+(?:mấy|bao nhiêu)\\s+(?:người\\s+)?con(?:\\s+không)?$`, 'iu');
 const BARE_KIN_SPOUSE = new RegExp(`^${KIN_AFTER}\\s+có\\s+(vợ|chồng)\\s+chưa$`, 'iu');
@@ -138,17 +149,35 @@ function rewriteRegionalKinship(text, plain, info = {}, southHint = false) {
         if (next && (/^\d/.test(next) || NOT_ORDER_FOLLOWER.has(next.toLowerCase()))) return matched;
         // "ut" không dấu chỉ là thứ bậc khi câu không dấu hoàn toàn; "ba/hai" không dấu quá dễ nhầm nên không xét.
         if (word === 'ut' && !plain) return matched;
-        if (/^(?:hai|ba|tư|năm|sáu|bảy|tám|chín|mười|cả|trưởng)$/.test(word) && plain) return matched;
+        if (!plain && /^(?:ca|truong|tu|sau|bay|tam|chin|muoi|nam)$/.test(word)) return matched;
+        if (plain && word !== 'ut') {
+            // Số/cả/trưởng không dấu quá dễ nhầm: chỉ nhận khi cả câu không dấu + viết thường, xưng hô thật và có ngữ cảnh.
+            if (!plain || whole !== whole.toLowerCase() || !PLAIN_KIN_ACCENT[kin.toLowerCase()]) return matched;
+            if (prev && !PLAIN_CONTEXT_PREV.has(prev)) return matched;
+            // "co/di/mo" trùng từ thường (có/đi/mợ): chỉ nhận ở đầu câu hoặc sau "của".
+            if (/^(?:co|di|mo)$/.test(kin.toLowerCase()) && prev && prev !== 'cua') return matched;
+            if (next && PLAIN_NOT_FOLLOWER.has(next)) return matched;
+        }
         if (word === 'năm' && next && NOT_NAM_FOLLOWER.has(next.toLowerCase())) return matched;
         hadOrder = true;
         if (!info.order) {
             const kinWord = kin.toLowerCase();
-            info.order = orderFromWord(word, kinWord, southHint || SOUTH_KIN.has(kinWord));
+            const kinAccent = PLAIN_KIN_ACCENT[kinWord] || kinWord;
+            info.order = orderFromWord(PLAIN_ORDER_ACCENT[word] || word, plain ? kinAccent : kinWord, southHint || SOUTH_KIN.has(kinAccent));
         }
-        return kin;
+        return plain && /^(?:thim|duong)$/.test(kin) ? PLAIN_KIN_ACCENT[kin] : kin;
     });
     const punct = (result.match(/[?.!]*$/) || [''])[0];
     const body = result.slice(0, result.length - punct.length).trim();
+    if (plain && result === result.toLowerCase()) {
+        const accent = (kin) => (/^(?:thim|duong)$/.test(kin) ? PLAIN_KIN_ACCENT[kin] : kin);
+        let plainMatch = body.match(PLAIN_WHO);
+        if (plainMatch && (hadOrder || /^(?:duong|dượng|mo|thim|thím)$/.test(plainMatch[1]))) return `${accent(plainMatch[1])} cua toi ${plainMatch[2]}${punct}`;
+        plainMatch = body.match(PLAIN_CHILDREN);
+        if (plainMatch) return `con cua ${accent(plainMatch[1])} toi la ai${punct}`;
+        plainMatch = body.match(PLAIN_SPOUSE);
+        if (plainMatch) return `${plainMatch[2]} cua ${accent(plainMatch[1])} toi la ai${punct}`;
+    }
     let match = body.match(BARE_KIN_WHO);
     if (match && (hadOrder || /^(dượng|mợ|thím)$/i.test(match[1]))) {
         const question = body.match(new RegExp(`${QUESTION_WORD}`, 'iu'))[0];

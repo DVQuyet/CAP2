@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import useDismissable from "../../../shared/hooks/useDismissable";
 import { useTranslation } from "react-i18next";
 import {
@@ -151,11 +151,7 @@ export default function MembersPage() {
     }
   }, [toast.show]);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
@@ -167,7 +163,12 @@ export default function MembersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const isAdminAccount = (account) => Number(account.role_id) === 1;
 
@@ -414,7 +415,7 @@ export default function MembersPage() {
         </>
       )}
 
-      {error && <ErrorState message={error} />}
+      {error && <ErrorState message={error} onRetry={fetchData} />}
 
       {selectedClan !== null && (
       <div className="premium-dark-glass">
