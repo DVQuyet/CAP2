@@ -1,22 +1,21 @@
 import { useTranslation } from "react-i18next";
+import useLandingContent from "../landing/useLandingContent";
+import { sectionOf, mergeItems, itemKey, DEFAULT_STATS } from "../landing/landingContent";
 
 export default function StatsSection() {
   const { t } = useTranslation();
+  const { content } = useLandingContent();
 
-  const stats = [
-    ["1,200+", t("public.stats.clans")],
-    ["500k+", t("public.stats.members")],
-    ["250k+", t("public.stats.documents")],
-    ["63", t("public.stats.provinces")],
-  ];
+  const defaults = DEFAULT_STATS.map(([id, value]) => ({ id: null, meta: value, title: t(`public.stats.${id}`) }));
+  const stats = mergeItems(sectionOf(content, "stats"), defaults);
 
   return (
     <section className="stats-section">
       <div className="container stats-grid">
-        {stats.map(([value, label]) => (
-          <div key={label}>
-            <strong>{value}</strong>
-            <p>{label}</p>
+        {stats.map((item, index) => (
+          <div key={itemKey(item, index)}>
+            <strong>{item.meta}</strong>
+            <p>{item.title}</p>
           </div>
         ))}
       </div>

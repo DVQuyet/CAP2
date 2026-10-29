@@ -1,46 +1,17 @@
 import { useTranslation } from "react-i18next";
+import useLandingContent from "../landing/useLandingContent";
+import { sectionOf, mergeItems, itemKey, isSectionVisible, DEFAULT_GUIDE_STEPS } from "../landing/landingContent";
 
 export default function GuideDetailPage() {
   const { t } = useTranslation();
+  const { content } = useLandingContent();
 
-  const steps = [
-    {
-      number: "01",
-      title: t("public.guide.steps.step1.title"),
-      desc: t("public.guide.steps.step1.desc"),
-      icon: "group_add",
-    },
-    {
-      number: "02",
-      title: t("public.guide.steps.step2.title"),
-      desc: t("public.guide.steps.step2.desc"),
-      icon: "person_add",
-    },
-    {
-      number: "03",
-      title: t("public.guide.steps.step3.title"),
-      desc: t("public.guide.steps.step3.desc"),
-      icon: "schema",
-    },
-    {
-      number: "04",
-      title: t("public.guide.steps.step4.title"),
-      desc: t("public.guide.steps.step4.desc"),
-      icon: "cloud_upload",
-    },
-    {
-      number: "05",
-      title: t("public.guide.steps.step5.title"),
-      desc: t("public.guide.steps.step5.desc"),
-      icon: "mail_outline",
-    },
-    {
-      number: "06",
-      title: t("public.guide.steps.step6.title"),
-      desc: t("public.guide.steps.step6.desc"),
-      icon: "calendar_today",
-    },
-  ];
+  const defaultSteps = DEFAULT_GUIDE_STEPS.map(([id, icon]) => ({
+    title: t(`public.guide.steps.${id}.title`),
+    body: t(`public.guide.steps.${id}.desc`),
+    icon,
+  }));
+  const steps = isSectionVisible(content, "guide") ? mergeItems(sectionOf(content, "guide"), defaultSteps) : [];
 
   const faqs = t("public.guide.faqs", { returnObjects: true }) || [];
 
@@ -59,12 +30,12 @@ export default function GuideDetailPage() {
           <section className="guide-steps">
             <h2 className="guide-section-title">{t("public.guide.stepsTitle")}</h2>
             <div className="steps-grid">
-              {steps.map((step) => (
-                <article key={step.number} className="guide-step-card">
-                  <div className="step-number">{step.number}</div>
+              {steps.map((step, index) => (
+                <article key={itemKey(step, index)} className="guide-step-card">
+                  <div className="step-number">{String(index + 1).padStart(2, "0")}</div>
                   <span className="material-symbols-outlined step-icon">{step.icon}</span>
                   <h3>{step.title}</h3>
-                  <p>{step.desc}</p>
+                  <p>{step.body}</p>
                 </article>
               ))}
             </div>

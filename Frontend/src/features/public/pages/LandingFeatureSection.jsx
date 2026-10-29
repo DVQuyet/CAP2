@@ -1,14 +1,24 @@
 import { useTranslation } from "react-i18next";
 import LandingFamilyTree from "./LandingFamilyTree";
+import useLandingContent from "../landing/useLandingContent";
+import { sectionOf, mergeSectionText, mergeItems, itemKey, DEFAULT_FEATURES_IMAGE } from "../landing/landingContent";
 
 export default function LandingFeatureSection() {
   const { t } = useTranslation();
+  const { content } = useLandingContent();
+  const section = sectionOf(content, "features");
 
-  const features = [
-    { icon: "bolt", title: t("public.features.advanced.items.auto.title"), desc: t("public.features.advanced.items.auto.desc") },
-    { icon: "notifications_active", title: t("public.features.advanced.items.events.title"), desc: t("public.features.advanced.items.events.desc") },
-    { icon: "security", title: t("public.features.advanced.items.security.title"), desc: t("public.features.advanced.items.security.desc") },
+  const defaultFeatures = [
+    { icon: "bolt", title: t("public.features.advanced.items.auto.title"), body: t("public.features.advanced.items.auto.desc") },
+    { icon: "notifications_active", title: t("public.features.advanced.items.events.title"), body: t("public.features.advanced.items.events.desc") },
+    { icon: "security", title: t("public.features.advanced.items.security.title"), body: t("public.features.advanced.items.security.desc") },
   ];
+  const features = mergeItems(section, defaultFeatures);
+  const merged = mergeSectionText(section, {
+    tag: t("public.features.advanced.tag"),
+    title: t("public.features.advanced.title"),
+    image_url: DEFAULT_FEATURES_IMAGE,
+  });
 
   return (
     <>
@@ -37,15 +47,15 @@ export default function LandingFeatureSection() {
       </section>
       <section className="features-section" id="tin-tuc">
         <div className="container two-col">
-          <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAd6zBRvZR3R4FNjtUr2lLEx9nhgeCvjODU75n1JNSZXsYbZbBF_gkjblSR6pitSFdONbGyENkDH6yqIi4uS-Ykb6p6ILCjP0nXnqvGTlFy9hTWmvVSDjpMIx7HWlHJsTVzyp8Eupx2Tm3Xyjng359b4cGX8X6_EDIt4xaLllWGrajQxWqaRni5VzHCLHVKEAERaVpCv2KL8n9_4GnV-fPjGCzGNfAwYlnkE_xJidn-Rg1rLL1S3goPoSirM6dhlbwjipscoiT16iOH" alt={t("public.features.advanced.title")} />
+          <img src={merged.image_url} alt={merged.title} />
           <div>
-            <span className="section-tag">{t("public.features.advanced.tag")}</span>
-            <h3>{t("public.features.advanced.title")}</h3>
+            <span className="section-tag">{merged.tag}</span>
+            <h3>{merged.title}</h3>
             <div className="feature-list">
-              {features.map((item) => (
-                <article key={item.title}>
+              {features.map((item, index) => (
+                <article key={itemKey(item, index)}>
                   <span className="material-symbols-outlined">{item.icon}</span>
-                  <div><h4>{item.title}</h4><p>{item.desc}</p></div>
+                  <div><h4>{item.title}</h4><p>{item.body}</p></div>
                 </article>
               ))}
             </div>

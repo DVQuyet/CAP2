@@ -14,6 +14,7 @@ const menuItems = [
   { icon: "group", labelKey: "layout.adminMenu.accounts", path: "/dashboard/members" },
   { icon: "outgoing_mail", labelKey: "layout.adminMenu.invitations", path: "/dashboard/invitations" },
   { icon: "article", labelKey: "layout.adminMenu.posts", path: "/dashboard/posts" },
+  { icon: "web", labelKey: "layout.adminMenu.landing", path: "/dashboard/landing" },
   { icon: "assignment", labelKey: "layout.adminMenu.events", path: "/dashboard/tasks" },
   { icon: "workspace_premium", labelKey: "layout.adminMenu.billing", path: "/dashboard/billing" },
   { icon: "calendar_month", labelKey: "layout.adminMenu.calendar", path: "/dashboard/calendar" },
