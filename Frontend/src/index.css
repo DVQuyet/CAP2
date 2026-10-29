@@ -48,6 +48,15 @@ textarea {
   flex-shrink: 0;
 }
 
+/* Viền focus bàn phím chung cho nút/link/điều khiển. :where() giữ độ ưu tiên bằng 0 nên mọi kiểu
+   :focus-visible riêng của từng component vẫn thắng. Ô nhập chữ đã có viền/đổ bóng khi focus riêng. */
+:where(a[href], button, summary, select, [role="button"], [role="tab"], [role="menuitem"],
+  input[type="checkbox"], input[type="radio"], input[type="button"], input[type="submit"],
+  [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: 2px solid #b77912;
+  outline-offset: 2px;
+}
+
 @media (max-width: 760px) {
   body {
     min-width: 0;
