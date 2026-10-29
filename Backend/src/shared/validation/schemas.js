@@ -381,8 +381,17 @@ const generatePersonBiography = validate({
     },
 });
 
+const generatePostDraft = validate({
+    body: {
+        idea: v.string({ max: 1000, label: 'ý tưởng' }),
+        event_id: v.string({ max: 80, pattern: /^[A-Za-z0-9_-]+$/, label: 'sự kiện' }),
+        kind: v.enum(['meeting', 'anniversary', 'celebration', 'general'], { label: 'loại bài' }),
+        tone: v.enum(['formal', 'friendly'], { label: 'giọng văn' }),
+    },
+});
+
 module.exports = {
-    generatePersonBiography,
+    generatePersonBiography, generatePostDraft,
     createCalendarEvent, updateCalendarEvent, deleteCalendarEvent,
     assignTask, createEventTask, bulkAssignTasks, updateAssignedTask, taskIdParam, updateTaskStatus,
     createFamilyMemory, updateFamilyMemory, updateMemberProfile, updateMyProfile,

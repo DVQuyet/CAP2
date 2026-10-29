@@ -39,4 +39,14 @@ router.post(
     aiController.generatePersonBiographyAI
 );
 
+// Quyền giống đăng bài (POST /api/member/content/post): admin, manager, member.
+router.post(
+    '/post-draft/generate',
+    verifyToken,
+    checkRole(['admin', 'manager', 'member']),
+    aiRateLimit,
+    schemas.generatePostDraft,
+    aiController.generatePostDraftAI
+);
+
 module.exports = router;

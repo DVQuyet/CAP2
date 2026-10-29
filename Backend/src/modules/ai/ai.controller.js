@@ -3,6 +3,8 @@ const { callGroq } = groqClient;
 const { assertTreeMutationPermission } = require('../../shared/utils/treeEditPermissions');
 const { assertCanManagePersonId } = require('../manager/managerClan.service');
 const personBio = require('./personBiography.service');
+const postDraft = require('./postDraft.service');
+const calendar = require('../calendar/calendar.controller');
 
 const MAX_EVENT_PROMPT_LENGTH = 2000;
 const MAX_GENEALOGY_PROMPT_LENGTH = 6000;
@@ -417,6 +419,69 @@ exports.generatePersonBiographyAI = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: 'Không thể tạo gợi ý tiểu sử',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+        });
+    }
+};
+
+// Soạn bài đăng/thông báo: chỉ trả bản nháp, không ghi DB. Dữ kiện sự kiện do server đọc theo event_id.
+exports.generatePostDraftAI = async (req, res) => {
+    try {
+        const accountId = req.user?.account_id || req.user?.id || null;
+        if (!accountId) {
+            return res.status(401).json({ success: false, message: 'Bạn cần đăng nhập để sử dụng AI soạn bài' });
+        }
+
+        const body = req.body || {};
+        const options = postDraft.normalizeOptions(body);
+        const eventId = body.event_id === undefined || body.event_id === null ? '' : String(body.event_id).trim();
+        if (!options.idea && !eventId) {
+            return res.status(400).json({ success: false, message: 'Vui lòng nhập ý tưởng hoặc chọn một sự kiện' });
+        }
+
+        if (!groqClient.isGroqConfigured()) {
+            return res.status(503).json({
+                success: false,
+                code: 'AI_UNAVAILABLE',
+                message: 'AI chưa được cấu hình. Vui lòng soạn bài thủ công.',
+            });
+        }
+
+        let eventFacts = null;
+        if (eventId) {
+            const clanId = await calendar.resolveClanId(req);
+            eventFacts = await postDraft.loadEventFacts(eventId, { clanId, userId: req.user.id });
+            if (!eventFacts) {
+                return res.status(404).json({ success: false, message: 'Không tìm thấy sự kiện hoặc bạn không có quyền xem' });
+            }
+            if (!body.kind) options.kind = postDraft.kindFromEventType(eventFacts.type);
+        }
+
+        const userPrompt = postDraft.buildUserPrompt(eventFacts, options);
+        const raw = await groqClient.callGroq(postDraft.buildSystemPrompt(options), userPrompt, 900);
+        const draft = postDraft.parseDraft(raw);
+        if (!draft) {
+            return res.status(503).json({
+                success: false,
+                code: 'AI_UNAVAILABLE',
+                message: 'AI tạm thời không phản hồi. Vui lòng thử lại sau hoặc soạn bài thủ công.',
+            });
+        }
+        const warnings = postDraft.findUnverifiedDateTimes(`${draft.title} ${draft.content}`, userPrompt);
+        return res.json({
+            success: true,
+            draft: true,
+            title: draft.title,
+            content: draft.content,
+            facts_used: postDraft.eventFactsToList(eventFacts),
+            unverified: warnings,
+            options,
+        });
+    } catch (error) {
+        console.error('generatePostDraftAI error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Không thể tạo bản nháp bài đăng',
             error: process.env.NODE_ENV === 'development' ? error.message : undefined,
         });
     }

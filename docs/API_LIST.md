@@ -111,6 +111,7 @@ Prefix: `/api/ai`
 |---|---|---|---|
 | POST | `/api/ai/event-form/generate` | admin, manager | Gọi Groq (qua backend) để sinh form sự kiện và danh sách task |
 | POST | `/api/ai/person-biography/generate` | admin, manager, member (quyền sửa hồ sơ người đó; member cần temporary edit key) | Body `{person_id, tone?: formal/friendly, length?: short/medium, language?: vi/en, notes?≤600}`. Server tự đọc dữ kiện, trả bản nháp `{success, draft:true, biography, facts_used[], options}`; 503 `AI_UNAVAILABLE` khi thiếu GROQ_API_KEY/AI lỗi. Không ghi DB |
+| POST | `/api/ai/post-draft/generate` | admin, manager, member (như quyền đăng bài) | Body `{idea?≤1000, event_id?, kind?: meeting/anniversary/celebration/general, tone?: formal/friendly}` (cần `idea` hoặc `event_id`). `event_id` = id lịch số, `birthday-/death-<người>-<năm>` hoặc `manager-event-<id>-<ngày>`; server tự đọc dữ kiện trong dòng họ của người dùng (404 nếu không thấy/không được xem). Trả bản nháp `{success, draft:true, title, content, facts_used[], unverified[], options}` (`unverified` = ngày/giờ AI thêm mà đầu vào không có); 503 `AI_UNAVAILABLE` khi thiếu GROQ_API_KEY/AI lỗi. Không ghi DB |
 
 ## Admin
 
