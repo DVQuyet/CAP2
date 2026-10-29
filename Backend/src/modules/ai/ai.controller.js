@@ -1,4 +1,7 @@
 const { callGroq } = require('../chatbot/groqClient');
+const db = require('../../config/db');
+const { buildBiographyFacts } = require('./biographyFacts');
+const { generateBiographyDraft, assertCanDraftBiography } = require('./biographyService');
 
 const MAX_EVENT_PROMPT_LENGTH = 2000;
 const MAX_GENEALOGY_PROMPT_LENGTH = 6000;
@@ -353,6 +356,57 @@ exports.generateEventFormAI = async (req, res) => {
             message: 'Không thể xử lý yêu cầu AI lập kế hoạch',
             error: process.env.NODE_ENV === 'development' ? error.message : undefined,
         });
+    }
+};
+
+// Soạn BẢN NHÁP tiểu sử / lời tưởng niệm từ dữ liệu trên cây. Không ghi vào people: người dùng tự đọc, sửa và bấm Lưu.
+exports.generateBiographyDraft = async (req, res) => {
+    const startedAt = Date.now();
+    const personId = Number(req.params.id);
+    const body = req.body || {};
+    const options = {
+        purpose: body.purpose === 'memorial' ? 'memorial' : 'biography',
+        tone: body.tone === 'warm' ? 'warm' : 'formal',
+        length: body.length === 'medium' ? 'medium' : 'short',
+        language: body.language === 'en' ? 'en' : 'vi',
+    };
+    let clanId = null;
+    let facts = null;
+    let result = null;
+    let errorText = null;
+    try {
+        const access = await assertCanDraftBiography(req, personId);
+        if (!access.ok) return res.status(access.status).json({ success: false, message: access.message });
+        clanId = access.person?.clan_id;
+
+        facts = await buildBiographyFacts(personId, req.user);
+        if (!facts) return res.status(404).json({ success: false, message: 'Không tìm thấy người trong gia phả.' });
+        if (options.purpose === 'memorial' && facts.person.is_living) {
+            return res.status(400).json({ success: false, message: 'Chỉ soạn lời tưởng niệm cho người đã mất.' });
+        }
+
+        result = await generateBiographyDraft(facts, options);
+        return res.json({ success: true, ...result });
+    } catch (error) {
+        errorText = error.message;
+        console.error('generateBiographyDraft error:', error);
+        return res.status(500).json({ success: false, message: 'Không thể soạn bản nháp lúc này. Vui lòng thử lại.' });
+    } finally {
+        // Nhật ký tối thiểu (không lưu dữ kiện cá nhân). Bảng ai_audit_logs có thể chưa tồn tại ở mọi môi trường nên không để lỗi chặn phản hồi.
+        db.query(
+            `INSERT INTO ai_audit_logs (account_id, person_id, clan_id, role, prompt, intent, row_count, duration_ms, error)
+             VALUES (?, ?, ?, ?, ?, 'biography_draft', ?, ?, ?)`,
+            [
+                Number(req.user?.id) || null,
+                personId || null,
+                Number(clanId) || null,
+                req.user?.role_name || null,
+                `biography:${options.purpose}:${options.language}:${result?.source || 'none'}:${(result?.warnings || []).join('|')}`.slice(0, 200),
+                result ? 1 : 0,
+                Date.now() - startedAt,
+                errorText,
+            ]
+        ).catch(() => {});
     }
 };
 

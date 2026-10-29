@@ -36,10 +36,12 @@ async function createTempClan(label = '', { withSubscription = true } = {}) {
 }
 
 // Tạo người trên cây (people) thuộc dòng họ tạm.
-async function createTempPerson({ clanId, name = 'Person', gender = 1, generation = 1, birthDate = null, deathDate = null, isLiving = 1 } = {}) {
+// exactName: tên hiển thị thật (vd. "Nguyễn Văn Lâm") cho test cần tên tự nhiên; vẫn dọn được vì người thuộc dòng họ ITEST_ (bắt buộc có clanId).
+async function createTempPerson({ clanId, name = 'Person', exactName = null, gender = 1, generation = 1, birthDate = null, deathDate = null, isLiving = 1, hometown = null } = {}) {
+    if (exactName && !clanId) throw new Error('exactName chỉ dùng cho người thuộc dòng họ tạm (cần clanId) để cleanup tìm thấy.');
     const [result] = await db.query(
-        'INSERT INTO people (clan_id, display_name, gender, generation, birth_date, death_date, is_living) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [clanId, `${NAME_PREFIX}${name}_${rand()}`, gender, generation, birthDate, deathDate, isLiving]
+        'INSERT INTO people (clan_id, display_name, gender, generation, birth_date, death_date, is_living, hometown) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [clanId, exactName || `${NAME_PREFIX}${name}_${rand()}`, gender, generation, birthDate, deathDate, isLiving, hometown]
     );
     return result.insertId;
 }

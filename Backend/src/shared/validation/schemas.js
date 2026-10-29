@@ -277,6 +277,17 @@ const updateMyProfile = validate({
     },
 });
 
+// ---- AI soạn tiểu sử / lời tưởng niệm ----
+const biographyDraft = validate({
+    params: { id: v.id({ label: 'ID người', message: 'ID người không hợp lệ.' }) },
+    body: {
+        purpose: v.enum(['biography', 'memorial'], { label: 'mục đích' }),
+        tone: v.enum(['formal', 'warm'], { label: 'giọng văn' }),
+        length: v.enum(['short', 'medium'], { label: 'độ dài' }),
+        language: v.enum(['vi', 'en'], { label: 'ngôn ngữ' }),
+    },
+});
+
 // ---- Đăng nhập mạng xã hội ----
 const oauthExchange = validate({
     body: { code: v.string({ required: true, max: 100, label: 'mã đăng nhập', message: 'Mã đăng nhập không hợp lệ hoặc đã hết hạn.' }) },
@@ -382,7 +393,7 @@ module.exports = {
     createFamilyMemory, updateFamilyMemory, updateMemberProfile, updateMyProfile,
     updateClanInfo, registerClan, registerClanWithManager,
     adminCreateAccount, adminCreateManager, adminDeleteAccount, archiveMember, restoreArchivedMember,
-    register, login, forgotPassword, resetPassword, oauthExchange,
+    register, login, forgotPassword, resetPassword, oauthExchange, biographyDraft,
     createPerson, updatePerson, linkRelations, createFamily, updateFamily, addFamilyChild,
     fundIncome, fundExpense, fundReportPayment,
     postComment, postCreate, postUpdate,
