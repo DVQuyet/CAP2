@@ -15,7 +15,7 @@
 .clan-sidebar {
     width: 280px;
     background: white;
-    border-radius: 16px;
+    border-radius: var(--radius-2xl);
     display: flex;
     flex-direction: column;
     border: 1px solid #f3f4f6;
@@ -30,7 +30,7 @@
 
 .sidebar-header h3 {
     font-family: 'Playfair Display', serif;
-    color: #7f1d1d;
+    color: var(--color-red-900);
     margin: 0;
 }
 
@@ -60,7 +60,7 @@
     align-items: center;
     gap: 1rem;
     padding: 1rem;
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     cursor: pointer;
     transition: all 0.2s;
     border: 1px solid transparent;
@@ -72,12 +72,12 @@
 }
 
 .clan-item.active {
-    background: #fef3c7;
-    border-color: #d4af37;
+    background: var(--color-amber-100);
+    border-color: var(--color-gold-metal);
 }
 
 .clan-item .material-symbols-outlined {
-    color: #7f1d1d;
+    color: var(--color-red-900);
     font-size: 1.5rem;
 }
 
@@ -89,20 +89,20 @@
 }
 
 .clan-info strong {
-    font-size: 0.95rem;
+    font-size: var(--fs-base-plus);
     color: #111827;
     overflow-wrap: anywhere;
 }
 
 .clan-info span {
-    font-size: 0.75rem;
+    font-size: var(--fs-2xs);
     color: var(--text-muted);
 }
 
 .tree-canvas-container {
     flex: 1;
     background: #fdfbf7;
-    border-radius: 24px;
+    border-radius: var(--radius-5xl);
     overflow: hidden;
     position: relative;
     border: 1px solid rgba(0,0,0,0.05);
@@ -110,7 +110,7 @@
 }
 
 .tree-canvas-container :global(.fte-editorWrapper) {
-    border-radius: 24px;
+    border-radius: var(--radius-5xl);
 }
 
 @media (max-width: 760px) {
@@ -138,7 +138,7 @@
     align-items: center;
     justify-content: center;
     height: 100%;
-    color: #7f1d1d;
+    color: var(--color-red-900);
 }
 
 .member-modal-backdrop {
@@ -152,14 +152,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 9000;
+    z-index: var(--z-overlay);
 }
 
 .member-modal-content {
     width: 100%;
     max-width: 600px;
     background: white;
-    border-radius: 24px;
+    border-radius: var(--radius-5xl);
     padding: 2.5rem;
     position: relative;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
@@ -187,8 +187,8 @@
 .modal-avatar {
     width: 80px;
     height: 80px;
-    border-radius: 20px;
-    background: #fef3c7;
+    border-radius: var(--radius-4xl);
+    background: var(--color-amber-100);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -203,22 +203,22 @@
 
 .modal-avatar .material-symbols-outlined {
     font-size: 3rem;
-    color: #7f1d1d;
+    color: var(--color-red-900);
 }
 
 .modal-title h2 {
     font-family: 'Playfair Display', serif;
-    color: #7f1d1d;
+    color: var(--color-red-900);
     margin: 0;
 }
 
 .badge-generation {
     display: inline-block;
-    background: #fef3c7;
+    background: var(--color-amber-100);
     color: #78350f;
     padding: 0.25rem 0.75rem;
-    border-radius: 10px;
-    font-size: 0.8rem;
+    border-radius: var(--radius-md);
+    font-size: var(--fs-xs-plus);
     font-weight: 700;
     margin-top: 0.5rem;
 }
@@ -231,7 +231,7 @@
 
 .info-group label {
     display: block;
-    font-size: 0.75rem;
+    font-size: var(--fs-2xs);
     text-transform: uppercase;
     letter-spacing: 1px;
     color: var(--text-muted);
@@ -252,9 +252,9 @@
 .bio-box {
     background: #fdfbf7;
     padding: 1rem;
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     border: 1px solid #f3f4f6;
-    font-size: 0.9rem;
+    font-size: var(--fs-base-minus);
     line-height: 1.6;
     color: #374151;
 }
@@ -278,10 +278,10 @@
     justify-content: center;
     gap: 0.35rem;
     width: 100%;
-    border: 1px solid #d4af37;
-    background: #fff8df;
-    color: #7f1d1d;
-    border-radius: 10px;
+    border: 1px solid var(--color-gold-metal);
+    background: var(--color-cream-2);
+    color: var(--color-red-900);
+    border-radius: var(--radius-md);
     padding: 0.75rem 0.9rem;
     font-weight: 700;
     cursor: pointer;
@@ -289,7 +289,7 @@
 }
 
 .add-clan-btn:hover {
-    background: #fef3c7;
+    background: var(--color-amber-100);
     transform: translateY(-1px);
 }
 
@@ -304,7 +304,7 @@
     gap: 0.45rem;
     border: 1px solid #ead8aa;
     background: #fffdf7;
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     padding: 0.55rem 0.75rem;
 }
 
@@ -318,7 +318,7 @@
     border: none;
     outline: none;
     background: transparent;
-    font-size: 0.9rem;
+    font-size: var(--fs-base-minus);
     color: #4b5563;
 }
 
@@ -349,10 +349,10 @@
 .clan-actions button {
     width: 28px;
     height: 28px;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     border: 1px solid #ead8aa;
     background: #fffdf7;
-    color: #7f1d1d;
+    color: var(--color-red-900);
     cursor: pointer;
     display: inline-flex;
     align-items: center;
@@ -360,11 +360,11 @@
 }
 
 .clan-actions button:hover {
-    background: #fef3c7;
+    background: var(--color-amber-100);
 }
 
 .clan-actions button.danger {
-    color: #dc2626;
+    color: var(--color-red-600);
     border-color: #fecaca;
 }
 
@@ -373,15 +373,15 @@
 }
 
 .clan-actions .material-symbols-outlined {
-    font-size: 1rem;
+    font-size: var(--fs-base);
 }
 
 .empty-clan-list,
 .empty-tree-state {
-    color: var(--text-muted, #6b7280);
+    color: var(--text-muted, var(--color-gray-500));
     text-align: center;
     padding: 1.5rem 1rem;
-    font-size: 0.9rem;
+    font-size: var(--fs-base-minus);
 }
 
 .empty-tree-state {
@@ -394,7 +394,7 @@
 .clan-modal-backdrop {
     position: fixed;
     inset: 0;
-    z-index: 9000;
+    z-index: var(--z-overlay);
     background: rgba(0, 0, 0, 0.45);
     backdrop-filter: blur(6px);
     display: flex;
@@ -405,7 +405,7 @@
 
 .clan-modal {
     width: min(520px, 100%);
-    background: #ffffff;
+    background: var(--color-white);
     border-radius: 22px;
     padding: 2rem;
     position: relative;
@@ -417,7 +417,7 @@
 
 .clan-modal h3 {
     margin: 0 0 0.25rem;
-    color: #7f1d1d;
+    color: var(--color-red-900);
     font-family: 'Playfair Display', serif;
 }
 
@@ -426,19 +426,19 @@
     flex-direction: column;
     gap: 0.45rem;
     color: #374151;
-    font-size: 0.9rem;
+    font-size: var(--fs-base-minus);
     font-weight: 700;
 }
 
 .clan-modal label b {
-    color: #dc2626;
+    color: var(--color-red-600);
 }
 
 .clan-modal input,
 .clan-modal textarea {
     width: 100%;
     border: 1px solid #e5e7eb;
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     padding: 0.85rem 1rem;
     font: inherit;
     outline: none;
@@ -447,18 +447,18 @@
 
 .clan-modal input:focus,
 .clan-modal textarea:focus {
-    border-color: #d4af37;
+    border-color: var(--color-gold-metal);
     box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.16);
 }
 
 .clan-form-error {
     margin: 0;
-    color: #dc2626;
+    color: var(--color-red-600);
     background: #fee2e2;
     border: 1px solid #fecaca;
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     padding: 0.75rem;
-    font-size: 0.9rem;
+    font-size: var(--fs-base-minus);
 }
 
 .clan-modal-actions {
@@ -470,11 +470,11 @@
 
 .clan-modal-actions button {
     border: none;
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     padding: 0.75rem 1.15rem;
     cursor: pointer;
     font-weight: 700;
-    background: #7f1d1d;
+    background: var(--color-red-900);
     color: white;
 }
 
@@ -498,8 +498,8 @@
 
 .manager-account-section {
     border: 1px solid #ead8aa;
-    background: #fffaf0;
-    border-radius: 16px;
+    background: var(--color-cream-3);
+    border-radius: var(--radius-2xl);
     padding: 1rem;
     display: flex;
     flex-direction: column;
@@ -510,7 +510,7 @@
     display: flex;
     gap: 0.75rem;
     align-items: flex-start;
-    color: #7f1d1d;
+    color: var(--color-red-900);
 }
 
 .manager-section-title .material-symbols-outlined {
@@ -521,13 +521,13 @@
 
 .manager-section-title strong {
     display: block;
-    font-size: 0.95rem;
+    font-size: var(--fs-base-plus);
 }
 
 .manager-section-title p {
     margin: 0.2rem 0 0;
-    color: #6b7280;
-    font-size: 0.82rem;
+    color: var(--color-gray-500);
+    font-size: var(--fs-sm-minus);
     font-weight: 500;
     line-height: 1.45;
 }

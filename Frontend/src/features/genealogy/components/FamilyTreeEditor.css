@@ -14,9 +14,9 @@
 .fte-dangerButton,
 .fte-iconButton {
     border: 1px solid #cba756;
-    background: #fff;
+    background: var(--color-white);
     color: #54320d;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     min-height: 46px;
     padding: 0 16px;
     display: inline-flex;
@@ -24,7 +24,7 @@
     justify-content: center;
     gap: 6px;
     font-weight: 700;
-    font-size: 1rem;
+    font-size: var(--fs-base);
     cursor: pointer;
     transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
 }
@@ -61,7 +61,7 @@
     border: 1px solid #b6d9c1;
     background: #eef9f1;
     color: #1f6a3b;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     padding: 10px 12px;
     font-size: 1.05rem;
     font-weight: 700;
@@ -76,7 +76,7 @@
     min-width: 0;
     min-height: 720px;
     border: 1px solid #d1b46b;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.52), transparent 26%), linear-gradient(135deg, #fff5bc 0%, #f3d477 46%, #d99a38 100%);
     overflow: hidden;
     position: relative;
@@ -128,7 +128,7 @@
     padding: 10px 14px 12px;
     margin: -10px 0 0 -14px;
     border: 1px dashed transparent;
-    border-radius: 14px;
+    border-radius: var(--radius-xl);
     transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
@@ -235,7 +235,7 @@
     gap: 5px;
     padding: 12px 16px;
     border: 3px solid #a82718;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: linear-gradient(#fffef0, #ffd966);
     box-shadow: 0 10px 22px rgba(69, 38, 8, 0.26);
     cursor: grab;
@@ -259,7 +259,7 @@
     align-items: center;
     justify-content: center;
     padding: 2px 7px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: #8f1d14;
     color: #fff7d6;
     border: 1px solid rgba(255, 222, 133, 0.78);
@@ -316,7 +316,7 @@
 .fte-cardMeta {
     width: 100%;
     color: #2c241a;
-    font-size: 0.9rem;
+    font-size: var(--fs-base-minus);
     line-height: 1.2;
     text-align: center;
     overflow: hidden;
@@ -330,7 +330,7 @@
     max-height: min(760px, calc(100vh - 48px));
     overflow-y: auto;
     border: 1px solid #d7bd75;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: #fffdfa;
     padding: 18px;
     box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
@@ -355,7 +355,7 @@
 .fte-inspectorHeader span,
 .fte-modalHeader span {
     color: #9a4e13;
-    font-size: 0.92rem;
+    font-size: var(--fs-base-minus-plus);
     font-weight: 900;
     text-transform: uppercase;
 }
@@ -371,7 +371,7 @@
 .fte-inspectorHeader p {
     margin: 0;
     color: #69707a;
-    font-size: 1rem;
+    font-size: var(--fs-base);
 }
 
 .fte-inspectorActions {
@@ -384,7 +384,7 @@
 .fte-readOnlyNote {
     margin: 14px 0;
     border: 1px solid #e0c684;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: #fff7db;
     color: #7c4a14;
     padding: 10px 12px;
@@ -395,7 +395,7 @@
 .fte-inspectorActions button {
     justify-content: flex-start;
     min-width: 0;
-    font-size: 1rem;
+    font-size: var(--fs-base);
 }
 
 .fte-formGrid {
@@ -410,7 +410,7 @@
     display: grid;
     gap: 5px;
     color: #5f4730;
-    font-size: 0.95rem;
+    font-size: var(--fs-base-plus);
     font-weight: 800;
 }
 
@@ -427,9 +427,9 @@
 .fte-formGrid select,
 .fte-formGrid textarea {
     width: 100%;
-    border: 1px solid #d6bf84;
-    border-radius: 8px;
-    background: #fff;
+    border: 1px solid var(--color-gold-light);
+    border-radius: var(--radius-sm);
+    background: var(--color-white);
     color: #1f2933;
     min-height: 46px;
     padding: 10px 12px;
@@ -463,9 +463,9 @@
 }
 
 .fte-primaryButton {
-    background: #8b1e13;
-    border-color: #8b1e13;
-    color: #fff;
+    background: var(--color-brick-1);
+    border-color: var(--color-brick-1);
+    color: var(--color-white);
 }
 
 .fte-dangerButton {
@@ -475,7 +475,7 @@
 }
 
 .fte-ghostButton {
-    background: #fff;
+    background: var(--color-white);
     color: #594023;
 }
 
@@ -495,7 +495,7 @@
     overflow-y: auto;
     background: #fffdfa;
     border: 1px solid #d7bd75;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
     padding: 18px;
 }
@@ -524,9 +524,9 @@
 .fte-aiPromptField textarea {
     width: 100%;
     min-height: 150px;
-    border: 1px solid #d6bf84;
-    border-radius: 8px;
-    background: #fff;
+    border: 1px solid var(--color-gold-light);
+    border-radius: var(--radius-sm);
+    background: var(--color-white);
     color: #1f2933;
     padding: 12px;
     font: inherit;
@@ -543,8 +543,8 @@
     min-height: 38px;
     padding: 8px 10px;
     border: 1px solid rgba(214, 191, 132, 0.65);
-    border-radius: 8px;
-    background: #fffaf0;
+    border-radius: var(--radius-sm);
+    background: var(--color-cream-3);
 }
 
 .fte-aiVoiceControls {
@@ -562,9 +562,9 @@
     height: 34px;
     flex: 0 0 34px;
     border: 1px solid #d6a329;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     border-color: #d6a329;
-    background: #fff;
+    background: var(--color-white);
     color: #8a5308;
     cursor: pointer;
     transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease, transform 0.16s ease;
@@ -596,7 +596,7 @@
 
 .fte-aiVoiceControls .voice-recorder-button {
     border-color: #d6a329;
-    background: #fff;
+    background: var(--color-white);
     color: #8a5308;
 }
 
@@ -643,7 +643,7 @@
     align-items: center;
     gap: 8px;
     border: 1px solid #f2b8b5;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: #fff1f0;
     color: #a32014;
     padding: 10px 12px;
@@ -671,8 +671,8 @@
 .fte-aiSummary div,
 .fte-aiDraftSection {
     border: 1px solid #ead9a6;
-    border-radius: 8px;
-    background: #fffaf0;
+    border-radius: var(--radius-sm);
+    background: var(--color-cream-3);
 }
 
 .fte-aiSummary div {
@@ -705,7 +705,7 @@
 .fte-aiDraftSection h4 {
     margin: 0 0 10px;
     color: #311b08;
-    font-size: 1rem;
+    font-size: var(--fs-base);
 }
 
 .fte-aiDraftSection p {
@@ -723,8 +723,8 @@
     display: grid;
     gap: 3px;
     border: 1px solid rgba(214, 191, 132, 0.75);
-    border-radius: 8px;
-    background: #fff;
+    border-radius: var(--radius-sm);
+    background: var(--color-white);
     padding: 9px 10px;
     min-width: 0;
 }
@@ -751,9 +751,9 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
     padding: 9px;
-    border: 1px dashed #d6bf84;
-    border-radius: 8px;
-    background: #fffaf0;
+    border: 1px dashed var(--color-gold-light);
+    border-radius: var(--radius-sm);
+    background: var(--color-cream-3);
 }
 
 .fte-aiAccountFields small {
@@ -764,7 +764,7 @@
     display: grid;
     gap: 4px;
     color: #5f4730;
-    font-size: 0.86rem;
+    font-size: var(--fs-sm-plus);
     font-weight: 900;
 }
 
@@ -773,9 +773,9 @@
 .fte-aiDraftItem textarea {
     width: 100%;
     min-height: 38px;
-    border: 1px solid #d6bf84;
-    border-radius: 8px;
-    background: #fff;
+    border: 1px solid var(--color-gold-light);
+    border-radius: var(--radius-sm);
+    background: var(--color-white);
     color: #1f2933;
     padding: 8px 10px;
     font: inherit;
@@ -791,7 +791,7 @@
     width: 34px;
     min-height: 34px;
     border: 1px solid #f0b4b4;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: #fff5f5;
     color: #b42318;
     display: inline-flex;
@@ -861,15 +861,15 @@
     display: grid;
     gap: 6px;
     color: #5f4730;
-    font-size: 0.82rem;
+    font-size: var(--fs-sm-minus);
     font-weight: 800;
 }
 
 .fte-relationPicker input {
     width: 100%;
-    border: 1px solid #d6bf84;
-    border-radius: 8px;
-    background: #fff;
+    border: 1px solid var(--color-gold-light);
+    border-radius: var(--radius-sm);
+    background: var(--color-white);
     color: #1f2933;
     min-height: 40px;
     padding: 8px 10px;
@@ -889,8 +889,8 @@
     width: 100%;
     min-width: 0;
     border: 1px solid #e0c684;
-    border-radius: 8px;
-    background: #fff;
+    border-radius: var(--radius-sm);
+    background: var(--color-white);
     color: #2b1b0b;
     padding: 9px 10px;
     display: grid;
@@ -903,7 +903,7 @@
 
 .fte-relationOption:hover,
 .fte-relationOption.is-selected {
-    border-color: #8b1e13;
+    border-color: var(--color-brick-1);
     background: #fff7db;
 }
 
@@ -913,8 +913,8 @@
 
 .fte-relationOption em {
     align-self: center;
-    border-radius: 999px;
-    background: #fef3c7;
+    border-radius: var(--radius-pill);
+    background: var(--color-amber-100);
     color: #8a4b0f;
     font-size: 0.68rem;
     font-style: normal;
@@ -927,13 +927,13 @@
 .fte-relationAvatar {
     width: 42px;
     height: 42px;
-    border-radius: 8px;
-    border: 1px solid #d6bf84;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-gold-light);
     background: #fff7db;
     display: grid;
     place-items: center;
     overflow: hidden;
-    color: #8b1e13;
+    color: var(--color-brick-1);
     font-weight: 900;
 }
 
@@ -954,20 +954,20 @@
 }
 
 .fte-relationOption strong {
-    font-size: 0.92rem;
+    font-size: var(--fs-base-minus-plus);
 }
 
 .fte-relationOption small {
     margin-top: 3px;
-    color: #6b7280;
-    font-size: 0.75rem;
+    color: var(--color-gray-500);
+    font-size: var(--fs-2xs);
     font-weight: 700;
 }
 
 .fte-relationEmpty {
-    border: 1px dashed #d6bf84;
-    border-radius: 8px;
-    color: #6b7280;
+    border: 1px dashed var(--color-gold-light);
+    border-radius: var(--radius-sm);
+    color: var(--color-gray-500);
     padding: 18px;
     text-align: center;
     font-weight: 700;
@@ -1032,9 +1032,9 @@
     width: 34px;
     height: 34px;
     border: 1px solid #d6a85b;
-    border-radius: 999px;
-    background: #fff8df;
-    color: #8b1e13;
+    border-radius: var(--radius-pill);
+    background: var(--color-cream-2);
+    color: var(--color-brick-1);
     display: grid;
     place-items: center;
     box-shadow: 0 8px 18px rgba(83, 42, 12, 0.24);
@@ -1090,14 +1090,14 @@
 
 .fte-lineControl circle {
     fill: #fff8db;
-    stroke: #8b1e13;
+    stroke: var(--color-brick-1);
     stroke-width: 3;
     filter: drop-shadow(0 3px 8px rgba(69, 38, 8, 0.28));
 }
 
 .fte-lineControl path {
     fill: none;
-    stroke: #8b1e13;
+    stroke: var(--color-brick-1);
     stroke-width: 2.5;
     stroke-linecap: round;
     stroke-linejoin: round;
@@ -1133,7 +1133,7 @@
     gap: 4px;
     padding: 10px 16px 12px;
     border: 2px solid #c98920;
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     background: linear-gradient(180deg, #fff2bd 0%, #ffd875 100%);
     box-shadow: 0 12px 22px rgba(78, 45, 10, 0.26);
     color: #7a280d;
@@ -1171,7 +1171,7 @@
 
 .fte-cardMeta {
     color: inherit;
-    font-size: 0.78rem;
+    font-size: var(--fs-xs);
     font-weight: 700;
     opacity: 0.9;
 }
@@ -1210,7 +1210,7 @@
     pointer-events: none;
     background: rgba(255, 248, 220, 0.96);
     border: 1px solid rgba(201, 137, 32, 0.75);
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     padding: 4px;
     box-shadow: 0 10px 22px rgba(78, 45, 10, 0.28);
     transition: opacity 0.16s ease, transform 0.16s ease;
@@ -1286,7 +1286,7 @@
     width: 100%;
     margin-top: auto;
     padding: 0 2px;
-    font-size: 14px;
+    font-size: var(--fs-14);
     font-weight: 800;
     line-height: 1.12;
     text-align: center;
@@ -1312,8 +1312,8 @@
     width: 100%;
     border: 1px solid #b7791f;
     background: linear-gradient(135deg, #fff7e6, #ffe0a3);
-    color: #7c2d12;
-    border-radius: 10px;
+    color: var(--color-rust);
+    border-radius: var(--radius-md);
     padding: 10px 12px;
     display: inline-flex;
     align-items: center;
@@ -1369,7 +1369,7 @@
 .fte-searchPanel,
 .fte-viewMode {
     border: 1px solid rgba(203, 167, 86, 0.5);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     background: rgba(255, 250, 240, 0.92);
 }
 
@@ -1392,7 +1392,7 @@
     display: grid;
     gap: 4px;
     color: #6b3e0f;
-    font-size: 0.8rem;
+    font-size: var(--fs-xs-plus);
     font-weight: 900;
 }
 
@@ -1400,9 +1400,9 @@
 .fte-viewMode select,
 .fte-rootPicker input {
     min-height: 42px;
-    border: 1px solid #d6bf84;
-    border-radius: 8px;
-    background: #fff;
+    border: 1px solid var(--color-gold-light);
+    border-radius: var(--radius-sm);
+    background: var(--color-white);
     color: #1f2933;
     padding: 8px 10px;
     font: inherit;
@@ -1418,13 +1418,13 @@
     top: calc(100% + 10px);
     left: 0;
     width: 600px;
-    z-index: 9999;
+    z-index: var(--z-modal);
     display: flex;
     gap: 12px;
     overflow-x: auto;
     padding: 12px;
     border: 1px solid #dcc17a;
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     background: #fffdfa;
     box-shadow: 0 16px 32px rgba(84, 43, 16, 0.25);
 }
@@ -1432,8 +1432,8 @@
 .fte-searchResults button {
     min-width: 190px;
     border: 1px solid #e0c684;
-    border-radius: 8px;
-    background: #fff;
+    border-radius: var(--radius-sm);
+    background: var(--color-white);
     color: #2b1b0b;
     padding: 8px 10px;
     text-align: left;
@@ -1455,7 +1455,7 @@
 
 .fte-searchResults small {
     margin-top: 2px;
-    color: #6b7280;
+    color: var(--color-gray-500);
     font-weight: 700;
 }
 
@@ -1468,9 +1468,9 @@
 }
 
 .fte-viewMode button.is-active {
-    background: #8b1e13;
-    color: #fff;
-    border-color: #8b1e13;
+    background: var(--color-brick-1);
+    color: var(--color-white);
+    border-color: var(--color-brick-1);
 }
 
 .fte-viewModeRoot {
@@ -1498,7 +1498,7 @@
     position: absolute;
     left: 0;
     top: calc(100% + 10px);
-    z-index: 9999;
+    z-index: var(--z-modal);
     width: min(320px, calc(100vw - 36px));
     max-height: 280px;
     overflow-y: auto;
@@ -1506,7 +1506,7 @@
     gap: 4px;
     padding: 6px;
     border: 1px solid rgba(203, 167, 86, 0.65);
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     background: #fffdfa;
     box-shadow: 0 18px 36px rgba(84, 43, 16, 0.18);
 }
@@ -1523,7 +1523,7 @@
     gap: 2px;
     padding: 7px 9px;
     text-align: left;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
 }
 
 .fte-rootPickerResults button.is-selected {
@@ -1541,15 +1541,15 @@
 }
 
 .fte-rootPickerResults small {
-    color: #6b7280;
+    color: var(--color-gray-500);
     font-size: 0.72rem;
 }
 
 .fte-validationPanel {
     border: 1px solid #f59e0b;
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     background: #fff7ed;
-    color: #7c2d12;
+    color: var(--color-rust);
     padding: 10px;
     display: grid;
     gap: 8px;
@@ -1579,9 +1579,9 @@
     min-width: 250px;
     max-width: 340px;
     border: 1px solid #fdba74;
-    border-radius: 10px;
-    background: #fff;
-    color: #7c2d12;
+    border-radius: var(--radius-md);
+    background: var(--color-white);
+    color: var(--color-rust);
     padding: 8px 10px;
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
@@ -1592,13 +1592,13 @@
 }
 
 .fte-validationList button:hover {
-    border-color: #dc2626;
+    border-color: var(--color-red-600);
     background: #fff1f2;
 }
 
 .fte-validationList .material-symbols-outlined {
     grid-row: 1 / span 2;
-    color: #dc2626;
+    color: var(--color-red-600);
     font-size: 22px;
 }
 
@@ -1641,7 +1641,7 @@
 }
 
 .fte-personCard.is-invalid {
-    border-color: #dc2626 !important;
+    border-color: var(--color-red-600) !important;
 }
 
 .fte-stateDots {
@@ -1653,7 +1653,7 @@
     gap: 4px;
     z-index: 35;
     padding: 3px 5px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: rgba(255, 255, 255, 0.94);
     border: 1px solid rgba(203, 167, 86, 0.45);
     box-shadow: 0 6px 14px rgba(78, 45, 10, 0.18);
@@ -1662,7 +1662,7 @@
 .fte-stateDots span {
     width: 9px;
     height: 9px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     display: block;
 }
 
@@ -1670,7 +1670,7 @@
 .fte-stateDots .is-online { background: #22c55e; }
 .fte-stateDots .is-search { background: #f59e0b; }
 .fte-stateDots .is-editing { background: #9333ea; }
-.fte-stateDots .is-error { background: #dc2626; }
+.fte-stateDots .is-error { background: var(--color-red-600); }
 
 .fte-nodeBadge {
     position: absolute;
@@ -1678,9 +1678,9 @@
     top: 8px;
     z-index: 34;
     max-width: calc(100% - 16px);
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     padding: 2px 7px;
-    color: #fff;
+    color: var(--color-white);
     font-size: 0.66rem;
     font-weight: 900;
     line-height: 1.2;
@@ -1694,7 +1694,7 @@
 }
 
 .fte-nodeBadge.is-error {
-    background: #dc2626;
+    background: var(--color-red-600);
 }
 
 .fte-collapseButton {
@@ -1707,9 +1707,9 @@
     height: 30px;
     min-height: 30px;
     border: 1px solid #c98920;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: #fffdf2;
-    color: #7c2d12;
+    color: var(--color-rust);
     display: grid;
     place-items: center;
     cursor: pointer;
@@ -1731,7 +1731,7 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
 }
 
 .fte-relationAvatar {
@@ -1747,7 +1747,7 @@
     margin: 12px 16px;
     padding: 14px 16px;
     border: 1px solid #f59e0b;
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     background: #fffbeb;
     color: #78350f;
     box-shadow: 0 8px 24px rgba(120, 53, 15, 0.12);
@@ -1756,12 +1756,12 @@
 .fte-billingWarning strong {
     display: block;
     margin-bottom: 4px;
-    font-size: 14px;
+    font-size: var(--fs-14);
 }
 
 .fte-billingWarning p {
     margin: 0;
-    font-size: 13px;
+    font-size: var(--fs-13);
     line-height: 1.45;
 }
 
@@ -1771,10 +1771,10 @@
     gap: 6px;
     white-space: nowrap;
     border: 0;
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     padding: 10px 12px;
     background: #d97706;
-    color: #fff;
+    color: var(--color-white);
     cursor: pointer;
     font-weight: 600;
 }
@@ -1791,7 +1791,7 @@
 }
 
 .fte-viewport {
-    border-radius: 18px;
+    border-radius: var(--radius-3xl);
     border-color: rgba(217, 169, 58, 0.7);
     background: radial-gradient(circle at 24% 18%, rgba(255, 255, 255, 0.68), transparent 24%), radial-gradient(circle at 78% 74%, rgba(255, 181, 59, 0.28), transparent 30%), linear-gradient(135deg, #fff6c7 0%, #f5da82 48%, #dda13f 100%);
     box-shadow: inset 0 0 0 1px rgba(255, 252, 229, 0.6), 0 22px 45px rgba(84, 43, 16, 0.14);
@@ -1804,14 +1804,14 @@
 
 .fte-canvasTitle {
     padding: 10px 14px;
-    border-radius: 16px;
+    border-radius: var(--radius-2xl);
     background: rgba(255, 248, 220, 0.42);
     backdrop-filter: blur(4px);
 }
 
 .fte-personCard {
     border-width: 2px;
-    border-radius: 16px;
+    border-radius: var(--radius-2xl);
     transition: box-shadow 0.18s ease, transform 0.18s ease, filter 0.18s ease;
 }
 
@@ -1834,7 +1834,7 @@ body.fte-bodyFullscreen {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    color: #fff8df;
+    color: var(--color-cream-2);
     background: linear-gradient(135deg, #250803 0%, #4b150c 48%, #250803 100%);
     overflow: hidden;
 }
@@ -1882,7 +1882,7 @@ body.fte-bodyFullscreen {
     width: 100%;
     height: 100%;
     min-height: 0;
-    border-radius: 18px;
+    border-radius: var(--radius-3xl);
     border-color: rgba(255, 224, 151, 0.75);
     box-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
 }
@@ -1918,7 +1918,7 @@ body.fte-bodyFullscreen {
     grid-column: 1 / -1;
     border: 1px solid rgba(180, 120, 35, 0.35);
     background: rgba(255, 246, 220, 0.75);
-    border-radius: 14px;
+    border-radius: var(--radius-xl);
     padding: 12px;
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1947,7 +1947,7 @@ body.fte-bodyFullscreen {
 }
 
 .fte-cardHoverActions button.is-create {
-    background: #fff7e8;
+    background: var(--color-cream-1);
     border-color: #d8a14a;
     color: #8b4513;
 }
@@ -1969,8 +1969,8 @@ body.fte-bodyFullscreen {
 
 .fte-quickCreateChoice {
     border: 1px solid #d8b36a;
-    border-radius: 16px;
-    background: #fffaf0;
+    border-radius: var(--radius-2xl);
+    background: var(--color-cream-3);
     padding: 18px 16px;
     display: flex;
     flex-direction: column;
@@ -1997,7 +1997,7 @@ body.fte-bodyFullscreen {
 }
 
 .fte-quickCreateChoice small {
-    font-size: 13px;
+    font-size: var(--fs-13);
     line-height: 1.45;
     color: #7a5b33;
 }
@@ -2015,8 +2015,8 @@ body.fte-bodyFullscreen {
 
 .fte-personActionChoice {
     border: 1px solid #d8b36a;
-    border-radius: 12px;
-    background: #fffaf0;
+    border-radius: var(--radius-lg);
+    background: var(--color-cream-3);
     color: #5c3718;
     padding: 16px 14px;
     display: flex;
@@ -2051,7 +2051,7 @@ body.fte-bodyFullscreen {
 
 .fte-personActionChoice small {
     color: #755532;
-    font-size: 13px;
+    font-size: var(--fs-13);
     line-height: 1.45;
 }
 .fte-lunarHint {
@@ -2060,7 +2060,7 @@ body.fte-bodyFullscreen {
   gap: 4px;
   margin-top: 5px;
   color: #9a3412;
-  font-size: 0.78rem;
+  font-size: var(--fs-xs);
   font-weight: 800;
   line-height: 1.3;
 }
@@ -2085,10 +2085,10 @@ body.fte-bodyFullscreen {
     width: min(540px, calc(100vw - 34px));
     background: #fffdfa;
     border: 1px solid #d69e2e;
-    border-radius: 18px;
+    border-radius: var(--radius-3xl);
     box-shadow: 0 24px 72px rgba(120, 53, 15, 0.24);
     padding: 18px 20px;
-    color: #7c2d12;
+    color: var(--color-rust);
     display: grid;
     grid-template-columns: auto 1fr;
     align-items: center;
@@ -2098,7 +2098,7 @@ body.fte-bodyFullscreen {
 .fte-centerNoticeIcon {
     width: 46px;
     height: 46px;
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     display: grid;
     place-items: center;
     color: #9a3412;
@@ -2112,16 +2112,16 @@ body.fte-bodyFullscreen {
 
 .fte-centerNoticeContent h3 {
     margin: 0 0 5px;
-    font-size: 1rem;
+    font-size: var(--fs-base);
     font-weight: 900;
-    color: #7c2d12;
+    color: var(--color-rust);
 }
 
 .fte-centerNoticeContent p {
     margin: 0;
-    font-size: 0.95rem;
+    font-size: var(--fs-base-plus);
     line-height: 1.45;
-    color: #7c2d12;
+    color: var(--color-rust);
 }
 
 .fte-centerNoticeContent small {
@@ -2136,7 +2136,7 @@ body.fte-bodyFullscreen {
     border: 1px solid #b6d9c1;
     background: #eef9f1;
     color: #1f6a3b;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     padding: 10px 12px;
     font-size: 1.05rem;
     font-weight: 700;
@@ -2152,9 +2152,9 @@ body.fte-bodyFullscreen {
 
 .fte-treePickFloating button {
     border: 1px solid #b6d9c1;
-    background: #fff;
+    background: var(--color-white);
     color: #1f6a3b;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     min-height: 34px;
     padding: 0 14px;
     font-weight: 900;
@@ -2175,8 +2175,8 @@ body.fte-bodyFullscreen {
 
 .fte-treePickFloating button {
     border-color: #b45309 !important;
-    background: #fffaf0 !important;
-    color: #7c2d12 !important;
+    background: var(--color-cream-3) !important;
+    color: var(--color-rust) !important;
 }
 
 .fte-treePickFloating button:hover {
@@ -2232,7 +2232,7 @@ body.fte-bodyFullscreen {
 }
 
 .fte-inspectorHeader p {
-    font-size: 0.92rem;
+    font-size: var(--fs-base-minus-plus);
 }
 
 .fte-inspectorActions {
@@ -2252,7 +2252,7 @@ body.fte-bodyFullscreen {
 
 .fte-formGrid label {
     gap: 4px;
-    font-size: 0.9rem;
+    font-size: var(--fs-base-minus);
 }
 
 .fte-formGrid input,
@@ -2307,12 +2307,12 @@ body.fte-bodyFullscreen {
 
 .fte-archiveTab:hover {
     background: #fff8ef;
-    color: #8b1e13;
+    color: var(--color-brick-1);
 }
 
 .fte-archiveTab.is-active {
-    color: #8b1e13;
-    border-bottom-color: #8b1e13;
+    color: var(--color-brick-1);
+    border-bottom-color: var(--color-brick-1);
     background: #fff8ef;
 }
 
@@ -2328,9 +2328,9 @@ body.fte-bodyFullscreen {
     position: relative;
     display: flex;
     align-items: center;
-    border: 1px solid #d6bf84;
-    border-radius: 8px;
-    background: #fff;
+    border: 1px solid var(--color-gold-light);
+    border-radius: var(--radius-sm);
+    background: var(--color-white);
     padding: 0 10px;
 }
 
@@ -2365,13 +2365,13 @@ body.fte-bodyFullscreen {
 .fte-archiveError {
     background: #fef2f2;
     border: 1px solid #fca5a5;
-    color: #991b1b;
-    border-radius: 8px;
+    color: var(--color-red-800);
+    border-radius: var(--radius-sm);
     padding: 10px 14px;
     display: flex;
     align-items: center;
     gap: 10px;
-    font-size: 0.95rem;
+    font-size: var(--fs-base-plus);
     font-weight: 700;
 }
 
@@ -2384,7 +2384,7 @@ body.fte-bodyFullscreen {
     padding: 40px 0;
     color: #7a5f3e;
     font-weight: 700;
-    font-size: 1rem;
+    font-size: var(--fs-base);
 }
 
 .spinning-icon {
@@ -2406,13 +2406,13 @@ body.fte-bodyFullscreen {
     padding: 60px 20px;
     color: #9ca3af;
     text-align: center;
-    border: 1px dashed #d6bf84;
-    border-radius: 8px;
+    border: 1px dashed var(--color-gold-light);
+    border-radius: var(--radius-sm);
 }
 
 .fte-archiveEmpty span {
     font-size: 48px;
-    color: #d6bf84;
+    color: var(--color-gold-light);
 }
 
 .fte-archiveEmpty p {
@@ -2432,8 +2432,8 @@ body.fte-bodyFullscreen {
 
 .fte-archiveItem {
     border: 1px solid #e0c684;
-    border-radius: 8px;
-    background: #fff;
+    border-radius: var(--radius-sm);
+    background: var(--color-white);
     padding: 12px 16px;
     display: flex;
     justify-content: space-between;
@@ -2443,7 +2443,7 @@ body.fte-bodyFullscreen {
 }
 
 .fte-archiveItem:hover {
-    border-color: #8b1e13;
+    border-color: var(--color-brick-1);
     box-shadow: 0 4px 12px rgba(139, 30, 19, 0.08);
 }
 
@@ -2469,12 +2469,12 @@ body.fte-bodyFullscreen {
 
 .fte-archiveItemEmail {
     font-size: 0.88rem;
-    color: #6b7280;
+    color: var(--color-gray-500);
     font-weight: 600;
 }
 
 .fte-archiveItemDetails {
-    font-size: 0.92rem;
+    font-size: var(--fs-base-minus-plus);
     color: #4b5563;
 }
 
@@ -2489,7 +2489,7 @@ body.fte-bodyFullscreen {
 }
 
 .archived-meta {
-    font-size: 0.82rem;
+    font-size: var(--fs-sm-minus);
     color: #9ca3af;
     margin-top: 4px !important;
     font-weight: 600;
@@ -2504,10 +2504,10 @@ body.fte-bodyFullscreen {
 
 .fte-restoreBtn,
 .fte-deletePermanentlyBtn {
-    border: 1px solid #d6bf84;
-    background: #fff;
+    border: 1px solid var(--color-gold-light);
+    background: var(--color-white);
     color: #7c4a14;
-    border-radius: 6px;
+    border-radius: var(--radius-xs);
     min-height: 34px;
     padding: 0 12px;
     font-size: 0.88rem;
@@ -2522,14 +2522,14 @@ body.fte-bodyFullscreen {
 
 .fte-restoreBtn:hover:not(:disabled) {
     background: #fff8ef;
-    border-color: #8b1e13;
-    color: #8b1e13;
+    border-color: var(--color-brick-1);
+    color: var(--color-brick-1);
 }
 
 .fte-deletePermanentlyBtn {
     border-color: #fca5a5;
-    background: #fff;
-    color: #dc2626;
+    background: var(--color-white);
+    color: var(--color-red-600);
 }
 
 .fte-deletePermanentlyBtn:hover:not(:disabled) {
@@ -2547,7 +2547,7 @@ body.fte-bodyFullscreen {
 
 .fte-archiveFormHelp {
     background: #fff8ef;
-    border-left: 4px solid #d6bf84;
+    border-left: 4px solid var(--color-gold-light);
     padding: 12px;
     border-radius: 0 8px 8px 0;
     font-size: 0.94rem;
@@ -2560,7 +2560,7 @@ body.fte-bodyFullscreen {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    font-size: 0.95rem;
+    font-size: var(--fs-base-plus);
     font-weight: 800;
     color: #5f4730;
 }
@@ -2568,9 +2568,9 @@ body.fte-bodyFullscreen {
 .fte-archiveFormLabel select,
 .fte-archiveFormLabel textarea {
     width: 100%;
-    border: 1px solid #d6bf84;
-    border-radius: 8px;
-    background: #fff;
+    border: 1px solid var(--color-gold-light);
+    border-radius: var(--radius-sm);
+    background: var(--color-white);
     padding: 10px 12px;
     font: inherit;
     font-weight: 600;
@@ -2580,7 +2580,7 @@ body.fte-bodyFullscreen {
 
 .fte-archiveFormLabel select:focus,
 .fte-archiveFormLabel textarea:focus {
-    border-color: #8b1e13;
+    border-color: var(--color-brick-1);
 }
 
 .fte-archiveFormFooter {
@@ -2615,7 +2615,7 @@ body.fte-bodyFullscreen {
   border: 1px solid rgba(220, 38, 38, 0.45);
   background: #fff1f1;
   color: #b91c1c;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   padding: 8px 12px;
   font-weight: 800;
   cursor: pointer;
@@ -2681,7 +2681,7 @@ body.fte-bodyFullscreen {
         width: 100%;
         max-width: 100vw;
         gap: 8px;
-        font-size: 0.95rem;
+        font-size: var(--fs-base-plus);
     }
 
     .fte-viewMode {
@@ -2725,7 +2725,7 @@ body.fte-bodyFullscreen {
         width: 100%;
         max-width: 100%;
         min-height: 28px;
-        font-size: 0.78rem;
+        font-size: var(--fs-xs);
         white-space: normal;
         overflow-wrap: anywhere;
     }
@@ -2754,7 +2754,7 @@ body.fte-bodyFullscreen {
     .fte-searchForm label,
     .fte-viewMode label {
         min-width: 0;
-        font-size: 0.75rem;
+        font-size: var(--fs-2xs);
     }
 
     .fte-searchForm button {
@@ -2785,7 +2785,7 @@ body.fte-bodyFullscreen {
     .fte-treePickFloating,
     .fte-validationPanel,
     .fte-billingWarning {
-        border-radius: 14px;
+        border-radius: var(--radius-xl);
         padding: 10px;
         font-size: 0.88rem;
     }
@@ -2811,7 +2811,7 @@ body.fte-bodyFullscreen {
         width: 100%;
         height: 100%;
         min-height: 0 !important;
-        border-radius: 16px;
+        border-radius: var(--radius-2xl);
     }
 
     .fte-transformWrapper {
@@ -2839,7 +2839,7 @@ body.fte-bodyFullscreen {
     .fte-modal {
         width: 100%;
         max-height: calc(100dvh - 20px);
-        border-radius: 16px;
+        border-radius: var(--radius-2xl);
         padding: 14px;
     }
 
@@ -2903,7 +2903,7 @@ body.fte-bodyFullscreen {
     .fte-aiVoiceControls .voice-recorder-button {
         width: 100%;
         height: 38px;
-        border-radius: 12px;
+        border-radius: var(--radius-lg);
     }
 
     .fte-aiVoiceControls .voice-recorder-status {
@@ -2915,7 +2915,7 @@ body.fte-bodyFullscreen {
         display: grid;
         grid-template-columns: 1fr;
         gap: 8px;
-        font-size: 0.86rem;
+        font-size: var(--fs-sm-plus);
     }
 
     .fte-aiActions .fte-primaryButton,
@@ -3106,7 +3106,7 @@ body.fte-bodyFullscreen {
     min-height: 105px;
     padding: 16px 20px;
     border: 2px solid #c97b4d;
-    border-radius: 16px;
+    border-radius: var(--radius-2xl);
     background: linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(255, 250, 241, 0.92) 100%);
     color: #2f241b;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
@@ -3150,7 +3150,7 @@ body.fte-bodyFullscreen {
 }
 
 .fte-personCard.is-generation-early {
-    background: linear-gradient(180deg, #fffaf0 0%, #f4e7d5 100%);
+    background: linear-gradient(180deg, var(--color-cream-3) 0%, #f4e7d5 100%);
 }
 
 .fte-personCard.is-generation-mid {
@@ -3158,7 +3158,7 @@ body.fte-bodyFullscreen {
 }
 
 .fte-personCard.is-generation-late {
-    background: linear-gradient(180deg, #ffffff 0%, #fbf7f1 100%);
+    background: linear-gradient(180deg, var(--color-white) 0%, #fbf7f1 100%);
 }
 
 .fte-personCard.is-generation-root,
@@ -3219,7 +3219,7 @@ body.fte-bodyFullscreen {
     margin: 0;
     padding: 0;
     color: #6f6257;
-    font-size: 13px;
+    font-size: var(--fs-13);
     font-weight: 700;
     letter-spacing: 0.2px;
     line-height: 1.18;
@@ -3255,7 +3255,7 @@ body.fte-bodyFullscreen {
 
 .fte-cardHoverActions button {
     border-color: rgba(183, 106, 66, 0.45);
-    background: #fff;
+    background: var(--color-white);
     color: #7b5338;
 }
 
@@ -3267,7 +3267,7 @@ body.fte-bodyFullscreen {
     gap: 4px;
     padding: 4px;
     border: 1px solid rgba(183, 106, 66, 0.32);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: #fffaf3;
 }
 
@@ -3276,15 +3276,15 @@ body.fte-bodyFullscreen {
 .fte-pdfStub {
     min-height: 34px;
     padding: 0 10px;
-    border-radius: 6px;
-    font-size: 0.86rem;
+    border-radius: var(--radius-xs);
+    font-size: var(--fs-sm-plus);
 }
 
 .fte-displayToggle button.is-active,
 .fte-segmented button.is-active {
     border-color: #b06a4f;
     background: #7c9b8a;
-    color: #fff;
+    color: var(--color-white);
 }
 
 .fte-displayToggle span:last-child {
@@ -3371,7 +3371,7 @@ body.fte-bodyFullscreen {
     column-gap: 14px;
     row-gap: 3px;
     padding: 14px 18px;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     overflow: visible;
 }
 
@@ -3448,8 +3448,8 @@ body.fte-bodyFullscreen {
     gap: 8px;
     padding: 12px;
     border: 1px solid #ead9a6;
-    border-radius: 8px;
-    background: #fffaf0;
+    border-radius: var(--radius-sm);
+    background: var(--color-cream-3);
 }
 
 .fte-exportGrid h4 {
@@ -3477,7 +3477,7 @@ body.fte-bodyFullscreen {
 .fte-pdfStub {
     justify-self: start;
     border: 1px dashed #cba756;
-    background: #fff;
+    background: var(--color-white);
     color: #73512c;
 }
 
@@ -3490,8 +3490,8 @@ body.fte-bodyFullscreen {
     width: 420px;
     height: 135px;
     border: 2px solid #b9825b;
-    border-radius: 10px;
-    background: #fffaf0;
+    border-radius: var(--radius-md);
+    background: var(--color-cream-3);
     color: #2f241b;
     box-shadow: 0 8px 20px rgba(71, 50, 32, 0.12);
     overflow: hidden;
@@ -3598,8 +3598,8 @@ body.fte-bodyFullscreen {
     margin: 14px 0;
     padding: 12px;
     border: 1px solid #ead9a6;
-    border-radius: 8px;
-    background: #fffaf0;
+    border-radius: var(--radius-sm);
+    background: var(--color-cream-3);
 }
 
 .fte-coupleInspectorChildren strong {
@@ -3613,9 +3613,9 @@ body.fte-bodyFullscreen {
 
 .fte-coupleInspectorChildren button {
     min-height: 36px;
-    border: 1px solid #d6bf84;
-    border-radius: 8px;
-    background: #fff;
+    border: 1px solid var(--color-gold-light);
+    border-radius: var(--radius-sm);
+    background: var(--color-white);
     color: #4d3520;
     font-weight: 750;
     text-align: left;
@@ -3648,8 +3648,8 @@ body.fte-bodyFullscreen {
     max-width: var(--fte-card-width, 420px);
     max-height: var(--fte-card-height, 96px);
     border: 2px solid #b9825b;
-    border-radius: 10px;
-    background: #fffaf0;
+    border-radius: var(--radius-md);
+    background: var(--color-cream-3);
     color: #2f241b;
     box-shadow: 0 8px 20px rgba(71, 50, 32, 0.12);
     overflow: hidden;
@@ -3814,7 +3814,7 @@ body.fte-bodyFullscreen {
     width: 26px;
     height: 26px;
     border: 1px solid rgba(183, 106, 66, 0.45);
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: rgba(255, 250, 243, 0.96);
     color: #7b5338;
     display: inline-grid;
@@ -3825,8 +3825,8 @@ body.fte-bodyFullscreen {
 }
 
 .fte-coupleHalfActions button:hover {
-    border-color: #8b1e13;
-    color: #8b1e13;
+    border-color: var(--color-brick-1);
+    color: var(--color-brick-1);
     background: #fff1e8;
 }
 
@@ -3852,15 +3852,15 @@ body.fte-bodyFullscreen {
     z-index: 7;
     pointer-events: none;
     border: 2px solid rgba(139, 30, 19, 0.78);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: rgba(139, 30, 19, 0.1);
     box-shadow: 0 0 0 1px rgba(255, 250, 240, 0.72), 0 10px 24px rgba(54, 43, 31, 0.14);
 }
 
 .fte-iconButton.is-active {
-    border-color: #8b1e13;
+    border-color: var(--color-brick-1);
     background: #fff1e8;
-    color: #8b1e13;
+    color: var(--color-brick-1);
 }
 
 /* Compact tree toolbar and balanced card content. */
@@ -3945,7 +3945,7 @@ body.fte-bodyFullscreen {
     width: 100%;
     min-height: 52px;
     border: 1px solid rgba(217, 181, 116, 0.95);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     background: var(--toolbar-card);
     color: var(--toolbar-text);
     padding: 0 14px;
@@ -3960,7 +3960,7 @@ body.fte-bodyFullscreen {
 .fte-searchPanel--toolbar .fte-searchForm input:focus,
 .fte-viewMode--rootOnly .fte-rootPicker input:focus {
     border-color: var(--toolbar-highlight);
-    background: #fff;
+    background: var(--color-white);
     box-shadow: 0 0 0 3px rgba(201, 120, 74, 0.14), 0 6px 16px rgba(45, 42, 38, 0.07);
 }
 
@@ -3968,10 +3968,10 @@ body.fte-bodyFullscreen {
     width: 58px;
     height: 52px;
     min-height: 52px;
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     border-color: var(--toolbar-highlight);
     background: var(--toolbar-highlight);
-    color: #fff;
+    color: var(--color-white);
 }
 
 .fte-viewMode--rootOnly {
@@ -3998,7 +3998,7 @@ body.fte-bodyFullscreen {
     min-height: 52px;
     padding: 0;
     border: 1px solid rgba(217, 181, 116, 0.95);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     background: #fff5ef;
     color: #9b1c10;
     display: grid;
@@ -4022,7 +4022,7 @@ body.fte-bodyFullscreen {
     height: 24px;
     padding: 0 6px;
     border: 1px solid rgba(183, 106, 66, 0.5);
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: rgba(255, 250, 243, 0.96);
     color: #7b5338;
     font-size: 12px;
@@ -4042,9 +4042,9 @@ body.fte-bodyFullscreen {
 }
 
 .fte-branchToggle.is-collapsed {
-    background: #8b1e13;
-    border-color: #8b1e13;
-    color: #fff;
+    background: var(--color-brick-1);
+    border-color: var(--color-brick-1);
+    color: var(--color-white);
 }
 
 .fte-branchToggle .material-symbols-outlined {
@@ -4059,7 +4059,7 @@ body.fte-bodyFullscreen {
     position: relative;
     height: 22px;
     margin-top: 14px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: #f3e6c8;
     overflow: hidden;
 }
@@ -4092,7 +4092,7 @@ body.fte-bodyFullscreen {
 .fte-bioAiRun {
     min-height: 40px;
     border: 1px solid #b9c7d8;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: #f4f8fc;
     color: #1f3a5f;
     padding: 8px 14px;
@@ -4140,19 +4140,19 @@ body.fte-bodyFullscreen {
     max-width: calc(100% - 24px);
     padding: 6px 8px 6px 12px;
     border: 1px solid #ea580c;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: #fff7ed;
     color: #9a3412;
-    font-size: 14px;
+    font-size: var(--fs-14);
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
 }
 
 .fte-pathBanner button {
     min-height: 36px;
     border: 0;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: #ea580c;
-    color: #fff;
+    color: var(--color-white);
     padding: 4px 12px;
     font-weight: 600;
     cursor: pointer;

@@ -4,6 +4,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
+import "../styles/tokens.css";
 import "../index.css";
 import "../app/App.css";
 import "../i18n/i18n";

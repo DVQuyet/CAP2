@@ -1,7 +1,7 @@
 .confirm-dialog-overlay {
   position: fixed;
   inset: 0;
-  z-index: 10000;
+  z-index: var(--z-toast);
   display: grid;
   place-items: center;
   padding: 16px;
@@ -16,8 +16,8 @@
   overflow-y: auto;
   box-sizing: border-box;
   padding: 20px 22px;
-  border-radius: 16px;
-  background: #fff;
+  border-radius: var(--radius-2xl);
+  background: var(--color-white);
   color: #1f2937;
   box-shadow: 0 20px 48px rgba(0, 0, 0, 0.25);
 }
@@ -27,14 +27,14 @@
   place-items: center;
   width: 44px;
   height: 44px;
-  border-radius: 50%;
+  border-radius: var(--radius-round);
   background: #eff6ff;
   color: #2563eb;
 }
 
 .confirm-dialog.is-danger .confirm-dialog-icon {
   background: #fef2f2;
-  color: #dc2626;
+  color: var(--color-red-600);
 }
 
 .confirm-dialog-body h3 {
@@ -62,7 +62,7 @@
   min-height: 44px;
   padding: 0 18px;
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   font: inherit;
   font-weight: 600;
   cursor: pointer;
@@ -75,11 +75,11 @@
 
 .confirm-dialog-ok {
   background: #2563eb;
-  color: #fff;
+  color: var(--color-white);
 }
 
 .confirm-dialog.is-danger .confirm-dialog-ok {
-  background: #dc2626;
+  background: var(--color-red-600);
 }
 
 .confirm-dialog-actions button:focus-visible {

@@ -4,7 +4,7 @@
 .dup-head p { margin: 0; color: #6b5b4d; font-size: 14px; }
 .dup-error { color: #a12a2a; }
 .dup-count { margin: 0; color: #6b5b4d; font-size: 14px; }
-.dup-card { display: grid; gap: 10px; padding: 12px; border: 1px solid #e3d8c8; border-radius: 10px; background: #fff; }
+.dup-card { display: grid; gap: 10px; padding: 12px; border: 1px solid #e3d8c8; border-radius: 10px; background: var(--color-white); }
 .dup-cardHead { display: grid; gap: 6px; }
 .dup-score { font-weight: 700; }
 .dup-score.is-high { color: #a12a2a; }

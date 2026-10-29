@@ -16,7 +16,7 @@
     padding: 16px 28px;
     background: rgba(70, 20, 10, 0.9);
     border: 2px solid #d4a017;
-    border-radius: 20px;
+    border-radius: var(--radius-4xl);
 }
 
 .main-nav-links {
@@ -28,7 +28,7 @@
 }
 
 .main-nav-links a {
-    color: #f3c63f;
+    color: var(--color-gold-bright);
     text-decoration: none;
     font-size: 18px;
     font-weight: 700;
@@ -59,7 +59,7 @@
     align-items: center;
     justify-content: center;
     padding: 10px 18px;
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     text-decoration: none;
     font-size: 15px;
     font-weight: 700;
@@ -70,8 +70,8 @@
 
 .nav-btn-register {
     background: transparent;
-    color: #f3c63f;
-    border: 1px solid #f3c63f;
+    color: var(--color-gold-bright);
+    border: 1px solid var(--color-gold-bright);
 }
 
 .nav-btn-register:hover {
@@ -81,8 +81,8 @@
 
 .nav-btn-login {
     background: transparent;
-    color: #f3c63f;
-    border: 1px solid #f3c63f;
+    color: var(--color-gold-bright);
+    border: 1px solid var(--color-gold-bright);
 }
 
 .nav-btn-login:hover {
@@ -91,23 +91,23 @@
 }
 
 .nav-btn-logout {
-    background: #f3c63f;
+    background: var(--color-gold-bright);
     color: #4a1208;
-    border: 1px solid #f3c63f;
+    border: 1px solid var(--color-gold-bright);
 }
 
 .auth-user {
-    color: #f3c63f;
+    color: var(--color-gold-bright);
     font-weight: 600;
 }
 
 .nav-language-toggle {
     width: 42px;
     height: 42px;
-    border-radius: 10px;
-    border: 1px solid #f3c63f;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-gold-bright);
     background: transparent;
-    color: #f3c63f;
+    color: var(--color-gold-bright);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -127,7 +127,7 @@
     .main-nav {
         gap: 12px;
         padding: 12px;
-        border-radius: 16px;
+        border-radius: var(--radius-2xl);
         align-items: stretch;
     }
 
@@ -142,9 +142,9 @@
     }
 
     .main-nav-links a {
-        font-size: 14px;
+        font-size: var(--fs-14);
         padding: 8px 10px;
-        border-radius: 10px;
+        border-radius: var(--radius-md);
         background: rgba(255, 255, 255, 0.06);
         scroll-snap-align: start;
     }
@@ -159,7 +159,7 @@
     .nav-btn {
         min-height: 40px;
         padding: 8px 12px;
-        font-size: 13px;
+        font-size: var(--fs-13);
     }
 
     .auth-user {

@@ -9,7 +9,7 @@
 .vn-calendar-shell,
 .vn-agenda-panel {
   border: 1px solid rgba(214, 178, 100, 0.5);
-  border-radius: 24px;
+  border-radius: var(--radius-5xl);
   box-shadow: 0 18px 40px rgba(45, 20, 8, 0.18);
 }
 
@@ -31,7 +31,7 @@
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  font-size: 0.78rem;
+  font-size: var(--fs-xs);
 }
 
 .vn-calendar-hero h1,
@@ -60,7 +60,7 @@
 .vn-hero-date {
   min-width: 190px;
   padding: 1rem 1.25rem;
-  border-radius: 20px;
+  border-radius: var(--radius-4xl);
   background: rgba(255, 247, 232, 0.12);
   border: 1px solid rgba(221, 183, 91, 0.35);
   text-align: center;
@@ -121,9 +121,9 @@
 .vn-template-row button,
 .vn-event-actions button {
   border: 1px solid rgba(199, 154, 63, 0.55);
-  background: #fffaf0;
+  background: var(--color-cream-3);
   color: #5a3114;
-  border-radius: 14px;
+  border-radius: var(--radius-xl);
   min-height: 42px;
   padding: 0.65rem 0.9rem;
   font-weight: 800;
@@ -141,7 +141,7 @@
 .vn-view-toggle {
   display: flex;
   padding: 0.25rem;
-  border-radius: 16px;
+  border-radius: var(--radius-2xl);
   background: rgba(229, 209, 164, 0.35);
   border: 1px solid rgba(199, 154, 63, 0.25);
 }
@@ -197,7 +197,7 @@
   min-height: 118px;
   padding: 0.75rem;
   border: 1px solid rgba(199, 154, 63, 0.35);
-  border-radius: 18px;
+  border-radius: var(--radius-3xl);
   background: linear-gradient(135deg, rgba(255, 252, 242, 0.98), rgba(255, 235, 180, 0.62));
   color: #552713;
   text-align: left;
@@ -224,7 +224,7 @@
   right: 0.55rem;
   color: white;
   background: #9d2e21;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 0.15rem 0.5rem;
   font-size: 0.68rem;
   font-weight: 800;
@@ -243,7 +243,7 @@
 .lunar-day {
   display: block;
   color: #997341;
-  font-size: 0.86rem;
+  font-size: var(--fs-sm-plus);
   font-weight: 800;
 }
 
@@ -256,7 +256,7 @@
 .event-dots i {
   width: 8px;
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: #c7952a;
 }
 
@@ -285,7 +285,7 @@
 
 .vn-selected-card {
   padding: 1.1rem;
-  border-radius: 20px;
+  border-radius: var(--radius-4xl);
   background: linear-gradient(135deg, rgba(93, 28, 22, 0.96), rgba(30, 20, 35, 0.94));
   color: #fff3d7;
   margin-bottom: 1rem;
@@ -335,7 +335,7 @@
 
 .vn-event-form {
   padding: 1rem;
-  border-radius: 18px;
+  border-radius: var(--radius-3xl);
   border: 1px solid rgba(199, 154, 63, 0.35);
   background: rgba(255, 247, 229, 0.84);
   margin-bottom: 1rem;
@@ -346,7 +346,7 @@
 .vn-event-form textarea {
   width: 100%;
   border: 1px solid rgba(199, 154, 63, 0.42);
-  border-radius: 14px;
+  border-radius: var(--radius-xl);
   padding: 0.8rem 0.9rem;
   color: #5a3114;
   background: #fffdf8;
@@ -378,7 +378,7 @@
 .vn-empty {
   margin: 0;
   padding: 1rem;
-  border-radius: 16px;
+  border-radius: var(--radius-2xl);
   color: #7a5c41;
   background: rgba(199, 154, 63, 0.12);
   font-weight: 700;
@@ -390,8 +390,8 @@
   gap: 0.8rem;
   border-left: 5px solid #c7952a;
   padding: 0.85rem 0.9rem;
-  border-radius: 16px;
-  background: #fffaf0;
+  border-radius: var(--radius-2xl);
+  background: var(--color-cream-3);
   border-top: 1px solid rgba(199, 154, 63, 0.28);
   border-right: 1px solid rgba(199, 154, 63, 0.28);
   border-bottom: 1px solid rgba(199, 154, 63, 0.28);
@@ -405,7 +405,7 @@
 
 .vn-event-item span {
   color: #8b6842;
-  font-size: 0.78rem;
+  font-size: var(--fs-xs);
   font-weight: 800;
 }
 
@@ -418,14 +418,14 @@
 .vn-event-item p {
   margin: 0.35rem 0 0;
   color: #7a5c41;
-  font-size: 0.9rem;
+  font-size: var(--fs-base-minus);
 }
 
 .vn-event-item button {
   width: 36px;
   height: 36px;
   border: none;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   color: #c43d2f;
   background: rgba(196, 61, 47, 0.08);
   cursor: pointer;
@@ -467,7 +467,7 @@
 .vn-calendar-status {
   margin: 0 1.2rem 1rem;
   padding: 0.8rem 1rem;
-  border-radius: 14px;
+  border-radius: var(--radius-xl);
   border: 1px solid rgba(214, 178, 100, 0.35);
   background: rgba(255, 249, 232, 0.9);
   color: #7a321f;
@@ -488,7 +488,7 @@
 
 .vn-reminder-field small {
   color: rgba(89, 52, 30, 0.72);
-  font-size: 0.78rem;
+  font-size: var(--fs-xs);
   line-height: 1.45;
   font-weight: 600;
 }
@@ -498,7 +498,7 @@
   display: block;
   margin-top: 0.2rem;
   color: rgba(89, 52, 30, 0.72);
-  font-size: 0.78rem;
+  font-size: var(--fs-xs);
   font-style: normal;
   font-weight: 700;
 }
@@ -517,7 +517,7 @@
 
 .vn-form-heading span {
   color: rgba(89, 52, 30, 0.72);
-  font-size: 0.82rem;
+  font-size: var(--fs-sm-minus);
   font-weight: 700;
 }
 
@@ -527,7 +527,7 @@
   width: fit-content;
   margin-top: 0.35rem;
   padding: 0.18rem 0.55rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   font-size: 0.72rem !important;
   font-weight: 900 !important;
 }
@@ -564,13 +564,13 @@
 }
 
 .event-dots .dot-birthday { background: #d97706; }
-.event-dots .dot-death_anniversary { background: #6b7280; }
+.event-dots .dot-death_anniversary { background: var(--color-gray-500); }
 .vn-event-item.type-birthday { border-left-color: #d97706; }
-.vn-event-item.type-death_anniversary { border-left-color: #6b7280; }
+.vn-event-item.type-death_anniversary { border-left-color: var(--color-gray-500); }
 .vn-event-item.type-birthday .vn-scope-badge,
 .vn-event-item.type-death_anniversary .vn-scope-badge {
   background: rgba(202, 138, 4, 0.12);
-  color: #7c2d12;
+  color: var(--color-rust);
 }
 
 /* Chế độ xem theo ngày: một ô lớn, liệt kê đủ sự kiện trong ngày. */
@@ -596,14 +596,14 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.95rem;
+  font-size: var(--fs-base-plus);
   color: #4a2b21;
 }
 
 .vn-day-event-list i {
   width: 9px;
   height: 9px;
-  border-radius: 50%;
+  border-radius: var(--radius-round);
   flex: none;
   background: #7c3aed;
 }
@@ -614,4 +614,4 @@
 .vn-day-event-list .dot-family,
 .vn-day-event-list .dot-manager_event { background: #2e7d32; }
 .vn-day-event-list .dot-birthday { background: #d97706; }
-.vn-day-event-list .dot-death_anniversary { background: #6b7280; }
+.vn-day-event-list .dot-death_anniversary { background: var(--color-gray-500); }

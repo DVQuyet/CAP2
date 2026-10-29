@@ -1,5 +1,5 @@
 .clan-register-page {
-    --auth-gold: #f3c63f;
+    --auth-gold: var(--color-gold-bright);
     --auth-gold-soft: #f6deb0;
     --auth-dark: #4a1208;
     --auth-border: #d4a017;
@@ -15,7 +15,7 @@
     padding: 120px 20px 48px;
     background:
         url('/backgroundbanner.png') center top / cover no-repeat,
-        linear-gradient(135deg, #4b0404 0%, #8b0000 48%, #260b06 100%);
+        linear-gradient(135deg, #4b0404 0%, var(--color-maroon) 48%, #260b06 100%);
 }
 
 .clan-register-page::before {
@@ -36,7 +36,7 @@
     min-height: 42px;
     padding: 0 18px;
     border: 1px solid rgba(243, 198, 63, 0.55);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     background: rgba(47, 12, 8, 0.72);
     color: var(--auth-gold);
     font-weight: 800;
@@ -84,7 +84,7 @@
     padding: 0 16px;
     margin: 9px 0;
     border: 1px solid var(--auth-border);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     box-sizing: border-box;
     background: rgba(255, 255, 255, 0.98);
     color: #2b130a;
@@ -108,7 +108,7 @@
 .clan-register-page .submit-btn,
 .clan-register-page .link-button {
     min-height: 52px;
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     font-weight: 900;
     cursor: pointer;
     transition: transform 0.18s ease, filter 0.18s ease, background 0.18s ease, color 0.18s ease;
@@ -151,10 +151,10 @@
     margin-bottom: 14px;
     padding: 12px 14px;
     border: 1px solid rgba(255, 179, 179, 0.5);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     background: rgba(127, 29, 29, 0.28);
     color: #ffb3b3;
-    font-size: 14px;
+    font-size: var(--fs-14);
     font-weight: 700;
 }
 
@@ -176,7 +176,7 @@
 
 .clan-register-page .checkbox-group label {
     color: var(--auth-gold-soft);
-    font-size: 14px;
+    font-size: var(--fs-14);
     line-height: 1.55;
 }
 
@@ -203,7 +203,7 @@
 .clan-register-page .policy-modal-overlay {
     position: fixed;
     inset: 0;
-    z-index: 10000;
+    z-index: var(--z-toast);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -218,7 +218,7 @@
     flex-direction: column;
     overflow: hidden;
     border: 2px solid var(--auth-border);
-    border-radius: 18px;
+    border-radius: var(--radius-3xl);
     background: linear-gradient(180deg, var(--auth-panel), var(--auth-panel-deep));
     box-shadow: 0 22px 52px rgba(0, 0, 0, 0.42);
 }

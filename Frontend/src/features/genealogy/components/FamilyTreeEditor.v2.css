@@ -8,13 +8,13 @@
 .fte2 {
     --t-canvas: #f6efe2;
     --t-canvas-pattern: radial-gradient(circle at 1px 1px, rgba(140, 104, 58, 0.11) 1px, transparent 0);
-    --t-surface: #fffaf1;
+    --t-surface: var(--color-cream-4);
     --t-surface-2: #f3e9d6;
     --t-border: #e2cfa6;
     --t-ink: #3b2a1a;
     --t-muted: #8a7458;
     --t-accent: #9c2f1c;
-    --t-accent-ink: #fffaf1;
+    --t-accent-ink: var(--color-cream-4);
     --t-accent-soft: rgba(156, 47, 28, 0.1);
     --t-line: #a98458;
     --t-line-strong: #8a5a2b;
@@ -32,16 +32,16 @@
 .fte2[data-tree-theme="modern"] {
     --t-canvas: #f5f7fa;
     --t-canvas-pattern: radial-gradient(circle at 1px 1px, rgba(100, 116, 139, 0.14) 1px, transparent 0);
-    --t-surface: #ffffff;
+    --t-surface: var(--color-white);
     --t-surface-2: #eef2f7;
     --t-border: #e1e6ee;
     --t-ink: #1f2937;
-    --t-muted: #6b7280;
+    --t-muted: var(--color-gray-500);
     --t-accent: #2563eb;
-    --t-accent-ink: #ffffff;
+    --t-accent-ink: var(--color-white);
     --t-accent-soft: rgba(37, 99, 235, 0.1);
     --t-line: #9aa8bd;
-    --t-line-strong: #64748b;
+    --t-line-strong: var(--color-slate-500);
     --t-male: #2f6fd6;
     --t-female: #d0457f;
     --t-unknown: #94a3b8;
@@ -115,7 +115,7 @@
     min-height: 0;
     height: auto;
     border: 1px solid var(--t-border);
-    border-radius: 16px;
+    border-radius: var(--radius-2xl);
     background-color: var(--fte-tree-bg, var(--t-canvas));
     background-image: var(--t-canvas-pattern);
     background-size: 22px 22px;
@@ -123,7 +123,7 @@
 }
 
 .fte-shell.fte2.is-mobile .fte-viewport {
-    border-radius: 14px;
+    border-radius: var(--radius-xl);
 }
 
 .fte2 .fte-transformWrapper {
@@ -149,7 +149,7 @@
     min-height: 58px;
     padding: 8px 10px;
     border: 1px solid var(--t-border);
-    border-radius: 14px;
+    border-radius: var(--radius-xl);
     background: var(--t-surface);
     box-shadow: var(--t-card-shadow);
     position: relative;
@@ -185,7 +185,7 @@
     justify-content: center;
     gap: 6px;
     height: 40px;
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     border: 1px solid var(--t-border);
     background: var(--t-surface);
     color: var(--t-ink);
@@ -216,7 +216,7 @@
     border-color: var(--t-accent);
     background: var(--t-accent);
     color: var(--t-accent-ink);
-    font-size: 0.9rem;
+    font-size: var(--fs-base-minus);
     font-weight: 800;
 }
 
@@ -250,10 +250,10 @@
 
 .fte2-badge {
     padding: 6px 10px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: var(--t-accent-soft);
     color: var(--t-accent);
-    font-size: 0.78rem;
+    font-size: var(--fs-xs);
     font-weight: 800;
     white-space: nowrap;
 }
@@ -274,10 +274,10 @@
     height: 32px;
     padding: 0 12px;
     border: 0;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: transparent;
     color: var(--t-muted);
-    font-size: 0.86rem;
+    font-size: var(--fs-sm-plus);
     font-weight: 800;
     cursor: pointer;
     white-space: nowrap;
@@ -313,7 +313,7 @@
     height: 40px;
     padding: 0 4px 0 12px;
     border: 1px solid var(--t-border);
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     background: var(--t-surface-2);
 }
 
@@ -339,7 +339,7 @@
     outline: none;
     background: transparent;
     color: var(--t-ink);
-    font-size: 0.9rem;
+    font-size: var(--fs-base-minus);
     box-shadow: none;
 }
 
@@ -349,7 +349,7 @@
     min-height: 0;
     padding: 0;
     border: 0;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: transparent;
     color: var(--t-muted);
     box-shadow: none;
@@ -370,7 +370,7 @@
     overflow: auto;
     padding: 6px;
     border: 1px solid var(--t-border);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     background: var(--t-surface);
     box-shadow: var(--t-shadow);
 }
@@ -394,7 +394,7 @@
     overflow: auto;
     padding: 8px;
     border: 1px solid var(--t-border);
-    border-radius: 14px;
+    border-radius: var(--radius-xl);
     background: var(--t-surface);
     box-shadow: var(--t-shadow);
     color: var(--t-ink);
@@ -441,10 +441,10 @@
     min-height: 38px;
     padding: 0 10px;
     border: 0;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: transparent;
     color: var(--t-ink);
-    font-size: 0.9rem;
+    font-size: var(--fs-base-minus);
     font-weight: 600;
     text-align: left;
     cursor: pointer;
@@ -488,7 +488,7 @@
 
 .fte2-fieldLabel {
     color: var(--t-muted);
-    font-size: 0.78rem;
+    font-size: var(--fs-xs);
     font-weight: 700;
 }
 
@@ -505,10 +505,10 @@
     gap: 6px;
     padding: 8px 4px;
     border: 1px solid var(--t-border);
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     background: var(--t-surface);
     color: var(--t-ink);
-    font-size: 0.78rem;
+    font-size: var(--fs-xs);
     font-weight: 700;
     cursor: pointer;
 }
@@ -521,7 +521,7 @@
 .fte2-themeSwatch {
     width: 100%;
     height: 22px;
-    border-radius: 6px;
+    border-radius: var(--radius-xs);
     border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
@@ -542,7 +542,7 @@
     height: 32px;
     padding: 2px;
     border: 1px solid var(--t-border);
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: var(--t-surface);
     cursor: pointer;
 }
@@ -564,7 +564,7 @@
     gap: 2px;
     padding: 4px;
     border: 1px solid var(--t-border);
-    border-radius: 14px;
+    border-radius: var(--radius-xl);
     background: color-mix(in srgb, var(--t-surface) 88%, transparent);
     backdrop-filter: blur(8px);
     box-shadow: var(--t-shadow);
@@ -576,7 +576,7 @@
     display: grid;
     place-items: center;
     border: 0;
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     background: transparent;
     color: var(--t-ink);
     cursor: pointer;
@@ -610,14 +610,14 @@
 .fte2-zoom.is-compact {
     right: 12px;
     bottom: 88px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     padding: 4px;
 }
 
 .fte2-zoom.is-compact button {
     width: 40px;
     height: 40px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
 }
 
 /* ===== Điện thoại: nút nổi kiểu Facebook ===== */
@@ -632,10 +632,10 @@
     height: 44px;
     padding: 0 18px 0 14px;
     border: 1px solid var(--t-border);
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: var(--t-surface);
     color: var(--t-ink);
-    font-size: 0.92rem;
+    font-size: var(--fs-base-minus-plus);
     font-weight: 700;
     box-shadow: var(--t-shadow);
     cursor: pointer;
@@ -649,7 +649,7 @@
     position: absolute;
     inset: 0;
     z-index: 35;
-    border-radius: 14px;
+    border-radius: var(--radius-xl);
     background: rgba(17, 12, 6, 0.32);
     animation: fte2-fade 0.18s ease;
 }
@@ -671,7 +671,7 @@
     display: grid;
     place-items: center;
     border: 0;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: var(--t-accent);
     color: var(--t-accent-ink);
     box-shadow: 0 10px 24px rgba(0, 0, 0, 0.28), 0 2px 6px rgba(0, 0, 0, 0.18);
@@ -730,7 +730,7 @@
 
 .fte2-speedDialLabel {
     padding: 7px 12px;
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     background: var(--t-surface);
     color: var(--t-ink);
     font-size: 0.88rem;
@@ -744,7 +744,7 @@
     height: 44px;
     display: grid;
     place-items: center;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: var(--t-surface);
     color: var(--t-accent);
     box-shadow: var(--t-shadow);
@@ -780,7 +780,7 @@
     width: 40px;
     height: 4px;
     margin: 8px auto 2px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: var(--t-border);
 }
 
@@ -802,7 +802,7 @@
     display: grid;
     place-items: center;
     border: 0;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: var(--t-surface-2);
     color: var(--t-ink);
 }
@@ -821,7 +821,7 @@
 
 .fte2-sheet .fte2-toolItem {
     min-height: 46px;
-    font-size: 0.95rem;
+    font-size: var(--fs-base-plus);
 }
 
 @keyframes fte2-fade {
@@ -856,7 +856,7 @@
 .fte2 .fte-canvas .fte-personCard,
 .fte2 .fte-canvas .fte-coupleCard {
     border: 1px solid var(--t-border);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     background: var(--t-surface);
     color: var(--t-ink);
     box-shadow: var(--t-card-shadow);
@@ -966,7 +966,7 @@
     display: grid;
     place-items: center;
     overflow: hidden;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     border: 2px solid var(--t-unknown);
     background: color-mix(in srgb, var(--t-unknown) 16%, var(--t-surface));
     color: var(--t-unknown);
@@ -1014,7 +1014,7 @@
     top: -4px;
     right: -6px;
     padding: 1px 6px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: color-mix(in srgb, var(--t-ink) 9%, transparent);
     color: var(--t-muted);
     font-size: 10px;
@@ -1100,7 +1100,7 @@
     height: 18px;
     transform: translate(-50%, -50%);
     border: 1px solid var(--t-border);
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: var(--t-surface);
 }
 
@@ -1183,7 +1183,7 @@
 .fte2 .fte-canvas .fte2-lane {
     position: absolute;
     z-index: 0;
-    border-radius: 18px;
+    border-radius: var(--radius-3xl);
     pointer-events: none;
 }
 
@@ -1198,7 +1198,7 @@
     transform: translateY(-50%);
     padding: 4px 10px;
     border: 1px solid var(--t-border);
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: var(--t-surface);
     color: var(--t-muted);
     font-family: var(--t-font-title);
@@ -1240,7 +1240,7 @@
 /* Tiêu đề cây theo chủ đề màu */
 .fte2 .fte-canvas .fte-canvasTitle {
     padding: 6px 10px;
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     background: transparent;
     backdrop-filter: none;
     color: var(--t-accent);
@@ -1284,7 +1284,7 @@
     height: 38px;
     padding: 0 12px;
     border: 1px solid var(--t-border);
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     background: var(--t-surface);
     color: var(--t-ink);
     font-size: 0.88rem;
@@ -1317,7 +1317,7 @@
 .fte2 .fte-rootPicker label > span {
     grid-column: 1 / -1;
     color: var(--t-muted);
-    font-size: 0.78rem;
+    font-size: var(--fs-xs);
     font-weight: 700;
 }
 
@@ -1327,10 +1327,10 @@
     height: 40px;
     padding: 0 12px;
     border: 1px solid var(--t-border);
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     background: var(--t-surface-2);
     color: var(--t-ink);
-    font-size: 0.92rem;
+    font-size: var(--fs-base-minus-plus);
     box-shadow: none;
 }
 
@@ -1342,7 +1342,7 @@
     overflow: auto;
     padding: 4px;
     border: 1px solid var(--t-border);
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     background: var(--t-surface);
     box-shadow: none;
 }
@@ -1356,7 +1356,7 @@
     width: 100%;
     padding: 8px 10px;
     border: 0;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: transparent;
     color: var(--t-ink);
     text-align: left;
@@ -1372,12 +1372,12 @@
 .fte2 .fte-rootPickerResults small,
 .fte2 .fte-searchResults small {
     color: var(--t-muted);
-    font-size: 0.78rem;
+    font-size: var(--fs-xs);
 }
 
 .fte2 .fte-viewModeRoot {
     color: var(--t-accent);
-    font-size: 0.82rem;
+    font-size: var(--fs-sm-minus);
     font-weight: 700;
 }
 
@@ -1434,7 +1434,7 @@
     display: grid;
     place-items: center;
     border: 1px solid var(--t-border);
-    border-radius: 10px;
+    border-radius: var(--radius-md);
     background: var(--t-surface);
     color: var(--t-ink);
     box-shadow: none;
@@ -1449,7 +1449,7 @@
 .fte2 .fte-viewMode > button {
     width: 100% !important;
     padding: 0 12px !important;
-    font-size: 0.9rem;
+    font-size: var(--fs-base-minus);
 }
 
 /* Quan hệ đặc biệt trên cây: nét đứt = hôn nhân đã kết thúc / con nuôi, thừa tự; nét chấm = vợ lẽ / con riêng. */
@@ -1471,7 +1471,7 @@
   gap: 10px;
   padding: 10px 14px;
   border: 1.5px dashed var(--fte-card-border, #b08a5a);
-  border-radius: 14px;
+  border-radius: var(--radius-xl);
   background: color-mix(in srgb, var(--fte-card-bg, #fffaf2) 82%, transparent);
   color: inherit;
   text-align: left;
@@ -1509,7 +1509,7 @@
   left: 50%;
   transform: translateX(-50%);
   padding: 1px 6px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgba(0, 0, 0, 0.06);
   font-size: 10px;
   white-space: nowrap;
@@ -1532,15 +1532,15 @@
   grid-column: 1 / -1;
   margin: 0;
   color: #9a3412;
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 
 .fte-relationPreview {
   margin: 0 18px;
   padding: 10px 12px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   background: rgba(0, 0, 0, 0.04);
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 
 .fte-relationPreview p {

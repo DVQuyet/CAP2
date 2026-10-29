@@ -2,7 +2,7 @@
   display: flex;
   min-height: 100vh;
   background: url('/backgroundbanner.png') center/cover no-repeat fixed;
-  color: #fff;
+  color: var(--color-white);
   transition: padding 0.25s ease;
 }
 
@@ -26,7 +26,7 @@
 .sidebar-collapsed .manager-sidebar {
   width: 88px;
   padding: 1.5rem 0.75rem;
-  border-radius: 24px;
+  border-radius: var(--radius-5xl);
 }
 
 .sidebar-toggle {
@@ -36,8 +36,8 @@
   width: 36px;
   height: 36px;
   border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 999px;
-  background: #c99a2c;
+  border-radius: var(--radius-pill);
+  background: var(--color-gold);
   color: #1d1208;
   display: inline-flex;
   align-items: center;
@@ -60,7 +60,7 @@
   align-items: center;
   justify-content: center;
   text-decoration: none;
-  color: #fff;
+  color: var(--color-white);
   margin-bottom: 2.25rem;
   min-height: 70px;
   overflow: hidden;
@@ -82,7 +82,7 @@
   margin-left: auto;
   margin-right: auto;
   margin-bottom: 1.25rem;
-  border-radius: 14px;
+  border-radius: var(--radius-xl);
 }
 
 .sidebar-collapsed .sidebar-header .sidebar-brand img {
@@ -100,7 +100,7 @@
   gap: 1.2rem;
   padding: 1.15rem;
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 20px;
+  border-radius: var(--radius-4xl);
   margin-bottom: 1.5rem;
   border: 1px solid rgba(255, 255, 255, 0.05);
   color: inherit;
@@ -117,13 +117,13 @@
 .sidebar-collapsed .sidebar-user-section {
   justify-content: center;
   padding: 0.8rem 0;
-  border-radius: 18px;
+  border-radius: var(--radius-3xl);
 }
 
 .manager-avatar-wrapper {
   width: 54px;
   height: 54px;
-  background: linear-gradient(135deg, #c99a2c 0%, #8b0000 100%);
+  background: linear-gradient(135deg, var(--color-gold) 0%, var(--color-maroon) 100%);
   border-radius: 15px;
   display: flex;
   align-items: center;
@@ -134,7 +134,7 @@
 
 .manager-avatar-wrapper .material-symbols-outlined {
   font-size: 1.8rem;
-  color: #fff;
+  color: var(--color-white);
 }
 
 .manager-avatar-img {
@@ -147,9 +147,9 @@
 
 .user-details strong {
   display: block;
-  font-size: 1rem;
+  font-size: var(--fs-base);
   margin-bottom: 0.3rem;
-  color: #fff;
+  color: var(--color-white);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -163,11 +163,11 @@
 }
 
 .role-chip {
-  font-size: 0.75rem;
+  font-size: var(--fs-2xs);
   background: rgba(201, 154, 44, 0.2);
-  color: #c99a2c;
+  color: var(--color-gold);
   padding: 3px 8px;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   font-weight: 600;
 }
 
@@ -192,7 +192,7 @@
   padding: 1.1rem 1.4rem;
   text-decoration: none;
   color: rgba(255, 255, 255, 0.6);
-  border-radius: 16px;
+  border-radius: var(--radius-2xl);
   transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
   min-width: 0;
   white-space: nowrap;
@@ -211,17 +211,17 @@
   justify-content: center;
   gap: 0;
   padding: 1rem 0;
-  border-radius: 18px;
+  border-radius: var(--radius-3xl);
 }
 
 .nav-item:hover {
   background: rgba(255, 255, 255, 0.08);
-  color: #fff;
+  color: var(--color-white);
   transform: scale(1.02);
 }
 
 .nav-item.active {
-  background: #c99a2c;
+  background: var(--color-gold);
   color: #000;
   font-weight: 700;
   box-shadow: 0 10px 20px rgba(201, 154, 44, 0.3);
@@ -236,7 +236,7 @@
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.05);
   color: #ff5252;
-  border-radius: 16px;
+  border-radius: var(--radius-2xl);
   cursor: pointer;
   font-weight: 600;
   transition: all 0.3s;
@@ -268,7 +268,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem 3rem;
-  border-radius: 24px;
+  border-radius: var(--radius-5xl);
   margin-bottom: 2.5rem;
   overflow: visible;
 }
@@ -277,14 +277,14 @@
   font-size: 1.6rem;
   font-weight: 800;
   margin: 0 0 0.5rem 0;
-  background: linear-gradient(to right, #fff, rgba(255, 255, 255, 0.6));
+  background: linear-gradient(to right, var(--color-white), rgba(255, 255, 255, 0.6));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .header-context p {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: var(--fs-base-minus);
   color: rgba(255, 255, 255, 0.5);
 }
 
@@ -301,7 +301,7 @@
   border-radius: 15px;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #fff;
+  color: var(--color-white);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -326,9 +326,9 @@
   right: 12px;
   width: 8px;
   height: 8px;
-  background: #c99a2c;
-  border-radius: 50%;
-  box-shadow: 0 0 10px #c99a2c;
+  background: var(--color-gold);
+  border-radius: var(--radius-round);
+  box-shadow: 0 0 10px var(--color-gold);
 }
 
 .glass-effect {
@@ -339,13 +339,13 @@
 }
 
 .manager-view-body {
-  color: #1d2b44;
+  color: var(--color-navy);
 }
 
 .manager-account-overlay {
   position: fixed;
   inset: 0;
-  z-index: 9000;
+  z-index: var(--z-overlay);
   display: flex;
   justify-content: flex-end;
   background: rgba(5, 8, 14, 0.62);
@@ -357,9 +357,9 @@
   width: min(560px, 100%);
   height: 100%;
   overflow-y: auto;
-  border-radius: 24px;
+  border-radius: var(--radius-5xl);
   padding: 1.4rem;
-  color: #fff;
+  color: var(--color-white);
   animation: managerPanelIn 0.22s ease-out;
 }
 
@@ -396,9 +396,9 @@
   width: 40px;
   height: 40px;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   background: rgba(255, 255, 255, 0.1);
-  color: #fff;
+  color: var(--color-white);
   cursor: pointer;
 }
 
@@ -415,7 +415,7 @@
 
 .manager-account-section h3 {
   margin: 0;
-  font-size: 1rem;
+  font-size: var(--fs-base);
   color: #ffd45f;
 }
 
@@ -430,9 +430,9 @@
   width: 100%;
   box-sizing: border-box;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   background: rgba(255, 255, 255, 0.92);
-  color: #1d2b44;
+  color: var(--color-navy);
   padding: 0.75rem 0.85rem;
   font: inherit;
 }
@@ -444,26 +444,26 @@
 .manager-account-section input:focus,
 .manager-account-section textarea:focus {
   outline: 2px solid rgba(201, 154, 44, 0.45);
-  border-color: #c99a2c;
+  border-color: var(--color-gold);
 }
 
 .manager-account-primary,
 .manager-account-secondary {
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   padding: 0.78rem 1rem;
   font-weight: 800;
   cursor: pointer;
 }
 
 .manager-account-primary {
-  background: #c99a2c;
+  background: var(--color-gold);
   color: #16110a;
 }
 
 .manager-account-secondary {
   background: rgba(255, 255, 255, 0.12);
-  color: #fff;
+  color: var(--color-white);
   border: 1px solid rgba(255, 255, 255, 0.14);
 }
 
@@ -475,7 +475,7 @@
 
 .manager-account-message,
 .manager-account-note {
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   padding: 0.75rem 0.85rem;
   background: rgba(201, 154, 44, 0.16);
   color: #ffe6a0;
@@ -501,7 +501,7 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 1rem;
-  color: #fff;
+  color: var(--color-white);
 }
 
 .manager-data-header h2 {
@@ -546,20 +546,20 @@
   align-items: center;
   padding: 0.85rem;
   border: 1px solid #e4ebf5;
-  border-radius: 12px;
-  background: #f8fafc;
+  border-radius: var(--radius-lg);
+  background: var(--color-slate-50);
 }
 
 .manager-member-row strong {
   display: block;
-  color: #1d2b44;
+  color: var(--color-navy);
 }
 
 .manager-member-row span {
   display: block;
   margin-top: 0.25rem;
   color: #6f7f98;
-  font-size: 0.86rem;
+  font-size: var(--fs-sm-plus);
 }
 
 .manager-archive-panel {
@@ -573,7 +573,7 @@
 
 .manager-inline-message,
 .manager-inline-error {
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   padding: 0.85rem 1rem;
   font-weight: 700;
 }
@@ -592,9 +592,9 @@
 
 .small-action-btn {
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 0.48rem 0.9rem;
-  background: #c99a2c;
+  background: var(--color-gold);
   color: #111;
   font-weight: 700;
   cursor: pointer;
@@ -609,10 +609,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   padding: 0.24rem 0.65rem;
   font-size: 0.76rem !important;
-  color: #1d2b44 !important;
+  color: var(--color-navy) !important;
   background: #edf2f7;
 }
 
@@ -662,7 +662,7 @@
     right: 14px;
     width: 42px;
     height: 42px;
-    border-radius: 14px;
+    border-radius: var(--radius-xl);
     background: rgba(255, 246, 220, 0.14);
     color: #ffe6a3;
     border-color: rgba(255, 222, 140, 0.34);
@@ -685,13 +685,13 @@
   }
 
   .manager-sidebar .nav-item.active {
-    background: linear-gradient(135deg, #d6a536, #8b1e13);
-    color: #fff8df;
+    background: linear-gradient(135deg, #d6a536, var(--color-brick-1));
+    color: var(--color-cream-2);
   }
 
   .manager-sidebar .role-chip,
   .manager-sidebar .user-details strong {
-    color: #fff8df;
+    color: var(--color-cream-2);
   }
 
   .sidebar-collapsed .manager-sidebar {
@@ -743,7 +743,7 @@
     align-items: flex-start;
     gap: 1rem;
     flex-wrap: wrap;
-    border-radius: 18px;
+    border-radius: var(--radius-3xl);
     margin-bottom: 1rem;
   }
 
@@ -757,7 +757,7 @@
   }
 
   .header-context p {
-    font-size: 0.78rem;
+    font-size: var(--fs-xs);
     line-height: 1.45;
   }
 
@@ -771,7 +771,7 @@
   .util-btn {
     width: 42px;
     height: 42px;
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
   }
 
   .manager-account-overlay {

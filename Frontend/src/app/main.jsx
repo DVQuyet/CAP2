@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import AOS from "aos";
 import "aos/dist/aos.css";
 import App from "./App";
+import "../styles/tokens.css";
 import "../index.css";
 import { i18nReady } from "../i18n/i18n";
 

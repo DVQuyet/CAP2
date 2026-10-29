@@ -1,5 +1,5 @@
 .register-page {
-    --auth-gold: #f3c63f;
+    --auth-gold: var(--color-gold-bright);
     --auth-gold-soft: #f6deb0;
     --auth-dark: #4a1208;
     --auth-border: #d4a017;
@@ -15,7 +15,7 @@
     padding: 36px 20px;
     background:
         url('/backgroundbanner.png') center top / cover no-repeat,
-        linear-gradient(135deg, #4b0404 0%, #8b0000 48%, #260b06 100%);
+        linear-gradient(135deg, #4b0404 0%, var(--color-maroon) 48%, #260b06 100%);
 }
 
 .register-page::before {
@@ -37,7 +37,7 @@
     min-height: 42px;
     padding: 0 18px;
     border: 1px solid rgba(243, 198, 63, 0.55);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     background: rgba(47, 12, 8, 0.72);
     color: var(--auth-gold);
     font-weight: 800;
@@ -85,11 +85,11 @@
     margin-bottom: 20px;
     padding: 12px 14px;
     border: 1px solid rgba(243, 198, 63, 0.32);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     background: rgba(255, 249, 235, 0.08);
     color: var(--auth-gold-soft);
     text-align: center;
-    font-size: 14px;
+    font-size: var(--fs-14);
 }
 
 .register-page .info-link a,
@@ -114,7 +114,7 @@
     padding: 0 16px;
     margin: 9px 0;
     border: 1px solid var(--auth-border);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     box-sizing: border-box;
     background: rgba(255, 255, 255, 0.98);
     color: #2b130a;
@@ -148,7 +148,7 @@
 
 .register-page .form-field small {
     color: var(--auth-gold-soft);
-    font-size: 13px;
+    font-size: var(--fs-13);
     line-height: 1.4;
 }
 
@@ -171,7 +171,7 @@
     margin-top: 14px;
     padding: 0 18px;
     border: 1px solid var(--auth-gold);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     background: var(--auth-gold);
     color: var(--auth-dark);
     font-size: 17px;
@@ -195,10 +195,10 @@
     margin-bottom: 14px;
     padding: 12px 14px;
     border: 1px solid rgba(255, 179, 179, 0.5);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     background: rgba(127, 29, 29, 0.28);
     color: #ffb3b3;
-    font-size: 14px;
+    font-size: var(--fs-14);
     font-weight: 700;
 }
 
@@ -220,7 +220,7 @@
 
 .register-page .checkbox-group label {
     color: var(--auth-gold-soft);
-    font-size: 14px;
+    font-size: var(--fs-14);
     line-height: 1.55;
 }
 
@@ -234,7 +234,7 @@
 .register-page .policy-modal-overlay {
     position: fixed;
     inset: 0;
-    z-index: 10000;
+    z-index: var(--z-toast);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -249,7 +249,7 @@
     flex-direction: column;
     overflow: hidden;
     border: 2px solid var(--auth-border);
-    border-radius: 18px;
+    border-radius: var(--radius-3xl);
     background: linear-gradient(180deg, var(--auth-panel), var(--auth-panel-deep));
     box-shadow: 0 22px 52px rgba(0, 0, 0, 0.42);
 }
@@ -304,7 +304,7 @@
     align-items: center;
     justify-content: center;
     border: 1px solid rgba(243, 198, 63, 0.72);
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: rgba(88, 22, 10, 0.72);
     color: var(--auth-gold);
     font-size: 26px;
@@ -323,10 +323,10 @@
     margin-bottom: 14px;
     padding: 12px 14px;
     border: 1px solid rgba(185, 247, 193, 0.5);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     background: rgba(22, 101, 52, 0.22);
     color: #b9f7c1;
-    font-size: 14px;
+    font-size: var(--fs-14);
     font-weight: 700;
 }
 
@@ -366,7 +366,7 @@
 .register-page.register-page--modal {
     position: fixed;
     inset: 0;
-    z-index: 9999;
+    z-index: var(--z-modal);
     min-height: 100vh;
     padding: 24px 16px;
     background:

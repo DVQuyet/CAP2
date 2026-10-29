@@ -1,15 +1,15 @@
 /* MembersPage.css - Premium Traditional Warm Cream UI */
 
 :root {
-    --traditional-burgundy: #4a160f;
-    --traditional-red: #9e2f24;
+    --traditional-burgundy: var(--color-ink-brown-1);
+    --traditional-red: var(--color-brick-3);
     --traditional-cream-bg: rgba(255, 250, 241, 0.96);
     --traditional-card-bg: rgba(255, 255, 255, 0.9);
     --traditional-border: rgba(211, 168, 82, 0.4);
     --traditional-text: #3f2018;
-    --traditional-text-muted: #7d5b43;
+    --traditional-text-muted: var(--color-brown-mid);
     --traditional-shadow: 0 14px 34px rgba(45, 17, 7, 0.12);
-    --btn-red-gradient: linear-gradient(135deg, #9f2f23, #5b1d14);
+    --btn-red-gradient: linear-gradient(135deg, var(--color-brick-4), #5b1d14);
 }
 
 .account-management-page {
@@ -24,11 +24,11 @@
     align-items: center;
     gap: 0.5rem;
     margin-bottom: 1.25rem;
-    font-size: 0.9rem;
+    font-size: var(--fs-base-minus);
     color: var(--traditional-text-muted);
     background: var(--traditional-cream-bg);
     padding: 8px 16px;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     border: 1px solid var(--traditional-border);
     box-shadow: 0 4px 12px rgba(45, 17, 7, 0.04);
 }
@@ -89,9 +89,9 @@
 .search-box-premium input {
     width: 100%;
     padding: 12px 12px 12px 44px;
-    background: #fff;
+    background: var(--color-white);
     border: 1px solid rgba(211, 168, 82, 0.54);
-    border-radius: 14px;
+    border-radius: var(--radius-xl);
     color: var(--traditional-text);
     outline: none;
     font-weight: 700;
@@ -114,7 +114,7 @@
 
 .clan-folder-card {
     background: var(--traditional-cream-bg);
-    border-radius: 20px;
+    border-radius: var(--radius-4xl);
     padding: 1.75rem;
     border: 1px solid var(--traditional-border);
     cursor: pointer;
@@ -137,7 +137,7 @@
     width: 72px;
     height: 72px;
     background: rgba(146, 48, 35, 0.06);
-    border-radius: 20px;
+    border-radius: var(--radius-4xl);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -150,8 +150,8 @@
 
 .clan-folder-card:hover .folder-icon {
     background: var(--btn-red-gradient);
-    color: #fff7e8;
-    border-color: #9f2f23;
+    color: var(--color-cream-1);
+    border-color: var(--color-brick-4);
     transform: scale(1.05) rotate(3deg);
 }
 
@@ -164,16 +164,16 @@
     top: -6px;
     right: -6px;
     background: var(--traditional-red);
-    color: #fff;
-    font-size: 0.75rem;
+    color: var(--color-white);
+    font-size: var(--fs-2xs);
     font-weight: 800;
     min-width: 24px;
     height: 24px;
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 2px solid #fff;
+    border: 2px solid var(--color-white);
     box-shadow: 0 4px 8px rgba(45, 17, 7, 0.14);
 }
 
@@ -185,7 +185,7 @@
 }
 
 .folder-info p {
-    font-size: 0.85rem;
+    font-size: var(--fs-sm);
     color: var(--traditional-text-muted);
     font-weight: 700;
     margin: 0;
@@ -195,7 +195,7 @@
 .premium-dark-glass {
     background: var(--traditional-cream-bg);
     border: 1px solid var(--traditional-border);
-    border-radius: 24px;
+    border-radius: var(--radius-5xl);
     padding: 1.5rem;
     box-shadow: var(--traditional-shadow);
     overflow: auto;
@@ -213,7 +213,7 @@
     color: var(--traditional-burgundy);
     font-weight: 900;
     text-transform: uppercase;
-    font-size: 0.8rem;
+    font-size: var(--fs-xs-plus);
     letter-spacing: 0.08em;
     padding: 14px 20px;
     text-align: left;
@@ -223,7 +223,7 @@
 .premium-table td {
     padding: 14px 20px;
     color: var(--traditional-text);
-    font-size: 0.92rem;
+    font-size: var(--fs-base-minus-plus);
     background: rgba(255, 255, 255, 0.5);
     border-top: 1px solid rgba(211, 168, 82, 0.15);
     border-bottom: 1px solid rgba(211, 168, 82, 0.15);
@@ -259,9 +259,9 @@
     width: 36px;
     height: 36px;
     background: var(--btn-red-gradient);
-    color: #fff7e8;
+    color: var(--color-cream-1);
     border: 1.5px solid var(--traditional-border);
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -275,7 +275,7 @@
 }
 
 .user-info-text .user-email {
-    font-size: 0.8rem;
+    font-size: var(--fs-xs-plus);
     color: var(--traditional-text-muted);
     font-weight: 700;
 }
@@ -283,7 +283,7 @@
 /* Badges */
 .status-pill {
     padding: 4px 10px;
-    border-radius: 20px;
+    border-radius: var(--radius-4xl);
     font-size: 0.72rem;
     font-weight: 900;
     text-transform: uppercase;
@@ -307,10 +307,10 @@
 }
 
 .role-tag {
-    font-size: 0.75rem;
+    font-size: var(--fs-2xs);
     font-weight: 800;
     padding: 3px 8px;
-    border-radius: 6px;
+    border-radius: var(--radius-xs);
     background: rgba(146, 48, 35, 0.05);
     color: #6b2b1d;
     border: 1px solid rgba(211, 168, 82, 0.3);
@@ -325,12 +325,12 @@
 .action-btn-circle {
     width: 32px;
     height: 32px;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     display: flex;
     align-items: center;
     justify-content: center;
     border: 1px solid rgba(211, 168, 82, 0.48);
-    background: #fffaf1;
+    background: var(--color-cream-4);
     color: #7b241a;
     cursor: pointer;
     transition: all 0.2s;
@@ -338,14 +338,14 @@
 
 .action-btn-circle:hover {
     background: var(--btn-red-gradient);
-    color: #fff7e8;
-    border-color: #9f2f23;
+    color: var(--color-cream-1);
+    border-color: var(--color-brick-4);
 }
 
 .action-btn-circle.delete:hover {
     background: #b91c1c;
     border-color: #b91c1c;
-    color: #fff;
+    color: var(--color-white);
 }
 
 /* Empty State */
@@ -366,7 +366,7 @@
     position: fixed;
     top: 24px;
     right: 24px;
-    z-index: 9999;
+    z-index: var(--z-modal);
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -376,8 +376,8 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    background: #fffaf1;
-    border-radius: 16px;
+    background: var(--color-cream-4);
+    border-radius: var(--radius-2xl);
     padding: 16px 20px;
     box-shadow: var(--traditional-shadow);
     border: 1px solid var(--traditional-border);
@@ -414,9 +414,9 @@
 }
 
 .premium-confirm-card {
-    background: #fffaf1;
+    background: var(--color-cream-4);
     border: 1px solid var(--traditional-border);
-    border-radius: 24px;
+    border-radius: var(--radius-5xl);
     padding: 2rem;
     max-width: 400px;
     width: 100%;
@@ -428,12 +428,12 @@
     width: 64px;
     height: 64px;
     background: rgba(220, 38, 38, 0.15);
-    border: 2px solid #dc2626;
-    border-radius: 50%;
+    border: 2px solid var(--color-red-600);
+    border-radius: var(--radius-round);
     display: grid;
     place-items: center;
     margin: 0 auto 1.25rem;
-    color: #dc2626;
+    color: var(--color-red-600);
     box-shadow: 0 0 15px rgba(220, 38, 38, 0.3);
 }
 
@@ -446,7 +446,7 @@
 
 .btn-premium-cancel, .btn-premium-confirm {
     padding: 12px;
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     font-weight: 800;
     cursor: pointer;
     transition: all 0.2s;
@@ -454,13 +454,13 @@
 
 .btn-premium-cancel { 
     border: 1px solid rgba(211, 168, 82, 0.52);
-    background: #fffaf1;
+    background: var(--color-cream-4);
     color: #65301f;
 }
 .btn-premium-confirm { 
     background: var(--btn-red-gradient);
-    border: 1px solid #9f2f23;
-    color: #fff7e8;
+    border: 1px solid var(--color-brick-4);
+    color: var(--color-cream-1);
     box-shadow: 0 10px 22px rgba(94, 30, 20, 0.22);
 }
 
@@ -471,7 +471,7 @@
 }
 
 .account-management-page .admin-account-modal {
-    background: #fffaf1;
+    background: var(--color-cream-4);
     border: 1px solid var(--traditional-border);
     box-shadow: 0 24px 60px rgba(0, 0, 0, 0.32);
 }
@@ -490,7 +490,7 @@
 
 .account-management-page .modal-close-btn {
     border: 1px solid rgba(211, 168, 82, 0.48);
-    background: #fffaf1;
+    background: var(--color-cream-4);
     color: #7b241a;
 }
 
@@ -501,7 +501,7 @@
 .account-management-page .admin-form-grid input,
 .account-management-page .admin-form-grid select {
     border: 1px solid rgba(211, 168, 82, 0.54);
-    background: #fff;
+    background: var(--color-white);
     color: var(--traditional-text);
     font-weight: 700;
 }
@@ -517,7 +517,7 @@
 @media (max-width: 768px) {
     .premium-dark-glass {
         padding: 1rem;
-        border-radius: 18px;
+        border-radius: var(--radius-3xl);
     }
     .premium-table th,
     .premium-table td {
@@ -538,7 +538,7 @@
     }
     .premium-confirm-card {
         padding: 1.5rem 1.25rem;
-        border-radius: 20px;
+        border-radius: var(--radius-4xl);
     }
     .confirm-actions {
         gap: 0.75rem;

@@ -16,14 +16,14 @@
   gap: 12px;
   padding: 12px 14px;
   border: 1px solid var(--gb-line);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   background: var(--gb-paper);
 }
 
 .gb-field {
   display: grid;
   gap: 4px;
-  font-size: 0.8rem;
+  font-size: var(--fs-xs-plus);
   font-weight: 700;
   color: var(--gb-muted);
   min-width: 0;
@@ -34,8 +34,8 @@
   min-height: 40px;
   padding: 6px 10px;
   border: 1px solid var(--gb-line);
-  border-radius: 8px;
-  background: #fff;
+  border-radius: var(--radius-sm);
+  background: var(--color-white);
   color: var(--gb-ink);
   max-width: 100%;
 }
@@ -57,8 +57,8 @@
   min-height: 40px;
   padding: 8px 14px;
   border: 1px solid var(--gb-line);
-  border-radius: 10px;
-  background: #fff;
+  border-radius: var(--radius-md);
+  background: var(--color-white);
   color: var(--gb-ink);
   font-weight: 800;
   text-decoration: none;
@@ -68,14 +68,14 @@
 .gb-btn-primary {
   background: var(--gb-accent);
   border-color: var(--gb-accent);
-  color: #fff;
+  color: var(--color-white);
 }
 
 .gb-book {
   background: var(--gb-paper);
   color: var(--gb-ink);
   border: 1px solid var(--gb-line);
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   padding: 24px clamp(16px, 4vw, 40px);
   font-family: "Times New Roman", "Noto Serif", Georgia, serif;
   line-height: 1.5;
@@ -118,11 +118,11 @@
 .gb-stats div {
   padding: 10px;
   border: 1px solid var(--gb-line);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 
 .gb-stats dt {
-  font-size: 0.8rem;
+  font-size: var(--fs-xs-plus);
   color: var(--gb-muted);
 }
 
@@ -154,7 +154,7 @@
 .gb-person {
   padding: 10px 12px;
   border: 1px solid var(--gb-line);
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   break-inside: avoid;
   page-break-inside: avoid;
   min-width: 0;
@@ -170,14 +170,14 @@
   margin-left: 8px;
   font-weight: 400;
   color: var(--gb-muted);
-  font-size: 0.75rem;
+  font-size: var(--fs-2xs);
 }
 
 .gb-person dl {
   margin: 0;
   display: grid;
   gap: 2px;
-  font-size: 0.92rem;
+  font-size: var(--fs-base-minus-plus);
 }
 
 .gb-person dl div {
@@ -214,7 +214,7 @@
 
 .gb-index em {
   color: var(--gb-muted);
-  font-size: 0.85rem;
+  font-size: var(--fs-sm);
   white-space: nowrap;
 }
 
@@ -235,7 +235,7 @@
 @media print {
   body.gb-printing,
   body.gb-printing #root {
-    background: #fff !important;
+    background: var(--color-white) !important;
   }
 
   body.gb-printing aside,
@@ -268,7 +268,7 @@
     border: 0;
     border-radius: 0;
     padding: 0;
-    background: #fff;
+    background: var(--color-white);
     color: #000;
   }
 
