@@ -62,6 +62,15 @@ Còn mở từ đợt 4:
 - Validate chưa phủ route calendar/events.
 - "ba co toi" vẫn mơ hồ (cụ vs bà cô).
 
+Đợt 10 (30/10) — tối ưu UI (không đổi giao diện), commit `016e263`, `cd146de`, `0e8660c`, `95befcf`:
+- **Bundle vào trang** (`016e263`): bản dịch tải theo ngôn ngữ đang dùng (`i18n.js` + `i18nReady` trong `main.jsx`), `AdminLayout`/`ManagerLayout`/`MemberLayout` lazy (kéo theo socket.io-client), biểu đồ `ManagerDashboard` tách chunk. `index.js` 120,6 → 23,6 KB gzip; JS ban đầu ~196 → ~134 KB (kể cả bản dịch vi); `index.css` 30,9 → 22,2 KB.
+- **Design tokens** (`cd146de`): `Frontend/src/styles/tokens.css` (67 biến: 30 màu, bo góc, cỡ chữ, z-index, bóng, khoảng cách), thay 1.945 giá trị CSS trùng khớp tuyệt đối bằng `var(--…)` trong 39 file; đã so CSS build trước/sau (chỉ khác cách minifier viết lại). Chưa gộp màu gần giống, chưa có dark mode.
+- **A11y** (`95befcf`): `aria-label` cho 59 nút chỉ có icon và 29 ô nhập thiếu nhãn, alt i18n cho ảnh, `role="button"` + Enter/Space cho 9 thẻ/dòng bấm được (`shared/utils/a11yClick.js`), `styles/a11y.css` giảm chuyển động theo `prefers-reduced-motion`; 17 key `a11y.*`. ESLint 139 → 138.
+- **Đề xuất cần QA trình duyệt**: `docs/UI_TOI_UU_DE_XUAT.md` (915 màu hex khác nhau, 122 kiểu nút, `.btn-primary` định nghĩa 2 lần trong `App.css`, ~140 chỗ nghi lỗi mobile, ảnh nền `backgroundbanner.png` 6,2 MB / `sodogiapha.png` 4,1 MB nên đổi WebP).
+- **Deploy cần**: không có migration.
+- **Cần QA trình duyệt**: lần tải đầu chờ bản dịch, đổi ngôn ngữ (import động), fallback khi tải layout theo vai trò, dashboard quản lý hiện `LoadingState` trước biểu đồ; Tab/Enter/Space trên thẻ thư mục dòng họ và dòng quỹ (nút bên trong vẫn bấm riêng được); viền focus mới trên các thẻ đó.
+- Còn mở: các mục trong `UI_TOI_UU_DE_XUAT.md`; `html-to-image` không dùng (gỡ được); Login/Register vừa import tĩnh vừa lazy nên lazy không có tác dụng; `DashboardHome` còn import recharts trực tiếp; logo trùng trong `public/`.
+
 Đợt 9 (30/10) — nút soạn thông báo từ lịch, xuất GEDCOM, AI tóm tắt quỹ:
 - **Nút "Soạn thông báo cho sự kiện này"** (trang lịch `/user|/manager/calendar`): sự kiện chưa qua, không phải lịch hệ thống/sinh nhật → chuyển tới `/user|/manager/posts?compose=1&event=<id>`; form đăng bài mở sẵn panel AI với sự kiện đã chọn (dùng lại `POST /api/ai/post-draft/generate`). Trang lịch của admin (`/dashboard/calendar`) chưa có nút vì không dùng form đăng bài này. Chỉ frontend, test `postAiHelpers.test.js`.
 - **2.3 "Tải thêm"** ✅: kiểm lại thì đã làm từ đợt 22/10 (thông báo, kỷ niệm, sự kiện member/manager đều có `before_id` + `has_more`/`next_before_id` + nút FE + test) → chỉ cập nhật tài liệu, không đổi code.
