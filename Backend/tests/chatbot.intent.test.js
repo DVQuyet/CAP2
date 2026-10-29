@@ -80,3 +80,13 @@ assert.ok(sameGenNamed.entities.targetName.some((name) => /Đinh Viết Lâm/i.t
 assert.strictEqual(parser.parse('Bạn làm được những gì').entities.topic, 'capabilities');
 
 console.log('chatbot.intent.test.js passed');
+
+// Đời/thế hệ của chính người hỏi là current_member, không phải tên người (bộ đo LLM thật phát hiện lỗi này).
+for (const text of ['Thế hệ của tôi là đời nào trong gia phả?', 'tôi thuộc thế hệ nào', 'Đời của tôi là đời thứ mấy', 'the he cua toi la doi nao']) {
+    const parsed = parser.parse(text);
+    assert.strictEqual(parsed.intent, 'find_generation', text);
+    assert.strictEqual(parsed.entities.source, 'current_member', text);
+    assert.deepStrictEqual(parsed.entities.targetName, [], text);
+}
+// Hỏi về người khác vẫn là named_person.
+assert.strictEqual(parser.parse('ông nội tôi thuộc đời thứ mấy').entities.source, 'named_person');

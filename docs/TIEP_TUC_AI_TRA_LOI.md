@@ -159,3 +159,26 @@ Số dòng trong file này tính theo commit `1f98244`; sau khi sửa có thể 
   trưởng họ, ngoài phạm vi, "A với B là gì của nhau", số điện thoại) và GĐ3 (hội thoại).
 
 - 15/10/2026: mới kiểm tra và lập kế hoạch, chưa sửa mã trả lời. Mốc 47/82, hội thoại 0/5 (commit `1f98244`).
+
+## Đo trợ lý với LLM thật (29–30/10/2026)
+
+**Phát hiện lớn:** model mặc định `llama-3.3-70b-versatile` đã bị Groq gỡ (404 `model_not_found`), nên trước đợt này mọi lời gọi LLM
+(planner, diễn đạt lại, tiêu đề hội thoại) đều lặng lẽ thất bại và trợ lý chỉ chạy bằng luật. `groqClient.js` giờ có danh sách model dự phòng
+(`qwen/qwen3.8-27b`, `openai/gpt-oss-120b`, `openai/gpt-oss-20b`; đổi bằng `GROQ_MODEL`, `GROQ_FALLBACK_MODELS`), tự chuyển khi gặp 404 và nhớ model chạy được.
+Production (Render) rất có thể cũng đang gặp lỗi 404 này nếu `GROQ_MODEL` trên Render còn là model cũ: bản sửa vẫn tự chuyển model nên không cần đổi biến.
+
+Lệnh: `cd Backend && node scripts/chatbot-llm-eval.js` (cần `GROQ_API_KEY` trong `.env`; giãn 2,5 giây/câu; không chạy trong CI).
+Bộ đo gồm 26 câu trên dòng họ mẫu (10 diễn đạt lạ, 12 câu quen, 3 kể chuyện, 1 ngoài phạm vi).
+
+| Cấu hình | Đúng | Dùng planner LLM | Dùng lời diễn đạt LLM | LLM bị lớp chặn bịa bác | p50 / p95 / chậm nhất |
+|---|---|---|---|---|---|
+| Như production (mặc định) | **25/26 (96%)** | 7 | 1 | 0 | 3ms / 476ms / 630ms |
+| Ép `CHATBOT_LLM_REWRITE=all` | 21/26 (81%) | 7 | 9 | 0 | 3ms / 1203ms / 1723ms |
+
+Nhận xét:
+- Planner LLM xử lý tốt câu diễn đạt lạ ("ông già tôi", "cha đẻ của cha tôi", "chị em gái ruột"...) khi luật không bắt được.
+- Ép LLM diễn đạt lại **mọi** câu (`CHATBOT_LLM_REWRITE=all`) làm đúng giảm từ 96% xuống 81%: LLM trả lời kiểu "Chưa có thông tin" / "mình chưa nhận được câu hỏi cụ thể"
+  dù dữ liệu đã tra được. Đây là lý do mặc định chỉ cho LLM viết lại câu kể chuyện (`memories_stories`). **Không bật `all` trên production.**
+- Lớp chặn bịa (answerGroundingService) bác 0/10 lần LLM viết trong bộ này: không có tên/năm bịa, và cũng không bác oan. Cần đo lại khi dòng họ thật có nhiều kỷ niệm.
+- Lỗi thật tìm được và đã sửa: "Thế hệ của tôi là đời nào trong gia phả?" bị hiểu thành tên người (lỗi luật, không phải LLM).
+- Còn mở: câu LLM "Kể cho tôi nghe về ông X" có thể thêm chi tiết mềm không kiểm được bằng grounding (ví dụ "sinh ra và lớn lên ở...") — chỉ bắt được tên/năm/ngày.

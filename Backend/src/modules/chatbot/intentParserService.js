@@ -423,6 +423,12 @@ function parseGeneration(message) {
     const normalized = normalizeText(text);
     if (!normalized.includes('doi thu') && !normalized.includes('the he') && !normalized.includes('generation')) return null;
 
+    // Hỏi về chính người hỏi: "tôi thuộc thế hệ nào", "thế hệ của tôi là đời nào", "đời của tôi là đời thứ mấy".
+    // Chỉ khi "tôi" đứng ngay đầu cụm; "ông nội tôi thuộc đời thứ mấy" vẫn là hỏi về ông nội.
+    if (/^(?:(?:toi|tui)\s+(?:thuoc\s+|o\s+)?(?:doi|the he)\b|(?:doi|the he)\s+cua\s+(?:toi|tui)\b)/.test(normalized)) {
+        return { intent: 'find_generation', confidence: 0.84, entities: { targetName: [], source: 'current_member' } };
+    }
+
     let withoutQuestion = text
         .replace(/\s*(thuộc|thuoc)?\s*(đời|doi|thế hệ|the he)\s*(thứ|thu)?\s*mấy.*$/i, '')
         .replace(/^người\s+này$/i, '')
