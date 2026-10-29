@@ -87,22 +87,22 @@ const addYearsToIsoDate = (value, years) => {
   return Number.isNaN(target.getTime()) ? "" : target.toISOString().slice(0, 10);
 };
 
-const parentChildAgeConstraintMessage = (childBirthDate, parentBirthDate) => {
+const parentChildAgeConstraintMessage = (childBirthDate, parentBirthDate, t) => {
   const childBirth = isoDateOnlyValue(childBirthDate);
   const parentBirth = isoDateOnlyValue(parentBirthDate);
   if (!childBirth || !parentBirth) return "";
 
   if (childBirth === parentBirth) {
-    return "Cha/mẹ và con không được có cùng ngày tháng năm sinh.";
+    return t("tree.ageConstraint.sameBirth");
   }
 
   if (childBirth < parentBirth) {
-    return "Ngày sinh của con phải nhỏ hơn của cha mẹ.";
+    return t("tree.ageConstraint.childOlder");
   }
 
   const minChildBirth = addYearsToIsoDate(parentBirth, 16);
   if (minChildBirth && childBirth < minChildBirth) {
-    return "Cha/mẹ phải lớn hơn con ít nhất 16 tuổi.";
+    return t("tree.ageConstraint.parentTooYoung", { years: 16 });
   }
 
   return "";
@@ -1580,13 +1580,13 @@ const coupleActionPerson = useMemo(
       if (relation.type !== "parent_child") return false;
       const parent = getDraftOrExistingPerson(relation.parent);
       const child = getDraftOrExistingPerson(relation.child);
-      return parentChildAgeConstraintMessage(personBirthValue(child), personBirthValue(parent));
+      return parentChildAgeConstraintMessage(personBirthValue(child), personBirthValue(parent), t);
     });
 
     if (invalidAgeRelation) {
       const parent = getDraftOrExistingPerson(invalidAgeRelation.parent);
       const child = getDraftOrExistingPerson(invalidAgeRelation.child);
-      const message = parentChildAgeConstraintMessage(personBirthValue(child), personBirthValue(parent));
+      const message = parentChildAgeConstraintMessage(personBirthValue(child), personBirthValue(parent), t);
       setGenealogyAiError(message);
       setConstraintNotice(message);
       return;
@@ -2368,8 +2368,8 @@ const coupleActionPerson = useMemo(
     setCardSizes(normalizedSettings.card_sizes);
     setTreeStyle(databaseTreeStyle);
     setTreeTitleLabel(normalizeTreeTitleLabel(databaseTreeStyle.titleLabel));
-    setStatus(`Đã xóa ${removedKeys.length} layout local. Dữ liệu đăng nhập được giữ nguyên.`);
-  }, [databaseTreeStyle, layoutSettings]);
+    setStatus(t("tree.layoutStatus.clearedLocal", { count: removedKeys.length }));
+  }, [databaseTreeStyle, layoutSettings, t]);
 
   const resetLayoutFromDatabase = useCallback(async () => {
     clearFamilyTreeLocalStorage();
@@ -2385,9 +2385,9 @@ const coupleActionPerson = useMemo(
     setDisplayNodePositions({});
     setTreeStyle(databaseTreeStyle);
     setTreeTitleLabel(normalizeTreeTitleLabel(databaseTreeStyle.titleLabel));
-    setStatus("Đang tải lại layout từ database...");
+    setStatus(t("tree.layoutStatus.reloading"));
     await onReload?.();
-  }, [databaseTreeStyle, onReload]);
+  }, [databaseTreeStyle, onReload, t]);
 
   const saveLayoutToDatabase = useCallback(async () => {
     if (!canEditAll) {
@@ -2401,7 +2401,7 @@ const coupleActionPerson = useMemo(
       const saved = await persistFullLayout(people, lineRoutes, cardSizes);
       if (saved) {
         await onReload?.();
-        setStatus("Đã lưu layout vào database.");
+        setStatus(t("tree.layoutStatus.saved"));
       }
     } finally {
       setSaving(false);
@@ -2450,7 +2450,7 @@ const coupleActionPerson = useMemo(
       return;
     }
     if (isBirthDateInFuture(form.birth_date)) {
-      setConstraintNotice("Ngày sinh không được lớn hơn ngày hiện tại.");
+      setConstraintNotice(t("tree.ageConstraint.futureBirth"));
       return;
     }
     const saveFormError = personFormError(form, t);
@@ -2702,7 +2702,7 @@ const submitCreateDialog = async () => {
   }
 
   if (isBirthDateInFuture(form.birth_date)) {
-    setConstraintNotice("Ngày sinh không được lớn hơn ngày hiện tại.");
+    setConstraintNotice(t("tree.ageConstraint.futureBirth"));
     return;
   }
 
@@ -3291,7 +3291,7 @@ const submitCreateDialog = async () => {
                           color: treeTitleLabel.color === DEFAULT_TREE_TITLE_LABEL.color ? undefined : treeTitleLabel.color,
                           "--tree-title-size": `${treeTitleLabel.fontSize}px`,
                         }}
-                        title={canEditAll ? "Kéo để di chuyển tiêu đề, dùng nút bên dưới để đổi màu/cỡ chữ" : undefined}
+                        title={canEditAll ? t("tree.titleTools.dragHint") : undefined}
                         onPointerDown={beginTreeTitleDrag}
                         onPointerMove={moveTreeTitleDrag}
                         onPointerUp={endTreeTitleDrag}
@@ -3301,22 +3301,22 @@ const submitCreateDialog = async () => {
                         <strong>{defaultTreeTitleText}</strong>
                         {canEditAll ? (
                           <div className="fte-canvasTitleTools" onPointerDown={(event) => event.stopPropagation()}>
-                            <label className="fte-canvasTitleColor" title="Đổi màu chữ">
+                            <label className="fte-canvasTitleColor" title={t("tree.titleTools.color")}>
                               <span className="material-symbols-outlined">palette</span>
                               <input
                                 type="color"
                                 value={treeTitleLabel.color}
                                 onChange={(event) => updateTreeTitleLabel({ color: event.target.value })}
-                                aria-label="Đổi màu chữ tiêu đề"
+                                aria-label={t("tree.titleTools.colorAria")}
                               />
                             </label>
-                            <button type="button" onClick={() => resizeTreeTitleLabel(-4)} title="Thu nhỏ chữ">
+                            <button type="button" onClick={() => resizeTreeTitleLabel(-4)} title={t("tree.titleTools.smaller")}>
                               <span className="material-symbols-outlined">text_decrease</span>
                             </button>
-                            <button type="button" onClick={() => resizeTreeTitleLabel(4)} title="Phóng to chữ">
+                            <button type="button" onClick={() => resizeTreeTitleLabel(4)} title={t("tree.titleTools.larger")}>
                               <span className="material-symbols-outlined">text_increase</span>
                             </button>
-                            <button type="button" onClick={resetTreeTitleLabel} title="Đặt lại vị trí, màu và cỡ chữ">
+                            <button type="button" onClick={resetTreeTitleLabel} title={t("tree.titleTools.reset")}>
                               <span className="material-symbols-outlined">restart_alt</span>
                             </button>
                           </div>
@@ -3496,7 +3496,7 @@ const submitCreateDialog = async () => {
           >
             <div className="fte-modalHeader">
               <div>
-                <span>Chọn thao tác</span>
+                <span>{t("tree.coupleChoices.pickAction")}</span>
                 <h3>{fullName(coupleActionPerson, t("tree.card.fallbackName"))}</h3>
               </div>
               <button type="button" className="fte-iconButton" onClick={() => setCouplePersonAction(null)} title={t("common.close")}>
@@ -3507,18 +3507,18 @@ const submitCreateDialog = async () => {
             <div className="fte-personActionChoices">
               <button type="button" className="fte-personActionChoice" disabled={!canEditAll} onClick={() => openCreateDialogForPerson(coupleActionPerson, "spouse")}>
                 <span className="material-symbols-outlined">favorite</span>
-                <strong>Tạo thêm vợ/chồng</strong>
-                <small>Tạo card mới và liên kết quan hệ hôn phối với người này.</small>
+                <strong>{t("tree.coupleChoices.addSpouse")}</strong>
+                <small>{t("tree.coupleChoices.addSpouseHint")}</small>
               </button>
               <button type="button" className="fte-personActionChoice" disabled={!canEditAll} onClick={() => openCreateDialogForPerson(coupleActionPerson, "child")}>
                 <span className="material-symbols-outlined">person_add</span>
-                <strong>Tạo thêm con</strong>
-                <small>Tạo hồ sơ con mới và nối vào gia đình hiện tại nếu có.</small>
+                <strong>{t("tree.coupleChoices.addChild")}</strong>
+                <small>{t("tree.coupleChoices.addChildHint")}</small>
               </button>
               <button type="button" className="fte-personActionChoice" onClick={() => openPersonEditor(coupleActionPerson)}>
                 <span className="material-symbols-outlined">badge</span>
-                <strong>Thông tin</strong>
-                <small>Đổi thông tin cá nhân hoặc chỉ định thêm vợ/con/cha/mẹ đã có.</small>
+                <strong>{t("tree.coupleChoices.info")}</strong>
+                <small>{t("tree.coupleChoices.infoHint")}</small>
               </button>
             </div>
           </div>

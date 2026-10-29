@@ -2646,6 +2646,34 @@
       "reasonField": "Lý do lưu trữ",
       "reasonPlaceholder": "Nhập lý do chi tiết...",
       "archiveNow": "Lưu trữ ngay"
+    },
+    "ageConstraint": {
+      "sameBirth": "Cha/mẹ và con không được có cùng ngày tháng năm sinh.",
+      "childOlder": "Ngày sinh của con phải nhỏ hơn của cha mẹ.",
+      "parentTooYoung": "Cha/mẹ phải lớn hơn con ít nhất {{years}} tuổi.",
+      "futureBirth": "Ngày sinh không được lớn hơn ngày hiện tại."
+    },
+    "layoutStatus": {
+      "clearedLocal": "Đã xóa {{count}} layout local. Dữ liệu đăng nhập được giữ nguyên.",
+      "reloading": "Đang tải lại layout từ database...",
+      "saved": "Đã lưu layout vào database."
+    },
+    "titleTools": {
+      "dragHint": "Kéo để di chuyển tiêu đề, dùng nút bên dưới để đổi màu/cỡ chữ",
+      "color": "Đổi màu chữ",
+      "colorAria": "Đổi màu chữ tiêu đề",
+      "smaller": "Thu nhỏ chữ",
+      "larger": "Phóng to chữ",
+      "reset": "Đặt lại vị trí, màu và cỡ chữ"
+    },
+    "coupleChoices": {
+      "pickAction": "Chọn thao tác",
+      "addSpouse": "Tạo thêm vợ/chồng",
+      "addSpouseHint": "Tạo card mới và liên kết quan hệ hôn phối với người này.",
+      "addChild": "Tạo thêm con",
+      "addChildHint": "Tạo hồ sơ con mới và nối vào gia đình hiện tại nếu có.",
+      "info": "Thông tin",
+      "infoHint": "Đổi thông tin cá nhân hoặc chỉ định thêm vợ/con/cha/mẹ đã có."
     }
   },
   "calendar": {

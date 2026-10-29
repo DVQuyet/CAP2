@@ -2646,6 +2646,34 @@
       "reasonField": "Reason for archiving",
       "reasonPlaceholder": "Enter the detailed reason...",
       "archiveNow": "Archive now"
+    },
+    "ageConstraint": {
+      "sameBirth": "A parent and child cannot share the same date of birth.",
+      "childOlder": "The child's date of birth must be later than the parent's.",
+      "parentTooYoung": "A parent must be at least {{years}} years older than the child.",
+      "futureBirth": "Date of birth cannot be in the future."
+    },
+    "layoutStatus": {
+      "clearedLocal": "Cleared {{count}} local layout entries. Your sign-in data was kept.",
+      "reloading": "Reloading the layout from the database...",
+      "saved": "Layout saved to the database."
+    },
+    "titleTools": {
+      "dragHint": "Drag to move the title; use the buttons below to change its color and size",
+      "color": "Change text color",
+      "colorAria": "Change title text color",
+      "smaller": "Smaller text",
+      "larger": "Larger text",
+      "reset": "Reset position, color and size"
+    },
+    "coupleChoices": {
+      "pickAction": "Choose an action",
+      "addSpouse": "Add a spouse",
+      "addSpouseHint": "Create a new card and link it as this person's spouse.",
+      "addChild": "Add a child",
+      "addChildHint": "Create a new child profile and attach it to the current family, if any.",
+      "info": "Details",
+      "infoHint": "Edit personal details or link an existing spouse, child or parent."
     }
   },
   "calendar": {
