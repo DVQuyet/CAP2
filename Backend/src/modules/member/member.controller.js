@@ -1,6 +1,10 @@
 const { parsePageParams, finishPage } = require('../../shared/utils/pagination');
 const db = require("../../config/db");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const { getJwtSecret } = require("../../config/jwt");
+const { invalidateAccountCache } = require("../../middleware/authMiddleware");
+const { updatePasswordHash } = require("../../shared/utils/passwordChange");
 const { getRoleName } = require("../../config/roles");
 const {
   getTreeEditSessionForAccount,
@@ -1156,9 +1160,27 @@ exports.changePassword = async (req, res) => {
     }
 
     const hashed = await bcrypt.hash(next, 10);
-    await db.query("UPDATE accounts SET password = ? WHERE id = ?", [hashed, accountId]);
+    await updatePasswordHash(db, accountId, hashed);
+    invalidateAccountCache(accountId);
 
-    return res.json({ success: true, message: "Đã đổi mật khẩu thành công" });
+    // Token cũ đã bị thu hồi; cấp token mới để người đang đổi mật khẩu không bị đăng xuất.
+    const roleName = req.user.role_name || getRoleName(req.user.role_id);
+    const token = jwt.sign(
+      {
+        id: accountId,
+        account_id: accountId,
+        person_id: req.user.person_id,
+        role_id: req.user.role_id,
+        role_name: roleName,
+        role: roleName,
+        email: req.user.email,
+        profile_completed: Number(req.user.profile_completed || 0),
+      },
+      getJwtSecret(),
+      { expiresIn: process.env.JWT_EXPIRES_IN || "24h" }
+    );
+
+    return res.json({ success: true, message: "Đã đổi mật khẩu thành công", token });
   } catch (error) {
     console.error("changePassword error:", error);
     return res.status(500).json({ success: false, message: "Lỗi đổi mật khẩu" });

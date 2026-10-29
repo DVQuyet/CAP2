@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiRequest } from "../../services/api";
-import { getStoredUser } from "../utils/auth";
+import { getStoredUser, persistAuthSession } from "../utils/auth";
 import "./ProfileDrawer.css";
 import { notify } from "../utils/toast";
 import { friendlyErrorMessage } from "../utils/friendlyError";
@@ -561,13 +561,16 @@ export default function ProfileDrawer({
     setSavingPassword(true);
 
     try {
-      await apiRequest("/api/member/password", {
+      const result = await apiRequest("/api/member/password", {
         method: "PUT",
         body: JSON.stringify({
           current_password: passwordForm.current_password,
           new_password: passwordForm.new_password,
         }),
       });
+
+      // Backend thu hồi token cũ khi đổi mật khẩu và trả token mới.
+      if (result?.token) persistAuthSession({ token: result.token });
 
       setPasswordForm({
         current_password: "",

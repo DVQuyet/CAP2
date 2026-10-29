@@ -117,7 +117,7 @@ const {
     getUploadContext,
 } = require('./src/shared/utils/media');
 
-const { verifyToken, checkRole, getAccountAccess } = require('./src/middleware/authMiddleware');
+const { verifyToken, checkRole, getAccountAccess, isTokenRevoked } = require('./src/middleware/authMiddleware');
 
 // 4. Cấu hình upload media: ảnh/video bài đăng được lưu trực tiếp vào MySQL LONGBLOB
 const upload = multer({
@@ -161,6 +161,7 @@ io.use(async (socket, next) => {
         if (!rows.length) return next(new Error('Socket account not found'));
         const access = await getAccountAccess(accountId);
         if (!access || access.disabled) return next(new Error('Socket account disabled'));
+        if (isTokenRevoked(access, decoded)) return next(new Error('Socket JWT revoked'));
         socket.user = { ...decoded, account_id: accountId };
         socket.accountContext = rows[0];
         next();

@@ -9,14 +9,29 @@ const ACCOUNT_CACHE_TTL_MS = Number(process.env.AUTH_ACCOUNT_CACHE_TTL_MS || 30 
 const ACCOUNT_CACHE_MAX = 5000;
 const accountCache = new Map();
 
+// Cột password_changed_at chỉ có sau khi migrate; thiếu cột thì bỏ qua kiểm tra đổi mật khẩu.
+let passwordChangedColumnMissing = false;
+
+async function selectAccountRow(accountId) {
+    if (!passwordChangedColumnMissing) {
+        try {
+            return await db.query(
+                'SELECT id, role_id, status, UNIX_TIMESTAMP(password_changed_at) AS password_changed_ts FROM accounts WHERE id = ? LIMIT 1',
+                [accountId]
+            );
+        } catch (error) {
+            if (error.code !== 'ER_BAD_FIELD_ERROR') throw error;
+            passwordChangedColumnMissing = true;
+        }
+    }
+    return db.query('SELECT id, role_id, status FROM accounts WHERE id = ? LIMIT 1', [accountId]);
+}
+
 async function loadAccountState(accountId) {
     const cached = accountCache.get(accountId);
     if (cached && cached.expiresAt > Date.now()) return cached.state;
 
-    const [rows] = await db.query(
-        'SELECT id, role_id, status FROM accounts WHERE id = ? LIMIT 1',
-        [accountId]
-    );
+    const [rows] = await selectAccountRow(accountId);
 
     let state = null;
     if (rows.length) {
@@ -31,7 +46,12 @@ async function loadAccountState(accountId) {
             // Bảng archived_members được tạo khi dùng lần đầu; chưa có bảng nghĩa là chưa ai bị lưu trữ.
             if (error.code !== 'ER_NO_SUCH_TABLE') throw error;
         }
-        state = { roleId: Number(rows[0].role_id), status: rows[0].status, archived };
+        state = {
+            roleId: Number(rows[0].role_id),
+            status: rows[0].status,
+            archived,
+            passwordChangedTs: Number(rows[0].password_changed_ts) || 0,
+        };
     }
 
     if (accountCache.size >= ACCOUNT_CACHE_MAX) accountCache.clear();
@@ -45,6 +65,12 @@ exports.getAccountAccess = async (accountId) => {
     const state = await loadAccountState(Number(accountId));
     if (!state) return null;
     return { ...state, disabled: state.archived || state.status === 'rejected', roleName: getRoleName(state.roleId) };
+};
+
+// Token cấp trước lần đổi/đặt lại mật khẩu gần nhất thì không còn hiệu lực (iat và mốc đều tính bằng giây).
+exports.isTokenRevoked = (state, decoded) => {
+    const issuedAt = Number(decoded?.iat);
+    return Boolean(state?.passwordChangedTs) && Number.isFinite(issuedAt) && issuedAt < state.passwordChangedTs;
 };
 
 // Gọi khi đổi role/khóa tài khoản để có hiệu lực ngay trên instance hiện tại.
@@ -97,6 +123,14 @@ exports.verifyToken = async (req, res, next) => {
                 success: false,
                 code: 'ACCOUNT_DISABLED',
                 message: "Tài khoản của bạn đã bị khóa, vui lòng liên hệ với manager."
+            });
+        }
+
+        if (exports.isTokenRevoked(state, decoded)) {
+            return res.status(401).json({
+                success: false,
+                code: 'TOKEN_INVALID',
+                message: "Mật khẩu đã được thay đổi. Vui lòng đăng nhập lại!"
             });
         }
 

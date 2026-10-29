@@ -15,6 +15,7 @@ const STEPS = [
     ['archived members', '../../modules/manager/archive.service', ['ensureArchivedMembersTable']],
     ['archived members (auth)', '../../modules/auth/auth.controller', ['ensureArchivedMembersTable']],
     ['profile completed', '../utils/profileCompletion', ['ensureProfileCompletedColumn']],
+    ['password changed', '../utils/passwordChange', ['ensurePasswordChangedAtColumn']],
     ['social auth', '../../modules/auth/socialAuth.service', ['ensureSocialAuthSchema']],
     ['invitations', '../../modules/invitations/invitation.service', ['ensureInvitationSchema']],
     ['billing payments', '../../modules/billing/billing.service', ['ensurePaymentPurchaseColumns']],

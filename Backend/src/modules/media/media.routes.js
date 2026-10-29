@@ -2,7 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const db = require('../../config/db');
 const { getJwtSecret } = require('../../config/jwt');
-const { getAccountAccess } = require('../../middleware/authMiddleware');
+const { getAccountAccess, isTokenRevoked } = require('../../middleware/authMiddleware');
 const { ensureMediaAccessKeyColumn, isValidMediaAccessKey } = require('../../shared/utils/media');
 const router = express.Router();
 
@@ -27,7 +27,7 @@ async function canViewerAccessMedia(req, file) {
   const accountId = Number(decoded.id || decoded.account_id);
   if (!Number.isFinite(accountId) || accountId <= 0) return false;
   const access = await getAccountAccess(accountId);
-  if (!access || access.disabled) return false;
+  if (!access || access.disabled || isTokenRevoked(access, decoded)) return false;
   if (access.roleId === 1) return true;
   if (Number(file.owner_account_id) === accountId) return true;
   if (file.clan_id == null) return true;

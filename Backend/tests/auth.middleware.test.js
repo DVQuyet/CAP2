@@ -134,3 +134,59 @@ test('getAccountAccess dùng cho socket/media phản ánh trạng thái và role
     createMockDb(async () => [[]]);
     assert.strictEqual(await getAccountAccess(20), null);
 });
+
+test('token cấp trước lần đổi mật khẩu bị từ chối, token cấp sau thì qua', async () => {
+    const now = Math.floor(Date.now() / 1000);
+    createMockDb(async (sql) => (
+        /FROM accounts/.test(sql) ? [[{ id: 21, role_id: 3, status: 'active', password_changed_ts: now }]] : [[]]
+    ));
+    const old = await run(jwt.sign({ id: 21, iat: now - 60 }, process.env.JWT_SECRET, { expiresIn: '1h' }));
+    assert.strictEqual(old.res.statusCode, 401);
+    assert.strictEqual(old.res.body.code, 'TOKEN_INVALID');
+    assert.strictEqual(old.nextCalled, false);
+
+    const fresh = await run(jwt.sign({ id: 21, iat: now }, process.env.JWT_SECRET, { expiresIn: '1h' }));
+    assert.strictEqual(fresh.nextCalled, true);
+});
+
+test('isTokenRevoked: chưa từng đổi mật khẩu thì không thu hồi', () => {
+    const { isTokenRevoked } = require('../src/middleware/authMiddleware');
+    assert.strictEqual(isTokenRevoked({ passwordChangedTs: 0 }, { iat: 10 }), false);
+    assert.strictEqual(isTokenRevoked({ passwordChangedTs: 100 }, { iat: 99 }), true);
+    assert.strictEqual(isTokenRevoked({ passwordChangedTs: 100 }, { iat: 100 }), false);
+});
+
+test('updatePasswordHash ghi mốc đổi mật khẩu và lùi về UPDATE cũ khi chưa có cột', async () => {
+    const { updatePasswordHash } = require('../src/shared/utils/passwordChange');
+    let mock = createMockDb(async () => [{}]);
+    const changedAt = await updatePasswordHash(require('../src/config/db'), 5, 'hash');
+    assert.ok(changedAt > 0);
+    assert.strictEqual(mock.find(/password_changed_at/).length, 1);
+
+    mock = createMockDb(async (sql) => {
+        if (/password_changed_at/.test(sql)) {
+            const error = new Error('Unknown column');
+            error.code = 'ER_BAD_FIELD_ERROR';
+            throw error;
+        }
+        return [{}];
+    });
+    await updatePasswordHash(require('../src/config/db'), 5, 'hash');
+    assert.strictEqual(mock.calls.length, 2);
+    assert.match(mock.calls[1].sql, /^UPDATE accounts SET password = \? WHERE id = \?$/);
+});
+
+test('thiếu cột password_changed_at thì verifyToken vẫn chạy như cũ', async () => {
+    invalidateAccountCache();
+    createMockDb(async (sql) => {
+        if (/password_changed_ts/.test(sql)) {
+            const error = new Error('Unknown column');
+            error.code = 'ER_BAD_FIELD_ERROR';
+            throw error;
+        }
+        if (/FROM accounts/.test(sql)) return [[{ id: 22, role_id: 3, status: 'active' }]];
+        return [[]];
+    });
+    const { nextCalled } = await run(sign({ id: 22 }));
+    assert.strictEqual(nextCalled, true);
+});

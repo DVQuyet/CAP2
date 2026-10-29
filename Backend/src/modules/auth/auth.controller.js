@@ -5,6 +5,8 @@ const jwt = require('jsonwebtoken');
 const { getJwtSecret } = require('../../config/jwt');
 const { sendMail, isSmtpConfigured: isEmailConfigured } = require('../../shared/utils/email');
 const { getRoleName } = require('../../config/roles');
+const { invalidateAccountCache } = require('../../middleware/authMiddleware');
+const { updatePasswordHash } = require('../../shared/utils/passwordChange');
 const { ensureProfileCompletedColumn } = require('../../shared/utils/profileCompletion');
 const {
     attachSocialProviderToAccount,
@@ -405,7 +407,8 @@ exports.resetPasswordWithCode = async (req, res) => {
         }
 
         const hashed = await bcrypt.hash(newPassword, 10);
-        await db.query('UPDATE accounts SET password = ? WHERE id = ?', [hashed, token.account_id]);
+        await updatePasswordHash(db, token.account_id, hashed);
+        invalidateAccountCache(token.account_id);
         await clearResetToken(token.account_id);
 
         return res.json({ success: true, message: 'Đặt lại mật khẩu thành công. Bạn có thể đăng nhập.' });
