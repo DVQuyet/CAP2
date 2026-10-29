@@ -1,4 +1,5 @@
 const { callGroq } = require('./groqClient');
+const { checkGrounding } = require('./answerGroundingService');
 const {
     buildPlanPrompt,
     buildExplainPrompt,
@@ -85,7 +86,9 @@ async function getPlan({ message, history, userProfile, clanContext } = {}) {
     return parsed || fallbackPlan(message);
 }
 
-async function getExplanation({
+// Trả { text, rejected }: rejected = 'ungrounded' khi câu LLM chứa tên/năm/ngày không có trong dữ liệu đã đưa cho nó
+// (khi đó text là câu dựng theo luật, có thể rỗng để nơi gọi dùng câu trả lời của chính nó).
+async function getExplanationDetailed({
     intent,
     userMessage,
     resolvedData,
@@ -112,7 +115,19 @@ async function getExplanation({
 
     const raw = await callGroq(systemPrompt, userContent, 800, CHAT_REQUEST_OPTIONS);
     const text = String(raw || '').trim();
-    return text || fallbackExplain({ intent, relation, evidence, userProfile, clanContext });
+    if (!text) return { text: fallbackExplain({ intent, relation, evidence, userProfile, clanContext }), rejected: null };
+
+    // Mọi thứ LLM được thấy (userContent) là dữ liệu hợp lệ; tên/năm/ngày ngoài đó là bịa.
+    const grounding = checkGrounding(text, userContent);
+    if (!grounding.ok) {
+        console.warn(`[chatbot] Bác câu LLM (intent=${intent || ''}): tên lạ=${JSON.stringify(grounding.unknownNames)} số lạ=${JSON.stringify(grounding.unknownNumbers)}`);
+        return { text: fallbackExplain({ intent, relation, evidence, userProfile, clanContext }), rejected: 'ungrounded' };
+    }
+    return { text, rejected: null };
+}
+
+async function getExplanation(payload = {}) {
+    return (await getExplanationDetailed(payload)).text;
 }
 
 async function generateTitle(messages = []) {
@@ -136,8 +151,8 @@ async function planChatbotQuery(payload = {}) {
 }
 
 async function explainRelationship(payload = {}) {
-    const explanation = await getExplanation(payload);
-    return { success: Boolean(explanation), data: { success: Boolean(explanation), explanation } };
+    const { text: explanation, rejected } = await getExplanationDetailed(payload);
+    return { success: Boolean(explanation), data: { success: Boolean(explanation), explanation, rejected } };
 }
 
 async function generateConversationTitle({ messages } = {}) {
@@ -147,6 +162,7 @@ async function generateConversationTitle({ messages } = {}) {
 module.exports = {
     getPlan,
     getExplanation,
+    getExplanationDetailed,
     generateTitle,
     planChatbotQuery,
     explainRelationship,

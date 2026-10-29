@@ -19,7 +19,7 @@ async function buildExplanation({ relation, path, evidence } = {}) {
     });
 
     const explanation = String(result?.data?.explanation || '').trim();
-    if (!result.success || !result.data?.success || !explanation) {
+    if (!result.success || !result.data?.success || !explanation || result.data?.rejected) {
         return { explanation: fallback, aiUsed: false, source: 'rule_explanation' };
     }
 

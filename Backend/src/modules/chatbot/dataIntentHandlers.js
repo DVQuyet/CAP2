@@ -85,8 +85,10 @@ async function explainResolvedIntent({ intent, message, resolvedData, context })
         history: context.history || [],
     });
     const explanation = String(result?.data?.explanation || '').trim();
-    if (result.success && result.data?.success && explanation) return { explanation, aiUsed: true };
-    return { explanation: null, aiUsed: false };
+    const llmRejected = result?.data?.rejected || null;
+    if (result.success && result.data?.success && explanation && !llmRejected) return { explanation, aiUsed: true };
+    // Câu LLM bị bác (bịa tên/năm): dùng câu trả lời theo luật của nơi gọi, không dùng bản dựng sẵn của fallbackExplain.
+    return { explanation: null, aiUsed: false, llmRejected };
 }
 
 // Chỉ gửi cho LLM những trường cá nhân mà câu hỏi thực sự cần (địa chỉ, ghi chú, tiểu sử
@@ -252,7 +254,7 @@ async function handlePersonInfoIntent({ clanId, currentMemberId, message, parsed
         resolvedData,
         subjectPerson: profiles.length === 1 ? { id: profiles[0].id, name: relationshipEngine.personName(profiles[0]) } : null,
         people: profiles.map((person) => ({ id: person.id, name: relationshipEngine.personName(person) })),
-        ai: { plannerUsed: planner?.source === 'llm_planner' && planner.accepted, explanationUsed: ai.aiUsed },
+        ai: { plannerUsed: planner?.source === 'llm_planner' && planner.accepted, explanationUsed: ai.aiUsed, llmRejected: ai.llmRejected || null },
     };
 }
 
@@ -367,7 +369,7 @@ async function handleMemoriesIntent({ message, parsed, context, planner }) {
         source: 'database',
         planner,
         resolvedData,
-        ai: { plannerUsed: planner?.source === 'llm_planner' && planner.accepted, explanationUsed: ai.aiUsed },
+        ai: { plannerUsed: planner?.source === 'llm_planner' && planner.accepted, explanationUsed: ai.aiUsed, llmRejected: ai.llmRejected || null },
     };
 }
 
@@ -578,7 +580,7 @@ async function handleEventsIntent({ clanId, accountId = null, message, parsed, c
         source: 'database',
         planner,
         resolvedData,
-        ai: { plannerUsed: planner?.source === 'llm_planner' && planner.accepted, explanationUsed: ai.aiUsed },
+        ai: { plannerUsed: planner?.source === 'llm_planner' && planner.accepted, explanationUsed: ai.aiUsed, llmRejected: ai.llmRejected || null },
     };
 }
 
@@ -614,7 +616,7 @@ async function handleGeneralChatIntent({ message, parsed, context, planner }) {
         source: 'assistant',
         planner,
         resolvedData,
-        ai: { plannerUsed: planner?.source === 'llm_planner' && planner.accepted, explanationUsed: ai.aiUsed },
+        ai: { plannerUsed: planner?.source === 'llm_planner' && planner.accepted, explanationUsed: ai.aiUsed, llmRejected: ai.llmRejected || null },
     };
 }
 
