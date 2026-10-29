@@ -7,6 +7,9 @@ const SOCKET_URL = (import.meta.env.VITE_SOCKET_URL || API_BASE_URL).replace(/\/
 let socket = null;
 let currentAccountId = null;
 
+// Token đăng nhập hiện hành: đọc lại mỗi lần (kết nối lại) để dùng token mới sau khi đổi mật khẩu.
+const readCurrentToken = () => localStorage.getItem("auth_token") || localStorage.getItem("token") || "";
+
 export function connectSocket(accountId, token) {
   if (!accountId || !token) {
     console.warn("Missing accountId or token. Socket not connected.");
@@ -28,7 +31,7 @@ export function connectSocket(accountId, token) {
   }
 
   socket = io(SOCKET_URL, {
-    auth: { token },
+    auth: (callback) => callback({ token: readCurrentToken() || token }),
     transports: ["polling", "websocket"],
     reconnection: true,
     reconnectionAttempts: 5,
@@ -51,8 +54,16 @@ export function connectSocket(accountId, token) {
     console.error("Socket connection error:", error.message);
   });
 
+  const thisSocket = socket;
   socket.on("disconnect", (reason) => {
     console.log("Socket disconnected:", reason);
+    // Server chủ động ngắt (đổi mật khẩu, đổi vai trò, khóa tài khoản): client không tự nối lại.
+    // Thử một lần với token hiện hành; token bị thu hồi hay tài khoản bị khóa thì server từ chối (connect_error) và dừng ở đây.
+    if (reason === "io server disconnect") {
+      setTimeout(() => {
+        if (socket === thisSocket && readCurrentToken()) thisSocket.connect();
+      }, 1000);
+    }
   });
 
   return socket;

@@ -1,4 +1,6 @@
 const { invalidateAccountCache } = require('../../middleware/authMiddleware');
+const { updatePasswordHash } = require('../../shared/utils/passwordChange');
+const { disconnectAccountSockets } = require('../../shared/utils/realtime');
 const {
     ensureArchivedMembersTable,
 } = require('./archive.service');
@@ -441,6 +443,7 @@ const archiveMember = async(req, res) => {
         );
 
         invalidateAccountCache(targetAccountId);
+        disconnectAccountSockets(req, targetAccountId);
         return res.json({ success: true, message: 'Đã chuyển thành viên vào kho lưu trữ.' });
     } catch (error) {
         console.error('archiveMember error:', error);
@@ -758,6 +761,7 @@ const updateMemberByManager = async(req, res) => {
 
                 await db.query('UPDATE accounts SET status = ? WHERE id = ?', [st, targetAccountId]);
                 invalidateAccountCache(targetAccountId);
+                disconnectAccountSockets(req, targetAccountId);
             }
         }
 
@@ -777,6 +781,7 @@ const updateMemberByManager = async(req, res) => {
             if (rid !== Number(full.role_id)) {
                 await db.query('UPDATE accounts SET role_id = ? WHERE id = ?', [rid, targetAccountId]);
                 invalidateAccountCache(targetAccountId);
+                disconnectAccountSockets(req, targetAccountId);
             }
         }
 
@@ -786,7 +791,10 @@ const updateMemberByManager = async(req, res) => {
                 return res.status(400).json({ success: false, message: 'Mật khẩu mới tối thiểu 6 ký tự' });
             }
             const hashed = await bcrypt.hash(np, 10);
-            await db.query('UPDATE accounts SET password = ? WHERE id = ?', [hashed, targetAccountId]);
+            // Đặt mật khẩu hộ: thu hồi token cũ của người đó và ngắt realtime, như khi họ tự đổi.
+            await updatePasswordHash(db, targetAccountId, hashed);
+            invalidateAccountCache(targetAccountId);
+            disconnectAccountSockets(req, targetAccountId);
         }
 
         const strOrKeep = (key, current) => {

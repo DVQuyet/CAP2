@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 const { getJwtSecret } = require("../../config/jwt");
 const { invalidateAccountCache } = require("../../middleware/authMiddleware");
 const { updatePasswordHash } = require("../../shared/utils/passwordChange");
+const { disconnectAccountSockets } = require("../../shared/utils/realtime");
 const { getRoleName } = require("../../config/roles");
 const {
   getTreeEditSessionForAccount,
@@ -1163,6 +1164,7 @@ exports.changePassword = async (req, res) => {
     const hashed = await bcrypt.hash(next, 10);
     await updatePasswordHash(db, accountId, hashed);
     invalidateAccountCache(accountId);
+    disconnectAccountSockets(req, accountId);
 
     // Token cũ đã bị thu hồi; cấp token mới để người đang đổi mật khẩu không bị đăng xuất.
     const roleName = req.user.role_name || getRoleName(req.user.role_id);

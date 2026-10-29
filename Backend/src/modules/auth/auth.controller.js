@@ -8,6 +8,7 @@ const { getRoleName } = require('../../config/roles');
 const { consumeOAuthCode } = require('./oauthCodeStore');
 const { invalidateAccountCache } = require('../../middleware/authMiddleware');
 const { updatePasswordHash } = require('../../shared/utils/passwordChange');
+const { disconnectAccountSockets } = require('../../shared/utils/realtime');
 const { ensureProfileCompletedColumn } = require('../../shared/utils/profileCompletion');
 const {
     attachSocialProviderToAccount,
@@ -428,6 +429,7 @@ exports.resetPasswordWithCode = async (req, res) => {
         const hashed = await bcrypt.hash(newPassword, 10);
         await updatePasswordHash(db, token.account_id, hashed);
         invalidateAccountCache(token.account_id);
+        disconnectAccountSockets(req, token.account_id);
         await clearResetToken(token.account_id);
 
         return res.json({ success: true, message: 'Đặt lại mật khẩu thành công. Bạn có thể đăng nhập.' });

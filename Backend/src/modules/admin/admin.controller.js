@@ -1,4 +1,6 @@
 const { invalidateAccountCache } = require('../../middleware/authMiddleware');
+const { updatePasswordHash } = require('../../shared/utils/passwordChange');
+const { disconnectAccountSockets } = require('../../shared/utils/realtime');
 const db = require("../../config/db");
 const bcrypt = require("bcryptjs");
 const { deletePersonCompletely } = require("../../shared/utils/personDeletion");
@@ -1150,6 +1152,7 @@ exports.updateAccountAccess = async (req, res) => {
     }
     const acc = rows[0];
     const body = req.body || {};
+    let securityChanged = false;
 
     const email = normalizeText(body.email).toLowerCase();
     if (email) await connection.query("UPDATE accounts SET email = ? WHERE id = ?", [email, targetId]);
@@ -1158,7 +1161,9 @@ exports.updateAccountAccess = async (req, res) => {
       const pwd = String(body.password);
       if (pwd.length < 6) throw Object.assign(new Error("Mật khẩu tối thiểu 6 ký tự"), { status: 400 });
       const hashed = await bcrypt.hash(pwd, 10);
-      await connection.query("UPDATE accounts SET password = ? WHERE id = ?", [hashed, targetId]);
+      // Đặt mật khẩu hộ: thu hồi token cũ của người đó (hiệu lực sau commit, xem bên dưới).
+      await updatePasswordHash(connection, targetId, hashed);
+      securityChanged = true;
     }
 
     if (body.role_id !== undefined) {
@@ -1167,7 +1172,7 @@ exports.updateAccountAccess = async (req, res) => {
       const rid = Number(body.role_id);
       if (![2, 3].includes(rid)) throw Object.assign(new Error("Chỉ gán vai trò Manager hoặc Member"), { status: 400 });
       await connection.query("UPDATE accounts SET role_id = ? WHERE id = ?", [rid, targetId]);
-      invalidateAccountCache(targetId);
+      securityChanged = true;
     }
 
     if (body.status !== undefined) {
@@ -1175,6 +1180,7 @@ exports.updateAccountAccess = async (req, res) => {
       if (["pending", "active", "rejected"].includes(st)) {
         if (targetId === selfId && st !== "active") throw Object.assign(new Error("Không thể khóa tài khoản admin đang đăng nhập"), { status: 400 });
         await connection.query("UPDATE accounts SET status = ? WHERE id = ?", [st, targetId]);
+        securityChanged = true;
       }
     }
 
@@ -1203,6 +1209,11 @@ exports.updateAccountAccess = async (req, res) => {
     }
 
     await connection.commit();
+    if (securityChanged) {
+      // Sau commit mới xóa cache/ngắt socket, để lần kết nối lại đọc đúng trạng thái đã lưu.
+      invalidateAccountCache(targetId);
+      disconnectAccountSockets(req, targetId);
+    }
     return res.json({ success: true, message: "Đã cập nhật tài khoản" });
   } catch (e) {
     try { await connection.rollback(); } catch (_) {}

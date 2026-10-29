@@ -85,6 +85,11 @@ app.locals.emitToAccount = (accountId, eventName, payload) => {
     io.to(`account_${accountId}`).emit(eventName, payload);
 };
 
+app.locals.disconnectAccount = (accountId) => {
+    if (!accountId) return;
+    io.in(`account_${accountId}`).disconnectSockets(true);
+};
+
 app.locals.emitToClan = (clanId, eventName, payload) => {
     if (!clanId) return;
     io.to(`clan_${clanId}`).emit(eventName, payload);
