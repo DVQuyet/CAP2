@@ -12,6 +12,7 @@ import { formatLunarFullFromSolar } from "../../../shared/utils/lunarCalendar";
 import DateInput from "../../../shared/components/DateInput";
 import { isoToVietnamDate, vietnamDateToIso } from "../../../shared/utils/dateFormat";
 import { compactPayload, fullName } from "../utils/managerData";
+import { Trans } from "react-i18next";
 import { useLanguage } from "../../../i18n/LanguageContext";
 import "./manager.css";
 import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
@@ -1025,9 +1026,13 @@ export default function AccountPage() {
         <div className="member-pro-toolbar">
           <div>
             <h3>{t("manager.accounts.list.title")}</h3>
-            <p dangerouslySetInnerHTML={{ 
-              __html: t("manager.accounts.list.showing", { count: filteredMembers.length, total: members.length }) 
-            }} />
+            <p>
+              <Trans
+                i18nKey="manager.accounts.list.showing"
+                values={{ count: filteredMembers.length, total: members.length }}
+                components={{ strong: <strong /> }}
+              />
+            </p>
           </div>
 
           <div className="member-pro-toolbar-actions">

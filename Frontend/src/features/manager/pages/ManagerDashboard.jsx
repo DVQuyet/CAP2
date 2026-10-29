@@ -10,6 +10,7 @@ import {
 import ManagerDashboardCharts from "../components/ManagerDashboardCharts";
 import { getStoredUser } from "../../../shared/utils/auth";
 import { formatDateTime } from "../utils/managerData";
+import { Trans } from "react-i18next";
 import { useLanguage } from "../../../i18n/LanguageContext";
 import ErrorState from "../../../shared/components/ErrorState";
 
@@ -193,9 +194,9 @@ export default function ManagerDashboard() {
         {t("manager.dashboard.welcome", { name: currentUser?.name || currentUser?.display_name || "Manager" })}
       </h2>
 
-      <p dangerouslySetInnerHTML={{ 
-        __html: t("manager.dashboard.pendingSummary", { count: totalPending }) 
-      }} />
+      <p>
+        <Trans i18nKey="manager.dashboard.pendingSummary" values={{ count: totalPending }} components={{ strong: <strong /> }} />
+      </p>
     </div>
   </div>
 
