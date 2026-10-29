@@ -4,7 +4,7 @@ const { createRequire } = require("module");
 const path = require("path");
 
 const db = require("../../Backend/src/config/db");
-const { verifyToken, checkRole } = require("../../Backend/src/middleware/authMiddleware");
+const { verifyToken, checkRole, authenticateMediaToken } = require("../../Backend/src/middleware/authMiddleware");
 const { ensureNotificationSchema } = require("../../Backend/src/shared/utils/notifications");
 
 const backendRequire = createRequire(path.resolve(__dirname, "..", "..", "Backend", "package.json"));
@@ -444,15 +444,29 @@ const canReadRecording = async (req, recording) => {
   return false;
 };
 
-router.use((req, _res, next) => {
+// <audio> không gửi được header Authorization: tải ghi âm nhận token media (scope 'media') qua ?token=.
+// JWT đăng nhập không được dùng ở đây; các route khác của voice vẫn bắt buộc verifyToken + header.
+router.use(async (req, res, next) => {
   const token = typeof req.query?.token === "string" ? req.query.token : "";
   if (req.method === "GET" && /\/recordings\/\d+\/audio$/.test(req.path) && token && !req.headers.authorization) {
-    req.headers.authorization = `Bearer ${token}`;
+    try {
+      if (!(await authenticateMediaToken(req, token))) {
+        return res.status(401).json({ success: false, code: "TOKEN_INVALID", message: "Token không hợp lệ hoặc đã hết hạn!" });
+      }
+      req.mediaAuthenticated = true;
+    } catch (error) {
+      console.error("voice media token error:", error.message);
+      return res.status(503).json({ success: false, message: "Không thể xác thực lúc này. Vui lòng thử lại." });
+    }
   }
   next();
 });
 
-router.use(verifyToken, checkRole(["admin", "manager", "member"]));
+const allowVoiceRoles = checkRole(["admin", "manager", "member"]);
+router.use((req, res, next) => {
+  if (req.mediaAuthenticated) return allowVoiceRoles(req, res, next);
+  return verifyToken(req, res, (error) => (error ? next(error) : allowVoiceRoles(req, res, next)));
+});
 
 router.post("/recordings", upload.single("audio"), async (req, res) => {
   try {
