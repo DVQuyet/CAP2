@@ -147,6 +147,23 @@ Prefix: `/api/admin`
 | PATCH | `/api/admin/posts/:postId/status` | admin | Cập nhật trạng thái bài viết |
 | DELETE | `/api/admin/posts/:postId` | admin | Xóa bài viết |
 
+## Trang chủ do admin quản lý
+
+Nội dung trang chủ công khai (hero, giới thiệu, tính năng, số liệu, tin tức, hướng dẫn). Chưa có dữ liệu hoặc chưa migrate `2026_10_30_site_content.sql` thì `content` là `null` và giao diện dùng nội dung i18n mặc định. Chỉ lưu văn bản thuần; link/ảnh chỉ nhận `http(s)://` hoặc đường dẫn bắt đầu bằng `/`.
+
+| Method | Endpoint | Quyền | Mô tả ngắn |
+|---|---|---|---|
+| GET | `/api/public/landing?lang=vi|en` | Public | `{ success, lang, content }`; `content` = `{ sections: { <key>: { visible, tag, title, body, quote, image_url, items_custom, items[] } }, order[] }` hoặc `null`. Cache bộ nhớ 60s, xóa khi admin ghi |
+| GET | `/api/admin/landing` | admin | Toàn bộ mục + mục con (kể cả ẩn), đủ vi/en; `tableMissing: true` nếu chưa migrate |
+| PUT | `/api/admin/landing/sections/:key` | admin | Cập nhật mục (`hero|about|features|stats|news|guide`): tag/title/body/quote_vi/en, image_url, is_visible, sort_order; tự tạo dòng mục nếu chưa có |
+| PUT | `/api/admin/landing/sections/order` | admin | Sắp xếp các mục, body `{ keys: [] }` |
+| DELETE | `/api/admin/landing/sections/:key` | admin | Khôi phục mặc định: xóa mục và mọi mục con |
+| POST | `/api/admin/landing/sections/:key/items` | admin | Thêm mục con (title/body/meta/link_label_vi/en, image_url, link_url, icon, is_visible) |
+| PUT | `/api/admin/landing/sections/:key/items/order` | admin | Sắp xếp mục con, body `{ ids: [] }` |
+| PUT | `/api/admin/landing/items/:id` | admin | Sửa mục con |
+| DELETE | `/api/admin/landing/items/:id` | admin | Xóa mục con |
+| POST | `/api/admin/landing/seed` | admin | "Lấy nội dung hiện tại": body `{ sections: [{ section_key, ..., items: [] }], overwrite? }`; chỉ tạo mục chưa có (trừ khi `overwrite`) |
+
 ## Manager
 
 Prefix: `/api/manager`

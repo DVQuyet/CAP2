@@ -100,6 +100,7 @@ const aiRoutes = require('./src/modules/ai/ai.routes');
 const chatbotRoutes = require('./src/modules/chatbot/chatbotRoutes');
 const voiceRoutes = require('../voice/backend/backendRoutes');
 const mediaRoutes = require('./src/modules/media/media.routes');
+const { publicRouter: siteContentPublicRoutes, adminRouter: siteContentAdminRoutes } = require('./src/modules/site-content/siteContent.routes');
 const calendarRoutes = require('./src/modules/calendar/calendar.routes');
 const invitationRoutes = require('./src/modules/invitations/invitation.routes');
 const meRoutes = require('./src/modules/me/me.routes');
@@ -404,6 +405,7 @@ app.post('/api/upload-memory-media', verifyToken, (req, res) => {
 
 // 8. Main API routes
 app.use('/api/media', mediaRoutes);
+app.use('/api/public', siteContentPublicRoutes);
 app.use('/api/calendar', calendarRoutes);
 app.use('/api/invitations', invitationRoutes);
 app.use('/api/me', meRoutes);
@@ -491,6 +493,7 @@ app.post(
 
 app.use('/api/manager', managerRoutes);
 app.use('/api/member', memberRoutes);
+app.use('/api/admin/landing', siteContentAdminRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/chatbot', chatbotRoutes);
