@@ -14,8 +14,24 @@ const ROLE_IDS = { admin: 1, manager: 2, member: 3 };
 
 const rand = () => crypto.randomBytes(4).toString('hex');
 
-async function createTempClan(label = '') {
+// Nhiều thao tác (duyệt tài khoản, thêm người) bị chặn nếu dòng họ chưa có gói: cho mỗi dòng họ tạm một gói tạm giới hạn lớn.
+const PLAN_CODE = `${NAME_PREFIX}PLAN`;
+async function getOrCreateTempPlan() {
+    const [rows] = await db.query('SELECT id FROM plans WHERE code = ? LIMIT 1', [PLAN_CODE]);
+    if (rows.length) return rows[0].id;
+    const [result] = await db.query(
+        "INSERT INTO plans (code, name, description, price_vnd, billing_cycle, person_limit, account_limit, is_active) VALUES (?, ?, 'Gói tạm cho test tích hợp', 0, 'free', 100000, 100000, 1)",
+        [PLAN_CODE, `${NAME_PREFIX}Plan`]
+    );
+    return result.insertId;
+}
+
+async function createTempClan(label = '', { withSubscription = true } = {}) {
     const [result] = await db.query('INSERT INTO clans (clan_name) VALUES (?)', [`${NAME_PREFIX}${Date.now()}_${rand()}${label ? `_${label}` : ''}`]);
+    if (withSubscription) {
+        const planId = await getOrCreateTempPlan();
+        await db.query("INSERT INTO subscriptions (clan_id, plan_id, status, started_at) VALUES (?, ?, 'free', NOW())", [result.insertId, planId]);
+    }
     return result.insertId;
 }
 
@@ -88,6 +104,8 @@ async function cleanupAll() {
     const convIds = await select('conversations', [byAccount('account_id')]);
     const msgIds = await select('chatbot_messages', [byAccount('account_id'), byClan('clan_id')]);
     const memIds = await select('family_memories', [byClan('clan_id')]);
+    const [planRows] = await db.query("SELECT id FROM plans WHERE code LIKE 'ITEST\\_%'");
+    const planIds = ids(planRows);
 
     // [bảng, [[cột, danh sách id]]]: điều kiện OR giữa các cặp có danh sách không rỗng.
     const plan = [
@@ -126,6 +144,7 @@ async function cleanupAll() {
         ['accounts', [['id', accountIds]]],
         ['people', [['id', personIds]]],
         ['clans', [['id', clanIds]]],
+        ['plans', [['id', planIds]]],
     ];
 
     const deleted = {};
