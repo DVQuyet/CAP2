@@ -25,21 +25,6 @@ export default function CreatePersonDialog({
   const handleCancel = () => requestClose(onCancel, dirty);
   if (!relation || !form) return null;
 
-  const titleMap = {
-    person: t("tree.createModal.titles.person"),
-    spouse: t("tree.createModal.titles.spouse"),
-    child: t("tree.createModal.titles.child"),
-    father: t("tree.createModal.titles.father"),
-    mother: t("tree.createModal.titles.mother"),
-  };
-
-  const relationTextMap = {
-    spouse: t("tree.relations.spouse"),
-    child: t("tree.relations.child"),
-    father: t("tree.relations.father"),
-    mother: t("tree.relations.mother"),
-  };
-
   const dialogTitle =
     relation !== "person" && selectedPerson
       ? t("tree.createModal.titles.for", { title: t(`tree.createModal.titles.${relation}`), name: fullName(selectedPerson, t("tree.card.fallbackName")) })

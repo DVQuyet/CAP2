@@ -199,10 +199,6 @@ export default function FamilyTreePage() {
   const remainingText = permissionExpiry
     ? `${Math.floor(remainingMs / 60000)}:${String(Math.floor((remainingMs % 60000) / 1000)).padStart(2, "0")}`
     : "";
-  const generationScopeText = permission.allowedGenerations?.length
-    ? permission.allowedGenerations.map((generation) => t("tree.page.generationLabel", { generation })).join(", ")
-    : t("tree.page.currentGenerationPlusMinus");
-
   const renderClanInfoModal = () => (
     <div className="member-clan-modalOverlay" role="dialog" aria-modal="true" onMouseDown={(event) => { if (event.target === event.currentTarget) setIsClanInfoOpen(false); }}>
       <div className="member-clan-modal">

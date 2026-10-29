@@ -10,7 +10,7 @@ const getAuthHeaders = () => {
 
 const parseResponse = async (res, fallbackMessage) => {
   const text = await res.text();
-  let result = {};
+  let result;
   try {
     result = text ? JSON.parse(text) : {};
   } catch {

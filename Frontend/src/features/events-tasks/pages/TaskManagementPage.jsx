@@ -958,21 +958,6 @@ const selectedAiTaskCount = aiTaskSuggestions.filter((task) => task.selected).le
 const aiTaskTotal = aiTaskSuggestions.length;
 const currentAiTaskTarget = clampAiTaskCount(aiTaskCount);
 
-const requestAiTasksForCreateForm = () => {
-  const prompt = [
-    aiPrompt.trim(),
-    eventForm.title ? `Sự kiện: ${eventForm.title}` : "",
-    eventForm.start_date ? `Ngày bắt đầu: ${eventForm.start_date}` : "",
-    eventForm.end_date ? `Ngày kết thúc: ${eventForm.end_date}` : "",
-    eventForm.description ? `Mô tả: ${eventForm.description}` : "",
-    `Hãy gợi ý đúng ${clampAiTaskCount(aiTaskCount)} công việc cần chuẩn bị cho sự kiện này.`,
-  ]
-    .filter(Boolean)
-    .join(". ");
-
-  requestAiEventCreate(prompt);
-};
-
 const submitSingleAiTaskSuggestion = async (task) => {
   if (!selectedEvent) {
     setError(t("eventsTasks.messages.selectEventFirst"));
@@ -1044,62 +1029,6 @@ const submitSingleAiTaskSuggestion = async (task) => {
     setBulkAssigning(false);
   }
 };
-
-const submitSelectedAiTaskSuggestions = async () => {
-  if (!selectedEvent) {
-    setError(t("eventsTasks.errors.selectEventFirst"));
-    return;
-  }
-
-  const selectedAiTasks = aiTaskSuggestions.filter((task) => task.selected);
-
-  if (!selectedAiTasks.length) {
-    setError(t("eventsTasks.messages.selectMemberFirst"));
-    return;
-  }
-
-  const invalidTask = selectedAiTasks.find((task) => {
-    const title = String(task.title || "").trim();
-    const description = String(task.description || "").trim();
-    const dueDate = task.due_date || null;
-    const memberIds = Array.isArray(task.member_account_ids)
-      ? task.member_account_ids
-      : [];
-
-    return !title || !description || !dueDate || !memberIds.length;
-  });
-
-  if (invalidTask) {
-    setError(t("eventsTasks.messages.taskInfoIncomplete"));
-    return;
-  }
-
-  setError("");
-  setMessage("");
-  setBulkAssigning(true);
-
-  try {
-    const result = await bulkAssignTasksAPI({
-      event_id: Number(selectedEvent.id),
-      ...(isAdmin && clanId ? { clan_id: Number(clanId) } : {}),
-      tasks: selectedAiTasks.map((task) => ({
-        title: String(task.title || "").trim(),
-        description: String(task.description || "").trim(),
-        due_date: vietnamDateToIso(task.due_date) || null,
-        member_account_ids: task.member_account_ids.map(Number),
-      })),
-    });
-
-    setMessage(result?.message || t("eventsTasks.messages.taskAssignedBulk", { count: selectedAiTasks.length }));
-    setAiTaskSuggestions([]);
-    await loadData();
-  } catch (err) {
-    setError(friendlyErrorMessage(err, t));
-  } finally {
-    setBulkAssigning(false);
-  }
-};
-
 
 const updateAssignedTask = async (task, draft) => {
   const taskId = Number(task?.task_id || task?.id);
@@ -1257,7 +1186,6 @@ const openEvent = (eventId) => {
               const myTaskCount = Number(event.my_task_count || 0);
               const myCompletedTaskCount = Number(event.my_completed_task_count || 0);
               const openTasks = Math.max(myTaskCount - myCompletedTaskCount, 0);
-              const hasAssignedTasks = myTaskCount > 0;
               
               return (
                 <button 

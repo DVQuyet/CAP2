@@ -47,7 +47,7 @@ const statusLabel = (status, t) => {
 const FOLDERS_PER_PAGE = 20;
 const ACCOUNTS_PER_PAGE = 10;
 
-const Pagination = ({ currentPage, totalItems, itemsPerPage, onPageChange, t }) => {
+const Pagination = ({ currentPage, totalItems, itemsPerPage, onPageChange }) => {
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   if (totalPages <= 1) return null;
 

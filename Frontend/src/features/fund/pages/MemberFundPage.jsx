@@ -16,12 +16,8 @@ export default function MemberFundPage() {
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
-  const totalIncome = transactions.filter(tx => tx.type === 'income' && tx.status === 'approved').reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
-  const totalExpense = transactions.filter(tx => tx.type === 'expense' && tx.status === 'approved').reduce((sum, tx) => sum + Number(tx.amount || 0), 0);
-  const currentBalance = totalIncome - totalExpense;
 
   // Filter main ledger for members
-  const pendingTransactions = transactions.filter(tx => tx.status === 'pending');
   
   const mainLedgerTransactions = transactions.filter(tx => {
     if (tx.status !== 'approved') return false;

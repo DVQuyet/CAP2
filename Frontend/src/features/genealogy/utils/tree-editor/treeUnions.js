@@ -14,11 +14,6 @@ export const isEndedUnion = (family) => ENDED_STATUSES.has(String(family?.relati
 export const isAdoptiveChildType = (type) => ADOPTIVE_TYPES.has(String(type || "").toLowerCase());
 export const isStepChildType = (type) => String(type || "").toLowerCase() === "step";
 
-const toId = (value) => {
-  const id = Number(value);
-  return Number.isFinite(id) && id > 0 ? id : null;
-};
-
 const childTypeOf = (row) => String(row?.child_type || "biological").toLowerCase();
 
 function unionRankFor(family, personId) {

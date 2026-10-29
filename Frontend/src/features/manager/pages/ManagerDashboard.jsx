@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   getDashboardData,
   getMembers,
@@ -15,7 +14,6 @@ import ErrorState from "../../../shared/components/ErrorState";
 
 export default function ManagerDashboard() {
   const { t } = useLanguage();
-  const navigate = useNavigate();
   const currentUser = getStoredUser();
   const [stats, setStats] = useState({ total_members: 0, total_managers: 0, total_pending: 0 });
 

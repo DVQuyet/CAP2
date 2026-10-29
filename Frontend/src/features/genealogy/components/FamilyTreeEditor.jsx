@@ -927,11 +927,6 @@ export default function FamilyTreeEditor({
   [people, dialog?.sourcePersonId, selectedPerson]
 );
 
-const dialogSourceSpouse = useMemo(
-  () => findSpouse(dialogSourcePerson, canonicalTree.families, people),
-  [dialogSourcePerson, canonicalTree.families, people]
-);
-
 const quickCreateSourcePerson = useMemo(
   () =>
     people.find((person) => Number(person.id) === Number(quickCreateDialog?.sourcePersonId)) ||

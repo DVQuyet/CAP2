@@ -113,7 +113,9 @@ const ClanRegister = () => {
     setLoading(true);
 
     try {
-      const { confirm_password, ...payload } = managerForm;
+      // Không gửi trường xác nhận mật khẩu lên server.
+      const payload = { ...managerForm };
+      delete payload.confirm_password;
 
       const res = await registerClanManagerAPI({
         clan_name: clanName,
