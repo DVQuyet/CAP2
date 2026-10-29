@@ -4,6 +4,7 @@ const router = express.Router();
 const aiController = require('./ai.controller');
 const { verifyToken, checkRole } = require('../../middleware/authMiddleware');
 const { createAuthRateLimit } = require('../../middleware/authRateLimit');
+const schemas = require('../../shared/validation/schemas');
 
 // Mỗi lần gọi tốn token LLM nên giới hạn theo tài khoản.
 const aiRateLimit = createAuthRateLimit({
@@ -27,6 +28,15 @@ router.post(
     checkRole(['admin', 'manager', 'member']),
     aiRateLimit,
     aiController.extractGenealogyAI
+);
+
+router.post(
+    '/person-biography/generate',
+    verifyToken,
+    checkRole(['admin', 'manager', 'member']),
+    aiRateLimit,
+    schemas.generatePersonBiography,
+    aiController.generatePersonBiographyAI
 );
 
 module.exports = router;

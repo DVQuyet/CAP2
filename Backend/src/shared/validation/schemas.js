@@ -371,7 +371,18 @@ const createCalendarEvent = validate({ body: calendarEventBody });
 const updateCalendarEvent = validate({ params: calendarEventId, body: calendarEventBody });
 const deleteCalendarEvent = validate({ params: calendarEventId });
 
+const generatePersonBiography = validate({
+    body: {
+        person_id: v.id({ required: true, label: 'person_id', message: 'person_id không hợp lệ' }),
+        tone: v.enum(['formal', 'friendly'], { label: 'giọng văn' }),
+        length: v.enum(['short', 'medium'], { label: 'độ dài' }),
+        language: v.enum(['vi', 'en'], { label: 'ngôn ngữ' }),
+        notes: v.string({ max: 600, label: 'ghi chú cho AI' }),
+    },
+});
+
 module.exports = {
+    generatePersonBiography,
     createCalendarEvent, updateCalendarEvent, deleteCalendarEvent,
     assignTask, createEventTask, bulkAssignTasks, updateAssignedTask, taskIdParam, updateTaskStatus,
     createFamilyMemory, updateFamilyMemory, updateMemberProfile, updateMyProfile,
