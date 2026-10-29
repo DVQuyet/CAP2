@@ -40,6 +40,7 @@ const MemberFundPage = lazy(() => import("../features/fund/pages/MemberFundPage"
 
 const FamilyTreePage = lazy(() => import("../features/genealogy/pages/UserFamilyTree"));
 const GenealogyBookPage = lazy(() => import("../features/genealogy-book/pages/GenealogyBookPage"));
+const DuplicatesPage = lazy(() => import("../features/duplicates/pages/DuplicatesPage"));
 const MemberDashboard = lazy(() => import("../features/member/pages/MemberDashboard"));
 const MemberProfile = lazy(() => import("../features/member/pages/MemberProfile"));
 const MemberSubmissions = lazy(() => import("../features/member/pages/MemberSubmissions"));
@@ -129,6 +130,7 @@ export default function AppRoutes() {
             <Route path="/manager/invitations" element={<InvitationPage />} />
             <Route path="/manager/genealogy" element={<GenealogySection />} />
             <Route path="/manager/genealogy-book" element={<GenealogyBookPage role="manager" />} />
+            <Route path="/manager/duplicates" element={<DuplicatesPage />} />
             <Route path="/manager/tasks" element={<TaskManagementPage role="manager" />} />
             <Route path="/manager/tasks/:taskId" element={<TaskManagementPage role="manager" />} />
             <Route path="/manager/time-capsule" element={<TimeCapsulePage role="manager" />} />

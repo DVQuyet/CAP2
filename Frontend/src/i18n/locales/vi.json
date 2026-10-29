@@ -3203,6 +3203,31 @@
       ]
     }
   },
+  "duplicates": {
+    "title": "Người có thể trùng lặp",
+    "intro": "Gợi ý các cặp hồ sơ có thể là cùng một người (dựa trên tên, năm sinh, cha mẹ, đời). Chỉ để xem và đối chiếu; hệ thống không tự gộp hồ sơ. Nếu đúng là trùng, hãy mở hồ sơ và chỉnh hoặc xóa thủ công.",
+    "entryLink": "Người trùng lặp",
+    "backToTree": "Về cây gia phả",
+    "emptyTitle": "Không có cặp nào đáng ngờ",
+    "emptyHint": "Chưa thấy hồ sơ nào có thể trùng, hoặc bạn đã xem hết.",
+    "count": "Đang hiện {{shown}} / {{total}} cặp",
+    "loadMore": "Tải thêm",
+    "score": "Điểm {{score}}/100",
+    "confidence": { "high": "Rất nghi trùng", "medium": "Khá nghi", "low": "Cần xem lại" },
+    "field": { "name": "Họ tên", "gender": "Giới tính", "generation": "Đời", "birth": "Sinh", "death": "Mất", "father": "Cha", "mother": "Mẹ" },
+    "gender": { "male": "Nam", "female": "Nữ" },
+    "unknown": "Chưa rõ",
+    "openProfile": "Mở hồ sơ {{name}}",
+    "notDuplicate": "Không trùng",
+    "confirmDismiss": "Đánh dấu {{a}} và {{b}} là hai người khác nhau? Cặp này sẽ không được gợi ý nữa.",
+    "reason": {
+      "name_exact": "Tên giống hệt (bỏ dấu)", "name_typo": "Tên gần giống (lệch 1 ký tự)", "name_similar": "Cùng họ và tên gọi",
+      "same_gender": "Cùng giới tính", "birth_year_same": "Cùng năm sinh", "birth_date_same": "Cùng ngày sinh",
+      "birth_year_close": "Năm sinh lệch 1-2 năm", "birth_year_far": "Năm sinh lệch nhiều", "death_year_far": "Năm mất lệch nhiều",
+      "same_parents": "Cùng cha và mẹ", "shared_parent": "Chung cha hoặc mẹ", "similar_parents": "Cha/mẹ trùng tên",
+      "same_generation": "Cùng đời", "generation_far": "Khác đời nhiều"
+    }
+  },
   "genealogyBook": {
     "title": "Sổ gia phả",
     "defaultClan": "Dòng họ",

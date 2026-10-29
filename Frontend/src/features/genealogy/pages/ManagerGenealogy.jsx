@@ -454,6 +454,9 @@ export default function GenealogySection() {
           <Link className="mgr-btnGhost" to="/manager/genealogy-book">
             {t("genealogyBook.entryLink")}
           </Link>
+          <Link className="mgr-btnGhost" to="/manager/duplicates">
+            {t("duplicates.entryLink")}
+          </Link>
         </div>
       </div>
 

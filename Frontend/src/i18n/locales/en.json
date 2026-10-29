@@ -3203,6 +3203,31 @@
       ]
     }
   },
+  "duplicates": {
+    "title": "Possible duplicate people",
+    "intro": "Pairs of records that may be the same person (based on name, birth year, parents, generation). For review only; the system never merges records automatically. If they really are duplicates, open the profiles and edit or delete manually.",
+    "entryLink": "Duplicate people",
+    "backToTree": "Back to the tree",
+    "emptyTitle": "No suspicious pairs",
+    "emptyHint": "No records look like duplicates, or you have reviewed them all.",
+    "count": "Showing {{shown}} of {{total}} pairs",
+    "loadMore": "Load more",
+    "score": "Score {{score}}/100",
+    "confidence": { "high": "Very likely", "medium": "Fairly likely", "low": "Worth a look" },
+    "field": { "name": "Full name", "gender": "Gender", "generation": "Generation", "birth": "Born", "death": "Died", "father": "Father", "mother": "Mother" },
+    "gender": { "male": "Male", "female": "Female" },
+    "unknown": "Unknown",
+    "openProfile": "Open profile of {{name}}",
+    "notDuplicate": "Not a duplicate",
+    "confirmDismiss": "Mark {{a}} and {{b}} as different people? This pair will no longer be suggested.",
+    "reason": {
+      "name_exact": "Identical name (ignoring accents)", "name_typo": "Nearly identical name (1 character off)", "name_similar": "Same surname and given name",
+      "same_gender": "Same gender", "birth_year_same": "Same birth year", "birth_date_same": "Same birth date",
+      "birth_year_close": "Birth years 1-2 apart", "birth_year_far": "Birth years far apart", "death_year_far": "Death years far apart",
+      "same_parents": "Same father and mother", "shared_parent": "Share a parent", "similar_parents": "Parents have the same names",
+      "same_generation": "Same generation", "generation_far": "Generations far apart"
+    }
+  },
   "genealogyBook": {
     "title": "Family Record Book",
     "defaultClan": "Clan",

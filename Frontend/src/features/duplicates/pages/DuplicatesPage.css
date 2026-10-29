@@ -1,0 +1,27 @@
+.dup-page { display: grid; gap: 14px; padding: 16px; max-width: 980px; margin: 0 auto; }
+.dup-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.dup-head h1 { margin: 0 0 4px; font-size: 1.4rem; }
+.dup-head p { margin: 0; color: #6b5b4d; font-size: 14px; }
+.dup-error { color: #a12a2a; }
+.dup-count { margin: 0; color: #6b5b4d; font-size: 14px; }
+.dup-card { display: grid; gap: 10px; padding: 12px; border: 1px solid #e3d8c8; border-radius: 10px; background: #fff; }
+.dup-cardHead { display: grid; gap: 6px; }
+.dup-score { font-weight: 700; }
+.dup-score.is-high { color: #a12a2a; }
+.dup-score.is-medium { color: #8a5a00; }
+.dup-score.is-low { color: #4b5563; }
+.dup-reasons { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.dup-reasons li { padding: 2px 8px; border-radius: 999px; background: #eef6ef; color: #1f6b3a; font-size: 12px; }
+.dup-reasons li.is-negative { background: #fdecea; color: #a12a2a; }
+.dup-compare { display: grid; font-size: 14px; }
+.dup-row { display: grid; grid-template-columns: 110px 1fr 1fr; gap: 8px; padding: 6px 4px; border-top: 1px solid #f0e9de; overflow-wrap: anywhere; }
+.dup-row.is-diff { background: #fff6dd; }
+.dup-rowHead { border-top: 0; }
+.dup-label { color: #6b5b4d; }
+.dup-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.dup-more { justify-self: center; }
+@media (max-width: 520px) {
+  .dup-page { padding: 12px; }
+  .dup-row { grid-template-columns: 76px 1fr 1fr; font-size: 13px; }
+  .dup-actions > * { flex: 1 1 100%; text-align: center; min-height: 40px; }
+}

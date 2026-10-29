@@ -938,3 +938,13 @@ export const rejectMemoryAPI = (id, reason) =>
   );
 
 
+
+// Gợi ý người trùng lặp (chỉ đọc) và đánh dấu "không trùng"; không có thao tác gộp.
+export const getDuplicateCandidates = ({ limit = 20, offset = 0 } = {}) =>
+  request(`/tree/duplicates?limit=${encodeURIComponent(limit)}&offset=${encodeURIComponent(offset)}`, {}, "Không thể tải gợi ý người trùng lặp");
+
+export const dismissDuplicatePair = (personAId, personBId) =>
+  request("/tree/duplicates/dismiss", {
+    method: "POST",
+    body: JSON.stringify({ person_a_id: personAId, person_b_id: personBId }),
+  }, "Không thể lưu trạng thái không trùng");
