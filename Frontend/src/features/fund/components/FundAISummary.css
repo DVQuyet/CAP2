@@ -1,0 +1,37 @@
+.fund-ai { margin-bottom: 1.5rem; padding: 16px; display: grid; gap: 12px; }
+.fund-ai-head h3 { margin: 0 0 4px; display: flex; align-items: center; gap: 6px; font-size: 1.05rem; }
+.fund-ai-head p { margin: 0; font-size: 13px; color: #6b5b4d; }
+.fund-ai-controls { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; }
+.fund-ai-controls label { display: grid; gap: 4px; font-size: 0.9rem; }
+.fund-ai-controls select,
+.fund-ai-controls input[type="date"] { min-height: 40px; font-size: 16px; box-sizing: border-box; }
+.fund-ai-check { display: flex !important; align-items: center; gap: 6px !important; min-height: 40px; }
+.fund-ai-range { display: flex; flex-wrap: wrap; gap: 10px; }
+.fund-ai-run {
+  min-height: 40px;
+  border: 1px solid #d9c9b5;
+  border-radius: 8px;
+  background: #faf5ee;
+  color: #5a3e2b;
+  padding: 8px 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.fund-ai-run:disabled { opacity: 0.6; cursor: not-allowed; }
+.fund-ai-error { color: #a12a2a; font-size: 14px; }
+.fund-ai-result { display: grid; gap: 10px; }
+.fund-ai-summary { margin: 0; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+.fund-ai-warning { color: #8a5a00; background: #fff6dd; border-radius: 6px; padding: 6px 8px; font-size: 13px; }
+.fund-ai-numbers summary { cursor: pointer; font-weight: 600; margin-bottom: 8px; }
+.fund-ai-numbers dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; margin: 0; }
+.fund-ai-numbers dl > div { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px dashed #e6dccd; padding: 4px 0; }
+.fund-ai-numbers dt { color: #6b5b4d; font-size: 13px; }
+.fund-ai-numbers dd { margin: 0; font-weight: 600; text-align: right; }
+.fund-ai-top { margin-top: 8px; font-size: 14px; }
+.fund-ai-top ol { margin: 4px 0 0; padding-left: 20px; overflow-wrap: anywhere; }
+.fund-ai-note { color: #6b5b4d; }
+@media (max-width: 520px) {
+  .fund-ai-controls { align-items: stretch; flex-direction: column; }
+  .fund-ai-run { width: 100%; }
+  .fund-ai-range { flex-direction: column; }
+}

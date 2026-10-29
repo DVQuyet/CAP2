@@ -390,6 +390,15 @@ const generatePostDraft = validate({
     },
 });
 
+const generateFundSummary = validate({
+    body: {
+        period: v.enum(['month', 'quarter', 'year'], { required: true, label: 'kỳ tóm tắt' }),
+        from: v.date({ label: 'từ ngày' }),
+        to: v.date({ label: 'đến ngày' }),
+        clan_id: v.id({ label: 'ID dòng họ' }),
+    },
+});
+
 const dismissDuplicate = validate({
     body: {
         person_a_id: v.id({ required: true, label: 'người thứ nhất' }),
@@ -398,7 +407,7 @@ const dismissDuplicate = validate({
 });
 
 module.exports = {
-    generatePersonBiography, generatePostDraft, dismissDuplicate,
+    generatePersonBiography, generatePostDraft, generateFundSummary, dismissDuplicate,
     createCalendarEvent, updateCalendarEvent, deleteCalendarEvent,
     assignTask, createEventTask, bulkAssignTasks, updateAssignedTask, taskIdParam, updateTaskStatus,
     createFamilyMemory, updateFamilyMemory, updateMemberProfile, updateMyProfile,

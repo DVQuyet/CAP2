@@ -1155,7 +1155,36 @@
       "expense": "Expense",
       "yearLabel": "Year {{year}}",
       "loadError": "Could not load fund statistics. Please try again.",
-      "empty": "No approved income or expenses to analyse yet."
+      "empty": "No approved income or expenses to analyse yet.",
+      "ai": {
+        "title": "AI summary",
+        "hint": "The system computes the approved figures for the period itself, then asks AI to write the summary. Contributor names are not included.",
+        "periodLabel": "Period",
+        "period": { "month": "This month", "quarter": "This quarter", "year": "This year" },
+        "customRange": "Pick a date range",
+        "from": "From",
+        "to": "To",
+        "run": "AI summary",
+        "loading": "Summarizing...",
+        "rangeInvalid": "Pick both a start and an end date (start must not be after end).",
+        "unavailable": "AI is not available. You can still use the charts below.",
+        "error": "Could not create the summary. Please try again.",
+        "unverified": "Some numbers do not match the fund figures: {{items}}. Check them against the figures below before using.",
+        "numbersTitle": "Figures used ({{label}})",
+        "note": "This summary is written by AI from the figures above; check it before posting or reporting.",
+        "n": {
+          "income": "Total income (entries)",
+          "expense": "Total expenses (entries)",
+          "net": "Income minus expenses",
+          "opening": "Opening balance",
+          "closing": "Closing balance",
+          "contributors": "Contributors",
+          "large": "Large transactions (from {{amount}})",
+          "largeValue": "{{income}} income, {{expense}} expense",
+          "topExpense": "Largest expense categories",
+          "topIncome": "Largest income sources"
+        }
+      }
     },
     "campaigns": {
       "title": "Campaign List",

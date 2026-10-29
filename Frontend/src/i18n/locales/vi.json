@@ -1155,7 +1155,36 @@
       "expense": "Chi ra",
       "yearLabel": "Năm {{year}}",
       "loadError": "Không tải được số liệu quỹ. Vui lòng thử lại.",
-      "empty": "Chưa có khoản thu chi nào được duyệt để thống kê."
+      "empty": "Chưa có khoản thu chi nào được duyệt để thống kê.",
+      "ai": {
+        "title": "AI tóm tắt",
+        "hint": "Hệ thống tự tính số liệu các khoản đã duyệt trong kỳ rồi nhờ AI viết lời tóm tắt. Không nêu tên người đóng góp.",
+        "periodLabel": "Kỳ",
+        "period": { "month": "Tháng này", "quarter": "Quý này", "year": "Năm nay" },
+        "customRange": "Chọn khoảng ngày",
+        "from": "Từ ngày",
+        "to": "Đến ngày",
+        "run": "AI tóm tắt",
+        "loading": "Đang tóm tắt...",
+        "rangeInvalid": "Hãy chọn đủ ngày bắt đầu và kết thúc (bắt đầu không sau kết thúc).",
+        "unavailable": "AI chưa sẵn sàng. Bạn vẫn xem được các biểu đồ bên dưới.",
+        "error": "Không tạo được bản tóm tắt. Vui lòng thử lại.",
+        "unverified": "Có số chưa khớp với số liệu quỹ: {{items}}. Hãy đối chiếu với bảng số liệu bên dưới trước khi dùng.",
+        "numbersTitle": "Số liệu đã dùng ({{label}})",
+        "note": "Bản tóm tắt do AI viết dựa trên số liệu trên; hãy kiểm tra trước khi đăng hoặc báo cáo.",
+        "n": {
+          "income": "Tổng thu (số khoản)",
+          "expense": "Tổng chi (số khoản)",
+          "net": "Chênh lệch thu - chi",
+          "opening": "Số dư đầu kỳ",
+          "closing": "Số dư cuối kỳ",
+          "contributors": "Số người đóng góp",
+          "large": "Giao dịch lớn (từ {{amount}})",
+          "largeValue": "{{income}} thu, {{expense}} chi",
+          "topExpense": "Hạng mục chi lớn nhất",
+          "topIncome": "Nguồn thu lớn nhất"
+        }
+      }
     },
     "campaigns": {
       "title": "Danh sách đợt thu",

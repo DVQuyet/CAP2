@@ -49,4 +49,14 @@ router.post(
     aiController.generatePostDraftAI
 );
 
+// Số liệu do server tự tính; quyền như xem thống kê quỹ (/api/member/fund/stats).
+router.post(
+    '/fund-summary/generate',
+    verifyToken,
+    checkRole(['admin', 'manager', 'member']),
+    aiRateLimit,
+    schemas.generateFundSummary,
+    aiController.generateFundSummaryAI
+);
+
 module.exports = router;

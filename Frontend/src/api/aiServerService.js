@@ -32,9 +32,18 @@ export const generatePostDraftAI = async (payload) => {
   });
 };
 
+// Tóm tắt quỹ theo kỳ: server tự tính số liệu, AI chỉ viết lời; trả { summary, numbers, unverified }.
+export const generateFundSummaryAI = async (payload) => {
+  return apiRequest("/api/ai/fund-summary/generate", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+};
+
 export default {
   generateEventFormAI,
   extractGenealogyAI,
   generatePersonBiographyAI,
   generatePostDraftAI,
+  generateFundSummaryAI,
 };

@@ -4,6 +4,8 @@ const { assertTreeMutationPermission } = require('../../shared/utils/treeEditPer
 const { assertCanManagePersonId } = require('../manager/managerClan.service');
 const personBio = require('./personBiography.service');
 const postDraft = require('./postDraft.service');
+const fundSummary = require('./fundSummary.service');
+const fundController = require('../fund/fund.controller');
 const calendar = require('../calendar/calendar.controller');
 
 const MAX_EVENT_PROMPT_LENGTH = 2000;
@@ -484,6 +486,51 @@ exports.generatePostDraftAI = async (req, res) => {
             message: 'Không thể tạo bản nháp bài đăng',
             error: process.env.NODE_ENV === 'development' ? error.message : undefined,
         });
+    }
+};
+
+// Tóm tắt quỹ: server tự tính số liệu đã duyệt trong kỳ, AI chỉ diễn đạt; chỉ trả kết quả, không ghi DB.
+exports.generateFundSummaryAI = async (req, res) => {
+    try {
+        const body = req.body || {};
+        const range = fundSummary.resolveRange(body);
+        if (range.error) return res.status(400).json({ success: false, message: range.error });
+
+        if (!groqClient.isGroqConfigured()) {
+            return res.status(503).json({
+                success: false,
+                code: 'AI_UNAVAILABLE',
+                message: 'AI chưa được cấu hình. Bạn vẫn xem được các số liệu quỹ bên dưới.',
+            });
+        }
+
+        const scope = await fundController.resolveReadableClanId({
+            user: req.user,
+            query: { clan_id: body.clan_id ?? req.query?.clan_id },
+        });
+        if (!scope.clanId) return res.status(scope.status || 400).json({ success: false, message: scope.message });
+
+        const numbers = await fundSummary.loadFundAggregates(scope.clanId, range);
+        const base = { success: true, clan_id: scope.clanId, period: range.period, from: range.from, to: range.to, numbers };
+        if (!fundSummary.hasActivity(numbers)) {
+            return res.json({ ...base, summary: `Trong ${range.label} chưa có khoản thu hoặc chi nào đã được duyệt.`, unverified: [], ai: false });
+        }
+
+        const factsText = fundSummary.buildFactsText(numbers);
+        const raw = await groqClient.callGroq(fundSummary.buildSystemPrompt(), `SỐ LIỆU QUỸ:
+${factsText}`, 600);
+        const summary = fundSummary.parseSummary(raw);
+        if (!summary) {
+            return res.status(503).json({
+                success: false,
+                code: 'AI_UNAVAILABLE',
+                message: 'AI tạm thời không phản hồi. Vui lòng thử lại sau.',
+            });
+        }
+        return res.json({ ...base, summary, unverified: fundSummary.findUnverifiedNumbers(summary, numbers, factsText), ai: true });
+    } catch (error) {
+        console.error('generateFundSummaryAI error:', error);
+        return res.status(500).json({ success: false, message: 'Không thể tạo tóm tắt quỹ' });
     }
 };
 

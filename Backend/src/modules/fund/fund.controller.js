@@ -1057,5 +1057,7 @@ exports.internalCalculateContributionUnit = async (clanId, definition) => {
     return rows[0].count;
 };
 
+module.exports.resolveReadableClanId = resolveReadableClanId;
+
 // Dùng bởi scripts/migrate.js để chạy trước các bước chỉnh schema.
 module.exports.ensureEventCostRecipientColumns = ensureEventCostRecipientColumns;
