@@ -2,6 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const db = require('../../config/db');
 const { getJwtSecret } = require('../../config/jwt');
+const { buildContentDisposition } = require('../../shared/utils/contentDisposition');
 const { getAccountAccess, isTokenRevoked } = require('../../middleware/authMiddleware');
 const { ensureMediaAccessKeyColumn, isValidMediaAccessKey } = require('../../shared/utils/media');
 const router = express.Router();
@@ -80,7 +81,7 @@ router.get('/:id', async (req, res) => {
     res.setHeader('Cache-Control', cacheControl);
     res.setHeader('X-Content-Type-Options', 'nosniff');
     if (file.original_filename) {
-      res.setHeader('Content-Disposition', `inline; filename="${String(file.original_filename).replace(/"/g, '')}"`);
+      res.setHeader('Content-Disposition', buildContentDisposition('inline', file.original_filename));
     }
     return res.send(file.image_data);
   } catch (error) {

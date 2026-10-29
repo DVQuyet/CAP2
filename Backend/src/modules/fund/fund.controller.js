@@ -1,5 +1,6 @@
 const db = require('../../config/db');
 const XLSX = require('xlsx');
+const { sanitizeSpreadsheetRows } = require('../../shared/utils/spreadsheet');
 const { getManagerClanId } = require('../manager/managerClan.service');
 
 const ensureEventCostRecipientColumns = async () => {
@@ -947,8 +948,8 @@ exports.exportFundExcel = async (req, res) => {
 
         const wb = XLSX.utils.book_new();
 
-        const wsIncome = XLSX.utils.json_to_sheet(income);
-        const wsExpense = XLSX.utils.json_to_sheet(expense);
+        const wsIncome = XLSX.utils.json_to_sheet(sanitizeSpreadsheetRows(income));
+        const wsExpense = XLSX.utils.json_to_sheet(sanitizeSpreadsheetRows(expense));
 
         XLSX.utils.book_append_sheet(wb, wsIncome, "Thu Quỹ");
         XLSX.utils.book_append_sheet(wb, wsExpense, "Chi Quỹ");
