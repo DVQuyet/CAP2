@@ -138,3 +138,29 @@ test('feedback: bảng không có account_id thì dùng chủ hội thoại, kh�
     feedbackDb({ withAccountColumn: false });
     assert.strictEqual((await callFeedback(77)).statusCode, 403);
 });
+
+// Log thật: "ap toi co su kien gi" (mất chữ s của "sắp").
+test('normalizer: "ap toi co/se" = "sắp tới" nhưng không đụng tên người hoặc cụm khác', () => {
+    assert.strictEqual(normalizeTyping('ap toi co su kien gi'), 'sap toi co su kien gi');
+    assert.strictEqual(normalizeTyping('ap toi se co gio ai'), 'sap toi se co gio ai');
+    assert.strictEqual(normalizeTyping('ap tới có sự kiện gì'), 'sắp tới có sự kiện gì');
+    // Không có "có/sẽ" theo sau, hoặc đứng sau tên viết hoa: giữ nguyên.
+    assert.strictEqual(normalizeTyping('ap toi'), 'ap toi');
+    assert.strictEqual(normalizeTyping('Đinh Ap toi co su kien gi'), 'Đinh Ap toi co su kien gi');
+});
+
+test('normalizer: "ba co toi" không dấu KHÔNG bị đổi sang cụ (mơ hồ bà cố/bà cô); "ong co toi" thì có', () => {
+    assert.strictEqual(normalizeTyping('ba co toi la ai'), 'ba co toi la ai');
+    assert.strictEqual(normalizeTyping('ba co cua toi la ai'), 'ba co cua toi la ai');
+    assert.strictEqual(normalizeTyping('ong co toi la ai'), 'cu ong toi la ai');
+    assert.strictEqual(normalizeTyping('ba co noi toi la ai'), 'cu noi toi la ai');
+});
+
+test('parser: "ba co toi" không dấu là mơ hồ giữa cụ và bà cô; có dấu thì rõ ràng', () => {
+    const plain = parse('ba co toi la ai');
+    assert.strictEqual(plain.intent, 'find_by_kinship');
+    assert.deepStrictEqual(plain.entities.ambiguousTerms, ['cụ', 'bà cô']);
+    const accented = parse('bà cô tôi là ai');
+    assert.strictEqual(accented.entities.kinshipTerm, 'bà cô');
+    assert.strictEqual(accented.entities.ambiguousTerms, null);
+});

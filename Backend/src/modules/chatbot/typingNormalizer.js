@@ -52,16 +52,21 @@ const ABBREVIATIONS = [
     [re(`${B}u(?=\\s+(?:tôi|toi|tui|của|cua|mình|minh))`), 'mẹ', 'me', 'kin'],
     // "ông cố (nội/ngoại)", "bà cố" -> cụ ông/cụ bà. Chữ "cố" phải viết thường và có dấu (không dấu "co" lẫn với "cô").
     [re(`${B}(ông|bà)\\s+(cố)(?:\\s+(nội|ngoại))?${E}`), 'cụ $1 $3', null, 'ancestor'],
-    // "ong co noi/ngoai", "ba co toi/minh/cua" (không dấu) = cụ. Chỉ khi cả câu không dấu, viết thường và có từ đi sau
-    // như trên, tránh nhầm với "ông cô" / "bà cô" (em gái của ông/bà nội).
+    // "ong/ba co noi/ngoai", "ong co toi/minh/cua" (không dấu) = cụ. Chỉ khi cả câu không dấu, viết thường và có từ đi sau
+    // như trên, tránh nhầm với "bà cô" (em gái của ông/bà nội).
     [re(`${B}(ong|ba)\\s+co(?=\\s+(?:noi|ngoai)${E})`), 'cu', null, 'plainCu'],
-    [re(`${B}(ong|ba)\\s+co(?=\\s+(?:toi|minh|cua)${E})`), 'cu $1', null, 'plainCu'],
+    // "ba co toi/minh/cua" cố ý KHÔNG đổi: vừa là "bà cố" vừa là "bà cô" (em gái của ông nội), nên để
+    // intentParserService.parseKinshipLookup coi là mơ hồ và hỏi lại. "ông cô" không phải xưng hô nên chắc chắn là "ông cố".
+    [re(`${B}(ong)\\s+co(?=\\s+(?:toi|minh|cua)${E})`), 'cu $1', null, 'plainCu'],
     // Lỗi chính tả/phương ngữ trong câu hỏi ngày tháng, chức danh.
     [re(`${B}lăm(?=\\s+(?:nào|nao))`), 'năm', 'nam', 'lower'],
     [re(`${B}(ngày|năm|khi|lúc|tháng|đời)\\s+lào${E}`), '$1 nào', null, 'phrase'],
     [re(`${B}dỗ${E}`), 'giỗ', 'gio', 'lower'],
     [re(`${B}chưởng(?=\\s+(?:họ|chi|tộc))`), 'trưởng', null, 'phrase'],
     [re(`${B}mất\\s+giỗ${E}`), 'giỗ', null, 'phrase'],
+    // Gõ mất chữ "s": "ap toi co su kien gi" = "sắp tới có sự kiện gì". Chỉ khi theo sau là "có/sẽ" (câu hỏi về sắp tới),
+    // và 'lower' để không đụng tên người viết hoa.
+    [re(`${B}ap\\s+(?:toi|tới)(?=\\s+(?:co|có|se|sẽ)${E})`), 'sắp tới', 'sap toi', 'lower'],
 ];
 
 const SELF_WORDS = new Set(['tôi', 'toi', 'tui', 'mình', 'minh', 'của', 'cua']);

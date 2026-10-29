@@ -27,10 +27,12 @@ test('tên riêng viết hoa và cụm không phải thứ bậc không bị coi
     }
 });
 
-test('"ong co"/"ba co" không dấu chỉ là cụ khi theo sau là noi/ngoai/toi/minh/cua', () => {
+test('"ong co" không dấu là cụ khi theo sau là noi/ngoai/toi/minh/cua; "ba co toi" mơ hồ (bà cố/bà cô) nên giữ nguyên để hỏi lại', () => {
     assert.equal(normalizeTyping('ong co noi toi la ai'), 'cu noi toi la ai');
+    assert.equal(normalizeTyping('ba co noi toi la ai'), 'cu noi toi la ai');
     assert.equal(normalizeTyping('ong co toi la ai'), 'cu ong toi la ai');
-    assert.equal(normalizeTyping('ba co cua toi la ai'), 'cu ba cua toi la ai');
+    // "ba co cua toi": vừa là bà cố vừa là bà cô -> không tự đổi sang cụ (parser coi là mơ hồ, controller hỏi lại).
+    assert.equal(normalizeTyping('ba co cua toi la ai'), 'ba co cua toi la ai');
     assert.equal(normalizeTyping('ong co dinh van binh la ai'), 'ong co dinh van binh la ai');
     assert.equal(normalizeTyping('ông cô của tôi là ai'), 'ông cô của tôi là ai');
     assert.equal(normalizeTyping('Ong Co toi la ai'), 'Ong Co toi la ai');

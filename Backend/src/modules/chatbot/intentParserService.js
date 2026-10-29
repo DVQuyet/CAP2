@@ -135,9 +135,11 @@ function parseKinshipLookup(message) {
     fragment = fragment.replace(/^(người|nguoi)\s+/, '');
 
     // Đúng một từ xưng hô; chuỗi "em của ông nội tôi" để parser biểu thức quan hệ xử lý.
-    const { terms, rest } = splitKinshipTerms(fragment);
+    const { terms, rest, accented } = splitKinshipTerms(fragment);
     if (terms.length !== 1 || rest.length) return null;
-    const keys = terms[0].keys;
+    let keys = terms[0].keys;
+    // "ba co" gõ không dấu = "bà cố" (cụ) hoặc "bà cô" (em gái của ông nội): mơ hồ thật, để controller tra dữ liệu rồi hỏi lại.
+    if (!accented && terms[0].text === 'ba co' && !keys.includes('cụ')) keys = ['cụ', ...keys];
     return {
         intent: 'find_by_kinship',
         confidence: 0.9,

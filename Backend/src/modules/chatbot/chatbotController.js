@@ -872,20 +872,37 @@ async function handleFindByKinship({ clanId, currentMemberId, parsed }) {
         };
     }
     const entities = parsed.entities || {};
-    const term = entities.kinshipTerm;
-    // "chú út của bạn" thay vì "chú của bạn" khi câu hỏi có thứ bậc.
-    const termText = labelWithOrder(term);
+    let term = entities.kinshipTerm;
+    // Từ gõ không dấu có thể hiểu thành nhiều xưng hô ("ba co" = bà cố / bà cô). Tra dữ liệu cho từng cách hiểu:
+    // chỉ một cách có người -> trả lời luôn; không cách nào có người -> báo chưa thấy; nhiều cách ra những người khác nhau -> hỏi lại.
     if (Array.isArray(entities.ambiguousTerms) && entities.ambiguousTerms.length > 1) {
         const options = entities.ambiguousTerms;
-        return {
-            success: true,
-            intent: parsed.intent,
-            answer: `Bạn muốn hỏi ${options.map((item) => `"${item}"`).join(' hay ')} của bạn? Gõ có dấu giúp tôi hiểu chính xác hơn.`,
-            confidence: 0.5,
-            needsClarification: true,
-            suggestions: options.map((item) => ({ type: 'quick_question', text: `${capitalizeFirst(item)} của tôi là ai?` })),
-        };
+        const lookups = [];
+        for (const option of options) {
+            const people = await relationshipEngine.findPeopleByKinshipTerm(currentMemberId, option, { clanId });
+            lookups.push({ option, people });
+        }
+        const withPeople = lookups.filter((item) => item.people.length);
+        const sameIds = (item) => item.people.map((match) => Number(match.person?.id ?? match.id)).sort().join(',');
+        const allSame = withPeople.length > 1 && withPeople.every((item) => sameIds(item) === sameIds(withPeople[0]));
+        if (withPeople.length === 1 || allSame) {
+            term = withPeople[0].option;
+        } else if (withPeople.length > 1) {
+            // "cụ" là cách gọi chung; ở đây nó là nghĩa "bà cố" của câu gõ không dấu nên ghi rõ để người dùng nhận ra.
+            const labelOf = (option) => (option === 'cụ' ? 'cụ (bà cố)' : option);
+            const described = withPeople.map((item) => `"${labelOf(item.option)}" (${item.people.map((match) => match.name).join(', ')})`);
+            return {
+                success: true,
+                intent: parsed.intent,
+                answer: `Bạn muốn hỏi ${described.join(' hay ')} của bạn? Gõ có dấu giúp tôi hiểu chính xác hơn.`,
+                confidence: 0.5,
+                needsClarification: true,
+                suggestions: withPeople.map((item) => ({ type: 'quick_question', text: `${capitalizeFirst(item.option)} của tôi là ai?` })),
+            };
+        }
     }
+    // "chú út của bạn" thay vì "chú của bạn" khi câu hỏi có thứ bậc.
+    const termText = labelWithOrder(term);
 
     const found = await relationshipEngine.findPeopleByKinshipTerm(currentMemberId, term, { clanId });
     // "chú ruột": chỉ giữ nhãn đúng bằng từ hỏi (bỏ "chú họ").
