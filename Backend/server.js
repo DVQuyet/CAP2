@@ -14,6 +14,7 @@ const jwt = require('jsonwebtoken');
 const { getJwtSecret } = require('./src/config/jwt');
 const passport = require('passport');
 const db = require('./src/config/db');
+const { securityHeaders } = require('./src/middleware/securityHeaders');
 
 // Dừng ngay khi khởi động nếu thiếu JWT_SECRET thay vì chạy với khóa đoán được.
 getJwtSecret();
@@ -50,15 +51,7 @@ app.use(cors({
 // Upload file đi qua multer; body JSON/form chỉ cần giới hạn nhỏ.
 const BODY_LIMIT = process.env.BODY_LIMIT || '2mb';
 app.disable('x-powered-by');
-app.use((req, res, next) => {
-    res.set({
-        'X-Content-Type-Options': 'nosniff',
-        'X-Frame-Options': 'SAMEORIGIN',
-        'Referrer-Policy': 'strict-origin-when-cross-origin',
-        'Cross-Origin-Resource-Policy': 'cross-origin',
-    });
-    next();
-});
+app.use(securityHeaders);
 app.use(express.json({ limit: BODY_LIMIT }));
 app.use(express.urlencoded({ extended: true, limit: BODY_LIMIT }));
 app.use(passport.initialize());

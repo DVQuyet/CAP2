@@ -18,3 +18,17 @@ test('member tạm đăng nhập và đọc được thông báo', async () => {
     const result = await api(server.baseUrl, 'GET', '/api/member/notifications', { token });
     assert.strictEqual(result.status, 200, JSON.stringify(result.data));
 });
+
+test('server thật trả header bảo mật và CSP; HTTP thường không có HSTS', async () => {
+    const response = await fetch(`${server.baseUrl}/api/health`);
+    assert.strictEqual(response.status, 200);
+    assert.strictEqual(response.headers.get('x-content-type-options'), 'nosniff');
+    assert.match(response.headers.get('content-security-policy') || '', /default-src 'none'/);
+    assert.strictEqual(response.headers.get('strict-transport-security'), null);
+    assert.strictEqual(response.headers.get('x-powered-by'), null);
+});
+
+test('server sau proxy HTTPS (X-Forwarded-Proto) trả HSTS', async () => {
+    const response = await fetch(`${server.baseUrl}/api/health`, { headers: { 'X-Forwarded-Proto': 'https' } });
+    assert.match(response.headers.get('strict-transport-security') || '', /max-age=\d+/);
+});
