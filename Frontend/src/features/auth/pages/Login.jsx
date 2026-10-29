@@ -25,6 +25,7 @@ export default function Login({ isOpen, onClose, onLoginSuccess, onOpenRegister 
   const { t } = useTranslation();
   const isModal = typeof isOpen === "boolean";
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [loginForm, setLoginForm] = useState(initialLoginForm);
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
@@ -104,7 +105,8 @@ export default function Login({ isOpen, onClose, onLoginSuccess, onOpenRegister 
         return;
       }
 
-      navigate(getRolePath(result.user), { replace: true });
+      // Phiên hết hạn đưa về /login?redirect=<trang cũ>: đăng nhập xong quay lại đúng trang đó.
+      navigate(safeRedirectPath(searchParams.get("redirect")) || getRolePath(result.user), { replace: true });
     } catch (submitError) {
       setError(submitError?.message || String(submitError));
     } finally {

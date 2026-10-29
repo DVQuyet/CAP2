@@ -1,5 +1,5 @@
 import { CANVAS_PADDING, CARD_WIDTH, X_GAP, Y_GAP } from "./treeConstants";
-import { asArray, fullName, personSort, toInt } from "./treePersonUtils";
+import { asArray, personSort, toInt } from "./treePersonUtils";
 
 export function findParentFamilyForChild(personId, families, childRows) {
   const rows = asArray(childRows).filter((row) => Number(row.person_id) === Number(personId));

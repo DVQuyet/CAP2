@@ -1156,7 +1156,8 @@ exports.changePassword = async (req, res) => {
     }
 
     if (!match) {
-      return res.status(401).json({ success: false, message: "Mật khẩu hiện tại không đúng" });
+      // Không dùng 401: frontend coi mọi 401 có token là phiên hết hạn và đăng xuất.
+      return res.status(400).json({ success: false, message: "Mật khẩu hiện tại không đúng" });
     }
 
     const hashed = await bcrypt.hash(next, 10);

@@ -11,6 +11,8 @@ import "./App.css";
 
 // Đếm request tới backend một lần cho cả app (banner "máy chủ đang khởi động").
 installPendingFetchTracker(API_BASE_URL);
+// Phiên hết hạn / token bị thu hồi (vd. sau khi đổi mật khẩu) thì xóa phiên và chuyển về đăng nhập.
+installSessionGuard(API_BASE_URL);
 
 export default function App() {
   // Esc đóng modal trên cùng ở mọi trang.

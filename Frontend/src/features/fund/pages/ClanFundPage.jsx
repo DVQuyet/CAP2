@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { apiRequest, buildApiUrl } from "../../../services/api";
 import { resolveImageUrl } from "../../../shared/utils/media";
 import DateInput from "../../../shared/components/DateInput";
-import { formatDateVN, isoToVietnamDate, vietnamDateToIso, pad2 } from "../../../shared/utils/dateFormat";
+import { formatDateVN, vietnamDateToIso, pad2 } from "../../../shared/utils/dateFormat";
 import LoadingState from "../../../shared/components/LoadingState";
 import ErrorState from "../../../shared/components/ErrorState";
 import "./FundDesign.css";

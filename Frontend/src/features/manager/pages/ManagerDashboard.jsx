@@ -9,7 +9,6 @@ import {
 } from "../../../api/managerService";
 import ManagerDashboardCharts from "../components/ManagerDashboardCharts";
 import { getStoredUser } from "../../../shared/utils/auth";
-import { formatDateTime } from "../utils/managerData";
 import { Trans } from "react-i18next";
 import { useLanguage } from "../../../i18n/LanguageContext";
 import ErrorState from "../../../shared/components/ErrorState";

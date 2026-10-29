@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { apiRequest } from "../../../services/api";
 import { getStoredUser } from "../../../shared/utils/auth";
 import { getSocket } from "../../../services/socket";
-import { useLanguage } from "../../../i18n/LanguageContext";
 import { notify } from "../../../shared/utils/toast";
 import { getLunarInfoFromSolar as getLunarInfo } from "../../../shared/utils/lunarCalendar";
 import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
