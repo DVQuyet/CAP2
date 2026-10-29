@@ -11,6 +11,7 @@ import { getStoredUser } from "../../../shared/utils/auth";
 import { resolveImageUrl } from "../../../shared/utils/media";
 import "./MemberDashboard.css";
 import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
+import BiographyDraftDialog from "../../../shared/components/BiographyDraftDialog";
 
 function personName(person, t) {
   return (
@@ -65,6 +66,7 @@ export default function MemberProfile() {
     generation: "",
   });
   const [contentForm, setContentForm] = useState({ bio: "", avatar_url: "", avatar_media_id: null });
+  const [biographyOpen, setBiographyOpen] = useState(false);
   const [relationForm, setRelationForm] = useState({ spouse_id: "", children_ids: [] });
   const [passwordForm, setPasswordForm] = useState({ current: "", next: "", confirm: "" });
 
@@ -327,6 +329,22 @@ export default function MemberProfile() {
               {t("member.profile.mediaBio.bioLabel")}
               <textarea rows={5} value={contentForm.bio} onChange={(event) => setContentForm((current) => ({ ...current, bio: event.target.value }))} />
             </label>
+            {profile.person_id ? (
+              <button type="button" className="bio-draft-trigger" onClick={() => setBiographyOpen(true)}>
+                <span className="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
+                {t("biographyDraft.open")}
+              </button>
+            ) : null}
+            {biographyOpen ? (
+              <BiographyDraftDialog
+                personId={profile.person_id}
+                onClose={() => setBiographyOpen(false)}
+                onUse={(draft) => {
+                  setContentForm((current) => ({ ...current, bio: draft }));
+                  setBiographyOpen(false);
+                }}
+              />
+            ) : null}
             {profile.moderation_reason && <div className="member-empty">{t("member.profile.mediaBio.moderationNote", { reason: profile.moderation_reason })}</div>}
             <button className="member-btn member-btn-primary" type="submit" disabled={savingContent || profile.moderation_status === "pending" || !profile.person_id}>
               {t("member.profile.mediaBio.submit")}

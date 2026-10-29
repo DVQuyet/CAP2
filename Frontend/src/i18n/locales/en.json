@@ -3197,5 +3197,34 @@
     "stillLiving": "Living",
     "deceasedNoDate": "Deceased (date unknown)",
     "index": "Index of names"
+  },
+  "biographyDraft": {
+    "title": "AI biography draft",
+    "open": "AI biography draft",
+    "hint": "The AI only uses data already on the family tree to write a draft. Read it, edit it, then save.",
+    "purpose": {
+      "label": "Type",
+      "biography": "Biography",
+      "memorial": "Memorial tribute"
+    },
+    "tone": {
+      "label": "Tone",
+      "formal": "Formal",
+      "warm": "Warm"
+    },
+    "length": {
+      "label": "Length",
+      "short": "Short (~80 words)",
+      "medium": "Medium (~180 words)"
+    },
+    "generate": "Generate",
+    "regenerate": "Regenerate",
+    "generating": "Writing a draft...",
+    "resultLabel": "Biography draft",
+    "factsUsed": "Facts used",
+    "reviewNote": "The AI only uses data on the tree. Please review before saving.",
+    "templateBadge": "Template (AI unavailable)",
+    "use": "Use this draft",
+    "close": "Close"
   }
 }

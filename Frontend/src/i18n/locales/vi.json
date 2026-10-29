@@ -3197,5 +3197,34 @@
     "stillLiving": "Còn sống",
     "deceasedNoDate": "Đã mất (chưa rõ ngày)",
     "index": "Phả hệ (mục lục theo tên)"
+  },
+  "biographyDraft": {
+    "title": "AI soạn tiểu sử",
+    "open": "AI soạn tiểu sử",
+    "hint": "AI chỉ dùng dữ liệu đã có trên cây gia phả để soạn bản nháp. Bạn đọc lại, sửa rồi mới lưu.",
+    "purpose": {
+      "label": "Loại văn bản",
+      "biography": "Tiểu sử",
+      "memorial": "Lời tưởng niệm"
+    },
+    "tone": {
+      "label": "Giọng văn",
+      "formal": "Trang trọng",
+      "warm": "Ấm áp"
+    },
+    "length": {
+      "label": "Độ dài",
+      "short": "Ngắn (~80 từ)",
+      "medium": "Vừa (~180 từ)"
+    },
+    "generate": "Soạn",
+    "regenerate": "Soạn lại",
+    "generating": "Đang soạn bản nháp...",
+    "resultLabel": "Bản nháp tiểu sử",
+    "factsUsed": "Dữ kiện đã dùng",
+    "reviewNote": "AI chỉ dùng dữ liệu trên cây. Hãy đọc lại trước khi lưu.",
+    "templateBadge": "Bản mẫu (AI không khả dụng)",
+    "use": "Dùng bản này",
+    "close": "Đóng"
   }
 }

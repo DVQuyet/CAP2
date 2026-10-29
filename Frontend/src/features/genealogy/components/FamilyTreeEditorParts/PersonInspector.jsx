@@ -3,6 +3,7 @@ import { useLanguage } from "../../../../i18n/LanguageContext";
 import { fullName, personToForm } from "../../utils/tree-editor/treePersonUtils";
 import ImageUpload from "../../../../shared/components/ImageUpload";
 import HistoricalPersonFields from "./HistoricalPersonFields";
+import BiographyDraftDialog from "../../../../shared/components/BiographyDraftDialog";
 
 export default function PersonInspector({
   person,
@@ -22,6 +23,7 @@ export default function PersonInspector({
 }) {
   const { t } = useLanguage();
   const [form, setForm] = useState(() => personToForm(person));
+  const [biographyOpen, setBiographyOpen] = useState(false);
   const hasParentFamily = Number(person?.child_family_id) > 0;
 
   useEffect(() => {
@@ -263,7 +265,24 @@ export default function PersonInspector({
           <label className="is-wide">
             {t("tree.inspector.fields.bio")}
             <textarea rows={3} value={form.bio} onChange={(event) => setField("bio", event.target.value)} disabled={!canEdit} />
+            {canEdit && person?.id ? (
+              <button type="button" className="bio-draft-trigger" onClick={() => setBiographyOpen(true)}>
+                <span className="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
+                {t("biographyDraft.open")}
+              </button>
+            ) : null}
           </label>
+          {biographyOpen ? (
+            <BiographyDraftDialog
+              personId={person.id}
+              isDeceased={Number(person?.is_living) === 0 || Boolean(person?.death_date)}
+              onClose={() => setBiographyOpen(false)}
+              onUse={(draft) => {
+                setField("bio", draft);
+                setBiographyOpen(false);
+              }}
+            />
+          ) : null}
 
           <label className="is-wide">
             {t("tree.inspector.fields.note")}
