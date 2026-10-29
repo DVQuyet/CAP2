@@ -258,3 +258,29 @@ test('POST /auth/register-clan: thiếu tên/chief sai bị 400 với thông bá
     assert.strictEqual(c.res.statusCode, 400);
     assert.strictEqual(mock.calls.length, 0, 'không được query DB khi dữ liệu sai');
 });
+
+test('calendar schemas: sai kiểu/quá cỡ bị 400, payload của client hiện tại vẫn qua', () => {
+    const good = {
+        title: 'Giỗ cụ', date: '2026-11-20', time: '08:00', type: 'anniversary', note: 'ghi chú',
+        visibility: 'clan', reminder_days: 3, person_id: 12, repeat_yearly: true,
+    };
+    let r = run(schemas.createCalendarEvent, { body: { ...good } });
+    assert.strictEqual(r.nextCalled, true);
+    assert.strictEqual(r.req.body.person_id, 12);
+
+    // Ngày dạng dd/mm/yyyy, id rỗng và chuỗi số vẫn do controller xử lý như cũ.
+    r = run(schemas.createCalendarEvent, { body: { title: 'x', date: '20/11/2026', person_id: '', reminder_days: '2', repeat_yearly: '1' } });
+    assert.strictEqual(r.nextCalled, true);
+
+    for (const bad of [{ title: { a: 1 } }, { note: 'x'.repeat(5001) }, { reminder_days: 'abc' }, { person_id: 'x' }, { repeat_yearly: 'maybe' }]) {
+        r = run(schemas.createCalendarEvent, { body: { ...good, ...bad } });
+        assert.strictEqual(r.nextCalled, false, JSON.stringify(bad));
+        assert.strictEqual(r.res.statusCode, 400);
+    }
+
+    r = run(schemas.updateCalendarEvent, { params: { id: 'abc' }, body: {} });
+    assert.strictEqual(r.res.statusCode, 400);
+    assert.strictEqual(r.res.body.message, 'ID lịch không hợp lệ.');
+    r = run(schemas.deleteCalendarEvent, { params: { id: '7' } });
+    assert.strictEqual(r.nextCalled, true);
+});

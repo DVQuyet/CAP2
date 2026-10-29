@@ -347,7 +347,32 @@ const restoreArchivedMember = validate({
     params: { id: v.id({ label: 'archive_id', message: 'archive_id không hợp lệ' }) },
 });
 
+// ---- Lịch (calendar) ----
+// Controller tự chuẩn hóa/cắt chuỗi và giữ thông báo lỗi cũ (rỗng, ngày sai...), nên ở đây chỉ chặn sai kiểu và quá cỡ.
+const calendarEventBody = {
+    title: v.string({ max: 1000, label: 'tên lịch' }),
+    date: v.string({ max: 40, label: 'ngày lịch' }),
+    event_date: v.string({ max: 40, label: 'ngày lịch' }),
+    time: v.string({ max: 40, label: 'giờ' }),
+    event_time: v.string({ max: 40, label: 'giờ' }),
+    type: v.string({ max: 50, label: 'loại lịch' }),
+    note: v.string({ max: 5000, label: 'ghi chú' }),
+    visibility: v.string({ max: 20, label: 'phạm vi' }),
+    scope: v.string({ max: 20, label: 'phạm vi' }),
+    reminder_days: v.number({ min: -1000, max: 1000, label: 'số ngày nhắc' }),
+    reminderDays: v.number({ min: -1000, max: 1000, label: 'số ngày nhắc' }),
+    person_id: nullableId('người được gắn'),
+    personId: nullableId('người được gắn'),
+    repeat_yearly: v.boolean({ label: 'lặp hằng năm' }),
+    repeatYearly: v.boolean({ label: 'lặp hằng năm' }),
+};
+const calendarEventId = { id: v.id({ label: 'ID lịch', message: 'ID lịch không hợp lệ.' }) };
+const createCalendarEvent = validate({ body: calendarEventBody });
+const updateCalendarEvent = validate({ params: calendarEventId, body: calendarEventBody });
+const deleteCalendarEvent = validate({ params: calendarEventId });
+
 module.exports = {
+    createCalendarEvent, updateCalendarEvent, deleteCalendarEvent,
     assignTask, createEventTask, bulkAssignTasks, updateAssignedTask, taskIdParam, updateTaskStatus,
     createFamilyMemory, updateFamilyMemory, updateMemberProfile, updateMyProfile,
     updateClanInfo, registerClan, registerClanWithManager,
