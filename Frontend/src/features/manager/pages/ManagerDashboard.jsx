@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   getDashboardData,
@@ -7,11 +7,14 @@ import {
   getFundTransactionsAPI,
   getManagerTree,
 } from "../../../api/managerService";
-import ManagerDashboardCharts from "../components/ManagerDashboardCharts";
+import LoadingState from "../../../shared/components/LoadingState";
 import { getStoredUser } from "../../../shared/utils/auth";
 import { Trans } from "react-i18next";
 import { useLanguage } from "../../../i18n/LanguageContext";
 import ErrorState from "../../../shared/components/ErrorState";
+
+// Biểu đồ (recharts ~118KB gzip) tải riêng để số liệu hiện trước.
+const ManagerDashboardCharts = lazy(() => import("../components/ManagerDashboardCharts"));
 
 export default function ManagerDashboard() {
   const { t } = useLanguage();
@@ -271,13 +274,15 @@ export default function ManagerDashboard() {
         </div>
       </section>
 
-      <ManagerDashboardCharts
-        members={members}
-        families={families}
-        fundTransactions={fundTransactions}
-        tasks={tasks}
-        loading={loading}
-      />
+      <Suspense fallback={<LoadingState variant="block" />}>
+        <ManagerDashboardCharts
+          members={members}
+          families={families}
+          fundTransactions={fundTransactions}
+          tasks={tasks}
+          loading={loading}
+        />
+      </Suspense>
     </div>
   );
 }

@@ -3,10 +3,11 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import ProtectedRoute from "../shared/components/ProtectedRoute";
 import UserLayout from "../layouts/PublicLayout";
-import AdminLayout from "../layouts/AdminLayout";
-import ManagerLayout from "../layouts/ManagerLayout";
-import MemberLayout from "../layouts/MemberLayout";
 
+// Layout theo vai trò chỉ tải khi vào khu đăng nhập (kéo theo socket, chuông thông báo, chatbot).
+const AdminLayout = lazy(() => import("../layouts/AdminLayout"));
+const ManagerLayout = lazy(() => import("../layouts/ManagerLayout"));
+const MemberLayout = lazy(() => import("../layouts/MemberLayout"));
 const Login = lazy(() => import("../features/auth/pages/Login"));
 const Register = lazy(() => import("../features/auth/pages/Register"));
 const Home = lazy(() => import("../features/public/pages/Home"));
