@@ -4,11 +4,20 @@
 // Mục đã có dòng => chữ trống trong DB vẫn lấy mặc định i18n; danh sách chỉ lấy từ DB khi items_custom = 1.
 const db = require('../../config/db');
 
-const SECTION_KEYS = ['hero', 'about', 'features', 'stats', 'news', 'guide'];
+const SECTION_KEYS = [
+    'hero', 'about', 'features', 'stats', 'news', 'guide',
+    // Đợt 12: phần còn lại của trang công khai
+    'demo', 'benefits', 'benefits_why', 'news_latest', 'news_categories', 'news_subscribe',
+    'guide_videos', 'faq', 'footer', 'footer_contact', 'footer_links', 'footer_social',
+];
 const SECTION_TEXT_FIELDS = ['tag', 'title', 'body', 'quote'];
-const ITEM_TEXT_FIELDS = ['title', 'body', 'meta', 'link_label'];
+const ITEM_TEXT_FIELDS = ['title', 'body', 'meta', 'link_label', 'content'];
 const LANGS = ['vi', 'en'];
 const CACHE_TTL_MS = 60 * 1000;
+const NEWS_SECTION_KEY = 'news';
+const CONTENT_COLUMNS = ['content_vi', 'content_en'];
+const SOCIAL_ICONS = ['facebook', 'youtube', 'tiktok', 'zalo', 'instagram', 'x', 'linkedin', 'telegram', 'other'];
+const CONTACT_ICONS = ['location_on', 'call', 'mail'];
 
 const isMissingTable = (error) => error && (error.code === 'ER_NO_SUCH_TABLE' || /doesn't exist/i.test(error.message || ''));
 const sectionTextColumns = SECTION_TEXT_FIELDS.flatMap((f) => LANGS.map((l) => `${f}_${l}`));
@@ -34,6 +43,54 @@ function isSafeUrl(value) {
 function sanitizeUrl(value) {
     const text = String(value ?? '').trim();
     return text && isSafeUrl(text) ? text : '';
+}
+
+// Link chỉ https tuyệt đối (mạng xã hội).
+function isHttpsUrl(value) {
+    return typeof value === 'string' && /^https:\/\/[^\s<>"']+$/i.test(value.trim());
+}
+
+// Video hướng dẫn: chỉ https YouTube/Vimeo (watch, youtu.be, embed) hoặc https tới tệp .mp4; không cho nhúng nguồn tùy ý.
+const YOUTUBE_HOSTS = new Set(['youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtube-nocookie.com', 'www.youtube-nocookie.com', 'youtu.be']);
+const VIMEO_HOSTS = new Set(['vimeo.com', 'www.vimeo.com', 'player.vimeo.com']);
+function isAllowedVideoUrl(value) {
+    if (typeof value !== 'string') return false;
+    let url;
+    try { url = new URL(value.trim()); } catch { return false; }
+    if (url.protocol !== 'https:' || url.username || url.password) return false;
+    const host = url.hostname.toLowerCase();
+    if (YOUTUBE_HOSTS.has(host)) {
+        if (host === 'youtu.be') return /^\/[A-Za-z0-9_-]{11}\/?$/.test(url.pathname);
+        if (url.pathname === '/watch') return /^[A-Za-z0-9_-]{11}$/.test(url.searchParams.get('v') || '');
+        return /^\/(embed|shorts)\/[A-Za-z0-9_-]{11}\/?$/.test(url.pathname);
+    }
+    if (VIMEO_HOSTS.has(host)) return /^\/(video\/)?\d{5,}\/?$/.test(url.pathname);
+    return /\.mp4$/i.test(url.pathname);
+}
+
+class LandingValidationError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = 'LandingValidationError';
+        this.status = 400;
+    }
+}
+
+// Quy tắc riêng từng mục (ngoài schema chung): link video, link mạng xã hội, icon liên hệ/mạng xã hội.
+function assertItemRules(sectionKey, fields) {
+    if (sectionKey === 'guide_videos' && fields.link_url && !isAllowedVideoUrl(fields.link_url)) {
+        throw new LandingValidationError('Video chỉ nhận liên kết https của YouTube, Vimeo hoặc tệp .mp4.');
+    }
+    if (sectionKey === 'footer_social') {
+        if (fields.link_url && !isHttpsUrl(fields.link_url)) throw new LandingValidationError('Liên kết mạng xã hội chỉ nhận địa chỉ https://.');
+        if (fields.icon && !SOCIAL_ICONS.includes(fields.icon.toLowerCase())) throw new LandingValidationError('Biểu tượng mạng xã hội không hợp lệ.');
+    }
+    if (sectionKey === 'footer_contact' && fields.icon && !CONTACT_ICONS.includes(fields.icon)) {
+        throw new LandingValidationError('Biểu tượng liên hệ chỉ nhận location_on, call hoặc mail.');
+    }
+    if (sectionKey !== NEWS_SECTION_KEY && (fields.content_vi || fields.content_en)) {
+        throw new LandingValidationError('Nội dung chi tiết chỉ dùng cho mục Tin tức.');
+    }
 }
 
 // ---- Bộ nhớ đệm ngắn cho GET công khai, xóa mỗi khi admin ghi ----
@@ -71,6 +128,7 @@ async function ensureLandingSchema() {
             body_vi TEXT NULL, body_en TEXT NULL,
             meta_vi VARCHAR(255) NULL, meta_en VARCHAR(255) NULL,
             link_label_vi VARCHAR(255) NULL, link_label_en VARCHAR(255) NULL,
+            content_vi MEDIUMTEXT NULL, content_en MEDIUMTEXT NULL,
             image_url VARCHAR(1000) NULL,
             link_url VARCHAR(1000) NULL,
             icon VARCHAR(60) NULL,
@@ -79,6 +137,14 @@ async function ensureLandingSchema() {
             KEY idx_landing_items_section (section_id, sort_order)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
+    // Bảng đã có từ đợt 11: thêm cột nội dung bài tin (bỏ qua nếu đã có).
+    for (const column of CONTENT_COLUMNS) {
+        try {
+            await db.query(`ALTER TABLE landing_items ADD COLUMN ${column} MEDIUMTEXT NULL AFTER link_label_en`);
+        } catch (error) {
+            if (error.code !== 'ER_DUP_FIELDNAME') throw error;
+        }
+    }
 }
 
 const bool = (v) => v === true || v === 1 || v === '1' || v === 'true';
@@ -125,6 +191,8 @@ function mapItemPublic(row, lang) {
         image_url: row.image_url || '',
         link_url: row.link_url || '',
         icon: row.icon || '',
+        // Bài tin có nội dung chi tiết (nội dung dài chỉ trả ở endpoint chi tiết).
+        has_content: Boolean(row.content_vi || row.content_en),
     };
 }
 
@@ -183,6 +251,26 @@ async function getPublicLanding(lang = 'vi') {
     return value;
 }
 
+// Chi tiết một bài tin: chỉ khi mục Tin tức đang hiện, đã tùy chỉnh danh sách (items_custom) và bài đang hiện. Không thì null (404).
+async function getPublicNewsItem(id, lang = 'vi') {
+    const language = lang === 'en' ? 'en' : 'vi';
+    let item;
+    let section;
+    try {
+        const [items] = await db.query('SELECT * FROM landing_items WHERE id = ? LIMIT 1', [id]);
+        item = items[0];
+        if (!item || !bool(item.is_visible)) return null;
+        const [sections] = await db.query('SELECT section_key, is_visible, items_custom FROM landing_sections WHERE id = ? LIMIT 1', [item.section_id]);
+        section = sections[0];
+    } catch (error) {
+        if (isMissingTable(error)) return null;
+        throw error;
+    }
+    if (!section || section.section_key !== NEWS_SECTION_KEY || !bool(section.is_visible) || !bool(section.items_custom)) return null;
+    const base = mapItemPublic(item, language);
+    return { ...base, content: item[`content_${language}`] || item.content_vi || '' };
+}
+
 async function getAdminLanding() {
     try {
         const { sections, grouped } = await loadAll();
@@ -212,6 +300,27 @@ function pickItemFields(input = {}) {
     if (input.is_visible !== undefined) out.is_visible = bool(input.is_visible) ? 1 : 0;
     if (input.sort_order !== undefined && Number.isFinite(Number(input.sort_order))) out.sort_order = Number(input.sort_order);
     return out;
+}
+
+const isMissingColumn = (error) => error && (error.code === 'ER_BAD_FIELD_ERROR' || /unknown column/i.test(error.message || ''));
+const MISSING_COLUMN_MESSAGE = 'Chưa có cột nội dung bài tin. Hãy chạy migration 2026_10_30_site_content_more.sql.';
+
+// Chưa migrate cột content_*: nếu giá trị đang ghi đều rỗng thì ghi lại không có cột đó, còn không thì báo lỗi rõ ràng.
+async function withContentFallback(fields, run) {
+    try {
+        return await run(fields);
+    } catch (error) {
+        if (!isMissingColumn(error) || !CONTENT_COLUMNS.some((c) => c in fields)) throw error;
+        if (CONTENT_COLUMNS.some((c) => fields[c])) {
+            const wrapped = new Error(MISSING_COLUMN_MESSAGE);
+            wrapped.code = 'ER_BAD_FIELD_ERROR';
+            wrapped.migrationMissing = true;
+            throw wrapped;
+        }
+        const rest = { ...fields };
+        CONTENT_COLUMNS.forEach((c) => delete rest[c]);
+        return run(rest);
+    }
 }
 
 const defaultSortOrder = (key) => (SECTION_KEYS.indexOf(key) + 1) * 10;
@@ -265,14 +374,15 @@ async function insertItem(executor, sectionId, fields, sortOrder) {
 }
 
 async function createItem(key, input, accountId) {
-    const sectionId = await ensureSectionRow(db, key, accountId);
     const fields = pickItemFields(input);
+    assertItemRules(key, fields);
+    const sectionId = await ensureSectionRow(db, key, accountId);
     let sortOrder = fields.sort_order;
     if (sortOrder === undefined) {
         const [rows] = await db.query('SELECT COALESCE(MAX(sort_order), 0) AS max_order FROM landing_items WHERE section_id = ?', [sectionId]);
         sortOrder = Number(rows[0]?.max_order || 0) + 10;
     }
-    const id = await insertItem(db, sectionId, fields, sortOrder);
+    const id = await withContentFallback(fields, (f) => insertItem(db, sectionId, f, sortOrder));
     await db.query('UPDATE landing_sections SET items_custom = 1, updated_by = ? WHERE id = ?', [accountId || null, sectionId]);
     invalidateLandingCache();
     return id;
@@ -280,11 +390,15 @@ async function createItem(key, input, accountId) {
 
 async function updateItem(itemId, input, accountId) {
     const fields = pickItemFields(input);
-    const columns = Object.keys(fields);
     const [rows] = await db.query('SELECT id, section_id FROM landing_items WHERE id = ? LIMIT 1', [itemId]);
     if (!rows.length) return false;
-    if (columns.length) {
-        await db.query(`UPDATE landing_items SET ${columns.map((c) => `${c} = ?`).join(', ')} WHERE id = ?`, [...columns.map((c) => fields[c]), itemId]);
+    const [owner] = await db.query('SELECT section_key FROM landing_sections WHERE id = ? LIMIT 1', [rows[0].section_id]);
+    assertItemRules(owner[0] && owner[0].section_key, fields);
+    if (Object.keys(fields).length) {
+        await withContentFallback(fields, (f) => {
+            const columns = Object.keys(f);
+            return db.query(`UPDATE landing_items SET ${columns.map((c) => `${c} = ?`).join(', ')} WHERE id = ?`, [...columns.map((c) => f[c]), itemId]);
+        });
     }
     await db.query('UPDATE landing_sections SET items_custom = 1, updated_by = ? WHERE id = ?', [accountId || null, rows[0].section_id]);
     invalidateLandingCache();
@@ -320,6 +434,9 @@ async function reorderItems(key, ids, accountId) {
 // "Lấy nội dung hiện tại": nhận nội dung mặc định (do giao diện dựng từ i18n vi/en) và ghi vào DB cho các mục chưa có.
 // overwrite=true thay thế mục đã có. Trả danh sách mục đã tạo/bỏ qua.
 async function seedSections(sections, { overwrite = false, accountId = null } = {}) {
+    for (const input of sections) {
+        for (const item of Array.isArray(input.items) ? input.items : []) assertItemRules(input.section_key, pickItemFields(item));
+    }
     const conn = await db.getConnection();
     const seeded = [];
     const skipped = [];
@@ -342,7 +459,7 @@ async function seedSections(sections, { overwrite = false, accountId = null } = 
                 values
             );
             for (let i = 0; i < items.length; i += 1) {
-                await insertItem(conn, result.insertId, pickItemFields(items[i]), (i + 1) * 10);
+                await withContentFallback(pickItemFields(items[i]), (f) => insertItem(conn, result.insertId, f, (i + 1) * 10));
             }
             seeded.push(key);
         }
@@ -364,6 +481,13 @@ module.exports = {
     CACHE_TTL_MS,
     isMissingTable,
     isSafeUrl,
+    isHttpsUrl,
+    isAllowedVideoUrl,
+    isMissingColumn,
+    MISSING_COLUMN_MESSAGE,
+    LandingValidationError,
+    SOCIAL_ICONS,
+    getPublicNewsItem,
     sanitizePlainText,
     sanitizeUrl,
     invalidateLandingCache,

@@ -6,6 +6,7 @@ const { verifyToken, checkRole } = require('../../middleware/authMiddleware');
 // Công khai: GET /api/public/landing?lang=vi|en
 const publicRouter = express.Router();
 publicRouter.get('/landing', controller.getPublicLanding);
+publicRouter.get('/landing/news/:id', schemas.landingItemId, controller.getPublicNewsItem);
 
 // Quản trị: /api/admin/landing/* (chỉ admin). Route cố định đặt trước route có :key.
 const adminRouter = express.Router();

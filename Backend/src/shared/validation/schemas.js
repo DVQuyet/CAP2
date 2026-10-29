@@ -407,7 +407,11 @@ const dismissDuplicate = validate({
 });
 
 // ---- Nội dung trang chủ do admin quản lý (chỉ văn bản thuần; URL chỉ http(s) hoặc đường dẫn nội bộ "/...") ----
-const LANDING_SECTION_KEYS = ['hero', 'about', 'features', 'stats', 'news', 'guide'];
+const LANDING_SECTION_KEYS = [
+    'hero', 'about', 'features', 'stats', 'news', 'guide',
+    'demo', 'benefits', 'benefits_why', 'news_latest', 'news_categories', 'news_subscribe',
+    'guide_videos', 'faq', 'footer', 'footer_contact', 'footer_links', 'footer_social',
+];
 const LANDING_URL_RE = /^(https?:\/\/[^\s<>"']+|\/(?!\/)[^\s<>"']*)$/i;
 const landingText = (label, max) => v.string({ max, label });
 const landingUrl = (label) => v.string({ max: 1000, pattern: LANDING_URL_RE, label, message: `${label} chỉ nhận http(s):// hoặc đường dẫn bắt đầu bằng "/".` });
@@ -429,6 +433,7 @@ const landingItemShape = () => ({
     ...landingBilingual('body', 'nội dung', 3000),
     ...landingBilingual('meta', 'giá trị/ngày', 255),
     ...landingBilingual('link_label', 'nhãn liên kết', 255),
+    ...landingBilingual('content', 'nội dung chi tiết', 20000),
     image_url: landingUrl('ảnh'),
     link_url: landingUrl('liên kết'),
     icon: v.string({ max: 60, pattern: /^[a-z0-9_]+$/i, label: 'biểu tượng' }),

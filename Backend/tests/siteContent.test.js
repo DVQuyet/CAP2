@@ -15,7 +15,7 @@ const sign = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '1h' 
 const ROLES = { 1: 1, 2: 2, 3: 3 }; // account id -> role_id
 
 // DB giả có trạng thái, đủ cho các câu SQL mà module trang chủ dùng.
-function createLandingDb({ missingTable = false } = {}) {
+function createLandingDb({ missingTable = false, noContentColumn = false } = {}) {
     const state = { sections: [], items: [], sectionSeq: 0, itemSeq: 0 };
     const missing = () => Object.assign(new Error("Table 'landing_sections' doesn't exist"), { code: 'ER_NO_SUCH_TABLE' });
     const mock = createMockDb(async (sql, params) => {
@@ -23,6 +23,11 @@ function createLandingDb({ missingTable = false } = {}) {
         if (/FROM archived_members/.test(sql)) return [[]];
         if (/landing_/.test(sql) && missingTable) throw missing();
         let m;
+        if (noContentColumn && /^(INSERT INTO|UPDATE) landing_items/.test(sql) && /content_(vi|en)/.test(sql)) {
+            throw Object.assign(new Error("Unknown column 'content_vi' in 'field list'"), { code: 'ER_BAD_FIELD_ERROR' });
+        }
+        if (/^SELECT \* FROM landing_items WHERE id/.test(sql)) return [state.items.filter((i) => i.id === Number(params[0]))];
+        if (/^SELECT section_key(, is_visible, items_custom)? FROM landing_sections WHERE id/.test(sql)) return [state.sections.filter((s) => s.id === params[0])];
         if (/^SELECT \* FROM landing_sections/.test(sql)) return [[...state.sections].sort((a, b) => a.sort_order - b.sort_order || a.id - b.id)];
         if (/^SELECT \* FROM landing_items/.test(sql)) return [[...state.items].sort((a, b) => a.section_id - b.section_id || a.sort_order - b.sort_order || a.id - b.id)];
         if (/^INSERT IGNORE INTO landing_sections/.test(sql)) {
@@ -279,4 +284,132 @@ test('sanitizePlainText / isSafeUrl', () => {
     assert.strictEqual(service.isSafeUrl('/tin-tuc'), true);
     assert.strictEqual(service.isSafeUrl('https://a.test/x?y=1'), true);
     for (const bad of ['javascript:alert(1)', '//evil.com', 'ftp://x', 'data:text/html,x', ' vbscript:x']) assert.strictEqual(service.isSafeUrl(bad), false, bad);
+});
+
+// ---- Đợt 12: phần còn lại của trang công khai ----
+
+test('khóa mục mới được chấp nhận (demo, benefits, footer...), khóa lạ vẫn bị chặn', async () => {
+    createLandingDb();
+    await withServer(async (call) => {
+        const token = sign(1);
+        for (const key of ['demo', 'benefits', 'benefits_why', 'news_latest', 'news_categories', 'news_subscribe', 'guide_videos', 'faq', 'footer', 'footer_contact', 'footer_links', 'footer_social']) {
+            const res = await call('PUT', `/api/admin/landing/sections/${key}`, { token, body: { title_vi: `T ${key}` } });
+            assert.strictEqual(res.status, 200, key);
+        }
+        assert.strictEqual((await call('PUT', '/api/admin/landing/sections/footer_hack', { token, body: {} })).status, 400);
+        const list = await call('GET', '/api/admin/landing', { token });
+        assert.strictEqual(list.body.sections.length, 12);
+        const pub = await call('GET', '/api/public/landing?lang=vi');
+        assert.strictEqual(pub.body.content.sections.footer_social.title, 'T footer_social');
+    });
+});
+
+test('video hướng dẫn: chỉ https YouTube/Vimeo/mp4', async () => {
+    createLandingDb();
+    await withServer(async (call) => {
+        const token = sign(1);
+        const post = (link_url) => call('POST', '/api/admin/landing/sections/guide_videos/items', { token, body: { title_vi: 'V', link_url } });
+        for (const bad of [
+            'javascript:alert(1)', 'http://www.youtube.com/watch?v=dQw4w9WgXcQ', 'https://evil.example.com/page', 'https://evil.example.com/watch?v=dQw4w9WgXcQ',
+            'https://youtube.com.evil.com/watch?v=dQw4w9WgXcQ', 'https://www.youtube.com/watch?v=short', 'https://vimeo.com/abc', '/uploads/a.mp4', 'https://user:pw@vimeo.com/123456',
+        ]) assert.strictEqual((await post(bad)).status, 400, bad);
+        for (const ok of [
+            'https://www.youtube.com/watch?v=dQw4w9WgXcQ', 'https://youtu.be/dQw4w9WgXcQ', 'https://www.youtube.com/embed/dQw4w9WgXcQ',
+            'https://vimeo.com/123456789', 'https://player.vimeo.com/video/123456789', 'https://cdn.example.com/huong-dan.mp4', '',
+        ]) assert.strictEqual((await post(ok)).status, 201, ok);
+        // Sửa mục: link xấu cũng bị chặn.
+        const created = await post('https://vimeo.com/123456789');
+        const id = created.body.id;
+        assert.strictEqual((await call('PUT', `/api/admin/landing/items/${id}`, { token, body: { link_url: 'http://vimeo.com/123456789' } })).status, 400);
+        // Seed cũng kiểm.
+        const seed = await call('POST', '/api/admin/landing/seed', { token, body: { sections: [{ section_key: 'guide_videos', items: [{ link_url: 'https://evil.example.com/x' }] }] } });
+        assert.strictEqual(seed.status, 400);
+    });
+});
+
+test('footer: liên kết mạng xã hội chỉ https và icon trong danh sách; link footer an toàn; liên hệ chỉ 3 icon', async () => {
+    createLandingDb();
+    await withServer(async (call) => {
+        const token = sign(1);
+        const post = (key, body) => call('POST', `/api/admin/landing/sections/${key}/items`, { token, body });
+        assert.strictEqual((await post('footer_social', { icon: 'facebook', link_url: 'http://facebook.com/x' })).status, 400);
+        assert.strictEqual((await post('footer_social', { icon: 'facebook', link_url: '/relative' })).status, 400);
+        assert.strictEqual((await post('footer_social', { icon: 'evilnet', link_url: 'https://facebook.com/x' })).status, 400);
+        assert.strictEqual((await post('footer_social', { icon: 'facebook', link_url: 'https://facebook.com/giaphaviet' })).status, 201);
+        assert.strictEqual((await post('footer_links', { title_vi: 'Điều khoản', link_url: 'javascript:alert(1)' })).status, 400);
+        assert.strictEqual((await post('footer_links', { title_vi: 'Điều khoản', meta_vi: 'Pháp lý', link_url: '/terms' })).status, 201);
+        assert.strictEqual((await post('footer_contact', { icon: 'call', title_vi: '0900 000 000' })).status, 201);
+        assert.strictEqual((await post('footer_contact', { icon: 'bolt', title_vi: 'x' })).status, 400);
+    });
+});
+
+test('bài tin: chi tiết chỉ khi mục + bài hiển thị, items_custom; ẩn/không tồn tại -> 404; không rò nội dung ở danh sách', async () => {
+    createLandingDb();
+    await withServer(async (call) => {
+        const token = sign(1);
+        const a = await call('POST', '/api/admin/landing/sections/news/items', { token, body: { title_vi: 'Bài A', title_en: 'Post A', content_vi: 'Đoạn 1\n\nĐoạn 2<script>x</script>', content_en: 'Para 1', is_visible: true } });
+        const b = await call('POST', '/api/admin/landing/sections/news/items', { token, body: { title_vi: 'Bài B', content_vi: 'Bí mật', is_visible: false } });
+        const c = await call('POST', '/api/admin/landing/sections/news/items', { token, body: { title_vi: 'Bài C' } });
+        assert.strictEqual(a.status, 201);
+
+        const list = await call('GET', '/api/public/landing?lang=vi');
+        const items = list.body.content.sections.news.items;
+        assert.deepStrictEqual(items.map((i) => [i.title, i.has_content]), [['Bài A', true], ['Bài C', false]]);
+        assert.strictEqual(JSON.stringify(list.body).includes('Đoạn 1'), false);
+
+        const detail = await call('GET', `/api/public/landing/news/${a.body.id}?lang=vi`);
+        assert.strictEqual(detail.status, 200);
+        assert.strictEqual(detail.body.item.title, 'Bài A');
+        assert.strictEqual(detail.body.item.content, 'Đoạn 1\n\nĐoạn 2x');
+        const en = await call('GET', `/api/public/landing/news/${a.body.id}?lang=en`);
+        assert.strictEqual(en.body.item.content, 'Para 1');
+        // Không có bản dịch EN: dùng tiếng Việt.
+        const noEn = await call('GET', `/api/public/landing/news/${c.body.id}?lang=en`);
+        assert.strictEqual(noEn.status, 200);
+
+        assert.strictEqual((await call('GET', `/api/public/landing/news/${b.body.id}`)).status, 404);
+        assert.strictEqual((await call('GET', '/api/public/landing/news/99999')).status, 404);
+        assert.strictEqual((await call('GET', '/api/public/landing/news/abc')).status, 400);
+
+        // Ẩn cả mục Tin tức -> mọi bài 404.
+        await call('PUT', '/api/admin/landing/sections/news', { token, body: { is_visible: false } });
+        assert.strictEqual((await call('GET', `/api/public/landing/news/${a.body.id}`)).status, 404);
+    });
+});
+
+test('bài tin: item của mục khác không đọc được qua endpoint tin; content chỉ cho mục Tin tức', async () => {
+    createLandingDb();
+    await withServer(async (call) => {
+        const token = sign(1);
+        const other = await call('POST', '/api/admin/landing/sections/guide/items', { token, body: { title_vi: 'Bước 1' } });
+        assert.strictEqual((await call('GET', `/api/public/landing/news/${other.body.id}`)).status, 404);
+        const bad = await call('POST', '/api/admin/landing/sections/guide/items', { token, body: { title_vi: 'x', content_vi: 'nội dung' } });
+        assert.strictEqual(bad.status, 400);
+    });
+});
+
+test('chưa migrate cột content: ghi không có nội dung vẫn chạy, ghi nội dung báo 503 rõ ràng; công khai không lỗi', async () => {
+    createLandingDb({ noContentColumn: true });
+    await withServer(async (call) => {
+        const token = sign(1);
+        const plain = await call('POST', '/api/admin/landing/sections/news/items', { token, body: { title_vi: 'Bài', content_vi: '', content_en: '' } });
+        assert.strictEqual(plain.status, 201);
+        const withContent = await call('POST', '/api/admin/landing/sections/news/items', { token, body: { title_vi: 'Bài', content_vi: 'Dài' } });
+        assert.strictEqual(withContent.status, 503);
+        assert.match(withContent.body.message, /2026_10_30_site_content_more/);
+        const upd = await call('PUT', `/api/admin/landing/items/${plain.body.id}`, { token, body: { title_vi: 'Đổi', content_vi: '', content_en: '' } });
+        assert.strictEqual(upd.status, 200);
+        const pub = await call('GET', '/api/public/landing');
+        assert.strictEqual(pub.body.content.sections.news.items[0].title, 'Đổi');
+        assert.strictEqual(pub.body.content.sections.news.items[0].has_content, false);
+    });
+});
+
+test('isAllowedVideoUrl / isHttpsUrl', () => {
+    assert.strictEqual(service.isAllowedVideoUrl('https://www.youtube.com/shorts/dQw4w9WgXcQ'), true);
+    assert.strictEqual(service.isAllowedVideoUrl('https://x.test/a.mp4?token=1'), true);
+    assert.strictEqual(service.isAllowedVideoUrl('https://x.test/a.mp4.exe'), false);
+    assert.strictEqual(service.isAllowedVideoUrl('//youtube.com/watch?v=dQw4w9WgXcQ'), false);
+    assert.strictEqual(service.isHttpsUrl('https://t.me/x'), true);
+    assert.strictEqual(service.isHttpsUrl('http://t.me/x'), false);
 });

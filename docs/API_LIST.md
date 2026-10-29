@@ -154,8 +154,9 @@ Nội dung trang chủ công khai (hero, giới thiệu, tính năng, số liệ
 | Method | Endpoint | Quyền | Mô tả ngắn |
 |---|---|---|---|
 | GET | `/api/public/landing?lang=vi|en` | Public | `{ success, lang, content }`; `content` = `{ sections: { <key>: { visible, tag, title, body, quote, image_url, items_custom, items[] } }, order[] }` hoặc `null`. Cache bộ nhớ 60s, xóa khi admin ghi |
+| GET | `/api/public/landing/news/:id?lang=vi|en` | Public | Chi tiết một bài tin: `{ success, lang, item: { id, title, body, meta, image_url, link_url, content, ... } }`; 404 nếu bài/mục Tin tức bị ẩn, chưa tùy chỉnh hoặc không tồn tại. Danh sách công khai chỉ có `has_content`, không kèm nội dung dài |
 | GET | `/api/admin/landing` | admin | Toàn bộ mục + mục con (kể cả ẩn), đủ vi/en; `tableMissing: true` nếu chưa migrate |
-| PUT | `/api/admin/landing/sections/:key` | admin | Cập nhật mục (`hero|about|features|stats|news|guide`): tag/title/body/quote_vi/en, image_url, is_visible, sort_order; tự tạo dòng mục nếu chưa có |
+| PUT | `/api/admin/landing/sections/:key` | admin | Cập nhật mục (`hero|about|features|stats|news|guide` và đợt 12: `demo|benefits|benefits_why|news_latest|news_categories|news_subscribe|guide_videos|faq|footer|footer_contact|footer_links|footer_social`): tag/title/body/quote_vi/en, image_url, is_visible, sort_order; tự tạo dòng mục nếu chưa có |
 | PUT | `/api/admin/landing/sections/order` | admin | Sắp xếp các mục, body `{ keys: [] }` |
 | DELETE | `/api/admin/landing/sections/:key` | admin | Khôi phục mặc định: xóa mục và mọi mục con |
 | POST | `/api/admin/landing/sections/:key/items` | admin | Thêm mục con (title/body/meta/link_label_vi/en, image_url, link_url, icon, is_visible) |
@@ -163,6 +164,8 @@ Nội dung trang chủ công khai (hero, giới thiệu, tính năng, số liệ
 | PUT | `/api/admin/landing/items/:id` | admin | Sửa mục con |
 | DELETE | `/api/admin/landing/items/:id` | admin | Xóa mục con |
 | POST | `/api/admin/landing/seed` | admin | "Lấy nội dung hiện tại": body `{ sections: [{ section_key, ..., items: [] }], overwrite? }`; chỉ tạo mục chưa có (trừ khi `overwrite`) |
+
+Đợt 12: mục con tin tức có thêm `content_vi/content_en` (văn bản thuần, tối đa 20000 ký tự, cần migration `2026_10_30_site_content_more.sql`; chưa migrate thì ghi nội dung dài trả 503). Quy tắc riêng: `guide_videos.link_url` chỉ nhận https YouTube/Vimeo hoặc tệp `.mp4`; `footer_social` chỉ nhận `link_url` https và `icon` trong `facebook|youtube|tiktok|zalo|instagram|x|linkedin|telegram|other`; `footer_contact.icon` chỉ `location_on|call|mail`; `content_*` chỉ cho mục `news`. Vi phạm trả 400.
 
 ## Manager
 

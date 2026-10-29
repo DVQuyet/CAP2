@@ -6,6 +6,8 @@ const accountIdOf = (req) => req.user?.id || req.user?.account_id || null;
 const TABLE_MISSING_MESSAGE = 'Chưa tạo bảng nội dung trang chủ. Hãy chạy migration 2026_10_30_site_content.sql.';
 
 function handleError(res, error, label) {
+    if (error && error.status === 400 && error.name === 'LandingValidationError') return fail(res, 400, error.message);
+    if (error && error.migrationMissing) return fail(res, 503, service.MISSING_COLUMN_MESSAGE);
     if (service.isMissingTable(error)) return fail(res, 503, TABLE_MISSING_MESSAGE);
     console.error(`${label}:`, error);
     return fail(res, 500, 'Không thể xử lý nội dung trang chủ');
@@ -23,6 +25,20 @@ async function getPublicLanding(req, res) {
         console.error('getPublicLanding error:', error);
         // Lỗi DB không được làm vỡ trang chủ: trả null để dùng mặc định.
         return res.json({ success: true, lang: 'vi', content: null });
+    }
+}
+
+// Chi tiết một bài tin (đã có nội dung chi tiết hoặc chỉ mục hiển thị); ẩn/không tồn tại -> 404.
+async function getPublicNewsItem(req, res) {
+    try {
+        const lang = String(req.query.lang || 'vi').toLowerCase().startsWith('en') ? 'en' : 'vi';
+        const item = await service.getPublicNewsItem(req.params.id, lang);
+        if (!item) return fail(res, 404, 'Không tìm thấy bài viết');
+        res.set({ 'Cache-Control': 'public, max-age=30' });
+        return res.json({ success: true, lang, item });
+    } catch (error) {
+        console.error('getPublicNewsItem error:', error);
+        return fail(res, 500, 'Không thể tải bài viết');
     }
 }
 
@@ -115,6 +131,6 @@ async function seed(req, res) {
 }
 
 module.exports = {
-    getPublicLanding, getAdminLanding, updateSection, reorderSections, resetSection,
+    getPublicLanding, getPublicNewsItem, getAdminLanding, updateSection, reorderSections, resetSection,
     createItem, updateItem, deleteItem, reorderItems, seed,
 };
