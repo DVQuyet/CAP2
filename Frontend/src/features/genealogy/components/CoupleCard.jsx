@@ -54,7 +54,7 @@ function PersonHalf({
           {hasChildren ? (
             <button
               type="button"
-              title={descendantsCollapsed ? t("tree.card.descendantsExpand") : t("tree.card.descendantsCollapse")}
+              title={descendantsCollapsed ? t("tree.card.descendantsExpand") : t("tree.card.descendantsCollapse")} aria-label={descendantsCollapsed ? t("tree.card.descendantsExpand") : t("tree.card.descendantsCollapse")}
               onPointerDown={stopActionPointer}
               onClick={(event) => { event.stopPropagation(); onToggleDescendants?.(person.id); }}
             >
@@ -64,7 +64,7 @@ function PersonHalf({
           {hasAncestors ? (
             <button
               type="button"
-              title={ancestorsCollapsed ? t("tree.card.ancestorsExpand") : t("tree.card.ancestorsCollapse")}
+              title={ancestorsCollapsed ? t("tree.card.ancestorsExpand") : t("tree.card.ancestorsCollapse")} aria-label={ancestorsCollapsed ? t("tree.card.ancestorsExpand") : t("tree.card.ancestorsCollapse")}
               onPointerDown={stopActionPointer}
               onClick={(event) => { event.stopPropagation(); onToggleAncestors?.(person.id); }}
             >

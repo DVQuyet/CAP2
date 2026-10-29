@@ -96,8 +96,8 @@ function PostCard({ post, onOpen, onLike, liking, onDelete, onEdit, canModify, t
         </button>
         {canModify && (
           <div className="feed-post-card-actions">
-            <button type="button" className="feed-post-action-btn" onClick={() => onEdit(post)} title={t("posts.card.edit")}><span className="material-symbols-outlined">edit</span></button>
-            <button type="button" className="feed-post-action-btn is-danger" onClick={() => onDelete(post.id)} title={t("posts.card.delete")}><span className="material-symbols-outlined">delete</span></button>
+            <button type="button" className="feed-post-action-btn" onClick={() => onEdit(post)} title={t("posts.card.edit")} aria-label={t("posts.card.edit")}><span className="material-symbols-outlined">edit</span></button>
+            <button type="button" className="feed-post-action-btn is-danger" onClick={() => onDelete(post.id)} title={t("posts.card.delete")} aria-label={t("posts.card.delete")}><span className="material-symbols-outlined">delete</span></button>
           </div>
         )}
       </header>
@@ -760,7 +760,7 @@ export default function GeneralPosts() {
           <section className="post-modal post-compose-modal" role="dialog" aria-modal="true" onMouseDown={(e) => e.stopPropagation()}>
             <header className="post-modal-head">
               <h2>{t("posts.modal.edit.title")}</h2>
-              <button type="button" className="post-icon-btn" onClick={() => requestClose(closeEditPost, isEditPostDirty)}><span className="material-symbols-outlined">close</span></button>
+              <button aria-label={t("common.close")} type="button" className="post-icon-btn" onClick={() => requestClose(closeEditPost, isEditPostDirty)}><span className="material-symbols-outlined">close</span></button>
             </header>
             <div className="post-compose-form">
               <label className="post-field">

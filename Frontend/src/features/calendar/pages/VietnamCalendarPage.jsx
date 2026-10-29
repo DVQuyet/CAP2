@@ -544,13 +544,13 @@ export default function VietnamCalendarPage() {
             </div>
             <input value={eventForm.title} onChange={(event) => setEventForm((current) => ({ ...current, title: event.target.value }))} placeholder={t("vnCalendar.form.titlePlaceholder")} />
             <div className="vn-event-form-row">
-              <select value={eventForm.type} onChange={(event) => setEventForm((current) => ({ ...current, type: event.target.value }))}>
+              <select aria-label={t("a11y.type")} value={eventForm.type} onChange={(event) => setEventForm((current) => ({ ...current, type: event.target.value }))}>
                 <option value="holiday">{t("vnCalendar.types.holiday")}</option>
                 <option value="family">{t("vnCalendar.types.family")}</option>
                 <option value="study">{t("vnCalendar.types.study")}</option>
                 <option value="personal">{t("vnCalendar.types.personal")}</option>
               </select>
-              <input type="time" value={eventForm.time} onChange={(event) => setEventForm((current) => ({ ...current, time: event.target.value }))} />
+              <input aria-label={t("a11y.time")} type="time" value={eventForm.time} onChange={(event) => setEventForm((current) => ({ ...current, time: event.target.value }))} />
             </div>
 
             <label className="vn-reminder-field">
@@ -631,12 +631,12 @@ export default function VietnamCalendarPage() {
                       </button>
                     ) : null}
                     {event.source !== "system" && event.can_edit ? (
-                      <button type="button" onClick={() => openEditForm(event)} title={t("vnCalendar.editTitle")}>
+                      <button type="button" onClick={() => openEditForm(event)} title={t("vnCalendar.editTitle")} aria-label={t("vnCalendar.editTitle")}>
                         <span className="material-symbols-outlined">edit</span>
                       </button>
                     ) : null}
                     {event.source !== "system" && event.can_delete ? (
-                      <button type="button" onClick={() => deleteEvent(event)} title={t("common.delete")}>
+                      <button type="button" onClick={() => deleteEvent(event)} title={t("common.delete")} aria-label={t("common.delete")}>
                         <span className="material-symbols-outlined">delete</span>
                       </button>
                     ) : null}

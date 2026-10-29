@@ -359,7 +359,7 @@ export default function ManagerLayout() {
             </button>
             <NotificationBell role="manager" buttonClassName="util-btn" />
             <LanguageToggle className="util-btn" />
-            <button className="util-btn" title={t("layout.editAccount")} onClick={openAccountModal}>
+            <button className="util-btn" title={t("layout.editAccount")} aria-label={t("layout.editAccount")} onClick={openAccountModal}>
               <span className="material-symbols-outlined">account_circle</span>
             </button>
             <button className="util-btn" title={t("common.help")} aria-label={t("common.help")} onClick={() => setHelpOpen(true)}>

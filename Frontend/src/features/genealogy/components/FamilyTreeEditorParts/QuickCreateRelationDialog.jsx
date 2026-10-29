@@ -22,7 +22,7 @@ export default function QuickCreateRelationDialog({
             <span>{fullName(sourcePerson, t("tree.card.fallbackName"))}</span>
             <h3>{t("tree.quickCreate.title")}</h3>
           </div>
-          <button type="button" className="fte-iconButton" onClick={onCancel} title={t("common.close")}>
+          <button type="button" className="fte-iconButton" onClick={onCancel} title={t("common.close")} aria-label={t("common.close")}>
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>

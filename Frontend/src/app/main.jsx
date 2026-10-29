@@ -6,6 +6,7 @@ import "aos/dist/aos.css";
 import App from "./App";
 import "../styles/tokens.css";
 import "../index.css";
+import "../styles/a11y.css";
 import { i18nReady } from "../i18n/i18n";
 
 // Chạy dev ở máy: nếu còn service worker/caches của bản build (PWA) trên localhost thì gỡ và tải lại,

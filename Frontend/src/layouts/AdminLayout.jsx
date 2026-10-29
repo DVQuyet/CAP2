@@ -48,7 +48,7 @@ export default function AdminLayout() {
           type="button"
           className="sidebar-toggle"
           onClick={() => setSidebarOpen((v) => !v)}
-          title={sidebarOpen ? t("layout.collapse") : t("layout.expand")}
+          title={sidebarOpen ? t("layout.collapse") : t("layout.expand")} aria-label={sidebarOpen ? t("layout.collapse") : t("layout.expand")}
         >
           <span className="material-symbols-outlined">{sidebarOpen ? "chevron_left" : "chevron_right"}</span>
         </button>

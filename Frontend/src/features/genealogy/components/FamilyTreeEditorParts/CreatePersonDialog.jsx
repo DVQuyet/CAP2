@@ -112,7 +112,7 @@ export default function CreatePersonDialog({
             <h3>{dialogTitle}</h3>
           </div>
 
-          <button type="button" className="fte-iconButton" onClick={handleCancel} title={t("common.close")}>
+          <button type="button" className="fte-iconButton" onClick={handleCancel} title={t("common.close")} aria-label={t("common.close")}>
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { buttonLikeProps, rowLikeProps } from "../../../shared/utils/a11yClick";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { getAdminClanTasks, getAdminClans, getAdminMembers } from "../../../api/adminService";
@@ -192,7 +193,7 @@ function MemberCombobox({ members, value, onChange, disabled = false }) {
 
       {open && (
         <div className="task-combobox-menu">
-          <input
+          <input aria-label={t("common.search")}
             className="task-combobox-search"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
@@ -1197,7 +1198,7 @@ const openEvent = (eventId) => {
 
         <div className="clan-folder-grid">
           {clans.map((item) => (
-            <div key={item.id} className="clan-folder-card" onClick={() => navigate(`/dashboard/tasks/clan/${item.id}`)}>
+            <div {...buttonLikeProps} key={item.id} className="clan-folder-card" onClick={() => navigate(`/dashboard/tasks/clan/${item.id}`)}>
               <div className="folder-icon">
                 <span className="material-symbols-outlined">folder_managed</span>
                 <span className="count-badge">{item.task_count || 0}</span>
@@ -1226,7 +1227,7 @@ const openEvent = (eventId) => {
                 </span>
                 <span className="toast-msg">{toast.message}</span>
             </div>
-            <button onClick={() => setToast(prev => ({ ...prev, show: false }))} className="toast-close">
+            <button aria-label={t("common.close")} onClick={() => setToast(prev => ({ ...prev, show: false }))} className="toast-close">
                 <span className="material-symbols-outlined">close</span>
             </button>
         </div>
@@ -1410,7 +1411,7 @@ const openEvent = (eventId) => {
                   disabled={aiLoading}
                   style={{ width: '100%', background: '#fff', border: '1px solid #d7c6aa', borderRadius: '12px', padding: '12px 45px 12px 12px', color: '#111827' }}
                 />
-                <button
+                <button aria-label={voiceListening ? t("common.stopVoice") : t("common.startVoice")}
                   className={`ai-voice-btn ${voiceListening ? "is-listening" : ""}`}
                   type="button"
                   onClick={toggleAiPromptVoiceInput}
@@ -1452,7 +1453,7 @@ const openEvent = (eventId) => {
                           <span className={canSend ? "ai-task-valid is-ok" : "ai-task-valid is-warning"} style={{ fontSize: '0.8rem', color: canSend ? '#4ade80' : '#fbbf24' }}>
                             {canSend ? t("eventsTasks.placeholders.infoComplete") : t("eventsTasks.placeholders.infoIncomplete")}
                           </span>
-                          <button className="task-icon-btn is-danger" type="button" onClick={() => removeAiTaskSuggestion(task.id)} style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', width: '32px', height: '32px', borderRadius: '8px' }}>
+                          <button aria-label={t("common.delete")} className="task-icon-btn is-danger" type="button" onClick={() => removeAiTaskSuggestion(task.id)} style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#ef4444', width: '32px', height: '32px', borderRadius: '8px' }}>
                             <span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>delete</span>
                           </button>
                         </div>
@@ -1680,7 +1681,7 @@ const openEvent = (eventId) => {
                 const openCount = Math.max(assignmentCount - completedCount, 0);
                 
                 return (
-                  <tr key={event.id} onClick={() => openEvent(event.id)} style={{ cursor: 'pointer' }}>
+                  <tr {...rowLikeProps} key={event.id} onClick={() => openEvent(event.id)} style={{ cursor: 'pointer' }}>
                     <td>
                       <div className="author-cell">
                         <div className="author-avatar"><span className="material-symbols-outlined" style={{ fontSize: '1.2rem' }}>event</span></div>
@@ -1738,7 +1739,7 @@ const openEvent = (eventId) => {
               </span>
               <span className="toast-msg">{toast.message}</span>
           </div>
-          <button onClick={() => setToast(prev => ({ ...prev, show: false }))} className="toast-close">
+          <button aria-label={t("common.close")} onClick={() => setToast(prev => ({ ...prev, show: false }))} className="toast-close">
               <span className="material-symbols-outlined">close</span>
           </button>
       </div>

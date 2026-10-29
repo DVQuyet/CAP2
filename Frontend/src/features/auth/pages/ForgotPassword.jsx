@@ -123,7 +123,7 @@ const ForgotPassword = () => {
         {step === 2 && (
           <form onSubmit={handleReset}>
             <div className="input-field">
-              <input type="email" value={email} disabled readOnly />
+              <input aria-label={t("common.email")} type="email" value={email} disabled readOnly />
             </div>
             <div className="input-field">
               <input

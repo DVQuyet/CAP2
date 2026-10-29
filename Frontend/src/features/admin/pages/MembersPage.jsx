@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { buttonLikeProps } from "../../../shared/utils/a11yClick";
 import useDismissable from "../../../shared/hooks/useDismissable";
 import { useTranslation } from "react-i18next";
 import {
@@ -65,7 +66,7 @@ const Pagination = ({ currentPage, totalItems, itemsPerPage, onPageChange, t }) 
 
   return (
     <div className="admin-pagination">
-      <button 
+      <button aria-label={t("a11y.firstPage")} 
         type="button"
         className="pagination-btn"
         disabled={currentPage === 1} 
@@ -75,7 +76,7 @@ const Pagination = ({ currentPage, totalItems, itemsPerPage, onPageChange, t }) 
       </button>
 
       {totalPages > 5 && (
-        <button 
+        <button aria-label={t("a11y.previousPage")} 
           type="button"
           className="pagination-btn"
           disabled={currentPage === 1} 
@@ -97,7 +98,7 @@ const Pagination = ({ currentPage, totalItems, itemsPerPage, onPageChange, t }) 
       ))}
 
       {totalPages > 5 && (
-        <button 
+        <button aria-label={t("a11y.nextPage")} 
           type="button"
           className="pagination-btn"
           disabled={currentPage === totalPages} 
@@ -107,7 +108,7 @@ const Pagination = ({ currentPage, totalItems, itemsPerPage, onPageChange, t }) 
         </button>
       )}
 
-      <button 
+      <button aria-label={t("a11y.lastPage")} 
         type="button"
         className="pagination-btn"
         disabled={currentPage === totalPages} 
@@ -354,7 +355,7 @@ export default function MembersPage() {
 
           <div className="clan-folder-grid">
             {pagedClanCards.map((clan) => (
-              <div
+              <div {...buttonLikeProps}
                 key={clan.id}
                 className="clan-folder-card"
                 onClick={() => openClanFolder(clan.id)}
@@ -390,7 +391,7 @@ export default function MembersPage() {
         <>
           <div className="premium-toolbar">
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <button type="button" className="action-btn-circle" onClick={backToClanFolders} title={t("admin.accounts.actions.back")}>
+                <button type="button" className="action-btn-circle" onClick={backToClanFolders} title={t("admin.accounts.actions.back")} aria-label={t("admin.accounts.actions.back")}>
                     <span className="material-symbols-outlined">arrow_back</span>
                 </button>
                 <h2 style={{ margin: 0, color: '#4a160f', fontSize: '1.4rem' }}>{selectedClanName}</h2>
@@ -446,11 +447,11 @@ export default function MembersPage() {
                 <td>{a.created_at ? formatDate(a.created_at, i18n) : "-"}</td>
                 <td className="text-right">
                   <div className="action-buttons-grid">
-                    <button className="action-btn-circle" title={t("admin.accounts.actions.edit")} onClick={() => openEdit(a)}>
+                    <button className="action-btn-circle" title={t("admin.accounts.actions.edit")} aria-label={t("admin.accounts.actions.edit")} onClick={() => openEdit(a)}>
                       <span className="material-symbols-outlined">edit</span>
                     </button>
                     {Number(a.role_id) !== 1 && (
-                      <button className="action-btn-circle delete" title={t("admin.accounts.actions.delete")} onClick={() => handleDelete(a)}>
+                      <button className="action-btn-circle delete" title={t("admin.accounts.actions.delete")} aria-label={t("admin.accounts.actions.delete")} onClick={() => handleDelete(a)}>
                         <span className="material-symbols-outlined">delete</span>
                       </button>
                     )}
@@ -516,7 +517,7 @@ export default function MembersPage() {
                 {toast.type === "success" ? "check_circle" : "warning"}
             </span>
             <span className="toast-message">{toast.message}</span>
-            <button className="toast-close-btn" onClick={() => setToast(prev => ({ ...prev, show: false }))}>
+            <button aria-label={t("common.close")} className="toast-close-btn" onClick={() => setToast(prev => ({ ...prev, show: false }))}>
                 <span className="material-symbols-outlined">close</span>
             </button>
         </div>

@@ -184,7 +184,7 @@ export default function MemberLayout() {
             <NotificationBell role="member" buttonClassName="top-icon-btn glass-btn" />
             <LanguageToggle className="top-icon-btn glass-btn" />
             <div className="divider" />
-            <button type="button" className="top-icon-btn glass-btn" onClick={() => setProfileOpen(true)} title={t("common.editProfile")}>
+            <button type="button" className="top-icon-btn glass-btn" onClick={() => setProfileOpen(true)} title={t("common.editProfile")} aria-label={t("common.editProfile")}>
               <span className="material-symbols-outlined">settings</span>
             </button>
           </div>

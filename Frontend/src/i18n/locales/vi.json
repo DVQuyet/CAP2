@@ -1,4 +1,23 @@
 {
+  "a11y": {
+    "firstPage": "Trang đầu",
+    "previousPage": "Trang trước",
+    "nextPage": "Trang sau",
+    "lastPage": "Trang cuối",
+    "clearSearch": "Xóa tìm kiếm",
+    "qrCode": "Mã QR",
+    "evidence": "Ảnh minh chứng",
+    "bill": "Ảnh hóa đơn",
+    "preview": "Ảnh xem trước",
+    "type": "Loại",
+    "time": "Giờ",
+    "datePrecision": "Độ chính xác của ngày",
+    "calendarType": "Loại lịch",
+    "living": "Còn sống hay đã mất",
+    "status": "Trạng thái",
+    "generation": "Đời",
+    "role": "Vai trò"
+  },
   "common": {
     "all": "Tất cả",
     "approved": "Đã duyệt",

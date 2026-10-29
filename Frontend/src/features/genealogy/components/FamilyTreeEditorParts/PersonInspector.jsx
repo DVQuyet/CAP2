@@ -84,7 +84,7 @@ export default function PersonInspector({
             <h3>{fullName(person, t("tree.card.fallbackName"))}</h3>
             <p>{spouse ? t("tree.inspector.spouseLabel", { name: fullName(spouse) }) : t("tree.inspector.fallbackSubtitle")}</p>
           </div>
-          <button type="button" className="fte-iconButton" onClick={onClose} title={t("tree.inspector.closePanel")}>
+          <button type="button" className="fte-iconButton" onClick={onClose} title={t("tree.inspector.closePanel")} aria-label={t("tree.inspector.closePanel")}>
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>

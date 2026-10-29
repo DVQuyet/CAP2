@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { buttonLikeProps } from "../../../shared/utils/a11yClick";
 import { useTranslation } from "react-i18next";
 import {
     createAdminClan,
@@ -261,7 +262,7 @@ export default function GenealogyManagement() {
                     {filteredClans.length === 0 ? (
                         <div className="empty-clan-list">{t("admin.genealogy.sidebar.empty")}</div>
                     ) : filteredClans.map(clan => (
-                        <div
+                        <div {...buttonLikeProps}
                             key={clan.id}
                             className={`clan-item ${selectedClanId === clan.id ? 'active' : ''}`}
                             onClick={() => setSelectedClanId(clan.id)}
@@ -273,10 +274,10 @@ export default function GenealogyManagement() {
                                 {clan.owner_name ? <small>{t("admin.genealogy.sidebar.owner", { name: clan.owner_name })}</small> : null}
                             </div>
                             <div className="clan-actions" onClick={(event) => event.stopPropagation()}>
-                                <button type="button" title={t("admin.genealogy.modal.editTitle")} onClick={() => { setSelectedClanId(clan.id); openEditModal(clan); }}>
+                                <button type="button" title={t("admin.genealogy.modal.editTitle")} aria-label={t("admin.genealogy.modal.editTitle")} onClick={() => { setSelectedClanId(clan.id); openEditModal(clan); }}>
                                     <span className="material-symbols-outlined">edit</span>
                                 </button>
-                                <button type="button" className="danger" title={t("admin.genealogy.messages.deleteError")} onClick={() => handleDeleteClan(clan)}>
+                                <button type="button" className="danger" title={t("admin.genealogy.messages.deleteError")} aria-label={t("admin.genealogy.messages.deleteError")} onClick={() => handleDeleteClan(clan)}>
                                     <span className="material-symbols-outlined">delete</span>
                                 </button>
                             </div>
@@ -306,7 +307,7 @@ export default function GenealogyManagement() {
             {modalMode && (
                 <div className="clan-modal-backdrop" {...backdropProps(closeModal, isFormDirty)}>
                     <form className="clan-modal" onSubmit={handleSubmitClan} onClick={(event) => event.stopPropagation()}>
-                        <button type="button" className="close-modal" onClick={() => requestClose(closeModal, isFormDirty)}>
+                        <button aria-label={t("common.close")} type="button" className="close-modal" onClick={() => requestClose(closeModal, isFormDirty)}>
                             <span className="material-symbols-outlined">close</span>
                         </button>
                         <h3>{modalMode === "edit" ? t("admin.genealogy.modal.editTitle") : t("admin.genealogy.modal.createTitle")}</h3>

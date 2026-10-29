@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { buttonLikeProps } from "../../../shared/utils/a11yClick";
 import { useTranslation } from "react-i18next";
 import { apiRequest } from "../../../services/api";
 import { resolveImageUrl } from "../../../shared/utils/media";
@@ -224,7 +225,7 @@ export default function MemberFundPage() {
           <div className="glass-card ledger-box" style={{ padding: '1rem', background: 'rgba(17, 20, 32, 0.6)' }}>
             <div className="tx-scroller" style={{ maxHeight: '600px', overflowY: 'auto' }}>
               {mainLedgerTransactions.map(tx => (
-                <div key={`${tx.type}-${tx.id}`} className={`tx-card-v2 ${tx.type}`} onClick={() => setSelectedTransaction(tx)} style={{ cursor: 'pointer' }}>
+                <div {...buttonLikeProps} key={`${tx.type}-${tx.id}`} className={`tx-card-v2 ${tx.type}`} onClick={() => setSelectedTransaction(tx)} style={{ cursor: 'pointer' }}>
                   <div className="tx-main">
                     <div className="tx-note">{tx.note || t("fund.member.ledger.defaultNote")}</div>
                     <div className="tx-meta">
@@ -299,7 +300,7 @@ export default function MemberFundPage() {
                         </div>
                         {selectedCampaign.campaign.qr_code_media_id && (
                           <div className="qr-box-v3">
-                            <img src={resolveImageUrl({ mediaId: selectedCampaign.campaign.qr_code_media_id })} alt="QR Code" />
+                            <img src={resolveImageUrl({ mediaId: selectedCampaign.campaign.qr_code_media_id })} alt={t("a11y.qrCode")} />
                             <p>{t("fund.member.bank.qrHelp")}</p>
                           </div>
                         )}
@@ -317,7 +318,7 @@ export default function MemberFundPage() {
 
                     <form onSubmit={handleSubmit} className="premium-form">
                       <h4>{t("fund.member.form.reportTitle")}</h4>
-                      <div className="form-group"><label>{t("fund.member.form.contributionAmount")}</label><input type="number" required value={formData.amount} onChange={e => setFormData({ ...formData, amount: e.target.value })} /></div>
+                      <div className="form-group"><label>{t("fund.member.form.contributionAmount")}</label><input aria-label={t("fund.member.form.contributionAmount")} type="number" required value={formData.amount} onChange={e => setFormData({ ...formData, amount: e.target.value })} /></div>
 
                       {formData.method === paymentMethods.transfer && (
                         <div className="form-group">
@@ -332,7 +333,7 @@ export default function MemberFundPage() {
                         </div>
                       )}
 
-                      <div className="form-group"><label>{t("fund.modal.approval.note")}</label><textarea value={formData.note} onChange={e => setFormData({ ...formData, note: e.target.value })} placeholder={t("fund.member.form.notePlaceholder")}></textarea></div>
+                      <div className="form-group"><label>{t("fund.modal.approval.note")}</label><textarea aria-label={t("fund.modal.approval.note")} value={formData.note} onChange={e => setFormData({ ...formData, note: e.target.value })} placeholder={t("fund.member.form.notePlaceholder")}></textarea></div>
 
                       <button type="submit" className="btn-premium btn-green" style={{ width: '100%', marginTop: '1rem' }} disabled={submitting || (formData.method === paymentMethods.transfer && !formData.evidence_media_id)}>
                         {t("fund.member.actions.sendReport")}
@@ -367,8 +368,8 @@ export default function MemberFundPage() {
                       {t("fund.methods.transfer")}
                     </label>
                   </div>
-                  <div className="form-group"><label>{t("fund.modal.form.amount")}</label><input type="number" required value={generalData.amount} onChange={e => setGeneralData({ ...generalData, amount: e.target.value })} /></div>
-                  <div className="form-group"><label>{t("fund.modal.transactionDetail.content")}</label><textarea required value={generalData.note} onChange={e => setGeneralData({ ...generalData, note: e.target.value })}></textarea></div>
+                  <div className="form-group"><label>{t("fund.modal.form.amount")}</label><input aria-label={t("fund.modal.form.amount")} type="number" required value={generalData.amount} onChange={e => setGeneralData({ ...generalData, amount: e.target.value })} /></div>
+                  <div className="form-group"><label>{t("fund.modal.transactionDetail.content")}</label><textarea aria-label={t("fund.modal.transactionDetail.content")} required value={generalData.note} onChange={e => setGeneralData({ ...generalData, note: e.target.value })}></textarea></div>
                   <button type="submit" className="btn-premium btn-gold" style={{ width: '100%', marginTop: '1rem' }} disabled={submitting}>{t("fund.member.actions.sendContribution")}</button>
                 </form>
               )}

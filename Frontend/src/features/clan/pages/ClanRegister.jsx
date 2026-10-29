@@ -205,7 +205,7 @@ const ClanRegister = () => {
               </div>
 
               <div className="input-row">
-                <select name="gender" value={managerForm.gender} onChange={handleManagerChange} required>
+                <select aria-label={t("common.gender")} name="gender" value={managerForm.gender} onChange={handleManagerChange} required>
                   <option value="1">{t("auth.register.male")}</option>
                   <option value="2">{t("auth.register.female")}</option>
                 </select>

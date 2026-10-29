@@ -111,8 +111,8 @@ function MemoryCard({ memory, isManagerView = false, t, showCarouselControls = f
           <span className={`memory-status is-${memory.status || "approved"}`}>{getStatusLabel(memory.status, t)}</span>
           {canModify && (
             <div className="memory-card-actions">
-              {onEdit && <button type="button" className="memory-action-btn" onClick={() => onEdit(memory)} title={t("timeCapsule.card.edit")}><span className="material-symbols-outlined">edit</span></button>}
-              <button type="button" className="memory-action-btn is-danger" onClick={() => onDelete(memory.id)} title={t("timeCapsule.card.delete")}><span className="material-symbols-outlined">delete</span></button>
+              {onEdit && <button type="button" className="memory-action-btn" onClick={() => onEdit(memory)} title={t("timeCapsule.card.edit")} aria-label={t("timeCapsule.card.edit")}><span className="material-symbols-outlined">edit</span></button>}
+              <button type="button" className="memory-action-btn is-danger" onClick={() => onDelete(memory.id)} title={t("timeCapsule.card.delete")} aria-label={t("timeCapsule.card.delete")}><span className="material-symbols-outlined">delete</span></button>
             </div>
           )}
         </div>
@@ -800,7 +800,7 @@ export default function TimeCapsulePage({ role = "member" }) {
                       type="button"
                       className="memory-switch-camera"
                       onClick={switchCamera}
-                      title={facingMode === "environment" ? t("timeCapsule.postMemory.switchToFront") : t("timeCapsule.postMemory.switchToBack")}
+                      title={facingMode === "environment" ? t("timeCapsule.postMemory.switchToFront") : t("timeCapsule.postMemory.switchToBack")} aria-label={facingMode === "environment" ? t("timeCapsule.postMemory.switchToFront") : t("timeCapsule.postMemory.switchToBack")}
                     >
                       <span className="material-symbols-outlined">flip_camera_ios</span>
                     </button>

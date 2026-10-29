@@ -905,7 +905,7 @@ export default function ProfileDrawer({
 
                   <div className="avatar-zoom-control">
                     <span>{t("shared.upload.zoom")}</span>
-                    <input
+                    <input aria-label={t("shared.upload.zoom")}
                       type="range"
                       min="1"
                       max="2.5"

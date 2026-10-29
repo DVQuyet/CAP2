@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { buttonLikeProps } from "../../../shared/utils/a11yClick";
 import { useTranslation } from "react-i18next";
 import i18n from "../../../i18n/i18n";
 import { formatDateTimeVN, formatDateVN } from "../../../shared/utils/dateFormat";
@@ -718,7 +719,7 @@ const handlePaySelectedPayment = (payment) => {
             <strong>{t("billingPayment.alerts.adminTitle")}</strong>
             <p>{t("billingPayment.alerts.adminDesc")}</p>
             <label>{t("billingPayment.alerts.adminSelectClan")}</label>
-            <select value={clanId || ""} onChange={handleClanChange}>
+            <select aria-label={t("billingPayment.alerts.adminSelectClan")} value={clanId || ""} onChange={handleClanChange}>
               {adminClans.map((clan) => (
                 <option key={clan.id} value={clan.id}>
                   #{clan.id} - {getClanName(clan)}
@@ -824,7 +825,7 @@ const handlePaySelectedPayment = (payment) => {
       ) : (
         <div className="billing-payment-list">
           {payments.map((payment) => (
-            <div
+            <div {...buttonLikeProps}
               className="billing-payment-row"
               key={payment.id}
               onClick={() => setSelectedPayment(payment)}

@@ -1,4 +1,23 @@
 {
+  "a11y": {
+    "firstPage": "First page",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "lastPage": "Last page",
+    "clearSearch": "Clear search",
+    "qrCode": "QR code",
+    "evidence": "Evidence image",
+    "bill": "Receipt image",
+    "preview": "Preview image",
+    "type": "Type",
+    "time": "Time",
+    "datePrecision": "Date precision",
+    "calendarType": "Calendar type",
+    "living": "Living or deceased",
+    "status": "Status",
+    "generation": "Generation",
+    "role": "Role"
+  },
   "common": {
     "all": "All",
     "approved": "Approved",

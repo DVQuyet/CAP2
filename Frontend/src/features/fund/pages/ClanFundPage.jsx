@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
+import { buttonLikeProps, rowLikeProps } from "../../../shared/utils/a11yClick";
 import { useTranslation } from "react-i18next";
 import { apiRequest, buildApiUrl } from "../../../services/api";
 import { resolveImageUrl } from "../../../shared/utils/media";
@@ -613,7 +614,7 @@ export default function ClanFundPage() {
             <div className="fund-filters">
               <div className="filter-item">
                 <span className="material-symbols-outlined">calendar_today</span>
-                <select value={filterYear} onChange={(e) => setFilterYear(e.target.value)}>
+                <select aria-label={t("fund.modal.form.year")} value={filterYear} onChange={(e) => setFilterYear(e.target.value)}>
                   <option value="">{t("fund.campaigns.allYears")}</option>
                   {years.map(y => (
                     <option key={y} value={y}>{y}</option>
@@ -623,7 +624,7 @@ export default function ClanFundPage() {
 
               <div className="filter-item">
                 <span className="material-symbols-outlined">filter_list</span>
-                <select value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)}>
+                <select aria-label={t("vnCalendar.month")} value={filterMonth} onChange={(e) => setFilterMonth(e.target.value)}>
                   <option value="">{t("fund.campaigns.allMonths")}</option>
                   {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
                     <option key={m} value={m}>{t("fund.campaigns.monthLabel", { month: m })}</option>
@@ -640,7 +641,7 @@ export default function ClanFundPage() {
               <ErrorState error={loadError} onRetry={loadData} />
             ) : filteredCampaigns.length ? (
               filteredCampaigns.map((c) => (
-                <div
+                <div {...buttonLikeProps}
                   key={c.id}
                   className="glass-card campaign-card-v3"
                   onClick={() => openCampaignLedger(c)}
@@ -710,7 +711,7 @@ export default function ClanFundPage() {
 
               <tbody>
                 {mainLedgerTransactions.map((tx) => (
-                  <tr key={`${tx.type}-${tx.id}`} onClick={() => setSelectedTransaction(tx)} style={{ cursor: 'pointer' }}>
+                  <tr {...rowLikeProps} key={`${tx.type}-${tx.id}`} onClick={() => setSelectedTransaction(tx)} style={{ cursor: 'pointer' }}>
                     <td>
                       <div className="tx-name">{tx.note || t("fund.ledger.generalExpense")}</div>
 
@@ -785,7 +786,7 @@ export default function ClanFundPage() {
 
                   <div className="form-group">
                     <label>{t("fund.modal.form.year")}</label>
-                    <input
+                    <input aria-label={t("fund.modal.form.year")}
                       type="number"
                       required
                       value={formData.year}
@@ -886,7 +887,7 @@ export default function ClanFundPage() {
 
                 <div className="form-group">
                   <label>{t("fund.modal.form.targetGoal")} (VND)</label>
-                  <input
+                  <input aria-label={t("fund.modal.form.targetGoal")}
                     type="text"
                     value={formData.target_goal}
                     onChange={(e) => setFormData({ ...formData, target_goal: formatMoneyInput(e.target.value) })}
@@ -895,7 +896,7 @@ export default function ClanFundPage() {
                   <p style={{ fontSize: '0.75rem', color: '#666', marginTop: '4px', marginBottom: '1rem' }}>{t("fund.modal.createCampaign.goalHelp")}</p>
 
                   <label>{t("fund.modal.form.contributionUnit")}</label>
-                  <select
+                  <select aria-label={t("fund.modal.form.contributionUnit")}
                     value={formData.contribution_unit_definition}
                     onChange={(e) =>
                       setFormData({
@@ -957,7 +958,7 @@ export default function ClanFundPage() {
                 <div className="mgmt-item">
                   <label>{t("fund.modal.form.status")}</label>
 
-                  <select
+                  <select aria-label={t("fund.modal.form.status")}
                     value={selectedCampaign.campaign.status}
                     onChange={(e) =>
                       handleUpdateCampaign(selectedCampaign.campaign.id, {
@@ -974,7 +975,7 @@ export default function ClanFundPage() {
                   <label>{t("fund.modal.form.currentContributionRate")}</label>
 
                   <div className="input-with-btn">
-                      <input
+                      <input aria-label={t("fund.modal.form.currentContributionRate")}
                         type="text"
                         inputMode="numeric"
                         defaultValue={formatMoneyInput(selectedCampaign.campaign.amount_per_member)}
@@ -997,7 +998,7 @@ export default function ClanFundPage() {
                         src={resolveImageUrl({
                           mediaId: selectedCampaign.campaign.qr_code_media_id
                         })}
-                        alt="QR"
+                        alt={t("a11y.qrCode")}
                         onClick={() =>
                           window.open(
                             resolveImageUrl({
@@ -1131,7 +1132,7 @@ export default function ClanFundPage() {
                     src={resolveImageUrl({
                       mediaId: approvalData.evidence_media_id
                     })}
-                    alt="Evidence"
+                    alt={t("a11y.evidence")}
                     className="bill-img-v3"
                   />
                 </div>
@@ -1140,7 +1141,7 @@ export default function ClanFundPage() {
               <form onSubmit={handleApprove} className="premium-form">
                 <div className="form-group">
                   <label>{t("fund.modal.approval.note")}</label>
-                  <textarea
+                  <textarea aria-label={t("fund.modal.approval.note")}
                     value={approvalData.manager_note}
                     onChange={(e) =>
                       setApprovalData({
@@ -1203,7 +1204,7 @@ export default function ClanFundPage() {
                   <div className="form-group">
                     <label>{t("fund.modal.cashExpense.amount")}</label>
 
-                    <input
+                    <input aria-label={t("fund.modal.cashExpense.amount")}
                       type="text"
                       inputMode="numeric"
                       required
@@ -1238,7 +1239,7 @@ export default function ClanFundPage() {
                   <div className="form-group">
                     <label>{t("fund.modal.cashExpense.category")}</label>
 
-                    <select
+                    <select aria-label={t("fund.modal.cashExpense.category")}
                       value={generalTx.category}
                       onChange={(e) =>
                         setGeneralTx({
@@ -1258,7 +1259,7 @@ export default function ClanFundPage() {
                   <div className="form-group">
                     <label>{t("fund.modal.cashExpense.campaign")}</label>
 
-                    <select
+                    <select aria-label={t("fund.modal.cashExpense.campaign")}
                       value={generalTx.campaign_id}
                       onChange={(e) =>
                         setGeneralTx({
@@ -1315,7 +1316,7 @@ export default function ClanFundPage() {
                   <div className="form-group">
                     <label>{t("fund.modal.cashExpense.recipient")}</label>
 
-                    <select
+                    <select aria-label={t("fund.modal.cashExpense.recipient")}
                       value={generalTx.recipient_person_id}
                       disabled={!members.length}
                       onChange={(e) => {
@@ -1351,7 +1352,7 @@ export default function ClanFundPage() {
                   <div className="form-group">
                     <label>{t("fund.modal.cashExpense.purpose")}</label>
 
-                    <textarea
+                    <textarea aria-label={t("fund.modal.cashExpense.purpose")}
                       value={generalTx.purpose_note}
                       onChange={(e) =>
                         setGeneralTx({
@@ -1368,7 +1369,7 @@ export default function ClanFundPage() {
                 <div className="form-group">
                   <label>{t("fund.modal.cashExpense.internalNote")}</label>
 
-                  <textarea
+                  <textarea aria-label={t("fund.modal.cashExpense.internalNote")}
                     required
                     value={generalTx.note}
                     onChange={(e) =>
@@ -1454,7 +1455,7 @@ export default function ClanFundPage() {
                     <label>{t("fund.modal.transactionDetail.bill")}:</label>
                     <img
                       src={resolveImageUrl({ mediaId: selectedTransaction.evidence_media_id })}
-                      alt="Bill"
+                      alt={t("a11y.bill")}
                       style={{ width: '100%', borderRadius: '12px', marginTop: '8px', border: '1px solid #ddd' }}
                       onClick={() => window.open(resolveImageUrl({ mediaId: selectedTransaction.evidence_media_id }), '_blank')}
                     />

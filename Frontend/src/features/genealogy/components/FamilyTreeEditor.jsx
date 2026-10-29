@@ -3364,13 +3364,13 @@ const submitCreateDialog = async () => {
                                 aria-label="Đổi màu chữ tiêu đề"
                               />
                             </label>
-                            <button type="button" onClick={() => resizeTreeTitleLabel(-4)} title="Thu nhỏ chữ">
+                            <button type="button" onClick={() => resizeTreeTitleLabel(-4)} title="Thu nhỏ chữ" aria-label="Thu nhỏ chữ">
                               <span className="material-symbols-outlined">text_decrease</span>
                             </button>
-                            <button type="button" onClick={() => resizeTreeTitleLabel(4)} title="Phóng to chữ">
+                            <button type="button" onClick={() => resizeTreeTitleLabel(4)} title="Phóng to chữ" aria-label="Phóng to chữ">
                               <span className="material-symbols-outlined">text_increase</span>
                             </button>
-                            <button type="button" onClick={resetTreeTitleLabel} title="Đặt lại vị trí, màu và cỡ chữ">
+                            <button type="button" onClick={resetTreeTitleLabel} title="Đặt lại vị trí, màu và cỡ chữ" aria-label="Đặt lại vị trí, màu và cỡ chữ">
                               <span className="material-symbols-outlined">restart_alt</span>
                             </button>
                           </div>
@@ -3562,7 +3562,7 @@ const submitCreateDialog = async () => {
                 <span>Chọn thao tác</span>
                 <h3>{fullName(coupleActionPerson, t("tree.card.fallbackName"))}</h3>
               </div>
-              <button type="button" className="fte-iconButton" onClick={() => setCouplePersonAction(null)} title={t("common.close")}>
+              <button type="button" className="fte-iconButton" onClick={() => setCouplePersonAction(null)} title={t("common.close")} aria-label={t("common.close")}>
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
@@ -3601,7 +3601,7 @@ const submitCreateDialog = async () => {
                 type="button"
                 className="fte-iconButton"
                 onClick={() => setSelectedCoupleId(null)}
-                title={t("common.close")}
+                title={t("common.close")} aria-label={t("common.close")}
               >
                 <span className="material-symbols-outlined">close</span>
               </button>
@@ -3663,7 +3663,7 @@ const submitCreateDialog = async () => {
                 className="fte-iconButton"
                 onClick={() => setGenealogyAiOpen(false)}
                 disabled={genealogyAiLoading || genealogyAiSaving}
-                title={t("common.close")}
+                title={t("common.close")} aria-label={t("common.close")}
               >
                 <span className="material-symbols-outlined">close</span>
               </button>
@@ -3903,7 +3903,7 @@ const submitCreateDialog = async () => {
                           <div className="fte-aiDraftItem" key={`edit-${relation.draft_id}`}>
                             <div className="fte-aiDraftItemHead">
                               <strong>{relation.draft_id}</strong>
-                              <button type="button" className="fte-aiSmallDanger" onClick={() => removeGenealogyAiDraftRelationship(relation.draft_id)} disabled={genealogyAiSaving} title={t("common.delete")}>
+                              <button type="button" className="fte-aiSmallDanger" onClick={() => removeGenealogyAiDraftRelationship(relation.draft_id)} disabled={genealogyAiSaving} title={t("common.delete")} aria-label={t("common.delete")}>
                                 <span className="material-symbols-outlined">delete</span>
                               </button>
                             </div>

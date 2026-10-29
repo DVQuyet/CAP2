@@ -156,7 +156,7 @@ export default function ArchivedMembersDialog({ people, onClose, onReload }) {
             <span>{t("tree.archive.kicker")}</span>
             <h3>{t("tree.archive.title")}</h3>
           </div>
-          <button type="button" className="fte-iconButton" onClick={onClose} title={t("common.close")}>
+          <button type="button" className="fte-iconButton" onClick={onClose} title={t("common.close")} aria-label={t("common.close")}>
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
@@ -210,7 +210,7 @@ export default function ArchivedMembersDialog({ people, onClose, onReload }) {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
               {searchQuery && (
-                <button type="button" className="clear-search-btn" onClick={() => setSearchQuery("")}>
+                <button aria-label={t("a11y.clearSearch")} type="button" className="clear-search-btn" onClick={() => setSearchQuery("")}>
                   <span className="material-symbols-outlined">close</span>
                 </button>
               )}
