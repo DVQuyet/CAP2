@@ -78,6 +78,38 @@ Còn mở từ đợt này:
 - Cảnh báo ESLint còn 139: `set-state-in-effect` 51, `exhaustive-deps` 42, `no-unused-vars` 24 (hàm/state chết ở `ManagerLayout.jsx`, `TaskManagementPage.jsx`, `TimeCapsulePage.jsx`… cần người xác nhận là code chết hay dang dở).
 - Việc lớn đã ghi ở `KE_HOACH_SONNET_1H.md` (token trong URL, JWT trong localStorage, CSP, gom hệ màu).
 
+Đợt 6 (30/10, Sonnet theo `KE_HOACH_SONNET_DOT6.md`) — 21 commit `49a5b40`..`d1ca435`, chưa push:
+- **Test tích hợp trên DB test:** `cd Backend && npm run test:integration` (49 test, tự tạo/dọn dữ liệu `ITEST_`/`itest_`; không chạy trong CI). Phủ đăng nhập/đổi/đặt lại mật khẩu, khóa tài khoản, **cô lập dòng họ A/B** (20 test kèm đối chứng, **không tìm thấy lỗ hổng**), token media, socket, rate limit, header bảo mật, tiểu sử AI, phân trang row-value và thanh toán `FOR UPDATE`/`DATE_ADD` (xong P0.4 và P3.5). Dọn tay: `node scripts/itest-cleanup.js`.
+- **Bảo mật:** đăng nhập Google/Facebook dùng mã một lần thay JWT trên URL; ảnh/ghi âm dùng token media riêng (scope `media`, `GET /api/auth/media-token`); đổi/đặt lại/đặt hộ mật khẩu, khóa, lưu trữ, đổi vai trò đều ngắt socket (đường admin và manager đặt mật khẩu hộ trước đây **không thu hồi token**, đã sửa); rate limit đổi mật khẩu/upload/xác thực lời mời; HSTS + CSP cho API; CSP **Report-Only** cho frontend (cả hai `vercel.json`).
+- **AI:**
+  - **Groq đã gỡ model `llama-3.3-70b-versatile` (404)** nên mọi lời gọi LLM trước giờ lặng lẽ rơi về luật; `groqClient.js` giờ tự chuyển sang `qwen/qwen3.8-27b` / `gpt-oss`.
+  - Lớp chặn bịa tên/năm/ngày cho câu LLM viết; bộ đo có LLM thật `scripts/chatbot-llm-eval.js` (production-like **25/26**, số liệu ở `TIEP_TUC_AI_TRA_LOI.md`).
+  - Sửa 3 lỗi luật: "ap toi co…", "ba co toi" (hỏi lại bà cố/bà cô kèm tên), "thế hệ của tôi là đời nào". E2E 187 → 199.
+  - **Tính năng mới "AI soạn tiểu sử / lời tưởng niệm"** (`POST /api/ai/person/:id/biography-draft` + hộp thoại trong hồ sơ người và hồ sơ cá nhân): chỉ ra bản nháp, không tự ghi.
+- **Giao diện:** viền focus bàn phím; dọn code chết (ESLint **139 → 114**); i18n nốt cây gia phả; nút micro có `aria-label`.
+- `scripts/data-quality-report.js` (chỉ đọc) — xong phần liệt kê của P0.6; xem số liệu bên dưới.
+
+**Deploy đợt này cần:** không có migrate mới (cột `accounts.password_changed_at` của đợt 5 đã chạy). Lưu ý khi deploy:
+- **Frontend và backend phải deploy cùng nhau.** Backend mới không còn nhận JWT đăng nhập qua `?token=` của ảnh/ghi âm: bản frontend cũ còn mở sẽ thấy ảnh cần token bị 404 cho tới khi tải lại (PWA tự cập nhật). Frontend mới vẫn nhận `?token=` ở `AuthCallback` để không vỡ đăng nhập Google/Facebook trong lúc chờ.
+- Mã đăng nhập mạng xã hội lưu trong bộ nhớ: chỉ đúng khi Render chạy **một instance**.
+- Biến `GROQ_MODEL` trên Render nếu còn là `llama-3.3-70b-versatile` thì vô hại (tự chuyển model), nhưng nên đổi sang `qwen/qwen3.8-27b`.
+- Không bật `CHATBOT_LLM_REWRITE=all` (làm đúng giảm từ 96% xuống 81%).
+- Sau deploy: xem console trình duyệt trên bản Vercel để thấy báo vi phạm CSP Report-Only; hết báo thì mới đổi header sang `Content-Security-Policy`.
+- **Tự thử Google/Facebook login sau deploy** (không thể test OAuth thật ở local).
+
+Số liệu `data-quality-report.js` (942 người thật, 725 tài khoản; đã loại 5000 người "Load Test" do script đo tải sinh ra, nên cân nhắc xóa chúng): 5 tài khoản có tên hiển thị là email; 0 tài khoản active chưa gắn người; 11 người có ngày `exact` rơi vào 01/01; 62 node mồ côi (chủ yếu họ `clan_id` 13/9/12 là dữ liệu thử); 0 con sinh trước cha mẹ.
+
+Còn mở từ đợt này:
+- **QA bằng trình duyệt chưa làm được** (Chrome của công cụ không với tới `localhost`): bảng 12 kịch bản ở `docs/report/QA_2026-10-30.md`. Rủi ro lớn nhất cần xem bằng mắt: `App.jsx` chờ lấy token media lúc khởi động, hộp thoại "AI soạn tiểu sử", redirect sau khi hết phiên.
+- `startAudioRecording` ở `TimeCapsulePage.jsx` còn nguyên nhưng **nút ghi âm đã bị gỡ khỏi JSX ở commit `69813f0`** — khôi phục hay xóa?
+- `eventStats` ở `TaskManagementPage.jsx` (bộ đếm sự kiện toàn họ, commit `5466783`) đã tính nhưng chưa hiển thị — làm nốt giao diện hay bỏ?
+- Khối `<style dangerouslySetInnerHTML>` (~1190 dòng) ở `ClanFundPage.jsx` và `FundAnalytics.jsx` vẫn chưa chuyển ra `.css` (cần QA mắt).
+- Câu LLM "Kể về ông X" có thể thêm chi tiết mềm ("sinh ra và lớn lên ở…") mà grounding không bắt được (chỉ bắt tên/năm/ngày). Bản nháp tiểu sử luôn cần người đọc lại.
+- `social_token` (token đăng ký 15 phút) vẫn nằm trên URL `/register?social_token=`; JWT vẫn lưu trong `localStorage` (chuyển cookie httpOnly là việc lớn).
+- Nhận xét múi giờ: `markPaymentAsPaid` lấy gốc `DATE_ADD` từ `new Date()` của JS còn `NOW()` theo DB; lệch 7 giờ nếu máy chạy khác múi giờ DB (trên Render cả hai UTC nên vô hại).
+- Nâng `react-router-dom` lên v7 (2 lỗi moderate của frontend) chưa làm; `xlsx` không có bản vá nhưng chỉ dùng để ghi file.
+- Họ `Load Test` 5000 người trong DB test nên dọn (xem `scripts/load-test-family-tree.js`).
+
 ## P0 — Chặn hoặc rủi ro trên môi trường thật (làm trước khi demo/nộp)
 
 Không làm được từ máy local vì `Backend/.env` trỏ vào DB thật; cần người có quyền Render/Aiven.
@@ -87,7 +119,7 @@ Không làm được từ máy local vì `Backend/.env` trỏ vào DB thật; c�
 | 0.1 | **Sao lưu DB Aiven** trước mọi lần deploy | Các hàm `ensure*Schema` tự `ALTER` ở request đầu | S |
 | 0.2 | Đặt key Groq trên Render (AI trả 503) | Thiếu key thì chatbot chỉ trả theo luật | S |
 | 0.3 | Chạy `npm run migrate` một lần, xem bước nào báo `✖`, rồi bật `DISABLE_RUNTIME_DDL=true` | Sau khi có bản sao lưu | S |
-| 0.4 | Thử trên MySQL thật: giao dịch mua gói (`FOR UPDATE`, `DATE_ADD`), phân trang row-value `(created_at, id) < (...)`, tài khoản bị khóa chuyển về `/account-disabled` | Test hiện chỉ chạy trên DB giả | S |
+| 0.4 ✅ | Thử trên MySQL thật: giao dịch mua gói (`FOR UPDATE`, `DATE_ADD`), phân trang row-value `(created_at, id) < (...)`, tài khoản bị khóa chuyển về `/account-disabled` | Test hiện chỉ chạy trên DB giả | S |
 | 0.5 | Đo p95 thật của `/api/chatbot/ask` trên Render | Free plan có cold start 30–60 giây; ghi số vào `TIEP_TUC_AI_TRA_LOI.md` | S |
 | 0.6 | Dọn dữ liệu mẫu: tên hiển thị là email, tài khoản chưa liên kết với người trên cây, hồ sơ chỉ biết năm nhưng `*_date_precision = 'exact'` | Viết script chỉ đọc để liệt kê trước, sửa sau | M |
 
@@ -118,7 +150,7 @@ Không làm được từ máy local vì `Backend/.env` trỏ vào DB thật; c�
 | 3.2 | Tách `FamilyTreeEditor.jsx` | **4142 dòng**; trước khi tách cần test giao diện cho thêm, sửa, xóa người và lưu bố cục | L |
 | 3.3 | Tách `ClanFundPage.jsx` (2756 dòng) và `modules/member/member.controller.js` (2374 dòng) | Tách theo nhóm route hoặc tab, không đổi API | M–L |
 | 3.4 | Giảm cảnh báo ESLint ở frontend | Lần đo trước có 145 cảnh báo | S–M |
-| 3.5 | Test tích hợp với MySQL thật (Docker) cho thanh toán và phân trang | Có thư mục `docker/`; xử lý luôn được 0.4 | M |
+| 3.5 ✅ | Test tích hợp với MySQL thật (Docker) cho thanh toán và phân trang | Có thư mục `docker/`; xử lý luôn được 0.4 | M |
 
 ## P4 — Tính năng mới
 
