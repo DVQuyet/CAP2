@@ -62,6 +62,22 @@ Còn mở từ đợt 4:
 - Validate chưa phủ route calendar/events.
 - "ba co toi" vẫn mơ hồ (cụ vs bà cô).
 
+Đợt 5 (29/10, Sonnet theo `KE_HOACH_SONNET_1H.md`) — 6 commit `c8b8ef5`..`fcab1ab`, chưa push:
+- Dependency: `npm audit fix` + nodemailer 10 (API `createTransport/sendMail` đã thử). Backend chỉ còn `xlsx` (không có bản vá; chỉ dùng để ghi file nên giữ lại). Frontend còn 2 lỗi moderate của `react-router` (cần nhảy lên v7, breaking) — để sau.
+- Đổi/đặt lại mật khẩu thu hồi token cũ: cột `accounts.password_changed_at`, `verifyToken`/socket/media từ chối token có `iat` sớm hơn mốc; `PUT /api/member/password` trả token mới (frontend tự lưu). Thiếu cột thì chạy như cũ. `isTokenRevoked` dùng chung.
+- Xuất Excel quỹ chống formula injection (`shared/utils/spreadsheet.js`); header `Content-Disposition` của media an toàn với tên file tiếng Việt (`shared/utils/contentDisposition.js`).
+- Validate route calendar (tạo/sửa/xóa lịch).
+- FE: `<Trans>` thay `dangerouslySetInnerHTML` cho chuỗi i18n; viền focus bàn phím chung (`index.css`); dọn import không dùng (cảnh báo ESLint 148 -> 139).
+- Phát hiện thêm: `installSessionGuard` được import ở `App.jsx` nhưng **chưa từng được gọi**, và `Login.jsx` không đọc `?redirect=` — hai nửa của "hết phiên thì về /login?redirect=" ở đợt 4 chưa chạy. Đã nối cả hai; đổi 401 "sai mật khẩu hiện tại" thành 400 để guard không đăng xuất nhầm.
+
+**Deploy backend đợt này cần:** sao lưu DB, rồi `npm run migrate` (cột `accounts.password_changed_at`; hoặc chạy `database/migrations/2026_10_29_accounts_password_changed_at.sql`). Chưa migrate thì đăng nhập/đổi mật khẩu vẫn chạy, chỉ chưa thu hồi token cũ.
+
+Còn mở từ đợt này:
+- Khối `<style dangerouslySetInnerHTML>` ở `ClanFundPage.jsx` (~1190 dòng) và `FundAnalytics.jsx` **không chuyển ra `.css`**: chúng đang ghi đè `FundDesign.css` nhờ nằm trong DOM, chuyển file sẽ đổi thứ tự cascade — cần QA bằng mắt trên trình duyệt thật.
+- Chưa QA bằng trình duyệt: guard phiên (hết hạn token, đổi mật khẩu rồi dùng tab khác), redirect sau đăng nhập, viền focus.
+- Cảnh báo ESLint còn 139: `set-state-in-effect` 51, `exhaustive-deps` 42, `no-unused-vars` 24 (hàm/state chết ở `ManagerLayout.jsx`, `TaskManagementPage.jsx`, `TimeCapsulePage.jsx`… cần người xác nhận là code chết hay dang dở).
+- Việc lớn đã ghi ở `KE_HOACH_SONNET_1H.md` (token trong URL, JWT trong localStorage, CSP, gom hệ màu).
+
 ## P0 — Chặn hoặc rủi ro trên môi trường thật (làm trước khi demo/nộp)
 
 Không làm được từ máy local vì `Backend/.env` trỏ vào DB thật; cần người có quyền Render/Aiven.
