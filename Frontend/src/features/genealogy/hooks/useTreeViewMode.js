@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { computeDefaultCollapseState, computeExpandForTarget, loadCollapseState, saveCollapseState } from "../utils/tree-editor/treeCollapse";
+import { revealHiddenIds } from "../utils/treePathHighlight";
 import { buildFamilyIndexes, filterTreeData, getAncestorPathIds, getDescendantIds, getHiddenDescendantIds, getRelatedRootViewIds } from "../utils/treeFilter";
 
 const asArray = (value) => (Array.isArray(value) ? value : []);
@@ -9,6 +10,8 @@ export function useTreeViewMode({ people = [], families = [], childRows = [], st
   const [rootPersonId, setRootPersonId] = useState(null);
   const [collapsedIds, setCollapsedIds] = useState(() => new Set());
   const [hiddenAncestorIds, setHiddenAncestorIds] = useState(() => new Set());
+  // Người cần hiện tạm thời (đường quan hệ được tô sáng): không đổi và không lưu trạng thái thu gọn của người dùng.
+  const [revealIds, setRevealIds] = useState(null);
 
   // Khởi tạo một lần cho mỗi khóa (người dùng + dòng họ): đọc trạng thái đã nhớ, không có thì mặc định 3 đời quanh "tôi".
   const [initKey, setInitKey] = useState(null);
@@ -40,11 +43,16 @@ export function useTreeViewMode({ people = [], families = [], childRows = [], st
   }, [childRows, families, mode, people, rootPersonId]);
 
   const visibleData = useMemo(() => {
-    const hidden = getHiddenDescendantIds([...collapsedIds], people, families, childRows);
+    let hidden = getHiddenDescendantIds([...collapsedIds], people, families, childRows);
     hiddenAncestorIds.forEach((id) => hidden.add(Number(id)));
+    if (revealIds?.size) hidden = revealHiddenIds(hidden, revealIds);
     const ids = new Set([...baseVisibleIds].filter((id) => !hidden.has(Number(id))));
+    if (revealIds?.size) {
+      const known = new Set(asArray(people).map((person) => Number(person.id)));
+      revealIds.forEach((id) => { if (known.has(Number(id))) ids.add(Number(id)); });
+    }
     return filterTreeData(people, families, childRows, ids);
-  }, [baseVisibleIds, childRows, collapsedIds, families, hiddenAncestorIds, people]);
+  }, [baseVisibleIds, childRows, collapsedIds, families, hiddenAncestorIds, people, revealIds]);
 
   const setFullMode = useCallback(() => {
     setMode("full");
@@ -132,5 +140,7 @@ export function useTreeViewMode({ people = [], families = [], childRows = [], st
     expandPathToPerson,
     expandAll,
     resetCollapse,
+    revealIds,
+    setRevealIds,
   };
 }

@@ -2016,6 +2016,10 @@
     }
   },
   "tree": {
+    "pathHighlight": {
+      "banner": "Đang tô sáng đường quan hệ ({{count}} người)",
+      "clear": "Bỏ tô sáng"
+    },
     "page": {
       "memberFallback": "Thành viên",
       "clanFallback": "Dòng họ",
@@ -2729,6 +2733,8 @@
     "feedbackError": "Không gửi được phản hồi, thử lại sau.",
     "viewOnTree": "Xem trên cây",
     "viewOnTreeTitle": "Mở cây gia phả và làm nổi bật người được nhắc tới",
+    "viewPathOnTree": "Xem đường quan hệ trên cây",
+    "viewPathOnTreeTitle": "Mở cây gia phả và tô sáng đường quan hệ giữa hai người",
     "coldStartNotice": "Máy chủ đang khởi động, lần đầu có thể mất tới 1 phút…",
     "clearHistory": "Xóa lịch sử trò chuyện",
     "clearHistoryConfirm": "Xóa toàn bộ lịch sử trò chuyện của bạn trong dòng họ này?",

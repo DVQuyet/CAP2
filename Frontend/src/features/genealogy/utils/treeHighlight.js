@@ -6,6 +6,7 @@ export function getPersonHighlightState(person, options = {}) {
 
   return {
     online: onlineIds.has(id),
+    path: Boolean(options.pathPersonIds?.has(id)),
     search: Number(options.searchPersonId) === id || Boolean(options.searchPersonIds?.has(id)),
     selected: Number(options.selectedPersonId) === id,
     self: Number(options.selfPersonId) === id,
@@ -19,6 +20,7 @@ export function getPersonHighlightState(person, options = {}) {
 export function highlightClassNames(state = {}) {
   return [
     state.online ? "is-online" : "",
+    state.path ? "is-onPath" : "",
     state.search ? "is-searchMatch" : "",
     state.selected ? "is-selected" : "",
     state.self ? "is-self" : "",

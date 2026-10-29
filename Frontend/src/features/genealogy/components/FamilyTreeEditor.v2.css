@@ -1594,3 +1594,17 @@
 .fte2-menu--root {
     max-width: calc(100vw - 24px);
 }
+
+/* Tô sáng đường quan hệ từ trợ lý AI (đè lên kiểu mờ/chọn của giao diện v2) */
+.fte2 .fte-canvas .fte-personCard.is-onPath,
+.fte2 .fte-canvas .fte-coupleCard .fte-coupleHalf.is-onPath {
+    outline: 4px solid rgba(234, 88, 12, 0.85);
+    outline-offset: 3px;
+    opacity: 1;
+    filter: none;
+}
+
+.fte2 .fte-canvas .fte-coupleCard.is-dimmed:has(.is-onPath) {
+    opacity: 1;
+    filter: none;
+}

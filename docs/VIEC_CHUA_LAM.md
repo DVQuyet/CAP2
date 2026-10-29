@@ -116,7 +116,7 @@ Không làm được từ máy local vì `Backend/.env` trỏ vào DB thật; c�
 | # | Việc | Hiện trạng đã kiểm | Ai làm | Công sức |
 |---|---|---|---|---|
 | 2.1 | **i18n**: đưa chuỗi tiếng Việt viết cứng vào `vi.json`/`en.json` | 36 file `.jsx` còn chuỗi có dấu; nhiều nhất là `ArchivedMembersDialog` (~23), `TimeCapsulePage` (~15), `GeneralPosts` (~8). Nhiều chỗ dạng `t(key) \|\| "fallback"` thì chỉ cần thêm key | Frontend | M |
-| 2.2 | **Tô sáng đường quan hệ trên cây** khi AI trả lời câu quan hệ | `relationshipPath` mới chỉ vẽ trong chat (`FamilyPathVisualizer.jsx`, `RelationshipCard.jsx`); cây đã có `focusedPersonId` để nối vào | Frontend | M |
+| 2.2 ✅ | **Tô sáng đường quan hệ trên cây** khi AI trả lời câu quan hệ | `relationshipPath` mới chỉ vẽ trong chat (`FamilyPathVisualizer.jsx`, `RelationshipCard.jsx`); cây đã có `focusedPersonId` để nối vào | Frontend | M |
 | 2.3 | "Tải thêm" cho thông báo, sự kiện, kỷ niệm | `member.controller.js:798` lấy thông báo `LIMIT 50`, `:745` lấy sự kiện `LIMIT 50`, kỷ niệm có trần; dùng lại mẫu `beforeId` của bảng tin | Fullstack | M |
 | 2.4 ✅ | Ghi log câu chatbot không hiểu (`intent = 'unknown'` hoặc phải nhờ LLM) + script lấy top 20 câu mỗi tuần | Xong ở đợt 22/10: `scripts/chatbot-unknown-report.js` (đọc `chatbot_messages`, gom nhóm), có test | Backend | S |
 | 2.5 ✅ | Nút 👍/👎 cho câu trả lời của chatbot (lưu vào `chatbot_messages`) | Xong ở đợt 22/10: bảng `chatbot_feedback` + `POST /api/chatbot/messages/:id/feedback` + nút trong chat | Fullstack | S |

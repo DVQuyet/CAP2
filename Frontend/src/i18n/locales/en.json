@@ -2017,6 +2017,10 @@
   },
   "tree": {
     "title": "Family Tree",
+    "pathHighlight": {
+      "banner": "Highlighting relationship path ({{count}} people)",
+      "clear": "Clear highlight"
+    },
     "page": {
       "memberFallback": "Member",
       "clanFallback": "Clan",
@@ -2729,6 +2733,8 @@
     "feedbackError": "Could not send feedback, please try again.",
     "viewOnTree": "View on tree",
     "viewOnTreeTitle": "Open the family tree and highlight the people mentioned",
+    "viewPathOnTree": "Show relationship on tree",
+    "viewPathOnTreeTitle": "Open the family tree and highlight the relationship path between the two people",
     "coldStartNotice": "The server is starting up, the first reply may take up to 1 minute…",
     "clearHistory": "Clear chat history",
     "clearHistoryConfirm": "Delete all of your chat history in this clan?",

@@ -27,6 +27,7 @@ import { autoLayoutPeople, computeReferencePlacements, findFounderIds, generatio
 import ReferenceCard from "./ReferenceCard";
 import { buildCollapseStorageKey, resolveSelfPersonId } from "../utils/tree-editor/treeCollapse";
 import { parseTreeFocusParams, TREE_FOCUS_EVENT } from "../utils/treeFocusParams";
+import { computePathHighlight, isLineOnPath, normalizePathIds } from "../utils/treePathHighlight";
 import GenealogyAuditDialog from "./FamilyTreeEditorParts/GenealogyAuditDialog";
 import { blankCreateForm, buildCreateRelationFields, buildLinkPayload, defaultRelationOptions, findParentFamilyForChild, findSpouse, findSpouseFamily, getChildOrderMapForFamily, getChildrenForFamily, relationCandidates, relationLinkedIds } from "../utils/tree-editor/treeRelations";
 import { downloadBlob, exportFileName, exportPreparedTree, prepareTreeExportPayload } from "../utils/tree-editor/treeExport";
@@ -537,6 +538,7 @@ export default function FamilyTreeEditor({
   const [selectedCoupleId, setSelectedCoupleId] = useState(null);
   // Người vừa được tìm thấy/định vị: chỉ căn giữa và tô sáng, không mở form hồ sơ.
   const [focusedPersonId, setFocusedPersonId] = useState(null);
+  const [pathHighlightIds, setPathHighlightIds] = useState(null); // đường quan hệ (id theo thứ tự) từ trợ lý AI
   const [chatHighlightIds, setChatHighlightIds] = useState(null); // Set id được trợ lý AI nhắc tới ("Xem trên cây")
   const [couplePersonAction, setCouplePersonAction] = useState(null);
   const [treeDisplayMode, setTreeDisplayMode] = useState(TREE_DISPLAY_MODE.DETAIL);
@@ -1024,7 +1026,13 @@ const coupleActionPerson = useMemo(
     () => displayNodes.find((node) => node.id === selectedCoupleId) || null,
     [displayNodes, selectedCoupleId],
   );
+  const pathHighlight = useMemo(
+    () => (pathHighlightIds?.length ? computePathHighlight(pathHighlightIds, canonicalTree.families, canonicalTree.childRows) : null),
+    [canonicalTree.childRows, canonicalTree.families, pathHighlightIds],
+  );
   const selectedRelatedIds = useMemo(() => {
+    // Đang tô sáng đường quan hệ và chưa chọn gì: chỉ giữ người trên đường đi, mờ phần còn lại.
+    if (pathHighlight && selectedId == null && !selectedCoupleNode) return pathHighlight.nodeIds;
     const id = Number(selectedId);
     if (selectedType === "couple" && selectedCoupleNode) {
       const ids = new Set(selectedCoupleNode.personIds.map(Number));
@@ -1041,7 +1049,7 @@ const coupleActionPerson = useMemo(
       spouses.forEach((spouseId) => ids.add(Number(spouseId)));
     });
     return ids;
-  }, [canonicalTree.childRows, canonicalTree.families, people, selectedCoupleNode, selectedId, selectedType]);
+  }, [canonicalTree.childRows, canonicalTree.families, pathHighlight, people, selectedCoupleNode, selectedId, selectedType]);
   const childCountByParentId = useMemo(() => {
     const counts = new Map();
     asArray(canonicalTree.childRows).forEach((row) => {
@@ -1330,6 +1338,7 @@ const coupleActionPerson = useMemo(
   }, [currentAccount, focusPerson, people, t, treeViewMode, visiblePeople]);
 
   // "Xem trên cây" từ trợ lý AI: nhảy tới người trọng tâm và làm nổi bật các người được nhắc.
+  const fitToPersonIdsRef = useRef(() => {});
   const applyChatFocus = useCallback((target) => {
     if (!target?.focus) return false;
     if (!people.some((person) => Number(person.id) === target.focus)) return false;
@@ -1337,9 +1346,26 @@ const coupleActionPerson = useMemo(
     setMobileTreePanel(null);
     if (!visiblePeople.some((person) => Number(person.id) === target.focus)) treeViewMode.setFullMode();
     setChatHighlightIds(new Set(target.highlight));
+    const pathIds = normalizePathIds(target.path).filter((id) => people.some((person) => Number(person.id) === id));
+    if (pathIds.length >= 2) {
+      // Hiện tạm các người trên đường đi (không đổi trạng thái thu gọn đã lưu) rồi thu phóng vừa đường đi.
+      setSelectedId(null);
+      setSelectedCoupleId(null);
+      setPathHighlightIds(pathIds);
+      treeViewMode.setRevealIds(new Set(pathIds));
+      fitToPersonIdsRef.current(pathIds);
+      return true;
+    }
+    setPathHighlightIds(null);
+    treeViewMode.setRevealIds(null);
     focusPerson(target.focus, { scale: 1.2 });
     return true;
   }, [focusPerson, people, treeViewMode, visiblePeople]);
+  const clearPathHighlight = useCallback(() => {
+    setPathHighlightIds(null);
+    setChatHighlightIds(null);
+    treeViewMode.setRevealIds(null);
+  }, [treeViewMode]);
   const applyChatFocusRef = useRef(applyChatFocus);
   useEffect(() => {
     applyChatFocusRef.current = applyChatFocus;
@@ -2958,6 +2984,29 @@ const submitCreateDialog = async () => {
           : t("tree.inspector.readOnlyNote")
     : "";
 
+  // Thu phóng vừa các người trên đường quan hệ (sau khi cây vẽ lại với các nhánh được hiện tạm).
+  const fitToPersonIds = useCallback((ids) => {
+    window.setTimeout(() => {
+      const api = transformApiRef.current;
+      const viewport = viewportRef.current;
+      if (!api?.setTransform || !viewport) return;
+      const nodes = ids.map((id) => displayNodeByPersonIdRef.current.get(Number(id))).filter(Boolean);
+      if (!nodes.length) return;
+      const rect = viewport.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const left = Math.min(...nodes.map((node) => toInt(node.x, 0)));
+      const top = Math.min(...nodes.map((node) => toInt(node.y, 0)));
+      const right = Math.max(...nodes.map((node) => toInt(node.x, 0) + node.width));
+      const bottom = Math.max(...nodes.map((node) => toInt(node.y, 0) + node.height));
+      const padding = isTreeMobile ? 36 : 90;
+      const scale = Math.min(1.4, Math.max(0.3, Math.min((rect.width - padding * 2) / Math.max(1, right - left), (rect.height - padding * 2) / Math.max(1, bottom - top))));
+      api.setTransform(rect.width / 2 - ((left + right) / 2) * scale, rect.height / 2 - ((top + bottom) / 2) * scale, scale, 320);
+    }, 260);
+  }, [isTreeMobile]);
+  useEffect(() => {
+    fitToPersonIdsRef.current = fitToPersonIds;
+  }, [fitToPersonIds]);
+
   const fitTreeToScreen = useCallback((duration = 320) => {
     const api = transformApiRef.current;
     const viewport = viewportRef.current;
@@ -3344,7 +3393,7 @@ const submitCreateDialog = async () => {
                             return (
                           <path
                             key={line.id || `${line.type}-${index}`}
-                            className={`fte-line is-${line.type} ${line.variant ? `is-variant-${line.variant}` : ""} ${line.branchLevel === 0 && line.type === "blood" ? "is-mainBranch" : ""} ${selectedRelatedIds.size ? (lineRelated ? "is-related" : "is-dimmed") : ""} ${line.dragAxis ? `is-axis-${line.dragAxis}` : ""} ${canEditAll && line.dragAxis ? "is-draggable" : ""} ${draggingLineId === `${Number(line.familyId)}:${line.routeKey || "baseY"}` ? "is-dragging" : ""}`}
+                            className={`fte-line is-${line.type} ${line.variant ? `is-variant-${line.variant}` : ""} ${line.branchLevel === 0 && line.type === "blood" ? "is-mainBranch" : ""} ${selectedRelatedIds.size ? (lineRelated ? "is-related" : "is-dimmed") : ""} ${isLineOnPath(line, pathHighlight) ? "is-onPath" : ""} ${line.dragAxis ? `is-axis-${line.dragAxis}` : ""} ${canEditAll && line.dragAxis ? "is-draggable" : ""} ${draggingLineId === `${Number(line.familyId)}:${line.routeKey || "baseY"}` ? "is-dragging" : ""}`}
                             d={line.d}
                             style={line.color ? { "--line-color": line.color } : undefined}
                             onPointerDown={canEditAll && line.dragAxis ? (event) => beginLineDrag(event, line) : undefined}
@@ -3396,6 +3445,7 @@ const submitCreateDialog = async () => {
                               node={node}
                               selectedPersonId={selectedType === "person" ? (selectedId ?? focusedPersonId) : null}
                               selectedCouple={(selectedType === "couple" && selectedCoupleId === node.id) || selectedDisplayNodeIds.has(node.id)}
+                              pathPersonIds={pathHighlight?.nodeIds}
                               related={related}
                               dimmed={dimmed}
                               dragging={draggingId === node.id}
@@ -3445,7 +3495,8 @@ const submitCreateDialog = async () => {
                               onlinePersonIds: treeRealtime.onlinePersonIds,
                               editingPersonIds: treeRealtime.editingPersonIds,
                               searchPersonId: treeSearch.highlightedPersonId,
-                              searchPersonIds: chatHighlightIds,
+                              searchPersonIds: pathHighlight ? null : chatHighlightIds,
+                              pathPersonIds: pathHighlight?.nodeIds,
                               selfPersonId,
                               validationErrors,
                             }}
@@ -3464,6 +3515,13 @@ const submitCreateDialog = async () => {
                   </TransformComponent>
                 )}
               </div>
+              {pathHighlight ? (
+                <div className="fte-pathBanner" role="status">
+                  <span className="material-symbols-outlined" aria-hidden="true">route</span>
+                  <span>{t("tree.pathHighlight.banner", { count: pathHighlight.nodeIds.size })}</span>
+                  <button type="button" onClick={clearPathHighlight}>{t("tree.pathHighlight.clear")}</button>
+                </div>
+              ) : null}
               <TreeZoomControls
                 scale={currentScale}
                 compact={isTreeMobile}

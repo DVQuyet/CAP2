@@ -114,11 +114,11 @@ export default function ChatWindow({
   }, [loading]);
 
   // "Xem trên cây": đang ở trang cây thì gửi sự kiện, ngược lại chuyển tới trang cây theo vai trò kèm ?focus=&highlight=.
-  const handleViewOnTree = (personIds) => {
-    const url = buildTreeFocusUrl(getStoredUser()?.role, personIds);
+  const handleViewOnTree = (personIds, pathIds = []) => {
+    const url = buildTreeFocusUrl(getStoredUser()?.role, personIds, pathIds);
     if (!url) return;
     if (isTreePath(location.pathname) && url.startsWith(location.pathname)) {
-      window.dispatchEvent(new CustomEvent(TREE_FOCUS_EVENT, { detail: { focus: personIds[0], highlight: personIds } }));
+      window.dispatchEvent(new CustomEvent(TREE_FOCUS_EVENT, { detail: { focus: personIds[0], highlight: personIds, path: pathIds } }));
     } else {
       navigate(url);
     }

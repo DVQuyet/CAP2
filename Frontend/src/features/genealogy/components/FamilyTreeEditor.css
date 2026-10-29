@@ -4111,3 +4111,54 @@ body.fte-bodyFullscreen {
     .fte-bioAiRow { grid-template-columns: 1fr; }
     .fte-bioAiToggle, .fte-bioAiRun { width: 100%; }
 }
+
+/* Tô sáng đường quan hệ từ trợ lý AI */
+.fte-personCard.is-onPath,
+.fte-coupleHalf.is-onPath {
+    outline: 4px solid rgba(234, 88, 12, 0.85);
+    outline-offset: 3px;
+    opacity: 1;
+    filter: none;
+}
+
+.fte-line.is-onPath {
+    stroke: #ea580c !important;
+    stroke-width: 4.5 !important;
+    opacity: 1 !important;
+    filter: drop-shadow(0 0 4px rgba(234, 88, 12, 0.55));
+}
+
+.fte-pathBanner {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: calc(100% - 24px);
+    padding: 6px 8px 6px 12px;
+    border: 1px solid #ea580c;
+    border-radius: 999px;
+    background: #fff7ed;
+    color: #9a3412;
+    font-size: 14px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+.fte-pathBanner button {
+    min-height: 36px;
+    border: 0;
+    border-radius: 999px;
+    background: #ea580c;
+    color: #fff;
+    padding: 4px 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+    .fte-pathBanner { top: 56px; font-size: 13px; }
+}

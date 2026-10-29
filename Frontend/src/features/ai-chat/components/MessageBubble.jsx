@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import RelationshipCard from "./RelationshipCard";
 import { apiRequest } from "../../../services/api";
 import { sendChatbotFeedback } from "../../../api/chatbotService";
-import { getFeedbackMessageId, getInitialFeedbackRating, getMessagePersonIds, nextFeedbackState } from "../utils/feedbackState";
+import { getFeedbackMessageId, getInitialFeedbackRating, getMessagePathIds, getMessagePersonIds, nextFeedbackState } from "../utils/feedbackState";
 
 // Nút hành động trợ lý đề xuất (ví dụ "Thêm vào lịch"). Chỉ lưu khi người dùng bấm.
 function AssistantAction({ action }) {
@@ -94,6 +94,7 @@ function MessageActions({ message, onViewOnTree }) {
   const { t } = useTranslation();
   const feedbackId = getFeedbackMessageId(message);
   const personIds = getMessagePersonIds(message);
+  const pathIds = getMessagePathIds(message);
   const [rating, setRating] = useState(() => getInitialFeedbackRating(message));
   const [error, setError] = useState("");
   const [askComment, setAskComment] = useState(false);
@@ -149,9 +150,9 @@ function MessageActions({ message, onViewOnTree }) {
           </>
         ) : null}
         {personIds.length ? (
-          <button type="button" title={t("aiChat.viewOnTreeTitle")} onClick={() => onViewOnTree?.(personIds)}>
+          <button type="button" title={pathIds.length ? t("aiChat.viewPathOnTreeTitle") : t("aiChat.viewOnTreeTitle")} onClick={() => onViewOnTree?.(personIds, pathIds)}>
             <span className="material-symbols-outlined" aria-hidden="true">account_tree</span>
-            {t("aiChat.viewOnTree")}
+            {pathIds.length ? t("aiChat.viewPathOnTree") : t("aiChat.viewOnTree")}
           </button>
         ) : null}
       </div>

@@ -7,6 +7,7 @@ function PersonHalf({
   person,
   side,
   selected,
+  onPath = false,
   directLineage,
   hasChildren,
   descendantCount = 0,
@@ -32,7 +33,7 @@ function PersonHalf({
 
   return (
     <div
-      className={`fte-coupleHalf is-${side} is-${genderKey(person)} ${directLineage ? "is-direct" : "is-inLaw"} ${deceased ? "is-deceased" : ""} ${selected ? "is-selectedPerson" : ""} ${person ? "" : "is-empty"}`}
+      className={`fte-coupleHalf is-${side} is-${genderKey(person)} ${directLineage ? "is-direct" : "is-inLaw"} ${deceased ? "is-deceased" : ""} ${selected ? "is-selectedPerson" : ""} ${onPath ? "is-onPath" : ""} ${person ? "" : "is-empty"}`}
       data-person-id={person?.id || ""}
       title={[name, directLineage ? t("tree.card.directLineageHint") : t("tree.card.inLawHint")].join("\n")}
     >
@@ -85,6 +86,7 @@ export default function CoupleCard({
   node,
   selectedPersonId,
   selectedCouple,
+  pathPersonIds = null,
   related = false,
   dimmed = false,
   dragging = false,
@@ -114,6 +116,7 @@ export default function CoupleCard({
       person: node.husband,
       side: "left",
       selected: husbandSelected,
+      onPath: Boolean(pathPersonIds?.has?.(Number(node?.husband?.id))),
       directLineage: husbandDirect,
       lineage: husbandLineage,
       descendantsCollapsed: collapsedIds?.has?.(Number(node?.husband?.id)),
@@ -124,6 +127,7 @@ export default function CoupleCard({
       person: node.wife,
       side: "right",
       selected: wifeSelected,
+      onPath: Boolean(pathPersonIds?.has?.(Number(node?.wife?.id))),
       directLineage: wifeDirect,
       lineage: wifeLineage,
       descendantsCollapsed: collapsedIds?.has?.(Number(node?.wife?.id)),
@@ -167,6 +171,7 @@ export default function CoupleCard({
         person={orderedHalves[0].person}
         side={orderedHalves[0].side}
         selected={orderedHalves[0].selected}
+        onPath={orderedHalves[0].onPath}
         directLineage={orderedHalves[0].directLineage}
         hasChildren={orderedHalves[0].lineage?.hasDescendants}
         descendantCount={orderedHalves[0].lineage?.descendantIds?.length}
@@ -186,6 +191,7 @@ export default function CoupleCard({
         person={orderedHalves[1].person}
         side={orderedHalves[1].side}
         selected={orderedHalves[1].selected}
+        onPath={orderedHalves[1].onPath}
         directLineage={orderedHalves[1].directLineage}
         hasChildren={orderedHalves[1].lineage?.hasDescendants}
         descendantCount={orderedHalves[1].lineage?.descendantIds?.length}
