@@ -5,6 +5,7 @@ const path = require("path");
 
 const db = require("../../Backend/src/config/db");
 const { verifyToken, checkRole, authenticateMediaToken } = require("../../Backend/src/middleware/authMiddleware");
+const { uploadRateLimit } = require("../../Backend/src/middleware/authRateLimit");
 const { ensureNotificationSchema } = require("../../Backend/src/shared/utils/notifications");
 
 const backendRequire = createRequire(path.resolve(__dirname, "..", "..", "Backend", "package.json"));
@@ -468,7 +469,7 @@ router.use((req, res, next) => {
   return verifyToken(req, res, (error) => (error ? next(error) : allowVoiceRoles(req, res, next)));
 });
 
-router.post("/recordings", upload.single("audio"), async (req, res) => {
+router.post("/recordings", uploadRateLimit, upload.single("audio"), async (req, res) => {
   try {
     await ensureVoiceSchema();
 

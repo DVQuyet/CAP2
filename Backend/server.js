@@ -123,6 +123,7 @@ const {
 } = require('./src/shared/utils/media');
 
 const { verifyToken, checkRole, getAccountAccess, isTokenRevoked } = require('./src/middleware/authMiddleware');
+const { uploadRateLimit } = require('./src/middleware/authRateLimit');
 
 // 4. Cấu hình upload media: ảnh/video bài đăng được lưu trực tiếp vào MySQL LONGBLOB
 const upload = multer({
@@ -290,7 +291,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // 7. Upload API
-app.post('/api/upload', verifyToken, (req, res) => {
+app.post('/api/upload', verifyToken, uploadRateLimit, (req, res) => {
     upload.single('image')(req, res, async (uploadError) => {
         if (uploadError) {
             const isMulterLimit = uploadError?.code === 'LIMIT_FILE_SIZE';
@@ -363,7 +364,7 @@ const memoryMediaUpload = multer({
     }
 });
 
-app.post('/api/upload-memory-media', verifyToken, (req, res) => {
+app.post('/api/upload-memory-media', verifyToken, uploadRateLimit, (req, res) => {
     memoryMediaUpload.single('file')(req, res, async (uploadError) => {
         if (uploadError) {
             const isMulterLimit = uploadError?.code === 'LIMIT_FILE_SIZE';

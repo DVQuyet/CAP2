@@ -3,6 +3,7 @@ const router = express.Router();
 const memberController = require("./member.controller");
 const { verifyToken, checkRole } = require("../../middleware/authMiddleware");
 const schemas = require("../../shared/validation/schemas");
+const { passwordChangeRateLimit } = require("../../middleware/authRateLimit");
 
 // Member dashboard: role 3 (member), 2 (manager), 1 (admin) khi có person_id.
 router.get("/dashboard", verifyToken, checkRole(["admin", "manager", "member"]), memberController.getDashboard);
@@ -11,7 +12,7 @@ router.patch("/notifications/read-all", verifyToken, checkRole(["admin", "manage
 router.patch("/notifications/:id/read", verifyToken, checkRole(["admin", "manager", "member"]), memberController.markNotificationRead);
 router.get("/profile", verifyToken, checkRole(["admin", "manager", "member"]), memberController.getProfile);
 router.put("/profile", verifyToken, checkRole(["admin", "manager", "member"]), schemas.updateMemberProfile, memberController.updateProfile);
-router.put("/password", verifyToken, checkRole(["admin", "manager", "member"]), memberController.changePassword);
+router.put("/password", verifyToken, checkRole(["admin", "manager", "member"]), passwordChangeRateLimit, memberController.changePassword);
 router.post("/tree-edit-session", verifyToken, checkRole(["admin", "manager", "member"]), memberController.verifyTreeEditSession);
 
 router.get("/chat", verifyToken, checkRole(["admin", "manager", "member"]), memberController.getChatMessages);

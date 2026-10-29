@@ -48,11 +48,33 @@ function createAuthRateLimit({ name, windowMs = DEFAULT_WINDOW_MS, max = DEFAULT
     };
 }
 
+// Giới hạn theo tài khoản đã đăng nhập (đặt sau verifyToken); chưa có req.user thì rơi về theo IP.
+const byAccount = (req) => (req.user?.id || req.user?.account_id ? `u${req.user.id || req.user.account_id}` : req.ip);
+
 module.exports = {
     createAuthRateLimit,
     loginRateLimit: createAuthRateLimit({ name: 'login' }),
     registerRateLimit: createAuthRateLimit({ name: 'register', windowMs: 60 * 60 * 1000, max: 10 }),
     forgotPasswordRateLimit: createAuthRateLimit({ name: 'forgot-password', max: 5 }),
     oauthExchangeRateLimit: createAuthRateLimit({ name: 'oauth-exchange', max: 30 }),
+    // Chặn dò mật khẩu hiện tại bằng một token bị lộ.
+    passwordChangeRateLimit: createAuthRateLimit({
+        name: 'password-change',
+        windowMs: Number(process.env.PASSWORD_CHANGE_RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000),
+        max: Number(process.env.PASSWORD_CHANGE_RATE_LIMIT_MAX || 10),
+        keyGenerator: byAccount,
+    }),
+    // Upload ảnh/video/ghi âm đều vào MySQL LONGBLOB nên cần chặn spam làm phình DB.
+    uploadRateLimit: createAuthRateLimit({
+        name: 'upload',
+        windowMs: Number(process.env.UPLOAD_RATE_LIMIT_WINDOW_MS || 10 * 60 * 1000),
+        max: Number(process.env.UPLOAD_RATE_LIMIT_MAX || 60),
+        keyGenerator: byAccount,
+    }),
+    // Endpoint không cần đăng nhập: chặn dò token lời mời.
+    invitationVerifyRateLimit: createAuthRateLimit({
+        name: 'invitation-verify',
+        max: Number(process.env.INVITATION_VERIFY_RATE_LIMIT_MAX || 30),
+    }),
     resetPasswordRateLimit: createAuthRateLimit({ name: 'reset-password', max: 10 }),
 };

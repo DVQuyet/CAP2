@@ -3,13 +3,14 @@ const router = express.Router();
 const invitationController = require("./invitation.controller");
 const { verifyToken, checkRole } = require("../../middleware/authMiddleware");
 const schemas = require("../../shared/validation/schemas");
+const { invitationVerifyRateLimit } = require("../../middleware/authRateLimit");
 
 // Health check - không cần token
 router.get("/health", (req, res) => {
   res.json({ message: "Invitation API is working" });
 });
 
-router.get("/verify", invitationController.verifyInvitation);
+router.get("/verify", invitationVerifyRateLimit, invitationController.verifyInvitation);
 router.post("/accept", invitationController.acceptInvitation);
 
 router.get(
