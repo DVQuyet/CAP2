@@ -390,8 +390,15 @@ const generatePostDraft = validate({
     },
 });
 
+const dismissDuplicate = validate({
+    body: {
+        person_a_id: v.id({ required: true, label: 'người thứ nhất' }),
+        person_b_id: v.id({ required: true, label: 'người thứ hai' }),
+    },
+});
+
 module.exports = {
-    generatePersonBiography, generatePostDraft,
+    generatePersonBiography, generatePostDraft, dismissDuplicate,
     createCalendarEvent, updateCalendarEvent, deleteCalendarEvent,
     assignTask, createEventTask, bulkAssignTasks, updateAssignedTask, taskIdParam, updateTaskStatus,
     createFamilyMemory, updateFamilyMemory, updateMemberProfile, updateMyProfile,

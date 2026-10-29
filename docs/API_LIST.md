@@ -192,6 +192,8 @@ Prefix: `/api/manager`
 | PATCH | `/api/manager/tasks/:id/complete` | admin, manager | Đánh dấu task hoàn thành |
 | GET | `/api/manager/clans/:clanId/family-tree` | admin, manager | Lấy cây gia phả theo dòng họ |
 | PATCH | `/api/manager/clans/:clanId/family-tree/layout` | admin, manager | Lưu layout cây gia phả theo dòng họ |
+| GET | `/api/manager/tree/duplicates` | admin, manager (dòng họ của mình; admin thêm `clan_id`) | Gợi ý cặp người có thể trùng lặp (chỉ đọc), query `limit` (≤100), `offset`. Trả `{success, clan_id, total, limit, offset, pairs:[{key, score, confidence: high/medium/low, reasons:[{code,points}], a, b}]}`; không có API tự gộp |
+| POST | `/api/manager/tree/duplicates/dismiss` | admin, manager | Body `{person_a_id, person_b_id}`: lưu "không trùng" (bảng `genealogy_duplicate_dismissals`, tự tạo nếu thiếu) |
 | POST | `/api/manager/people` | admin, manager, member | Tạo người trong gia phả |
 | POST | `/api/manager/people/create` | admin, manager, member | Alias tạo người trong gia phả |
 | PATCH | `/api/manager/people/link` | admin, manager, member | Liên kết quan hệ |

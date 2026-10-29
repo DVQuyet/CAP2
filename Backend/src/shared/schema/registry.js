@@ -27,6 +27,7 @@ const STEPS = [
     ['account people', '../../modules/me/me.controller', ['ensureAccountPeopleTable']],
     ['people layout', '../../modules/genealogy/familyRelation.service', ['ensurePeopleTreeLayoutColumns', 'ensureFamilyRelationshipColumns']],
     ['genealogy', '../../modules/genealogy/genealogySchema.service', ['ensureGenealogySchema']],
+    ['duplicate dismissals', '../../modules/genealogy/duplicates.service', ['ensureDuplicateDismissalsTable']],
     ['chatbot feedback', '../../modules/chatbot/chatbotFeedbackService', ['ensureChatbotFeedbackSchema', 'ensureChatbotHiddenSchema']],
     ['voice', '../../../../voice/backend/backendRoutes', ['ensureVoiceSchema']],
 ];
