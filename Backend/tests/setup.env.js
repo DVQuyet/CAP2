@@ -10,6 +10,8 @@ Object.assign(process.env, {
     DB_SSL: 'false',
     DB_USE_PUBLIC_DNS: 'false',
     DB_CONNECT_TIMEOUT: '1000',
+    // Test đơn vị không bao giờ gọi Groq thật (tốn quota, không ổn định); test cần LLM tự giả lập groq-sdk hoặc đặt khóa riêng.
+    GROQ_API_KEY: '',
 });
 delete process.env.DATABASE_URL;
 delete process.env.MYSQL_URL;
