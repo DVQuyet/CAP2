@@ -4085,3 +4085,29 @@ body.fte-bodyFullscreen {
     color: #a1261b;
     font-weight: 700;
 }
+
+/* AI gợi ý tiểu sử */
+.fte-bioAi { grid-column: 1 / -1; }
+.fte-bioAiToggle,
+.fte-bioAiRun {
+    min-height: 40px;
+    border: 1px solid #b9c7d8;
+    border-radius: 8px;
+    background: #f4f8fc;
+    color: #1f3a5f;
+    padding: 8px 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.fte-bioAiToggle:disabled,
+.fte-bioAiRun:disabled { opacity: 0.6; cursor: not-allowed; }
+.fte-bioAiPanel { display: grid; gap: 10px; margin-top: 8px; padding: 10px; border: 1px dashed #b9c7d8; border-radius: 8px; }
+.fte-bioAiPanel label { display: grid; gap: 4px; }
+.fte-bioAiRow { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.fte-bioAiHint { margin: 0; font-size: 13px; color: #5b6b7d; }
+.fte-bioAiError { color: #a12a2a; font-size: 14px; }
+.fte-bioAiDone { color: #1f6b3a; font-size: 14px; }
+@media (max-width: 520px) {
+    .fte-bioAiRow { grid-template-columns: 1fr; }
+    .fte-bioAiToggle, .fte-bioAiRun { width: 100%; }
+}

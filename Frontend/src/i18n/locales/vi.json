@@ -2257,6 +2257,24 @@
       "unknownName": "Chưa rõ"
     },
     "inspector": {
+      "bioAi": {
+        "button": "AI gợi ý tiểu sử",
+        "loading": "Đang soạn...",
+        "tone": "Giọng văn",
+        "toneFormal": "Trang trọng",
+        "toneFriendly": "Gần gũi",
+        "length": "Độ dài",
+        "lengthShort": "Ngắn",
+        "lengthMedium": "Vừa",
+        "notes": "Ghi chú thêm cho AI (không bắt buộc)",
+        "notesPlaceholder": "Ví dụ: nhấn mạnh quê quán, giọng văn nhẹ nhàng...",
+        "hint": "AI chỉ soạn bản nháp từ dữ liệu gia phả. Hãy kiểm tra và chỉnh sửa trước khi lưu.",
+        "confirmReplace": "Ô tiểu sử đang có nội dung. Thay bằng bản nháp của AI?",
+        "replace": "Thay thế",
+        "error": "Không thể tạo gợi ý tiểu sử lúc này.",
+        "unavailable": "AI tạm thời không khả dụng. Vui lòng nhập thủ công.",
+        "done": "Đã điền bản nháp vào ô tiểu sử. Chưa lưu cho đến khi bạn bấm lưu."
+      },
       "title": "Thông tin thành viên",
       "spouseLabel": "Vợ/chồng: {{name}}",
       "fallbackSubtitle": "Thông tin hồ sơ gia phả",

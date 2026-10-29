@@ -3,6 +3,7 @@ import { useLanguage } from "../../../../i18n/LanguageContext";
 import { fullName, personToForm } from "../../utils/tree-editor/treePersonUtils";
 import ImageUpload from "../../../../shared/components/ImageUpload";
 import HistoricalPersonFields from "./HistoricalPersonFields";
+import BiographyAIButton from "./BiographyAIButton";
 
 export default function PersonInspector({
   person,
@@ -264,6 +265,8 @@ export default function PersonInspector({
             {t("tree.inspector.fields.bio")}
             <textarea rows={3} value={form.bio} onChange={(event) => setField("bio", event.target.value)} disabled={!canEdit} />
           </label>
+
+          {canEdit ? <BiographyAIButton personId={person.id} currentBio={form.bio} onDraft={(text) => setField("bio", text)} /> : null}
 
           <label className="is-wide">
             {t("tree.inspector.fields.note")}

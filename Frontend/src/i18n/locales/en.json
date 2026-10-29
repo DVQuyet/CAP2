@@ -2257,6 +2257,24 @@
       "unknownName": "Unknown"
     },
     "inspector": {
+      "bioAi": {
+        "button": "AI biography suggestion",
+        "loading": "Drafting...",
+        "tone": "Tone",
+        "toneFormal": "Formal",
+        "toneFriendly": "Friendly",
+        "length": "Length",
+        "lengthShort": "Short",
+        "lengthMedium": "Medium",
+        "notes": "Extra notes for the AI (optional)",
+        "notesPlaceholder": "E.g. emphasize hometown, gentle tone...",
+        "hint": "The AI only drafts from family tree data. Review and edit before saving.",
+        "confirmReplace": "The biography field already has text. Replace it with the AI draft?",
+        "replace": "Replace",
+        "error": "Could not generate a biography suggestion right now.",
+        "unavailable": "AI is temporarily unavailable. Please write it manually.",
+        "done": "Draft filled into the biography field. Nothing is saved until you save."
+      },
       "title": "Member Information",
       "spouseLabel": "Spouse: {{name}}",
       "fallbackSubtitle": "Genealogy profile",
