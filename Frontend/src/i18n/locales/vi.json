@@ -1957,6 +1957,27 @@
         },
         "submit": "Gửi bài đăng"
       },
+      "ai": {
+        "button": "AI soạn giúp",
+        "hint": "Gõ ý chính hoặc chọn sự kiện sắp tới; AI chỉ soạn bản nháp từ thông tin bạn cung cấp. Hãy kiểm tra ngày, giờ, địa điểm trước khi gửi.",
+        "eventLabel": "Soạn thông báo cho sự kiện này",
+        "eventNone": "Không chọn sự kiện",
+        "ideaLabel": "Ý chính của bài",
+        "ideaPlaceholder": "Ví dụ: họp họ 15/11 tại nhà thờ họ, bàn việc tu sửa mộ",
+        "kindLabel": "Loại bài",
+        "kind": { "auto": "Tự nhận biết", "meeting": "Thông báo họp họ", "anniversary": "Giỗ", "celebration": "Hiếu hỷ", "general": "Chung" },
+        "toneLabel": "Giọng văn",
+        "tone": { "formal": "Trang trọng", "friendly": "Thân mật" },
+        "run": "Soạn bản nháp",
+        "loading": "Đang soạn...",
+        "confirmReplace": "Bài đang có nội dung. Thay bằng bản nháp của AI?",
+        "replace": "Thay thế",
+        "done": "Đã điền bản nháp vào bài. Chưa gửi cho đến khi bạn bấm Gửi bài đăng.",
+        "unverified": "Hãy kiểm tra lại các mốc ngày/giờ AI thêm vào: {{items}}",
+        "eventNotFound": "Không tìm thấy sự kiện hoặc bạn không có quyền xem.",
+        "unavailable": "AI tạm thời không khả dụng. Vui lòng soạn thủ công.",
+        "error": "Không thể soạn bản nháp lúc này."
+      },
       "detail": {
         "comments": "Bình luận",
         "loadingComments": "Đang tải bình luận...",

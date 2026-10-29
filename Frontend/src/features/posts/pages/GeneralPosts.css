@@ -738,3 +738,37 @@
   justify-content: flex-end;
   margin-top: 1rem;
 }
+
+/* AI soạn giúp bài đăng */
+.post-ai { display: grid; gap: 8px; }
+.post-ai-toggle,
+.post-ai-run {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  border: 1px solid #d9c9b5;
+  border-radius: 8px;
+  background: #faf5ee;
+  color: #5a3e2b;
+  padding: 8px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.post-ai-toggle { justify-self: start; }
+.post-ai-toggle:disabled,
+.post-ai-run:disabled { opacity: 0.6; cursor: not-allowed; }
+.post-ai-panel { display: grid; gap: 10px; padding: 10px; border: 1px dashed #d9c9b5; border-radius: 8px; }
+.post-ai-panel label { display: grid; gap: 4px; font-size: 0.9rem; }
+.post-ai-panel select,
+.post-ai-panel textarea { width: 100%; box-sizing: border-box; font-size: 16px; }
+.post-ai-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.post-ai-hint { margin: 0; font-size: 13px; color: #6b5b4d; }
+.post-ai-error { color: #a12a2a; font-size: 14px; }
+.post-ai-done { color: #1f6b3a; font-size: 14px; }
+.post-ai-warning { color: #8a5a00; background: #fff6dd; border-radius: 6px; padding: 6px 8px; font-size: 13px; }
+@media (max-width: 520px) {
+  .post-ai-row { grid-template-columns: 1fr; }
+  .post-ai-toggle, .post-ai-run { width: 100%; justify-self: stretch; }
+}

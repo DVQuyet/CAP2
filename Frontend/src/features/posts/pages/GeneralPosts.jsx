@@ -19,6 +19,7 @@ import { formatDateTimeVN } from "../../../shared/utils/dateFormat";
 import { getSocket } from "../../../services/socket";
 import { useConfirm } from "../../../shared/components/confirmContext.js";
 import useDismissable from "../../../shared/hooks/useDismissable";
+import PostAIAssist from "../components/PostAIAssist";
 import "./GeneralPosts.css";
 
 const emptyPostForm = {
@@ -199,6 +200,15 @@ function AddPostModal({ form, error, notice, submitting, onChange, onClose, onSu
               {t("posts.modal.create.tabs.story")}
             </button>
           </div>
+
+          <PostAIAssist
+            hasContent={Boolean(form.description?.trim() || form.content?.trim())}
+            disabled={submitting}
+            onDraft={({ title, content }) => {
+              onChange("description", title.slice(0, 255));
+              onChange("content", content);
+            }}
+          />
 
           <label className="post-field">
             <span>{t("posts.modal.create.fields.title")}</span>

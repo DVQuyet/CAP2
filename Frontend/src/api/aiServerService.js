@@ -24,8 +24,17 @@ export const generatePersonBiographyAI = async (payload) => {
   });
 };
 
+// Chỉ trả bản nháp bài đăng; nếu có eventId, server tự đọc dữ kiện sự kiện, không lưu gì.
+export const generatePostDraftAI = async (payload) => {
+  return apiRequest("/api/ai/post-draft/generate", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+};
+
 export default {
   generateEventFormAI,
   extractGenealogyAI,
   generatePersonBiographyAI,
+  generatePostDraftAI,
 };

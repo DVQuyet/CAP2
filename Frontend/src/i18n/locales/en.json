@@ -1957,6 +1957,27 @@
         },
         "submit": "Send post"
       },
+      "ai": {
+        "button": "Draft with AI",
+        "hint": "Type the main idea or pick an upcoming event; AI only drafts from what you provide. Check dates, times and places before posting.",
+        "eventLabel": "Draft an announcement for this event",
+        "eventNone": "No event",
+        "ideaLabel": "Main idea",
+        "ideaPlaceholder": "Example: clan meeting on 15/11 at the ancestral hall to discuss repairing the graves",
+        "kindLabel": "Post type",
+        "kind": { "auto": "Detect automatically", "meeting": "Clan meeting notice", "anniversary": "Death anniversary", "celebration": "Weddings and joyful events", "general": "General" },
+        "toneLabel": "Tone",
+        "tone": { "formal": "Formal", "friendly": "Friendly" },
+        "run": "Write draft",
+        "loading": "Drafting...",
+        "confirmReplace": "The post already has content. Replace it with the AI draft?",
+        "replace": "Replace",
+        "done": "Draft filled in. Nothing is sent until you press Send post.",
+        "unverified": "Please double-check the dates/times the AI added: {{items}}",
+        "eventNotFound": "Event not found or you are not allowed to view it.",
+        "unavailable": "AI is temporarily unavailable. Please write it manually.",
+        "error": "Could not draft right now."
+      },
       "detail": {
         "comments": "Comments",
         "loadingComments": "Loading comments...",
