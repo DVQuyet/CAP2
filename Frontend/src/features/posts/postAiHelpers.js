@@ -32,3 +32,20 @@ export function formatIsoShort(iso) {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ""));
   return m ? `${m[3]}/${m[2]}/${m[1]}` : String(iso || "");
 }
+
+// Sự kiện nào được hiện nút "Soạn thông báo cho sự kiện này" trên trang lịch:
+// không phải lịch hệ thống (lễ), không phải sinh nhật, và chưa qua ngày.
+export function canDraftAnnouncement(event, todayIso) {
+  if (!event || event.id === undefined || event.id === null) return false;
+  if (event.source === "system") return false;
+  if (String(event.type || "") === "birthday") return false;
+  return String(event.event_date || event.date || "") >= todayIso;
+}
+
+// Đường dẫn trang bài viết theo khu vực đang đứng (user/manager); admin không có form đăng bài này.
+export function postsPathFromCalendarPath(pathname) {
+  const path = String(pathname || "");
+  if (path.startsWith("/manager")) return "/manager/posts";
+  if (path.startsWith("/user")) return "/user/posts";
+  return "";
+}

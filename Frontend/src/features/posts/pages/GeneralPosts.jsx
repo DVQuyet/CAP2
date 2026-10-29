@@ -161,7 +161,7 @@ function FeedComposer({ onOpen, t }) {
   );
 }
 
-function AddPostModal({ form, error, notice, submitting, onChange, onClose, onSubmit, t }) {
+function AddPostModal({ form, error, notice, submitting, onChange, onClose, onSubmit, initialEventId = "", t }) {
   const { requestClose, backdropProps } = useDismissable();
   // Có nội dung đang soạn thì hỏi lại trước khi đóng.
   const dirty = Boolean(form.description?.trim() || form.content?.trim() || form.image_url);
@@ -204,6 +204,7 @@ function AddPostModal({ form, error, notice, submitting, onChange, onClose, onSu
           <PostAIAssist
             hasContent={Boolean(form.description?.trim() || form.content?.trim())}
             disabled={submitting}
+            initialEventId={initialEventId}
             onDraft={({ title, content }) => {
               onChange("description", title.slice(0, 255));
               onChange("content", content);
@@ -525,6 +526,7 @@ export default function GeneralPosts() {
     if (searchParams.get("compose")) {
       const nextParams = new URLSearchParams(searchParams);
       nextParams.delete("compose");
+      nextParams.delete("event");
       setSearchParams(nextParams, { replace: true });
     }
   };
@@ -727,6 +729,7 @@ export default function GeneralPosts() {
           onChange={changeFormField}
           onClose={closeAddModal}
           onSubmit={handleSubmitPost}
+          initialEventId={searchParams.get("event") || ""}
           t={t}
         />
       )}

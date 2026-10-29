@@ -6,14 +6,15 @@ import { useConfirm } from "../../../shared/components/confirmContext.js";
 import { formatIsoShort, pickUpcomingEvents, toIsoLocal } from "../postAiHelpers";
 
 // "AI soạn giúp": điền tiêu đề + nội dung nháp vào form đăng bài; chưa lưu gì cho đến khi người dùng gửi bài.
-export default function PostAIAssist({ hasContent = false, disabled = false, onDraft }) {
+export default function PostAIAssist({ hasContent = false, disabled = false, initialEventId = "", onDraft }) {
   const { t } = useTranslation();
   const confirm = useConfirm();
-  const [open, setOpen] = useState(false);
+  // Mở từ nút "Soạn thông báo" ở trang lịch: mở sẵn panel và chọn sẵn sự kiện.
+  const [open, setOpen] = useState(Boolean(initialEventId));
   const [idea, setIdea] = useState("");
   const [kind, setKind] = useState("");
   const [tone, setTone] = useState("formal");
-  const [eventId, setEventId] = useState("");
+  const [eventId, setEventId] = useState(initialEventId);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -78,11 +79,14 @@ export default function PostAIAssist({ hasContent = false, disabled = false, onD
       {open ? (
         <div className="post-ai-panel">
           <p className="post-ai-hint">{t("posts.modal.ai.hint")}</p>
-          {events.length ? (
+          {events.length || eventId ? (
             <label>
               {t("posts.modal.ai.eventLabel")}
               <select value={eventId} onChange={(event) => setEventId(event.target.value)} disabled={loading}>
                 <option value="">{t("posts.modal.ai.eventNone")}</option>
+                {eventId && !events.some((event) => event.id === eventId) ? (
+                  <option value={eventId}>{t("posts.modal.ai.eventSelected")}</option>
+                ) : null}
                 {events.map((event) => (
                   <option key={event.id} value={event.id}>{`${formatIsoShort(event.date)} - ${event.title}`}</option>
                 ))}

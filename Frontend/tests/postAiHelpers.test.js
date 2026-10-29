@@ -25,3 +25,16 @@ test("định dạng ngày", () => {
   assert.equal(toIsoLocal(new Date(2026, 10, 5)), "2026-11-05");
   assert.equal(formatIsoShort("2026-11-05"), "05/11/2026");
 });
+
+test("nút soạn thông báo từ lịch: bỏ lịch hệ thống, sinh nhật và sự kiện đã qua", async () => {
+  const { canDraftAnnouncement, postsPathFromCalendarPath } = await import("../src/features/posts/postAiHelpers.js");
+  const today = "2026-10-30";
+  assert.equal(canDraftAnnouncement({ id: "death-1-2026", type: "death_anniversary", date: "2026-11-05" }, today), true);
+  assert.equal(canDraftAnnouncement({ id: 7, type: "meeting", event_date: "2026-10-30" }, today), true);
+  assert.equal(canDraftAnnouncement({ id: "solar-1", type: "holiday", source: "system", date: "2026-11-05" }, today), false);
+  assert.equal(canDraftAnnouncement({ id: 2, type: "birthday", date: "2026-11-05" }, today), false);
+  assert.equal(canDraftAnnouncement({ id: 3, type: "meeting", date: "2026-10-01" }, today), false);
+  assert.equal(postsPathFromCalendarPath("/manager/calendar"), "/manager/posts");
+  assert.equal(postsPathFromCalendarPath("/user/calendar"), "/user/posts");
+  assert.equal(postsPathFromCalendarPath("/dashboard/calendar"), "");
+});
