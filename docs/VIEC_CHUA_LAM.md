@@ -19,7 +19,7 @@ Ký hiệu công sức: **S** < 2 giờ · **M** nửa ngày–1 ngày · **L** 
 
 ## Xong trong đợt 22/10/2026 (commit `3c4c6c8`..`ffba8f8`)
 
-- 2.1 i18n: ~330 chuỗi trong 21 file + test so khớp key vi/en (`Frontend/tests/localeParity.test.js`). Còn sót: tiêu đề cột bảng sự kiện ở `TaskManagementPage.jsx` (~dòng 1599).
+- 2.1 i18n: ~330 chuỗi trong 21 file + test so khớp key vi/en (`Frontend/tests/localeParity.test.js`). Tiêu đề cột bảng sự kiện ở `TaskManagementPage.jsx` đã dùng `t()` (kiểm lại ở đợt 6).
 - 2.2 "Xem trên cây" từ chat (`?focus=&highlight=`), 2.3 "Tải thêm" thông báo/kỷ niệm/sự kiện quản lý, 2.4 log câu chưa hiểu + `scripts/chatbot-unknown-report.js`, 2.5 👍/👎.
 - Chat: giao diện mới, màn chào, mobile toàn màn hình, báo máy chủ khởi động, xóa lịch sử (ẩn mềm), chuẩn hóa cách gõ (không dấu, viết tắt) an toàn với tên người. E2E 107/107.
 - Test backend không thể chạm DB thật (`tests/setup.env.js`).
@@ -61,6 +61,13 @@ Còn mở từ đợt 4:
 - Ảnh đại diện khi xuất cây vẫn là chữ cái đầu, chưa nhúng ảnh thật.
 - Validate chưa phủ route calendar/events.
 - "ba co toi" vẫn mơ hồ (cụ vs bà cô).
+
+Đợt 6 (30/10, Sonnet) — rà lại B3, 2.4, 2.5 theo `KE_HOACH_SONNET_1H.md`; **không cần code mới**:
+- B3: tiêu đề cột bảng sự kiện ở `TaskManagementPage.jsx` đã dùng `t()` từ trước.
+- 2.4 (log câu chưa hiểu + `scripts/chatbot-unknown-report.js`) và 2.5 (👍/👎: bảng `chatbot_feedback`, `POST /api/chatbot/messages/:id/feedback`, nút trong chat, i18n vi/en, test `chatbot.feedback.test.js`) đã có từ đợt 22/10; bảng P2 giờ đánh dấu ✅.
+- Baseline kiểm tra: Backend 167 test pass; Frontend 53 test pass, ESLint 0 lỗi / 139 cảnh báo (không đổi), `vite build` OK.
+- Migration cần khi deploy: không có thêm; vẫn là các file của đợt 5 và 22/10 (`password_changed_at`, `chatbot_feedback`, `chatbot_messages.hidden_at`).
+- Còn mở: như danh sách "Còn mở từ đợt này" của đợt 5 (QA trình duyệt, `<style>` ở `ClanFundPage`/`FundAnalytics`, cảnh báo ESLint cần người xác nhận).
 
 Đợt 5 (29/10, Sonnet theo `KE_HOACH_SONNET_1H.md`) — 6 commit `c8b8ef5`..`fcab1ab`, chưa push:
 - Dependency: `npm audit fix` + nodemailer 10 (API `createTransport/sendMail` đã thử). Backend chỉ còn `xlsx` (không có bản vá; chỉ dùng để ghi file nên giữ lại). Frontend còn 2 lỗi moderate của `react-router` (cần nhảy lên v7, breaking) — để sau.
@@ -105,8 +112,8 @@ Không làm được từ máy local vì `Backend/.env` trỏ vào DB thật; c�
 | 2.1 | **i18n**: đưa chuỗi tiếng Việt viết cứng vào `vi.json`/`en.json` | 36 file `.jsx` còn chuỗi có dấu; nhiều nhất là `ArchivedMembersDialog` (~23), `TimeCapsulePage` (~15), `GeneralPosts` (~8). Nhiều chỗ dạng `t(key) \|\| "fallback"` thì chỉ cần thêm key | Frontend | M |
 | 2.2 | **Tô sáng đường quan hệ trên cây** khi AI trả lời câu quan hệ | `relationshipPath` mới chỉ vẽ trong chat (`FamilyPathVisualizer.jsx`, `RelationshipCard.jsx`); cây đã có `focusedPersonId` để nối vào | Frontend | M |
 | 2.3 | "Tải thêm" cho thông báo, sự kiện, kỷ niệm | `member.controller.js:798` lấy thông báo `LIMIT 50`, `:745` lấy sự kiện `LIMIT 50`, kỷ niệm có trần; dùng lại mẫu `beforeId` của bảng tin | Fullstack | M |
-| 2.4 | Ghi log câu chatbot không hiểu (`intent = 'unknown'` hoặc phải nhờ LLM) + script lấy top 20 câu mỗi tuần | Chưa có log hay script nào | Backend | S |
-| 2.5 | Nút 👍/👎 cho câu trả lời của chatbot (lưu vào `chatbot_messages`) | Chưa có | Fullstack | S |
+| 2.4 ✅ | Ghi log câu chatbot không hiểu (`intent = 'unknown'` hoặc phải nhờ LLM) + script lấy top 20 câu mỗi tuần | Xong ở đợt 22/10: `scripts/chatbot-unknown-report.js` (đọc `chatbot_messages`, gom nhóm), có test | Backend | S |
+| 2.5 ✅ | Nút 👍/👎 cho câu trả lời của chatbot (lưu vào `chatbot_messages`) | Xong ở đợt 22/10: bảng `chatbot_feedback` + `POST /api/chatbot/messages/:id/feedback` + nút trong chat | Fullstack | S |
 | 2.6 ✅ | Rà UI mobile 390px: tràn ngang, modal không đóng bằng Esc/click ra ngoài, nút bị che | Lấy danh sách từ lần chạy `KICH_BAN_TEST_FULL.md` | Design | M |
 | 2.7 ✅ | Thay 17 chỗ `window.confirm` bằng dialog chung của app | Giữ lại có chủ đích vì handler phải chuyển sang async; nên làm cùng 2.6 | Design | M |
 
