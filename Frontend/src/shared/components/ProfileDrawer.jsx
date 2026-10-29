@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { apiRequest } from "../../services/api";
 import { getStoredUser, persistAuthSession } from "../utils/auth";
+import { ensureMediaToken } from "../../services/mediaToken";
 import "./ProfileDrawer.css";
 import { notify } from "../utils/toast";
 import { friendlyErrorMessage } from "../utils/friendlyError";
@@ -570,7 +571,10 @@ export default function ProfileDrawer({
       });
 
       // Backend thu hồi token cũ khi đổi mật khẩu và trả token mới.
-      if (result?.token) persistAuthSession({ token: result.token });
+      if (result?.token) {
+        persistAuthSession({ token: result.token });
+        await ensureMediaToken();
+      }
 
       setPasswordForm({
         current_password: "",

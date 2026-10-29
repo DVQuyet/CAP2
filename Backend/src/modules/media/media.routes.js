@@ -7,23 +7,26 @@ const { getAccountAccess, isTokenRevoked } = require('../../middleware/authMiddl
 const { ensureMediaAccessKeyColumn, isValidMediaAccessKey } = require('../../shared/utils/media');
 const router = express.Router();
 
+// Token từ header Authorization (JWT đăng nhập) hoặc từ query ?token= (chỉ nhận token scope 'media', xem verify bên dưới).
 function readRequestToken(req) {
   const header = String(req.headers.authorization || '');
-  if (header.startsWith('Bearer ')) return header.slice(7);
-  return typeof req.query.token === 'string' ? req.query.token : null;
+  if (header.startsWith('Bearer ')) return { token: header.slice(7), fromQuery: false };
+  return typeof req.query.token === 'string' ? { token: req.query.token, fromQuery: true } : null;
 }
 
 // Người xem đã đăng nhập được xem media của dòng họ mình (admin xem tất cả).
 async function canViewerAccessMedia(req, file) {
-  const token = readRequestToken(req);
-  if (!token) return false;
+  const request = readRequestToken(req);
+  if (!request) return false;
 
   let decoded;
   try {
-    decoded = jwt.verify(token, getJwtSecret());
+    decoded = jwt.verify(request.token, getJwtSecret());
   } catch (_) {
     return false;
   }
+  // JWT đăng nhập không được nằm trên URL; token media không được dùng như JWT đăng nhập qua header.
+  if (request.fromQuery !== (decoded.scope === 'media')) return false;
 
   const accountId = Number(decoded.id || decoded.account_id);
   if (!Number.isFinite(accountId) || accountId <= 0) return false;

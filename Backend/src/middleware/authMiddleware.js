@@ -102,6 +102,15 @@ exports.verifyToken = async (req, res, next) => {
         });
     }
 
+    // Token media chỉ để xem ảnh/ghi âm qua URL, không được dùng gọi API.
+    if (decoded.scope === 'media') {
+        return res.status(401).json({
+            success: false,
+            code: 'TOKEN_INVALID',
+            message: "Token không hợp lệ cho thao tác này."
+        });
+    }
+
     const accountId = Number(decoded.id || decoded.account_id);
     if (!Number.isInteger(accountId) || accountId <= 0) {
         // Token không gắn với tài khoản (vd. token đăng ký social) — để checkRole quyết định.
@@ -145,6 +154,26 @@ exports.verifyToken = async (req, res, next) => {
             message: "Không thể xác thực lúc này. Vui lòng thử lại."
         });
     }
+};
+
+// Xác thực token media trong query (?token=) cho các request GET tải file. Đặt req.user nếu hợp lệ.
+// Trả true khi hợp lệ; false khi sai chữ ký/scope, tài khoản bị khóa hoặc token bị thu hồi (đổi mật khẩu).
+exports.authenticateMediaToken = async (req, token) => {
+    let decoded;
+    try {
+        decoded = jwt.verify(token, getJwtSecret());
+    } catch (_) {
+        return false;
+    }
+    if (decoded.scope !== 'media') return false;
+    const accountId = Number(decoded.id || decoded.account_id);
+    if (!Number.isInteger(accountId) || accountId <= 0) return false;
+    const state = await loadAccountState(accountId);
+    if (!state || state.archived || state.status === 'rejected') return false;
+    if (exports.isTokenRevoked(state, decoded)) return false;
+    const roleName = getRoleName(state.roleId);
+    req.user = { id: accountId, account_id: accountId, role_id: state.roleId, role_name: roleName, role: roleName };
+    return true;
 };
 
 /**

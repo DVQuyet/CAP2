@@ -2,7 +2,7 @@ const crypto = require('crypto');
 const db = require('../../config/db');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { getJwtSecret } = require('../../config/jwt');
+const { getJwtSecret, signMediaToken } = require('../../config/jwt');
 const { sendMail, isSmtpConfigured: isEmailConfigured } = require('../../shared/utils/email');
 const { getRoleName } = require('../../config/roles');
 const { consumeOAuthCode } = require('./oauthCodeStore');
@@ -363,6 +363,15 @@ exports.requestPasswordReset = async (req, res) => {
         console.error('❌ requestPasswordReset:', error);
         return res.status(500).json({ success: false, message: 'Không thể gửi mã. Thử lại sau.' });
     }
+};
+
+// Cấp token chỉ-xem-media để đặt lên URL ảnh/ghi âm thay cho JWT đăng nhập.
+exports.getMediaToken = (req, res) => {
+    const accountId = Number(req.user?.id || req.user?.account_id);
+    if (!Number.isInteger(accountId) || accountId <= 0) {
+        return res.status(401).json({ success: false, code: 'TOKEN_INVALID', message: 'Token không hợp lệ.' });
+    }
+    return res.json({ success: true, media_token: signMediaToken(accountId) });
 };
 
 // Đổi mã đăng nhập mạng xã hội (dùng một lần, sống 60 giây) lấy JWT.

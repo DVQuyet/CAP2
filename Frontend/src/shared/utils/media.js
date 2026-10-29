@@ -1,5 +1,6 @@
 import { API_BASE_URL } from "../../services/api";
-import { getAuthToken } from "./auth";
+import { getMediaToken } from "./auth";
+import { appendMediaToken } from "./mediaToken";
 
 export function normalizeMediaId(value) {
   if (value === undefined || value === null || value === "") return null;
@@ -7,14 +8,10 @@ export function normalizeMediaId(value) {
   return Number.isInteger(number) && number > 0 ? number : null;
 }
 
-// Media mới chỉ tải được khi URL có khóa truy cập (?k=, backend trả về lúc upload)
-// hoặc token đăng nhập. URL dựng từ id không có khóa nên gắn token của người đang xem.
+// Media mới chỉ tải được khi URL có khóa truy cập (?k=, backend trả về lúc upload) hoặc token media của người xem.
+// URL dựng từ id không có khóa nên gắn token media (không phải JWT đăng nhập) của người đang xem.
 export function withMediaAccess(url) {
-  if (typeof url !== "string" || !url.includes("/api/media/")) return url;
-  if (/[?&](k|token)=/.test(url)) return url;
-  const token = getAuthToken();
-  if (!token) return url;
-  return `${url}${url.includes("?") ? "&" : "?"}token=${encodeURIComponent(token)}`;
+  return appendMediaToken(url, getMediaToken());
 }
 
 export function mediaUrlFromId(mediaId) {

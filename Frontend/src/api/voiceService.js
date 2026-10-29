@@ -1,4 +1,5 @@
 import { buildApiUrl } from "../services/api";
+import { getMediaToken } from "../shared/utils/auth";
 
 const BASE_URL = "/api/voice";
 
@@ -6,8 +7,6 @@ const getAuthHeaders = () => {
   const token = localStorage.getItem("auth_token") || localStorage.getItem("token");
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
-
-const getAuthToken = () => localStorage.getItem("auth_token") || localStorage.getItem("token") || "";
 
 const parseResponse = async (response, fallbackMessage) => {
   const result = await response.json().catch(() => ({}));
@@ -97,7 +96,8 @@ export const sendVoiceRecording = async (id, payload) => {
 };
 
 export const getVoiceRecordingAudioUrl = (id) => {
-  const token = getAuthToken();
+  // <audio> không gửi được header: dùng token media (không phải JWT đăng nhập) trên URL.
+  const token = getMediaToken();
   const query = token ? `?token=${encodeURIComponent(token)}` : "";
   return buildApiUrl(`${BASE_URL}/recordings/${encodeURIComponent(id)}/audio${query}`);
 };

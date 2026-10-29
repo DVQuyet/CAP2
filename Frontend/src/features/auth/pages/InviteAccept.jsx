@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { acceptInvitation, verifyInvitation } from "../../../api/invitationService";
+import { ensureMediaToken } from "../../../services/mediaToken";
 import { persistAuthSession } from "../../../shared/utils/auth";
 import "./invite.css";
 
@@ -75,6 +76,7 @@ export default function InviteAccept() {
         confirm_password: form.confirm_password,
       });
       persistAuthSession(result);
+      await ensureMediaToken();
       navigate(result.next || "/complete-profile", { replace: true });
     } catch (error) {
       setState((current) => ({

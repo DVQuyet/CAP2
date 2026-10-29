@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { completeMyProfile } from "../../../api/invitationService";
 import DateInput from "../../../shared/components/DateInput";
+import { ensureMediaToken } from "../../../services/mediaToken";
 import { persistAuthSession, getStoredUser } from "../../../shared/utils/auth";
 import { vietnamDateToIso } from "../../../shared/utils/dateFormat";
 import "./invite.css";
@@ -61,6 +62,7 @@ export default function CompleteProfile() {
         birth_date: vietnamDateToIso(form.birth_date) || null,
       });
       persistAuthSession(result);
+      await ensureMediaToken();
       navigate(dashboardPath(result.user), { replace: true });
     } catch (error) {
       setMessage(error?.message || t("auth.completeProfile.saveFailed"));

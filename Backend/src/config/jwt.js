@@ -8,4 +8,16 @@ function getJwtSecret() {
     return secret;
 }
 
-module.exports = { getJwtSecret };
+// Token riêng cho URL ảnh/ghi âm (thẻ <img>/<audio> không gửi được header Authorization).
+// Chỉ xem được media, không dùng được cho API: verifyToken từ chối scope 'media'; media chỉ nhận scope này qua query.
+const jsonwebtoken = require('jsonwebtoken');
+
+function signMediaToken(accountId) {
+    return jsonwebtoken.sign(
+        { id: accountId, account_id: accountId, scope: 'media' },
+        getJwtSecret(),
+        { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
+    );
+}
+
+module.exports = { getJwtSecret, signMediaToken };

@@ -5,6 +5,7 @@ import "./login.css";
 import { loginAPI } from "../../../api/authService";
 import { buildApiUrl } from "../../../services/api";
 import { persistAuthSession } from "../../../shared/utils/auth";
+import { ensureMediaToken } from "../../../services/mediaToken";
 import { safeRedirectPath } from "../../../shared/utils/sessionExpiry";
 
 const initialLoginForm = {
@@ -87,6 +88,7 @@ export default function Login({ isOpen, onClose, onLoginSuccess, onOpenRegister 
       }
 
       persistAuthSession(result);
+      await ensureMediaToken();
       onLoginSuccess?.(result.user);
       setLoginForm(initialLoginForm);
 

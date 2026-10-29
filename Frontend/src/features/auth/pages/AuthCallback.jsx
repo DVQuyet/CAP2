@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { exchangeOAuthCodeAPI, fetchMeAPI } from "../../../api/authService";
+import { ensureMediaToken } from "../../../services/mediaToken";
 import { persistAuthSession } from "../../../shared/utils/auth";
 import "./login.css";
 
@@ -73,6 +74,7 @@ export default function AuthCallback() {
         if (!user) throw new Error(t("auth.callback.noAccountInfo"));
 
         persistAuthSession({ token, user });
+        await ensureMediaToken();
         if (cancelled) return;
 
         if (user.auth_status === "pending" || user.status === "pending") {
