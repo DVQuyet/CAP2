@@ -1343,6 +1343,8 @@ const openEvent = (eventId) => {
                   type="button"
                   onClick={toggleAiPromptVoiceInput}
                   disabled={aiLoading}
+                  aria-label={voiceListening ? t("common.stopVoice") : t("common.startVoice")}
+                  aria-pressed={voiceListening}
                   style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: voiceListening ? '#ef4444' : '#d4af37' }}
                 >
                   <span className="material-symbols-outlined">{voiceListening ? "mic_off" : "mic"}</span>
