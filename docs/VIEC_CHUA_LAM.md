@@ -62,6 +62,12 @@ Còn mở từ đợt 4:
 - Validate chưa phủ route calendar/events.
 - "ba co toi" vẫn mơ hồ (cụ vs bà cô).
 
+Đợt 7 (30/10) — AI gợi ý tiểu sử:
+- `POST /api/ai/person-biography/generate` (`ai.controller.js`, `personBiography.service.js`, zod `generatePersonBiography`): server tự đọc dữ kiện theo `person_id` (ngày theo `*_date_precision`, quê quán, cha mẹ, vợ/chồng, con; bỏ qua quan hệ `visibility=managers` với người không phải admin/manager), kiểm quyền như sửa hồ sơ (`assertTreeMutationPermission` + `assertCanManagePersonId`), prompt không có SĐT/địa chỉ, ghi chú người dùng coi là dữ liệu không đáng tin. Chỉ trả bản nháp.
+- Frontend: `BiographyAIButton.jsx` trong `PersonInspector` điền ô tiểu sử, hỏi xác nhận khi ô đã có chữ; i18n vi/en.
+- Test: `tests/ai.personBiography.test.js` (8 test, DB và Groq giả). Không cần migration.
+- Còn mở: QA trên trình duyệt (desktop + điện thoại), chưa dùng family_memories vì bảng không gắn với người cụ thể; hỏi nhóm có cho đưa nơi sinh/địa chỉ vào bản nháp không.
+
 Đợt 6 (30/10, Sonnet) — rà lại B3, 2.4, 2.5 theo `KE_HOACH_SONNET_1H.md`; **không cần code mới**:
 - B3: tiêu đề cột bảng sự kiện ở `TaskManagementPage.jsx` đã dùng `t()` từ trước.
 - 2.4 (log câu chưa hiểu + `scripts/chatbot-unknown-report.js`) và 2.5 (👍/👎: bảng `chatbot_feedback`, `POST /api/chatbot/messages/:id/feedback`, nút trong chat, i18n vi/en, test `chatbot.feedback.test.js`) đã có từ đợt 22/10; bảng P2 giờ đánh dấu ✅.

@@ -110,6 +110,7 @@ Prefix: `/api/ai`
 | Method | Endpoint | Quyền | Mô tả ngắn |
 |---|---|---|---|
 | POST | `/api/ai/event-form/generate` | admin, manager | Gọi Groq (qua backend) để sinh form sự kiện và danh sách task |
+| POST | `/api/ai/person-biography/generate` | admin, manager, member (quyền sửa hồ sơ người đó; member cần temporary edit key) | Body `{person_id, tone?: formal/friendly, length?: short/medium, language?: vi/en, notes?≤600}`. Server tự đọc dữ kiện, trả bản nháp `{success, draft:true, biography, facts_used[], options}`; 503 `AI_UNAVAILABLE` khi thiếu GROQ_API_KEY/AI lỗi. Không ghi DB |
 
 ## Admin
 
