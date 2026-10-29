@@ -149,7 +149,7 @@ Không làm được từ máy local vì `Backend/.env` trỏ vào DB thật; c�
 | 4.2 ✅ | Sửa/xóa sự kiện qua chat, gợi ý chủ động ("sắp tới giỗ cụ X") | Luôn có bước xác nhận; chỉ trên sự kiện do chính người dùng tạo | M |
 | 4.3 ✅ | Thu gọn/mở rộng nhánh, nhớ theo từng người dùng | Mặc định mở 3 đời quanh người đang xem | M |
 | 4.4 một phần | Xuất báo cáo PDF gia phả | Đã có trang in "Sổ gia phả" (in/lưu PDF bằng trình duyệt); chưa tạo file PDF thật | M |
-| 4.5 | Nhập/xuất GEDCOM | | L |
+| 4.5 (một phần: xuất) | Nhập/xuất GEDCOM | Xuất xong ở đợt 9: `GET /api/manager/tree/export.gedcom` (`gedcom.service.js`, nút "Xuất GEDCOM" ở trang cây của quản lý). **Nhập chưa làm** (cần map id, phát hiện trùng với `duplicates.service`, xử lý tên/ngày không chuẩn) | L |
 | 4.6 | Hoàn tác thay đổi cây | Cần bảng lịch sử trước/sau | L |
 | 4.7 | Đối soát quỹ qua SePay, web push | | L |
 

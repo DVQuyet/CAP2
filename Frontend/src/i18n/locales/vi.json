@@ -2046,6 +2046,8 @@
       "saving": "Đang lưu...",
       "saveClanInfo": "Lưu thông tin dòng họ",
       "temporaryEditKey": "Khóa sửa tạm thời",
+      "exportGedcom": "Xuất GEDCOM",
+      "gedcomHint": "Tải file .ged (GEDCOM 5.5.1) để dùng ở phần mềm gia phả khác. Chỉ xuất; không gồm số điện thoại, email, địa chỉ.",
       "temporaryEditKeyHelp": "Hiệu lực 1 giờ từ lúc tạo key",
       "searchMemberByName": "Tìm member theo tên",
       "searchMemberPlaceholder": "Nhập tên, email hoặc account id",

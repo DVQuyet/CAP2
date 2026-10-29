@@ -2047,6 +2047,8 @@
       "saving": "Saving...",
       "saveClanInfo": "Save clan information",
       "temporaryEditKey": "Temporary edit key",
+      "exportGedcom": "Export GEDCOM",
+      "gedcomHint": "Download a .ged file (GEDCOM 5.5.1) for other genealogy software. Export only; excludes phone, email and address.",
       "temporaryEditKeyHelp": "Valid for 1 hour from key creation",
       "searchMemberByName": "Find member by name",
       "searchMemberPlaceholder": "Enter name, email, or account ID",

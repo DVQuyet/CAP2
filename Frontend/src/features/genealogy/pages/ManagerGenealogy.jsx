@@ -2,12 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useDismissable from "../../../shared/hooks/useDismissable";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { createTreeEditKeyAPI, getActiveTreeEditKeysAPI, getManagerTree, updateManagerClanInfo } from "../../../api/managerService";
+import { createTreeEditKeyAPI, downloadTreeGedcom, getActiveTreeEditKeysAPI, getManagerTree, updateManagerClanInfo } from "../../../api/managerService";
 import FamilyTreeEditor from "../components/FamilyTreeEditor.jsx";
 import { formatDateTimeVN } from "../../../shared/utils/dateFormat";
 import { onSocketEvent } from "../../../services/socket";
 import ErrorState from "../../../shared/components/ErrorState";
 import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
+import { notify } from "../../../shared/utils/toast";
 import "../../manager/pages/manager.css";
 
 export default function GenealogySection() {
@@ -39,7 +40,28 @@ export default function GenealogySection() {
   const [clanSaving, setClanSaving] = useState(false);
   const [clanMessage, setClanMessage] = useState("");
   const [clanError, setClanError] = useState("");
+  const [gedcomBusy, setGedcomBusy] = useState(false);
   const treeReloadTimerRef = useRef(null);
+
+  const exportGedcom = async () => {
+    if (gedcomBusy) return;
+    setGedcomBusy(true);
+    try {
+      const { blob, filename } = await downloadTreeGedcom();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      notify(friendlyErrorMessage(err, t));
+    } finally {
+      setGedcomBusy(false);
+    }
+  };
 
   const formatPersonName = (person) =>
     person?.display_name ||
@@ -457,6 +479,9 @@ export default function GenealogySection() {
           <Link className="mgr-btnGhost" to="/manager/duplicates">
             {t("duplicates.entryLink")}
           </Link>
+          <button className="mgr-btnGhost" type="button" onClick={exportGedcom} disabled={gedcomBusy || loading} title={t("tree.page.gedcomHint")}>
+            {gedcomBusy ? t("common.loading") : t("tree.page.exportGedcom")}
+          </button>
         </div>
       </div>
 

@@ -193,6 +193,7 @@ Prefix: `/api/manager`
 | GET | `/api/manager/clans/:clanId/family-tree` | admin, manager | Lấy cây gia phả theo dòng họ |
 | PATCH | `/api/manager/clans/:clanId/family-tree/layout` | admin, manager | Lưu layout cây gia phả theo dòng họ |
 | GET | `/api/manager/tree/duplicates` | admin, manager (dòng họ của mình; admin thêm `clan_id`) | Gợi ý cặp người có thể trùng lặp (chỉ đọc), query `limit` (≤100), `offset`. Trả `{success, clan_id, total, limit, offset, pairs:[{key, score, confidence: high/medium/low, reasons:[{code,points}], a, b}]}`; không có API tự gộp |
+| GET | `/api/manager/tree/export.gedcom` | admin, manager (dòng họ của mình; admin thêm `clan_id`) | Tải file GEDCOM 5.5.1 UTF-8 (`Content-Disposition: attachment`, CRLF): INDI (NAME `Tên /Họ/`, SEX, BIRT/DEAT theo `*_date_precision`, PLAC = quê quán, NOTE = tiểu sử), FAM (HUSB/WIFE/CHIL, MARR), gồm cả quan hệ `visibility=managers`; không có SĐT/email/địa chỉ. Chưa hỗ trợ nhập |
 | POST | `/api/manager/tree/duplicates/dismiss` | admin, manager | Body `{person_a_id, person_b_id}`: lưu "không trùng" (bảng `genealogy_duplicate_dismissals`, tự tạo nếu thiếu) |
 | POST | `/api/manager/people` | admin, manager, member | Tạo người trong gia phả |
 | POST | `/api/manager/people/create` | admin, manager, member | Alias tạo người trong gia phả |
