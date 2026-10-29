@@ -436,9 +436,10 @@ async function getAuthenticatedUser(accountId) {
   return buildSocialUser(account);
 }
 
-function buildOAuthRedirectUrl({ token, error, message, socialRegistrationToken, mode }) {
+function buildOAuthRedirectUrl({ code, error, message, socialRegistrationToken, mode }) {
   const url = new URL("/auth/callback", getFrontendUrl());
-  if (token) url.searchParams.set("token", token);
+  // Không đặt JWT lên URL: truyền mã dùng một lần, frontend đổi lấy token qua POST /api/auth/oauth/exchange.
+  if (code) url.searchParams.set("code", code);
   if (error) url.searchParams.set("error", error);
   if (message) url.searchParams.set("message", message);
   if (mode) url.searchParams.set("mode", mode);

@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const { getJwtSecret } = require('../../config/jwt');
 const { sendMail, isSmtpConfigured: isEmailConfigured } = require('../../shared/utils/email');
 const { getRoleName } = require('../../config/roles');
+const { consumeOAuthCode } = require('./oauthCodeStore');
 const { invalidateAccountCache } = require('../../middleware/authMiddleware');
 const { updatePasswordHash } = require('../../shared/utils/passwordChange');
 const { ensureProfileCompletedColumn } = require('../../shared/utils/profileCompletion');
@@ -362,6 +363,15 @@ exports.requestPasswordReset = async (req, res) => {
         console.error('❌ requestPasswordReset:', error);
         return res.status(500).json({ success: false, message: 'Không thể gửi mã. Thử lại sau.' });
     }
+};
+
+// Đổi mã đăng nhập mạng xã hội (dùng một lần, sống 60 giây) lấy JWT.
+exports.exchangeOAuthCode = (req, res) => {
+    const token = consumeOAuthCode(req.body?.code);
+    if (!token) {
+        return res.status(400).json({ success: false, message: 'Mã đăng nhập không hợp lệ hoặc đã hết hạn.' });
+    }
+    return res.json({ success: true, token });
 };
 
 exports.resetPasswordWithCode = async (req, res) => {

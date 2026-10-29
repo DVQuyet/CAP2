@@ -11,7 +11,9 @@ const {
     registerRateLimit,
     forgotPasswordRateLimit,
     resetPasswordRateLimit,
+    oauthExchangeRateLimit,
 } = require('../../middleware/authRateLimit');
+const { createOAuthCode } = require('./oauthCodeStore');
 const {
     buildOAuthRedirectUrl,
     handleSocialLogin,
@@ -157,7 +159,7 @@ function oauthCallback(provider) {
                     message: 'Dang nhap mang xa hoi that bai.',
                 }));
             }
-            return res.redirect(buildOAuthRedirectUrl({ token: result.token }));
+            return res.redirect(buildOAuthRedirectUrl({ code: createOAuthCode(result.token) }));
         })(req, res, next);
     };
 }
@@ -168,6 +170,7 @@ router.get('/google', requireOAuthConfig('google'), passport.authenticate('googl
 router.get('/google/callback', oauthCallback('google'));
 router.get('/facebook', requireOAuthConfig('facebook'), passport.authenticate('facebook', facebookAuthOptions));
 router.get('/facebook/callback', oauthCallback('facebook'));
+router.post('/oauth/exchange', oauthExchangeRateLimit, schemas.oauthExchange, authController.exchangeOAuthCode);
 router.get('/me', authController.me);
 router.get('/social-registration', authController.getSocialRegistrationProfile);
 router.post('/forgot-password', forgotPasswordRateLimit, schemas.forgotPassword, authController.requestPasswordReset);

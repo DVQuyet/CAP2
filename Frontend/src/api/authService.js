@@ -52,6 +52,13 @@ export const loginAPI = async (data) => {
     }
 };
 
+// Đổi mã dùng một lần từ URL callback (đăng nhập Google/Facebook) lấy JWT; không để token nằm trên URL.
+export const exchangeOAuthCodeAPI = async (code) => {
+    const result = await postAuth("/oauth/exchange", { code }, "Mã đăng nhập không hợp lệ hoặc đã hết hạn.");
+    if (!result.token) throw new Error("Mã đăng nhập không hợp lệ hoặc đã hết hạn.");
+    return result.token;
+};
+
 export const fetchMeAPI = async (token) => {
     const res = await fetch(buildApiUrl(`${BASE_URL}/me`), {
         headers: {

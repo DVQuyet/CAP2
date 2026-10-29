@@ -277,6 +277,11 @@ const updateMyProfile = validate({
     },
 });
 
+// ---- Đăng nhập mạng xã hội ----
+const oauthExchange = validate({
+    body: { code: v.string({ required: true, max: 100, label: 'mã đăng nhập', message: 'Mã đăng nhập không hợp lệ hoặc đã hết hạn.' }) },
+});
+
 // ---- Dòng họ ----
 const updateClanInfo = validate({
     body: {
@@ -377,7 +382,7 @@ module.exports = {
     createFamilyMemory, updateFamilyMemory, updateMemberProfile, updateMyProfile,
     updateClanInfo, registerClan, registerClanWithManager,
     adminCreateAccount, adminCreateManager, adminDeleteAccount, archiveMember, restoreArchivedMember,
-    register, login, forgotPassword, resetPassword,
+    register, login, forgotPassword, resetPassword, oauthExchange,
     createPerson, updatePerson, linkRelations, createFamily, updateFamily, addFamilyChild,
     fundIncome, fundExpense, fundReportPayment,
     postComment, postCreate, postUpdate,

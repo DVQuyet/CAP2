@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { fetchMeAPI } from "../../../api/authService";
+import { exchangeOAuthCodeAPI, fetchMeAPI } from "../../../api/authService";
 import { persistAuthSession } from "../../../shared/utils/auth";
 import "./login.css";
 
@@ -12,6 +12,13 @@ function getRolePath(user) {
   if (roleId === 1 || roleName === "admin") return "/dashboard";
   if (roleId === 2 || roleName === "manager") return "/manager/dashboard";
   return "/user/dashboard";
+}
+
+// Mã chỉ dùng được một lần: StrictMode (dev) chạy effect hai lần, nên dùng chung một lời gọi đổi mã cho cùng một mã.
+const codeExchanges = new Map();
+function exchangeCodeOnce(code) {
+  if (!codeExchanges.has(code)) codeExchanges.set(code, exchangeOAuthCodeAPI(code));
+  return codeExchanges.get(code);
 }
 
 export default function AuthCallback() {
@@ -26,7 +33,9 @@ export default function AuthCallback() {
     async function completeLogin() {
       const callbackError = searchParams.get("error");
       const message = searchParams.get("message");
-      const token = searchParams.get("token");
+      const code = searchParams.get("code");
+      // `token` là cách cũ (JWT trên URL): vẫn nhận để bản backend cũ chưa deploy không làm vỡ đăng nhập; bỏ sau một đợt deploy.
+      let token = searchParams.get("token");
       const mode = searchParams.get("mode");
       const socialToken = searchParams.get("social_token");
 
@@ -41,6 +50,16 @@ export default function AuthCallback() {
           state: { message: message || t("auth.callback.accountDisabled") },
         });
         return;
+      }
+
+      if (!callbackError && !token && code) {
+        try {
+          token = await exchangeCodeOnce(code);
+        } catch (err) {
+          if (!cancelled) setError(err?.message || t("auth.callback.socialLoginFailed"));
+          return;
+        }
+        if (cancelled) return;
       }
 
       if (callbackError || !token) {
