@@ -78,7 +78,7 @@ Còn mở từ đợt này:
 - Cảnh báo ESLint còn 139: `set-state-in-effect` 51, `exhaustive-deps` 42, `no-unused-vars` 24 (hàm/state chết ở `ManagerLayout.jsx`, `TaskManagementPage.jsx`, `TimeCapsulePage.jsx`… cần người xác nhận là code chết hay dang dở).
 - Việc lớn đã ghi ở `KE_HOACH_SONNET_1H.md` (token trong URL, JWT trong localStorage, CSP, gom hệ màu).
 
-Đợt 6 (30/10, Sonnet theo `KE_HOACH_SONNET_DOT6.md`) — 21 commit `49a5b40`..`d1ca435`, chưa push:
+Đợt 6 (30/10, Sonnet theo `KE_HOACH_SONNET_DOT6.md`) — 21 commit `49a5b40`..`90afb83`, chưa push:
 - **Test tích hợp trên DB test:** `cd Backend && npm run test:integration` (49 test, tự tạo/dọn dữ liệu `ITEST_`/`itest_`; không chạy trong CI). Phủ đăng nhập/đổi/đặt lại mật khẩu, khóa tài khoản, **cô lập dòng họ A/B** (20 test kèm đối chứng, **không tìm thấy lỗ hổng**), token media, socket, rate limit, header bảo mật, tiểu sử AI, phân trang row-value và thanh toán `FOR UPDATE`/`DATE_ADD` (xong P0.4 và P3.5). Dọn tay: `node scripts/itest-cleanup.js`.
 - **Bảo mật:** đăng nhập Google/Facebook dùng mã một lần thay JWT trên URL; ảnh/ghi âm dùng token media riêng (scope `media`, `GET /api/auth/media-token`); đổi/đặt lại/đặt hộ mật khẩu, khóa, lưu trữ, đổi vai trò đều ngắt socket (đường admin và manager đặt mật khẩu hộ trước đây **không thu hồi token**, đã sửa); rate limit đổi mật khẩu/upload/xác thực lời mời; HSTS + CSP cho API; CSP **Report-Only** cho frontend (cả hai `vercel.json`).
 - **AI:**
@@ -97,7 +97,7 @@ Còn mở từ đợt này:
 - Sau deploy: xem console trình duyệt trên bản Vercel để thấy báo vi phạm CSP Report-Only; hết báo thì mới đổi header sang `Content-Security-Policy`.
 - **Tự thử Google/Facebook login sau deploy** (không thể test OAuth thật ở local).
 
-Số liệu `data-quality-report.js` (942 người thật, 725 tài khoản; đã loại 5000 người "Load Test" do script đo tải sinh ra, nên cân nhắc xóa chúng): 5 tài khoản có tên hiển thị là email; 0 tài khoản active chưa gắn người; 11 người có ngày `exact` rơi vào 01/01; 62 node mồ côi (chủ yếu họ `clan_id` 13/9/12 là dữ liệu thử); 0 con sinh trước cha mẹ.
+Số liệu `data-quality-report.js` (942 người thật, 725 tài khoản; đã loại 5000 người "Load Test" do script đo tải sinh ra, nên cân nhắc xóa chúng): 5 tài khoản có tên hiển thị là email; 0 tài khoản active chưa gắn người; 11 người có ngày `exact` rơi vào 01/01; 62 node mồ côi (chưa kiểm xem là dữ liệu thử hay thiếu quan hệ; mẫu có người ở `clan_id` 13, 9, 12 và cả `clan_id` NULL); 0 con sinh trước cha mẹ.
 
 Còn mở từ đợt này:
 - **QA bằng trình duyệt chưa làm được** (Chrome của công cụ không với tới `localhost`): bảng 12 kịch bản ở `docs/report/QA_2026-10-30.md`. Rủi ro lớn nhất cần xem bằng mắt: `App.jsx` chờ lấy token media lúc khởi động, hộp thoại "AI soạn tiểu sử", redirect sau khi hết phiên.
