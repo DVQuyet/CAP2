@@ -1,5 +1,5 @@
-require('./src/config/loadEnv');
-const db = require('./src/config/db');
+require('../src/config/loadEnv');
+const db = require('../src/config/db');
 
 async function runMigration() {
     try {

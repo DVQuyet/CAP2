@@ -68,4 +68,4 @@ Theo `docs/VIEC_CHUA_LAM.md` và các mục "còn mở":
 
 - `README.md`, `Backend/README.md`, `Frontend/README.md`, `voice/README.md`
 - `docs/API_LIST.md`, `docs/AI_FAMILY_ASSISTANT_ARCHITECTURE.md`
-- `docs/VIEC_CHUA_LAM.md`, `docs/CAI_THIEN_HE_THONG.md`, `docs/UI_TOI_UU_DE_XUAT.md`
+- `docs/VIEC_CHUA_LAM.md`, `docs/nhat-ky/CAI_THIEN_HE_THONG.md`, `docs/UI_TOI_UU_DE_XUAT.md`

@@ -1,6 +1,6 @@
 # AI Family Assistant Architecture
 
-> Luồng hiện tại, độ phủ câu hỏi và đề xuất tối ưu: xem [TOI_UU_AI_VA_GIA_PHA.md](TOI_UU_AI_VA_GIA_PHA.md).
+> Luồng hiện tại, độ phủ câu hỏi và đề xuất tối ưu: xem [TOI_UU_AI_VA_GIA_PHA.md](nhat-ky/TOI_UU_AI_VA_GIA_PHA.md).
 
 ## Principle
 

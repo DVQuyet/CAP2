@@ -207,7 +207,7 @@ body {
 .hero-banner {
     position: relative;
     background:
-        url('/backgroundbanner.png') center top / cover no-repeat,
+        url('/backgroundbanner.webp') center top / cover no-repeat,
         linear-gradient(135deg, #4b0404 0%, var(--color-maroon) 45%, #560505 100%);
     min-height: 760px;
     padding-top: 8.75rem;

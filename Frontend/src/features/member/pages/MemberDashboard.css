@@ -50,7 +50,7 @@
   inset: 0;
   background:
     linear-gradient(90deg, rgba(2, 6, 23, 0.82), rgba(2, 6, 23, 0.38)),
-    url("/backgroundbanner.png") center/cover no-repeat;
+    url("/backgroundbanner.webp") center/cover no-repeat;
   opacity: 0.72;
 }
 

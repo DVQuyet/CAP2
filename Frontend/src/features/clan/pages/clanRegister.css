@@ -14,7 +14,7 @@
     align-items: center;
     padding: 120px 20px 48px;
     background:
-        url('/backgroundbanner.png') center top / cover no-repeat,
+        url('/backgroundbanner.webp') center top / cover no-repeat,
         linear-gradient(135deg, #4b0404 0%, var(--color-maroon) 48%, #260b06 100%);
 }
 

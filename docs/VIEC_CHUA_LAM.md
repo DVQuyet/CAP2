@@ -1,7 +1,7 @@
 # Việc chưa làm — CAP2 (Gia Phả Việt)
 
 Cập nhật 23/10/2026, quét lại mã ở commit `03e5681`. Đây là **danh sách duy nhất** các việc còn mở; gộp từ
-`CAI_THIEN_HE_THONG.md` (mục "Chưa làm"), `TOI_UU_AI_VA_GIA_PHA.md` (mục 2–6) và `TIEP_TUC_AI_TRA_LOI.md` (mục "Chờ nhóm quyết định").
+`nhat-ky/CAI_THIEN_HE_THONG.md` (mục "Chưa làm"), `nhat-ky/TOI_UU_AI_VA_GIA_PHA.md` (mục 2–6) và `nhat-ky/TIEP_TUC_AI_TRA_LOI.md` (mục "Chờ nhóm quyết định").
 Các file đó giữ làm nhật ký; việc mới thêm vào đây.
 
 Ký hiệu công sức: **S** < 2 giờ · **M** nửa ngày–1 ngày · **L** nhiều ngày. Cột "Ai làm" gợi ý chia việc khi chạy nhiều agent.

@@ -56,7 +56,7 @@ export default function AdminLayout() {
 
         <div className="sidebar-header">
           <Link to="/" className="sidebar-brand">
-            <img src={sidebarOpen ? "/gia-pha-full-logo.png" : "/gia-pha-g-logo.png"} alt={t("layout.brand")} />
+            <img src={sidebarOpen ? "/logo-giaphaviet.png" : "/logo.png"} alt={t("layout.brand")} />
           </Link>
         </div>
 

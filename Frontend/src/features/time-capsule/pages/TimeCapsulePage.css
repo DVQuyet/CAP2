@@ -504,7 +504,7 @@
 .memory-hero {
   background:
     linear-gradient(135deg, rgba(255, 250, 241, 0.96), rgba(250, 236, 209, 0.9)),
-    url('/backgroundbanner.png') center/cover;
+    url('/backgroundbanner.webp') center/cover;
   border-color: rgba(211, 168, 82, 0.48);
 }
 .memory-hero h2 {

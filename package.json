@@ -1,21 +1,25 @@
 {
-  "name": "cap2-api",
+  "name": "cap2",
   "version": "1.0.0",
-  "description": "API backend for CAP2 project",
-  "main": "server.js",
+  "description": "CAP2 - Gia Phả Việt (Frontend React/Vite + Backend Express)",
   "scripts": {
     "start": "cd Backend && node server.js",
-    "dev": "cd Backend && nodemon server.js"
+    "dev": "cd Backend && nodemon server.js",
+    "dev:frontend": "cd Frontend && npm run dev",
+    "test": "cd Backend && npm test && cd ../Frontend && npm test",
+    "lint": "cd Frontend && npm run lint",
+    "build": "cd Frontend && npm run build"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/CAP-2/CAP2.git"
+    "url": "git+https://github.com/DVQuyet/CAP2.git"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/CAP-2/CAP2/issues"
+    "url": "https://github.com/DVQuyet/CAP2/issues"
   },
-  "homepage": "https://github.com/CAP-2/CAP2#readme"
+  "homepage": "https://github.com/DVQuyet/CAP2#readme",
+  "private": true
 }

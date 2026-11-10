@@ -9,9 +9,8 @@ cap2/
 ├── Frontend/   # Giao diện React/Vite
 ├── Backend/    # Express API, Socket.IO, MySQL, Groq AI integration
 ├── voice/      # Local speech-to-text bằng faster-whisper
-├── database/   # Schema, seed, dump, migration SQL
-├── migrations/ # Migration bổ sung
-├── docs/       # Tài liệu nghiệp vụ/báo cáo
+├── database/   # schema/init.sql và migrations/ (nguồn schema duy nhất)
+├── docs/       # Kế hoạch (KE_HOACH_TONG_THE.md), việc còn mở, API; nhật ký cũ ở docs/nhat-ky/
 ├── scripts/    # Script vận hành local
 └── README.md
 ```
