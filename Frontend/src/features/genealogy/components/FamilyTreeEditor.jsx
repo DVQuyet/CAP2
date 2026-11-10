@@ -39,6 +39,9 @@ import { CenterNoticeDialog, CreatePersonDialog, PersonInspector, QuickCreateRel
 import { useConfirm } from "../../../shared/components/confirmContext.js";
 import "./FamilyTreeEditor.css";
 import "./FamilyTreeEditor.v2.css";
+import "../styles/TreeCard.css";
+import "../styles/TreeCardExtras.css";
+import "../styles/TreeLines.css";
 import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 
 const shouldSuppressInlineRelationError = (error) => Boolean(error?.__centeredNoticeShown);
@@ -483,6 +486,7 @@ export default function FamilyTreeEditor({
   editPermission,
   readOnly = false,
   enableRealtime = true,
+  initialDisplayMode = TREE_DISPLAY_MODE.DETAIL,
 }) {
   const [isTreeMobile, setIsTreeMobile] = useState(() => (
     typeof window !== "undefined" && window.matchMedia(TREE_MOBILE_QUERY).matches
@@ -541,7 +545,7 @@ export default function FamilyTreeEditor({
   const [pathHighlightIds, setPathHighlightIds] = useState(null); // đường quan hệ (id theo thứ tự) từ trợ lý AI
   const [chatHighlightIds, setChatHighlightIds] = useState(null); // Set id được trợ lý AI nhắc tới ("Xem trên cây")
   const [couplePersonAction, setCouplePersonAction] = useState(null);
-  const [treeDisplayMode, setTreeDisplayMode] = useState(TREE_DISPLAY_MODE.DETAIL);
+  const [treeDisplayMode, setTreeDisplayMode] = useState(initialDisplayMode);
   const [treeStyle, setTreeStyle] = useState(() => databaseTreeStyle);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [bulkMoveMode, setBulkMoveMode] = useState(false);
@@ -1286,6 +1290,9 @@ const coupleActionPerson = useMemo(
         const targetCenterY = targetNode ? targetNode.y + targetNode.height / 2 : toInt(target.tree_y, 0) + CARD_HEIGHT / 2;
         const nextX = rect.width / 2 - targetCenterX * nextScale;
         const nextY = rect.height / 2 - targetCenterY * nextScale;
+        // Cập nhật mức zoom ngay (như khi "vừa khít màn hình"): nếu chờ thư viện báo lại thì nhãn % và chế độ thu nhỏ xa bị cũ.
+        scaleRef.current = nextScale;
+        setCurrentScale(nextScale);
         api.setTransform(nextX, nextY, nextScale, 320);
         return;
       }
@@ -2981,6 +2988,8 @@ const submitCreateDialog = async () => {
       const bottom = Math.max(...nodes.map((node) => toInt(node.y, 0) + node.height));
       const padding = isTreeMobile ? 36 : 90;
       const scale = Math.min(1.4, Math.max(0.3, Math.min((rect.width - padding * 2) / Math.max(1, right - left), (rect.height - padding * 2) / Math.max(1, bottom - top))));
+      scaleRef.current = scale;
+      setCurrentScale(scale);
       api.setTransform(rect.width / 2 - ((left + right) / 2) * scale, rect.height / 2 - ((top + bottom) / 2) * scale, scale, 320);
     }, 260);
   }, [isTreeMobile]);
@@ -3303,6 +3312,8 @@ const submitCreateDialog = async () => {
                         height: canvasSize.height,
                         // Khi thu nhỏ, phóng chữ trên thẻ để tên vẫn đọc được (thu phóng theo ngữ nghĩa).
                         "--fte2-zoom-comp": clamp(FAR_ZOOM_TEXT_TARGET / Math.max(currentScale, 0.12), 1, 3).toFixed(3),
+                        // Nghịch đảo mức zoom: đường nối giữ nguyên độ dày trên màn hình (styles/TreeLines.css).
+                        "--fte-inv-scale": (1 / Math.max(currentScale, 0.12)).toFixed(3),
                       }}
                       onPointerDown={beginBulkSelection}
                     >

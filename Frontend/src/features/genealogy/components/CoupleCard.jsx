@@ -1,7 +1,10 @@
 import { useLanguage } from "../../../i18n/LanguageContext";
 import { fullName } from "../utils/tree-editor/treePersonUtils";
 import { WEB_CARD_HEIGHT, WEB_CARD_WIDTH } from "../utils/tree-editor/treeDisplayNodes";
-import { CardPersonBody, genderKey, lifeYears } from "./TreeCardParts";
+import { useCardActive } from "../hooks/useCardActive";
+import { cardExtraInfo, cardMeta, genderKey } from "../utils/tree-editor/treeCardInfo";
+import { CardPersonBody } from "./TreeCardParts";
+import TreeCardToolbar from "./TreeCardToolbar";
 
 function PersonHalf({
   person,
@@ -16,68 +19,68 @@ function PersonHalf({
   ancestorsCollapsed,
   onToggleDescendants,
   onToggleAncestors,
-  showAvatar = true,
-  showMeta = true,
+  detail = true,
 }) {
   const { t } = useLanguage();
+  const [active, activeHandlers] = useCardActive();
   const name = person ? fullName(person, t("tree.card.fallbackName")) : t("tree.card.unknownName");
-  const generation = person?.generation ? t("tree.card.generation", { count: person.generation }) : "";
-  const childOrder = Number(person?.child_order || person?.child_sort_order);
-  const childOrderLabel = Number.isFinite(childOrder) && childOrder > 0 ? t("tree.card.childOrder", { count: childOrder }) : "";
-  const meta = [lifeYears(person), generation, childOrderLabel].filter(Boolean).join(" · ");
   const deceased = Number(person?.is_living) === 0;
-  const stopActionPointer = (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-  };
+  const tooltipLines = person ? [
+    name,
+    cardMeta(person, t),
+    ...cardExtraInfo(person, t),
+    directLineage ? t("tree.card.directLineageHint") : t("tree.card.inLawHint"),
+  ].filter(Boolean) : [name];
+  // Nút chỉ có trong DOM khi nửa thẻ đang rê chuột, đang focus hoặc đang chọn.
+  const actions = person && (active || selected) ? [
+    hasChildren ? {
+      key: "descendants",
+      icon: descendantsCollapsed ? "unfold_more" : "unfold_less",
+      label: descendantsCollapsed ? t("tree.card.descendantsExpand") : t("tree.card.descendantsCollapse"),
+      onClick: () => onToggleDescendants?.(person.id),
+    } : null,
+    hasAncestors ? {
+      key: "ancestors",
+      icon: ancestorsCollapsed ? "keyboard_double_arrow_down" : "keyboard_double_arrow_up",
+      label: ancestorsCollapsed ? t("tree.card.ancestorsExpand") : t("tree.card.ancestorsCollapse"),
+      onClick: () => onToggleAncestors?.(person.id),
+    } : null,
+  ] : [];
 
   return (
     <div
       className={`fte-coupleHalf is-${side} is-${genderKey(person)} ${directLineage ? "is-direct" : "is-inLaw"} ${deceased ? "is-deceased" : ""} ${selected ? "is-selectedPerson" : ""} ${onPath ? "is-onPath" : ""} ${person ? "" : "is-empty"}`}
       data-person-id={person?.id || ""}
-      title={[name, directLineage ? t("tree.card.directLineageHint") : t("tree.card.inLawHint")].join("\n")}
+      title={tooltipLines.join("\n")}
+      {...activeHandlers}
     >
-      {person && hasChildren ? (
+      <CardPersonBody person={person} name={name} meta={person && detail ? cardMeta(person, t) : ""} showAvatar={Boolean(person) && detail} />
+      {person && hasChildren && descendantsCollapsed ? (
         <button
           type="button"
-          className={`fte-branchToggle ${descendantsCollapsed ? "is-collapsed" : ""}`}
-          title={descendantsCollapsed ? t("tree.card.branchBadge", { count: descendantCount }) : t("tree.card.branchCollapse")}
-          aria-expanded={!descendantsCollapsed}
-          onPointerDown={stopActionPointer}
+          className="fte-branchBadge"
+          title={t("tree.card.branchBadge", { count: descendantCount })}
+          aria-label={t("tree.card.branchBadge", { count: descendantCount })}
+          aria-expanded={false}
+          onPointerDown={(event) => { event.preventDefault(); event.stopPropagation(); }}
           onClick={(event) => { event.stopPropagation(); onToggleDescendants?.(person.id); }}
         >
-          {descendantsCollapsed ? <span>+{descendantCount}</span> : <span className="material-symbols-outlined" aria-hidden="true">expand_more</span>}
+          +{descendantCount}
         </button>
       ) : null}
-      {person && (hasChildren || hasAncestors) ? (
-        <div className="fte-coupleHalfActions">
-          {hasChildren ? (
-            <button
-              type="button"
-              title={descendantsCollapsed ? t("tree.card.descendantsExpand") : t("tree.card.descendantsCollapse")} aria-label={descendantsCollapsed ? t("tree.card.descendantsExpand") : t("tree.card.descendantsCollapse")}
-              onPointerDown={stopActionPointer}
-              onClick={(event) => { event.stopPropagation(); onToggleDescendants?.(person.id); }}
-            >
-              <span className="material-symbols-outlined">{descendantsCollapsed ? "unfold_more" : "unfold_less"}</span>
-            </button>
-          ) : null}
-          {hasAncestors ? (
-            <button
-              type="button"
-              title={ancestorsCollapsed ? t("tree.card.ancestorsExpand") : t("tree.card.ancestorsCollapse")} aria-label={ancestorsCollapsed ? t("tree.card.ancestorsExpand") : t("tree.card.ancestorsCollapse")}
-              onPointerDown={stopActionPointer}
-              onClick={(event) => { event.stopPropagation(); onToggleAncestors?.(person.id); }}
-            >
-              <span className="material-symbols-outlined">{ancestorsCollapsed ? "keyboard_double_arrow_down" : "keyboard_double_arrow_up"}</span>
-            </button>
-          ) : null}
-        </div>
+      {person && hasAncestors && ancestorsCollapsed ? (
+        <button
+          type="button"
+          className="fte-branchBadge is-ancestors"
+          title={t("tree.card.ancestorsExpand")}
+          aria-label={t("tree.card.ancestorsExpand")}
+          onPointerDown={(event) => { event.preventDefault(); event.stopPropagation(); }}
+          onClick={(event) => { event.stopPropagation(); onToggleAncestors?.(person.id); }}
+        >
+          ↑
+        </button>
       ) : null}
-      {person ? (
-        <CardPersonBody person={person} name={name} meta={showMeta ? meta : ""} showAvatar={showAvatar} directLineage={directLineage} />
-      ) : (
-        <div className="fte2-cardBody"><div className="fte2-cardText"><div className="fte-cardName">{name}</div></div></div>
-      )}
+      <TreeCardToolbar actions={actions} label={t("tree.card.toolbar")} />
     </div>
   );
 }
@@ -144,6 +147,8 @@ export default function CoupleCard({
     : unionType !== "marriage" && unionType !== "unknown"
       ? t(`tree.relationOptions.unionTypes.${unionType}`)
       : "";
+  // Đã kết thúc (ly hôn, ly thân...) hoặc không phải hôn nhân chính thức (vợ lẽ...): vẽ nét đứt.
+  const looseUnion = Boolean(statusLabel);
   const title = [
     fullName(node?.husband, t("tree.card.fallbackName")),
     fullName(node?.wife, t("tree.card.fallbackName")),
@@ -152,16 +157,13 @@ export default function CoupleCard({
   return (
     <div
       id={`fte-display-${node.id}`}
-      className={`fte-coupleCard is-${cardOrientation} is-${displayMode} is-union-${status} ${selectedCouple ? "is-selected" : ""} ${related ? "is-related" : ""} ${dimmed ? "is-dimmed" : ""} ${dragging ? "is-dragging" : ""}`}
+      className={`fte-coupleCard is-${cardOrientation} is-${displayMode} is-union-${status} ${looseUnion ? "is-looseUnion" : ""} ${selectedCouple ? "is-selected" : ""} ${related ? "is-related" : ""} ${dimmed ? "is-dimmed" : ""} ${dragging ? "is-dragging" : ""}`}
       style={{
         left: node.x,
         top: node.y,
-        width: node.width || WEB_CARD_WIDTH,
-        height: node.height || WEB_CARD_HEIGHT,
         "--fte-card-width": `${node.width || WEB_CARD_WIDTH}px`,
         "--fte-card-height": `${node.height || WEB_CARD_HEIGHT}px`,
-        "--fte-couple-name-size": `${Number(fontSize) || 15}px`,
-        "--fte-couple-meta-size": `${Math.max(10, Math.round((Number(fontSize) || 15) * 0.72))}px`,
+        "--fte-card-name-size": `${Number(fontSize) || 17}px`,
       }}
       title={title}
       data-static={!canDrag}
@@ -180,8 +182,7 @@ export default function CoupleCard({
         ancestorsCollapsed={orderedHalves[0].ancestorsCollapsed}
         onToggleDescendants={onToggleDescendants}
         onToggleAncestors={onToggleAncestors}
-        showAvatar={detail}
-        showMeta={detail}
+        detail={detail}
       />
       <span className="fte-coupleDivider" aria-hidden="true">
         <span className="fte2-coupleKnot" title={statusLabel || t("tree.card.spouses")} />
@@ -200,8 +201,7 @@ export default function CoupleCard({
         ancestorsCollapsed={orderedHalves[1].ancestorsCollapsed}
         onToggleDescendants={onToggleDescendants}
         onToggleAncestors={onToggleAncestors}
-        showAvatar={detail}
-        showMeta={detail}
+        detail={detail}
       />
     </div>
   );

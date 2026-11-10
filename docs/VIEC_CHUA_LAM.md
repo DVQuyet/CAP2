@@ -62,6 +62,13 @@ Còn mở từ đợt 4:
 - Validate chưa phủ route calendar/events.
 - "ba co toi" vẫn mơ hồ (cụ vs bà cô).
 
+Đợt 13 (10/11) — Giai đoạn 1 (A1: thẻ trên cây), xem `docs/anh/cay-A1/README.md`:
+- **Đã xong**: A1.1 bộ ảnh trước/sau (15 ảnh mỗi bên, script `Frontend/dev/tree-shots.sh`); A1.2 biến `--tc-*`, `--tl-*` và màu trạng thái trong `tokens.css`; A1.3 kiểu thẻ gom về `styles/TreeCard.css` + `TreeCardExtras.css` (571 dòng), gỡ 238 rule thẻ/đường nối khỏi hai file cũ (5.750 → 4.049 dòng), `.fte-cardName` còn một khai báo gốc; A1.4 thứ bậc thông tin; A1.5 `TreeCardToolbar.jsx`, thẻ thường còn 5 phần tử DOM; A1.6 `styles/TreeLines.css`.
+- **Sửa kèm**: nhãn % zoom và chế độ "thu nhỏ xa" bị cũ sau khi nhảy tới một người hoặc tô đường quan hệ (`focusPerson`, `fitToPersonIds` không cập nhật `currentScale`).
+- **Khác kế hoạch**: mã chỉ có 2 chế độ hiển thị và 3 chủ đề; không dùng `vector-effect: non-scaling-stroke` cho đường nối vì Chrome vẽ mờ/mất nét dọc khi zoom nhỏ, thay bằng biến `--fte-inv-scale`.
+- **Chưa kiểm tra**: mới chụp bằng Chrome headless. Cần thử tay: rê chuột hiện thanh thao tác, kéo thẻ, đổi cỡ thẻ, điện thoại thật (chạm để chọn rồi mới thấy nút), thẻ tham chiếu, vợ lẽ/ly hôn (viền nét đứt), tộc trưởng/thủy tổ (huy hiệu góc), người đang sửa/lỗi dữ liệu.
+- **Còn mở**: thẻ vợ chồng chưa có huy hiệu thủy tổ (thẻ không biết ai là thủy tổ); vạch màu của nửa phải nằm sát nút thắt; trên điện thoại cây tràn mép phải khi "vừa khít" (để A3.3).
+
 Đợt 12 (10/11) — Giai đoạn 0 của `KE_HOACH_TONG_THE.md` (sửa gấp và dọn dẹp), commit `73bb25a`..:
 - **Đã xong trong mã**: ẩn SĐT/email/địa chỉ với thành viên thường (H2.3, `genealogy/contactPrivacy.js`); CORS theo `FRONTEND_URL` + `CORS_ORIGINS` (H3.3); không trả `error.message` thô (H3.2); bỏ `console.log` (H4.6); `npm audit` về 0 ở cả hai phía: `xlsx` → `exceljs`, `react-router-dom` 6 → 7 (H3.4); dọn gốc dự án, `CLAUDE.md`, ảnh nền WebP 6,2 MB → 175 KB (E7.1); MySQL local trong `docker/docker-compose.yml` (H2.5); workflow sao lưu `.github/workflows/backup.yml` + `docs/SAO_LUU.md` (H2.1). G0 (model Groq) và H3.1 (token trên URL ảnh) đã xong từ đợt 6.
 - **Kiểm tra đã chạy**: Backend 291 test, e2e chatbot 199/199, Frontend 89 test, ESLint 0 lỗi/114 cảnh báo, build. Chưa mở trình duyệt.

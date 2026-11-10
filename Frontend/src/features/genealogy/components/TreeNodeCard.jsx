@@ -1,18 +1,14 @@
 import { useLanguage } from "../../../i18n/LanguageContext";
-import { formatDateVN } from "../../../shared/utils/dateFormat";
 import { getPersonHighlightState, highlightClassNames } from "../utils/treeHighlight";
-import { CARD_HEIGHT, CARD_WIDTH, META_FONT_SIZE, META_FONT_WEIGHT, NAME_FONT_SIZE, NAME_FONT_WEIGHT } from "../utils/tree-editor/treeConstants";
+import { CARD_HEIGHT, CARD_WIDTH, NAME_FONT_SIZE } from "../utils/tree-editor/treeConstants";
 import { TREE_DISPLAY_MODE, getTreeDisplayConfig } from "../utils/tree-editor/treeDisplayConfig";
-import { CardPersonBody, lifeYears } from "./TreeCardParts";
+import { useCardActive } from "../hooks/useCardActive";
+import { cardExtraInfo, cardMeta } from "../utils/tree-editor/treeCardInfo";
+import { CardPersonBody } from "./TreeCardParts";
+import TreeCardToolbar from "./TreeCardToolbar";
 
 function fullName(person, fallback) {
   return person?.display_name || [person?.surname, person?.middle_name, person?.first_name].filter(Boolean).join(" ").trim() || fallback;
-}
-
-function yearOnly(value) {
-  const text = String(value || "");
-  const match = text.match(/\d{4}/);
-  return match ? match[0] : "";
 }
 
 export default function TreeNodeCard({
@@ -45,13 +41,11 @@ export default function TreeNodeCard({
   onToggleAncestors,
 }) {
   const { t } = useLanguage();
+  const [active, activeHandlers] = useCardActive();
   const name = fullName(person, t("tree.card.fallbackName"));
   const genderClass = Number(person.gender) === 1 ? "is-male" : Number(person.gender) === 2 ? "is-female" : "is-unknown";
-  const birthText = formatDateVN(person.birth_date);
   const deceased = Number(person.is_living) === 0;
   const isClanChief = Number(person.role_id) === 2;
-  const generation = Number(person.generation) || 1;
-  const generationClass = founder ? "is-generation-root" : generation <= 2 ? "is-generation-early" : generation <= 4 ? "is-generation-mid" : "is-generation-late";
   const state = getPersonHighlightState(person, { ...highlightOptions, selectedPersonId: selected ? person.id : highlightOptions.selectedPersonId });
   const stateClasses = highlightClassNames(state);
   const badges = [
@@ -61,138 +55,106 @@ export default function TreeNodeCard({
     state.editing ? t("tree.card.badges.editing") : "",
     state.error ? t("tree.card.badges.error") : "",
   ].filter(Boolean);
-  const tooltip = [
+  const displayConfig = getTreeDisplayConfig(displayMode);
+  const resolvedFontSize = Number(fontSize) || displayConfig.singleNameFontSize || displayConfig.nameFontSize || NAME_FONT_SIZE;
+  const detail = displayMode !== TREE_DISPLAY_MODE.OVERVIEW;
+  const meta = detail && displayConfig.showMeta !== false ? cardMeta(person, t) : "";
+  const tooltipLines = [
     name,
+    cardMeta(person, t),
+    ...cardExtraInfo(person, t),
+    founder ? t("tree.card.founder") : "",
+    isClanChief ? t("tree.card.chief") : "",
     directLineage ? t("tree.card.directLineageHint") : t("tree.card.inLawHint"),
     ...badges,
     ...state.errors,
-  ].join("\n");
-  const displayConfig = getTreeDisplayConfig(displayMode);
-  const resolvedFontSize = Number(fontSize) || displayConfig.singleNameFontSize || displayConfig.nameFontSize || NAME_FONT_SIZE;
-  const showMeta = displayConfig.showMeta !== false;
-  const showAvatar = displayMode !== TREE_DISPLAY_MODE.OVERVIEW;
-
-  const lifeText = lifeYears(person) || yearOnly(birthText);
-  const childOrder = Number(person.child_order || person.child_sort_order);
-  const metaItems = [
-    lifeText,
-    person.generation ? t("tree.card.generation", { count: person.generation }) : "",
-    Number.isFinite(childOrder) && childOrder > 0 ? t("tree.card.childOrder", { count: childOrder }) : "",
-    person.branch ? t("tree.card.branch", { name: person.branch }) : "",
   ].filter(Boolean);
-
-  const stopActionPointer = (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-  };
+  // Nút chỉ có trong DOM khi thẻ đang rê chuột, đang focus hoặc đang chọn (và không trong lúc kéo).
+  const showTools = (active || selected) && !dragging;
+  const actions = showTools ? [
+    canEdit ? { key: "create", icon: "person_add", label: t("tree.card.addRelation"), onClick: () => onQuickCreate?.(person) } : null,
+    hasChildren ? {
+      key: "children",
+      icon: collapsed ? "expand_more" : "expand_less",
+      label: collapsed ? t("tree.card.collapse.expand") : t("tree.card.collapse.collapse"),
+      onClick: () => onToggleCollapse?.(person.id),
+    } : null,
+    hasChildren ? {
+      key: "descendants",
+      icon: collapsed ? "unfold_more" : "unfold_less",
+      label: collapsed ? t("tree.card.descendantsExpand") : t("tree.card.descendantsCollapse"),
+      onClick: () => onToggleDescendants?.(person.id),
+    } : null,
+    hasAncestors ? {
+      key: "ancestors",
+      icon: ancestorsCollapsed ? "keyboard_double_arrow_down" : "keyboard_double_arrow_up",
+      label: ancestorsCollapsed ? t("tree.card.ancestorsExpand") : t("tree.card.ancestorsCollapse"),
+      onClick: () => onToggleAncestors?.(person.id),
+    } : null,
+    canEdit ? { key: "edit", icon: "edit", label: t("tree.card.edit"), onClick: () => onEdit(person) } : null,
+    canDelete ? { key: "delete", icon: "delete", label: t("tree.card.delete"), tone: "danger", onClick: () => onDelete(person) } : null,
+  ] : [];
 
   return (
     <div
       id={`fte-person-${person.id}`}
-      className={`fte-personCard is-${displayMode} is-${cardOrientation} ${genderClass} ${generationClass} ${directLineage ? "is-direct" : "is-inLaw"} ${founder ? "is-founder" : ""} ${deceased ? "is-deceased" : ""} ${stateClasses} ${related ? "is-related" : ""} ${dimmed ? "is-dimmed" : ""} ${dragging ? "is-dragging" : ""}`}
+      className={`fte-personCard is-${displayMode} is-${cardOrientation} ${genderClass} ${directLineage ? "is-direct" : "is-inLaw"} ${founder ? "is-founder" : ""} ${deceased ? "is-deceased" : ""} ${stateClasses} ${related ? "is-related" : ""} ${dimmed ? "is-dimmed" : ""} ${dragging ? "is-dragging" : ""}`}
       style={{
         left: person.tree_x,
         top: person.tree_y,
-        width: size.width,
-        height: size.height,
         "--fte-card-width": `${size.width}px`,
         "--fte-card-height": `${size.height}px`,
         "--fte-card-name-size": `${resolvedFontSize}px`,
-        "--fte-card-name-weight": NAME_FONT_WEIGHT,
-        "--fte-card-meta-size": `${Math.max(10, Math.round(resolvedFontSize * 0.7)) || displayConfig.singleMetaFontSize || displayConfig.metaFontSize || META_FONT_SIZE}px`,
-        "--fte-card-meta-weight": META_FONT_WEIGHT,
       }}
       role="group"
       tabIndex={0}
-      title={tooltip}
+      title={tooltipLines.join("\n")}
+      aria-label={tooltipLines.join(", ")}
       onPointerDown={(event) => onPointerDown(event, person)}
       data-static={!canDrag}
       onKeyDown={(event) => {
+        if (event.target !== event.currentTarget) return;
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
           onEdit(person);
         }
       }}
+      {...activeHandlers}
     >
-      {hasChildren ? (
-        <button
-          type="button"
-          className="fte-collapseButton"
-          title={collapsed ? t("tree.card.collapse.expand") : t("tree.card.collapse.collapse")} aria-label={collapsed ? t("tree.card.collapse.expand") : t("tree.card.collapse.collapse")}
-          onPointerDown={stopActionPointer}
-          onClick={(event) => {
-            event.stopPropagation();
-            onToggleCollapse?.(person.id);
-          }}
-        >
-          <span className="material-symbols-outlined">{collapsed ? "add" : "remove"}</span>
-        </button>
+      <CardPersonBody person={person} name={name} meta={meta} showAvatar={detail} />
+      {founder || isClanChief ? (
+        <span className={`fte-cornerBadge ${founder ? "is-founder" : ""}`}>{founder ? t("tree.card.founder") : t("tree.card.chief")}</span>
       ) : null}
-
-      {badges.length ? (
-        <div className="fte-stateDots" aria-hidden="true">
-          {state.self ? <span className="is-self" /> : null}
-          {state.online ? <span className="is-online" /> : null}
-          {state.search ? <span className="is-search" /> : null}
-          {state.editing ? <span className="is-editing" /> : null}
-          {state.error ? <span className="is-error" /> : null}
-        </div>
-      ) : null}
-
-      {canEdit || canDelete || hasChildren || hasAncestors ? (
-        <div className="fte-cardHoverActions" aria-label={t("posts.modal.create.tabs.ariaLabel")}>
-          {canEdit ? (
-            <button type="button" className="is-create" title={t("tree.card.addRelation")} aria-label={t("tree.card.addRelation")} onPointerDown={stopActionPointer} onClick={(event) => { event.stopPropagation(); onQuickCreate?.(person); }}>
-              <span className="material-symbols-outlined">add</span>
-            </button>
-          ) : null}
-          {hasChildren ? (
-            <button
-              type="button"
-              title={collapsed ? t("tree.card.descendantsExpand") : t("tree.card.descendantsCollapse")} aria-label={collapsed ? t("tree.card.descendantsExpand") : t("tree.card.descendantsCollapse")}
-              onPointerDown={stopActionPointer}
-              onClick={(event) => { event.stopPropagation(); onToggleDescendants?.(person.id); }}
-            >
-              <span className="material-symbols-outlined">{collapsed ? "unfold_more" : "unfold_less"}</span>
-            </button>
-          ) : null}
-          {hasAncestors ? (
-            <button
-              type="button"
-              title={ancestorsCollapsed ? t("tree.card.ancestorsExpand") : t("tree.card.ancestorsCollapse")} aria-label={ancestorsCollapsed ? t("tree.card.ancestorsExpand") : t("tree.card.ancestorsCollapse")}
-              onPointerDown={stopActionPointer}
-              onClick={(event) => { event.stopPropagation(); onToggleAncestors?.(person.id); }}
-            >
-              <span className="material-symbols-outlined">{ancestorsCollapsed ? "keyboard_double_arrow_down" : "keyboard_double_arrow_up"}</span>
-            </button>
-          ) : null}
-          {canEdit ? (
-            <button type="button" title={t("tree.card.edit")} aria-label={t("tree.card.edit")} onPointerDown={stopActionPointer} onClick={(event) => { event.stopPropagation(); onEdit(person); }}>
-              <span className="material-symbols-outlined">edit</span>
-            </button>
-          ) : null}
-          {canDelete ? (
-            <button type="button" className="is-danger" title={t("tree.card.delete")} aria-label={t("tree.card.delete")} onPointerDown={stopActionPointer} onClick={(event) => { event.stopPropagation(); onDelete(person); }}>
-              <span className="material-symbols-outlined">delete</span>
-            </button>
-          ) : null}
-        </div>
-      ) : null}
-
-      {isClanChief ? <span className="fte-chiefBadge">{t("tree.card.chief")}</span> : null}
-      <CardPersonBody
-        person={person}
-        name={name}
-        meta={showMeta && metaItems.length ? metaItems.join(" · ") : ""}
-        showAvatar={showAvatar}
-        directLineage={directLineage}
-      />
       {state.editing ? <span className="fte-nodeBadge is-editing">{t("tree.card.badges.editing")}</span> : null}
       {state.error ? <span className="fte-nodeBadge is-error">!</span> : null}
-      {canEdit ? (
+      {collapsed && hasChildren ? (
+        <button
+          type="button"
+          className="fte-branchBadge"
+          title={t("tree.card.collapse.expand")}
+          aria-label={t("tree.card.collapse.expand")}
+          onPointerDown={(event) => { event.preventDefault(); event.stopPropagation(); }}
+          onClick={(event) => { event.stopPropagation(); onToggleCollapse?.(person.id); }}
+        >
+          +
+        </button>
+      ) : null}
+      {ancestorsCollapsed && hasAncestors ? (
+        <button
+          type="button"
+          className="fte-branchBadge is-ancestors"
+          title={t("tree.card.ancestorsExpand")}
+          aria-label={t("tree.card.ancestorsExpand")}
+          onPointerDown={(event) => { event.preventDefault(); event.stopPropagation(); }}
+          onClick={(event) => { event.stopPropagation(); onToggleAncestors?.(person.id); }}
+        >
+          ↑
+        </button>
+      ) : null}
+      <TreeCardToolbar actions={actions} label={t("tree.card.toolbar")} />
+      {showTools && canEdit ? (
         <span className="fte-resizeHandle" role="presentation" title={t("tree.card.resize")} onPointerDown={(event) => onResizePointerDown(event, person)} />
       ) : null}
     </div>
   );
 }
-

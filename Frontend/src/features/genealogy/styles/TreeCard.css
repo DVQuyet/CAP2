@@ -1,0 +1,396 @@
+/* Kiểu thẻ trên cây gia phả: thẻ một người, thẻ vợ chồng, thẻ tham chiếu và thanh thao tác nổi.
+ * Đây (cùng TreeCardExtras.css cho huy hiệu và thanh thao tác) là nơi DUY NHẤT khai báo kiểu thẻ; màu lấy từ biến chủ đề (--t-*) và tokens.css, không thêm mã hex.
+ * Đổi một biến --tc-* thì mọi thẻ đổi theo. */
+.fte2 {
+    --tc-radius: var(--radius-lg);
+    --tc-inner-radius: calc(var(--tc-radius) - 1px);
+    --tc-stripe: 4px;
+    --tc-pad: 10px 12px 10px 16px;
+    --tc-gap: 10px;
+    --tc-avatar: 40px;
+    --tc-name-size: calc(var(--fte-card-name-size, 17px) * 0.92);
+    --tc-name-weight: 700;
+    --tc-name-leading: 1.3;
+    --tc-meta-size: 12px;
+    --tc-meta-weight: 500;
+    --tc-surface: var(--t-surface);
+    --tc-surface-deceased: color-mix(in srgb, var(--t-surface-2) 55%, var(--t-surface));
+    --tc-border: var(--t-border);
+    --tc-shadow: var(--t-card-shadow);
+    --tc-shadow-raised: var(--t-shadow);
+    --tc-male: var(--t-male);
+    --tc-female: var(--t-female);
+    --tc-unknown: var(--t-unknown);
+    --tc-inlaw-opacity: 0.38;
+    --tc-ring: 3px;
+    --tc-state-selected: var(--t-accent);
+    --tc-state-related: var(--t-line-strong);
+    --tc-state-founder: var(--t-gold);
+    --tc-state-self: var(--color-state-self);
+    --tc-state-online: var(--color-state-online);
+    --tc-state-search: var(--color-state-search);
+    --tc-state-editing: var(--color-state-editing);
+    --tc-state-error: var(--color-state-error);
+    --tc-state-path: var(--color-state-path);
+    --tc-motion: 0.15s ease;
+}
+
+/* ===== Khung thẻ ===== */
+.fte-personCard,
+.fte-coupleCard {
+    position: absolute;
+    z-index: 2;
+    box-sizing: border-box;
+    width: var(--fte-card-width, 240px);
+    height: var(--fte-card-height, 100px);
+    border: 1px solid var(--tc-border);
+    border-radius: var(--tc-radius);
+    background: var(--tc-surface);
+    color: var(--t-ink);
+    box-shadow: var(--tc-shadow);
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+    transition: box-shadow var(--tc-motion), border-color var(--tc-motion), opacity var(--tc-motion);
+}
+
+.fte-personCard[data-static="true"],
+.fte-coupleCard[data-static="true"] {
+    cursor: pointer;
+    touch-action: auto;
+}
+
+.fte-personCard,
+.fte-coupleHalf {
+    display: flex;
+    align-items: center;
+    gap: var(--tc-gap);
+    min-width: 0;
+    padding: var(--tc-pad);
+}
+
+.fte-coupleHalf {
+    position: relative;
+    cursor: inherit;
+    transition: background-color var(--tc-motion);
+}
+
+.fte-personCard:hover,
+.fte-coupleCard:hover {
+    border-color: color-mix(in srgb, var(--t-accent) 45%, var(--tc-border));
+    box-shadow: var(--tc-shadow-raised);
+}
+
+/* Vạch màu bên trái: màu theo giới, đậm cho dòng chính, nhạt cho dâu rể. */
+.fte-personCard::before,
+.fte-coupleHalf::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: var(--tc-stripe);
+    border-radius: var(--tc-inner-radius) 0 0 var(--tc-inner-radius);
+    background: var(--tc-unknown);
+    pointer-events: none;
+}
+
+.fte-personCard.is-male::before,
+.fte-coupleHalf.is-male::before {
+    background: var(--tc-male);
+}
+
+.fte-personCard.is-female::before,
+.fte-coupleHalf.is-female::before {
+    background: var(--tc-female);
+}
+
+.fte-personCard.is-inLaw::before,
+.fte-coupleHalf.is-inLaw::before {
+    opacity: var(--tc-inlaw-opacity);
+}
+
+/* Đã mất: nền nhạt hơn và ảnh xám, không dùng màu đỏ. */
+.fte-personCard.is-deceased,
+.fte-coupleHalf.is-deceased {
+    background: var(--tc-surface-deceased);
+}
+
+/* ===== Nội dung: ảnh đại diện, tên, dòng phụ ===== */
+.fte2-avatar {
+    flex: 0 0 auto;
+    width: var(--tc-avatar);
+    height: var(--tc-avatar);
+    box-sizing: border-box;
+    display: grid;
+    place-items: center;
+    border: 2px solid var(--tc-unknown);
+    border-radius: var(--radius-pill);
+    background: color-mix(in srgb, var(--tc-unknown) 14%, var(--tc-surface));
+    color: var(--tc-unknown);
+    font-family: var(--t-font-title);
+    font-size: calc(var(--tc-avatar) * 0.42);
+    font-weight: 800;
+    line-height: 1;
+    object-fit: cover;
+}
+
+.fte2-avatar.is-male {
+    border-color: var(--tc-male);
+    background-color: color-mix(in srgb, var(--tc-male) 14%, var(--tc-surface));
+    color: var(--tc-male);
+}
+
+.fte2-avatar.is-female {
+    border-color: var(--tc-female);
+    background-color: color-mix(in srgb, var(--tc-female) 14%, var(--tc-surface));
+    color: var(--tc-female);
+}
+
+.fte2-avatar.is-deceased {
+    filter: grayscale(1);
+    opacity: 0.85;
+}
+
+.fte2-cardText {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+    text-align: left;
+}
+
+.fte-cardName {
+    margin: 0;
+    color: var(--t-ink);
+    font-size: var(--tc-name-size);
+    font-weight: var(--tc-name-weight);
+    line-height: var(--tc-name-leading);
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.fte-cardMeta {
+    color: var(--t-muted);
+    font-size: var(--tc-meta-size);
+    font-weight: var(--tc-meta-weight);
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.fte-coupleHalf.is-empty .fte-cardName {
+    color: var(--t-muted);
+    font-weight: var(--tc-meta-weight);
+}
+
+/* Chế độ tổng quan: chỉ có tên, canh giữa. */
+.is-overview .fte2-cardText {
+    text-align: center;
+}
+
+/* ===== Thẻ vợ chồng: hai nửa cùng chiều cao, nút thắt ở giữa ===== */
+.fte-coupleCard {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 0;
+}
+
+.fte-coupleCard.is-vertical {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+
+.fte-coupleHalf:first-child {
+    border-radius: var(--tc-inner-radius) 0 0 var(--tc-inner-radius);
+}
+
+.fte-coupleHalf:last-child {
+    border-radius: 0 var(--tc-inner-radius) var(--tc-inner-radius) 0;
+}
+
+.fte-coupleHalf:last-child::before {
+    border-radius: 0;
+}
+
+.fte-coupleCard.is-vertical .fte-coupleHalf:first-child {
+    border-radius: var(--tc-inner-radius) var(--tc-inner-radius) 0 0;
+}
+
+.fte-coupleCard.is-vertical .fte-coupleHalf:last-child {
+    border-radius: 0 0 var(--tc-inner-radius) var(--tc-inner-radius);
+}
+
+.fte-coupleCard.is-vertical .fte-coupleHalf:first-child::before {
+    border-radius: var(--tc-inner-radius) 0 0 0;
+}
+
+.fte-coupleCard.is-vertical .fte-coupleHalf:last-child::before {
+    border-radius: 0 0 0 var(--tc-inner-radius);
+}
+
+.fte-coupleHalf:hover,
+.fte-coupleHalf.is-selectedPerson {
+    background: var(--t-accent-soft);
+}
+
+.fte-coupleHalf.is-selectedPerson {
+    box-shadow: inset 0 0 0 2px var(--tc-state-selected);
+}
+
+.fte-coupleDivider {
+    position: absolute;
+    z-index: 2;
+    left: 50%;
+    top: 12px;
+    bottom: 12px;
+    border-left: 1px solid var(--tc-border);
+    pointer-events: none;
+}
+
+.fte-coupleCard.is-vertical .fte-coupleDivider {
+    left: 14px;
+    right: 14px;
+    top: 50%;
+    bottom: auto;
+    border-left: 0;
+    border-top: 1px solid var(--tc-border);
+}
+
+.fte2-coupleKnot {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 18px;
+    height: 18px;
+    transform: translate(-50%, -50%);
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--tc-border);
+    border-radius: var(--radius-pill);
+    background: var(--tc-surface);
+    color: var(--t-accent);
+    font-size: 9px;
+    line-height: 1;
+}
+
+.fte2-coupleKnot::after {
+    content: "\2665";
+}
+
+/* Quan hệ đã kết thúc hoặc không phải hôn nhân chính thức: viền và vạch giữa nét đứt. */
+.fte-coupleCard.is-looseUnion,
+.fte-coupleCard.is-looseUnion .fte-coupleDivider {
+    border-style: dashed;
+}
+
+.fte-coupleStatus {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 1px 6px;
+    border-radius: var(--radius-pill);
+    background: var(--t-surface-2);
+    color: var(--t-muted);
+    font-size: 10px;
+    white-space: nowrap;
+}
+
+/* ===== Trạng thái: viền + quầng sáng, mỗi trạng thái một màu cố định ===== */
+.fte-personCard.is-founder {
+    border-color: color-mix(in srgb, var(--tc-state-founder) 70%, var(--tc-border));
+}
+
+.fte-personCard.is-founder .fte2-avatar {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--tc-state-founder) 40%, transparent);
+}
+
+.fte-personCard.is-related,
+.fte-coupleCard.is-related {
+    border-color: var(--tc-state-related);
+}
+
+.fte-personCard.is-online {
+    box-shadow: 0 0 0 var(--tc-ring) color-mix(in srgb, var(--tc-state-online) 35%, transparent), var(--tc-shadow);
+}
+
+.fte-personCard.is-self {
+    border-color: var(--tc-state-self);
+}
+
+.fte-personCard.is-editing {
+    border-color: var(--tc-state-editing);
+    box-shadow: 0 0 0 var(--tc-ring) color-mix(in srgb, var(--tc-state-editing) 35%, transparent), var(--tc-shadow);
+}
+
+.fte-personCard.is-searchMatch {
+    border-color: var(--tc-state-search);
+    box-shadow: 0 0 0 calc(var(--tc-ring) + 1px) color-mix(in srgb, var(--tc-state-search) 40%, transparent), var(--tc-shadow-raised);
+}
+
+.fte-personCard.is-selected,
+.fte-coupleCard.is-selected {
+    border-color: var(--tc-state-selected);
+    box-shadow: 0 0 0 var(--tc-ring) color-mix(in srgb, var(--tc-state-selected) 22%, transparent), var(--tc-shadow-raised);
+}
+
+.fte-personCard.is-invalid {
+    border-color: var(--tc-state-error);
+}
+
+.fte-personCard.is-onPath,
+.fte-coupleHalf.is-onPath {
+    outline: 3px solid var(--tc-state-path);
+    outline-offset: 3px;
+}
+
+.fte-personCard.is-dimmed,
+.fte-coupleCard.is-dimmed,
+.fte-referenceCard.is-dimmed {
+    opacity: 0.32;
+}
+
+.fte-personCard.is-dimmed.is-onPath,
+.fte-coupleCard.is-dimmed:has(.is-onPath) {
+    opacity: 1;
+}
+
+.fte-personCard.is-dragging,
+.fte-coupleCard.is-dragging {
+    z-index: 4;
+    cursor: grabbing;
+    box-shadow: var(--tc-shadow-raised);
+}
+
+.fte-canvas.is-relation-picking .fte-personCard {
+    cursor: crosshair;
+    outline: 2px dashed color-mix(in srgb, var(--tc-state-founder) 60%, transparent);
+    outline-offset: 3px;
+}
+
+.fte-canvas.is-relation-picking .fte-personCard:hover {
+    outline-color: var(--tc-state-founder);
+}
+
+/* ===== Thu nhỏ xa: chỉ còn tên, chữ được bù theo mức zoom ===== */
+.fte-canvas.is-zoomFar .fte2-avatar,
+.fte-canvas.is-zoomFar .fte-cardMeta,
+.fte-canvas.is-zoomFar .fte2-coupleKnot,
+.fte-canvas.is-zoomFar .fte-coupleStatus,
+.fte-canvas.is-zoomFar .fte-cornerBadge {
+    display: none;
+}
+
+.fte-canvas.is-zoomFar .fte2-cardText {
+    text-align: center;
+}
+
+.fte-canvas.is-zoomFar .fte-cardName {
+    font-size: calc(var(--tc-name-size) * var(--fte2-zoom-comp, 1));
+    line-height: 1.15;
+}

@@ -1,0 +1,175 @@
+/* Phần phụ của thẻ trên cây: huy hiệu ở mép thẻ, thanh thao tác nổi, tay nắm đổi cỡ và thẻ tham chiếu.
+ * Dùng các biến --tc-* khai báo ở TreeCard.css. */
+/* ===== Huy hiệu nhỏ ở mép thẻ (không đổi cỡ thẻ) ===== */
+.fte-cornerBadge,
+.fte-nodeBadge,
+.fte-branchBadge {
+    position: absolute;
+    z-index: 3;
+    padding: 1px 7px;
+    border: 0;
+    border-radius: var(--radius-pill);
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.5;
+    white-space: nowrap;
+}
+
+.fte-cornerBadge {
+    top: -9px;
+    left: 12px;
+    background: var(--t-accent);
+    color: var(--t-accent-ink);
+    pointer-events: none;
+}
+
+.fte-cornerBadge.is-founder {
+    background: var(--tc-state-founder);
+    color: var(--t-accent-ink);
+}
+
+.fte-nodeBadge {
+    bottom: -9px;
+    left: 12px;
+    color: var(--color-white);
+    pointer-events: none;
+}
+
+.fte-nodeBadge.is-editing {
+    background: var(--tc-state-editing);
+}
+
+.fte-nodeBadge.is-error {
+    background: var(--tc-state-error);
+}
+
+/* Nhánh đang thu gọn: nút "+N" để mở lại. */
+.fte-branchBadge {
+    bottom: -10px;
+    right: 12px;
+    min-width: 24px;
+    background: var(--t-accent);
+    color: var(--t-accent-ink);
+    font-size: 11px;
+    cursor: pointer;
+}
+
+/* Các đời tổ tiên phía trên đang ẩn: nút "↑" ở mép trên để hiện lại. */
+.fte-branchBadge.is-ancestors {
+    top: -10px;
+    bottom: auto;
+}
+
+/* Vùng chạm rộng hơn phần nhìn thấy. */
+.fte-branchBadge::after {
+    content: "";
+    position: absolute;
+    inset: -8px;
+}
+
+/* ===== Thanh thao tác nổi: chỉ có trong DOM khi thẻ đang rê chuột, đang focus hoặc đang chọn ===== */
+.fte-cardToolbar {
+    position: absolute;
+    z-index: 30;
+    top: -20px;
+    right: 6px;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    padding: 3px;
+    border: 1px solid var(--tc-border);
+    border-radius: var(--radius-pill);
+    background: var(--tc-surface);
+    box-shadow: var(--tc-shadow-raised);
+    animation: fte-cardToolbarIn 0.14s ease;
+}
+
+@keyframes fte-cardToolbarIn {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+}
+
+.fte-cardToolbar button {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: var(--t-ink);
+    cursor: pointer;
+}
+
+.fte-cardToolbar button:hover,
+.fte-cardToolbar button:focus-visible {
+    background: var(--t-accent-soft);
+    color: var(--t-accent);
+}
+
+.fte-cardToolbar button.is-danger {
+    color: var(--tc-state-error);
+}
+
+.fte-cardToolbar button.is-danger:hover,
+.fte-cardToolbar button.is-danger:focus-visible {
+    background: color-mix(in srgb, var(--tc-state-error) 14%, transparent);
+    color: var(--tc-state-error);
+}
+
+.fte-cardToolbar .material-symbols-outlined {
+    font-size: 18px;
+}
+
+.fte-resizeHandle {
+    position: absolute;
+    z-index: 25;
+    right: 3px;
+    bottom: 3px;
+    width: 14px;
+    height: 14px;
+    border-right: 2px solid var(--t-muted);
+    border-bottom: 2px solid var(--t-muted);
+    border-radius: 0 0 4px 0;
+    cursor: nwse-resize;
+    touch-action: none;
+}
+
+/* ===== Thẻ tham chiếu: người được vẽ ở vị trí chính nơi khác ===== */
+.fte-referenceCard {
+    position: absolute;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: var(--tc-gap);
+    padding: 10px 14px;
+    border: 1.5px dashed var(--t-line);
+    border-radius: var(--tc-radius);
+    background: color-mix(in srgb, var(--tc-surface) 82%, transparent);
+    color: var(--t-ink);
+    text-align: left;
+    cursor: pointer;
+}
+
+.fte-referenceCard:hover {
+    border-style: solid;
+}
+
+.fte-referenceText {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+}
+
+.fte-referenceText strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.fte-referenceText small {
+    color: var(--t-muted);
+}

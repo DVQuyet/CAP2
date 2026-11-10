@@ -2364,6 +2364,7 @@
       "rootLabel": "Root: {{name}}"
     },
     "card": {
+      "toolbar": "Card actions",
       "fallbackName": "Member",
       "chief": "Clan Chief",
       "generation": "Gen {{count}}",

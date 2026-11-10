@@ -1,5 +1,6 @@
 // Trang xem thử trình chỉnh sửa cây gia phả với dữ liệu mẫu, không cần backend.
-// Chạy `npm run dev` rồi mở /dev/tree-preview.html (tham số: ?readonly=1, ?theme=modern|dark, ?lang=en).
+// Chạy `npm run dev` rồi mở /dev/tree-preview.html
+// (tham số: ?readonly=1, ?theme=modern|dark, ?orient=vertical, ?mode=overview, ?select=<id người>, ?lang=en).
 // Không được import từ app chính nên không nằm trong bản build.
 import React from "react";
 import ReactDOM from "react-dom/client";
@@ -70,7 +71,8 @@ ReactDOM.createRoot(document.getElementById("root")).render(
           families={families}
           children={children}
           readOnly={params.get("readonly") === "1"}
-          layoutSettings={params.get("theme") ? { tree_style: { theme: params.get("theme") } } : undefined}
+          layoutSettings={{ tree_style: { theme: params.get("theme") || undefined, cardOrientation: params.get("orient") || undefined } }}
+          initialDisplayMode={params.get("mode") === "overview" ? "overview" : "detail"}
           enableRealtime={false}
           onReload={() => {}}
         />

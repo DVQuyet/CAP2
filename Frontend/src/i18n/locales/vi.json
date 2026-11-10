@@ -2364,6 +2364,7 @@
       "rootLabel": "Gốc: {{name}}"
     },
     "card": {
+      "toolbar": "Thao tác với thẻ",
       "fallbackName": "Thành viên",
       "chief": "Tộc trưởng",
       "generation": "Đời {{count}}",

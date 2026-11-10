@@ -1,0 +1,74 @@
+/* Đường nối trên cây gia phả. Nét mảnh màu trầm, nhánh chính đậm hơn;
+ * khi chọn một người thì đường tới tổ tiên và con cháu được tô, phần còn lại mờ đi. */
+.fte2 {
+    --tl-width: 1.5;
+    --tl-width-main: 2.25;
+    --tl-width-active: 2.5;
+    --tl-width-grab: 4;
+}
+
+.fte-line {
+    fill: none;
+    stroke: var(--t-line);
+    /* Nét giữ nguyên độ dày trên màn hình khi zoom (thu nhỏ 40% vẫn thấy rõ nhánh chính): nhân với nghịch đảo
+     * mức zoom do FamilyTreeEditor đặt vào --fte-inv-scale. Không dùng vector-effect: non-scaling-stroke vì Chrome
+     * vẽ mờ hoặc bỏ nét dọc khi zoom nhỏ. */
+    stroke-width: calc(var(--tl-w, var(--tl-width)) * var(--fte-inv-scale, 1) * 1px);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: opacity 0.15s ease, stroke 0.15s ease;
+}
+
+.fte-line.is-spouse,
+.fte-line.is-mainBranch {
+    stroke: var(--t-line-strong);
+}
+
+.fte-line.is-mainBranch {
+    --tl-w: var(--tl-width-main);
+}
+
+.fte-line.is-variant-ended,
+.fte-line.is-variant-adoptive {
+    stroke-dasharray: 8 6;
+}
+
+.fte-line.is-variant-concubine,
+.fte-line.is-variant-step {
+    stroke-dasharray: 2 6;
+}
+
+.fte-line.is-related {
+    stroke: var(--t-accent);
+    --tl-w: var(--tl-width-active);
+}
+
+.fte-line.is-dimmed {
+    opacity: 0.22;
+}
+
+.fte-line.is-onPath {
+    stroke: var(--color-state-path);
+    --tl-w: var(--tl-width-grab);
+    opacity: 1;
+}
+
+/* Đường kéo được (người có quyền sửa bố cục). */
+.fte-line.is-draggable {
+    pointer-events: stroke;
+    cursor: ns-resize;
+}
+
+.fte-line.is-draggable.is-axis-x {
+    cursor: ew-resize;
+}
+
+.fte-line.is-draggable.is-axis-xy {
+    cursor: move;
+}
+
+.fte-line.is-draggable:hover,
+.fte-line.is-draggable.is-dragging {
+    --tl-w: var(--tl-width-grab);
+    opacity: 1;
+}

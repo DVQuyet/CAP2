@@ -37,6 +37,14 @@
   --color-gray-500: #6b7280;
   --color-navy: #1d2b44;
 
+  /* Màu trạng thái (thẻ trên cây, huy hiệu). Mỗi trạng thái một màu cố định ở mọi chủ đề. */
+  --color-state-self: #2563eb;
+  --color-state-online: #22a55b;
+  --color-state-search: #f59e0b;
+  --color-state-editing: #8b5cf6;
+  --color-state-error: #dc2626;
+  --color-state-path: #ea580c;
+
   /* Bo góc */
   --radius-xs: 6px;
   --radius-sm: 8px;

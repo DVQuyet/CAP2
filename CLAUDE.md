@@ -26,7 +26,9 @@ Không dùng dịch vụ trả phí.
 ## Cây gia phả
 - Không gọi setState trong pointermove; kéo bằng ref + requestAnimationFrame.
 - Thẻ đặt vị trí bằng transform; thẻ là React.memo, props phải ổn định.
-- Kiểu thẻ chỉ sửa ở TreeCard.css (tạo ở bước A1.3), màu lấy từ tokens.css.
+- Kiểu thẻ chỉ sửa ở Frontend/src/features/genealogy/styles/TreeCard.css và TreeCardExtras.css; đường nối ở TreeLines.css.
+  Đổi kiểu qua biến --tc-* / --tl-*; màu lấy từ biến chủ đề --t-* và tokens.css, không thêm mã hex.
+- Thẻ thường không mang nút: thao tác nằm trong TreeCardToolbar, chỉ render khi rê chuột, focus hoặc chọn.
 
 ## Quy ước
 - File mới <= 400 dòng, hàm <= 80 dòng. Không làm file cũ dài thêm.
@@ -49,5 +51,5 @@ Không dùng dịch vụ trả phí.
 - Backend: cd Backend && npm test && node scripts/chatbot-e2e-check.js --min 199 --min-conversation 7
 - Frontend: cd Frontend && npm run lint && npm test && npm run build
 - Cả hai: npm test và npm run lint ở gốc repo.
-- Đổi giao diện cây: chụp ảnh 390x844 và 1280x800 trên dev/tree-preview.html.
+- Đổi giao diện cây: chụp ảnh 390x844 và 1280x800 trên dev/tree-preview.html bằng Frontend/dev/tree-shots.sh, so với docs/anh/.
 - Việc còn mở ghi vào docs/VIEC_CHUA_LAM.md.
