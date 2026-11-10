@@ -10,6 +10,7 @@ const { getRoleName } = require("../../config/roles");
 const {
   getTreeEditSessionForAccount,
   activateTreeEditSessionForAccount,
+  readTreeEditKeyFromRequest,
 } = require("../../shared/utils/treeEditPermissions");
 const { createNotification, ensureNotificationSchema } = require("../../shared/utils/notifications");
 const { getTreeLayoutSettings } = require("../../shared/utils/treeLayoutSettings");
@@ -17,6 +18,7 @@ const { normalizeMediaId, extractMediaIdFromUrl } = require("../../shared/utils/
 const { applyMarriageToDraft, ensureFamilyRelationshipColumns } = require("../genealogy/familyRelation.service");
 const { TREE_CHILD_COLUMNS, TREE_FAMILY_COLUMNS, TREE_PERSON_EXTRA_COLUMNS } = require("../genealogy/treeQueries");
 const { applyFamilyVisibility } = require("../genealogy/treeVisibility");
+const { canSeeAllContacts, redactContactFields } = require("../genealogy/contactPrivacy");
 const {
   RelationDraft,
   RelationError,
@@ -364,7 +366,6 @@ const emitNotificationToAccount = async (req, receiverAccountId, payload) => {
 
   io.to(`account_${receiverAccountId}`).emit("new_notification", realtimePayload);
 
-  console.log(`✅ Đã gửi realtime notification tới account_${receiverAccountId}`);
 };
 
 const emitToClan = (req, clanId, eventName, payload) => {
@@ -376,7 +377,6 @@ const emitToClan = (req, clanId, eventName, payload) => {
 
   io.to(`clan_${clanId}`).emit(eventName, payload);
 
-  console.log(`📡 Đã emit ${eventName} tới clan_${clanId}`);
 };
 
 const getClanManagerAccounts = async (clanId) => {
@@ -684,7 +684,7 @@ exports.getDashboard = async (req, res) => {
     if (clanId) {
       await ensureFamilyRelationshipColumns();
       await ensureArchivedMembersTable();
-      const [peopleRows] = await db.query(
+      const [rawPeopleRows] = await db.query(
         `
           SELECT p.id, p.display_name, p.first_name, p.middle_name, p.surname, p.generation, p.branch,
                  p.hometown, p.address, p.birth_date, p.death_date, p.is_living, p.gender,
@@ -705,6 +705,14 @@ exports.getDashboard = async (req, res) => {
         `,
         [clanId]
       );
+      // Thành viên thường không nhận SĐT/email/địa chỉ của người khác, trừ những người nằm trong phạm vi khóa sửa tạm đang dùng.
+      const editKey = canSeeAllContacts(req.user) ? "" : readTreeEditKeyFromRequest(req);
+      const editSession = editKey ? await getTreeEditSessionForAccount(accountId, editKey) : null;
+      const peopleRows = redactContactFields(rawPeopleRows, {
+        user: req.user,
+        viewerPersonId: context.person_id,
+        editablePersonIds: editSession?.allowedNodeIds || [],
+      });
       treeMembers = peopleRows.map((person) => ({
         ...person,
         birth_date: fmtSqlDate(person.birth_date),
@@ -1430,7 +1438,6 @@ exports.submitMaterial = async (req, res) => {
           updated_at: new Date().toISOString(),
         });
 
-        console.log(`📰 Đã emit post_feed_updated post_created tới clan_${context.clan_id}`);
       }
     } else {
       await notifyManagersAboutPendingApproval(req, {
@@ -1586,7 +1593,6 @@ if (io) {
     updated_at: new Date().toISOString(),
   });
 
-  console.log(`💬 Đã emit post_feed_updated comment_added tới clan_${context.clan_id}`);
 }
 
     return res.status(201).json({ success: true, comment: rows[0] });
@@ -1640,7 +1646,6 @@ if (io) {
     updated_at: new Date().toISOString(),
   });
 
-  console.log(`❤️ Đã emit post_feed_updated like_updated tới clan_${context.clan_id}`);
 }
 return res.json({ success: true, liked, like_count: likeCount });
   } catch (error) {
@@ -1850,7 +1855,6 @@ if (io) {
     member_name: memberName,
   });
 
-  console.log(`✅ Đã emit task_status_updated "${nextStatus}" tới account_${task.manager_account_id}`);
 }
 
 if (nextStatus === "completed") {
@@ -1932,7 +1936,6 @@ if (nextStatus === "completed") {
             member_name: memberName,
           });
 
-          console.log(`✅ Đã emit task_status_updated tới account_${task.manager_account_id}`);
         }
 
       }

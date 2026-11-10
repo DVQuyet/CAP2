@@ -234,8 +234,7 @@ export default function VietnamCalendarPage() {
       return false;
     }
 
-    const handleCalendarUpdated = (payload) => {
-      console.log("Realtime calendar_updated received:", payload);
+    const handleCalendarUpdated = () => {
       loadCalendarEvents();
     };
 

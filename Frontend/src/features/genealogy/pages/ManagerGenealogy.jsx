@@ -112,8 +112,6 @@ export default function GenealogySection() {
 
   useEffect(() => {
     const offTreeUpdated = onSocketEvent("tree_updated", (payload) => {
-      console.log("Manager tree realtime tree_updated received:", payload);
-
       const currentClanId = clan?.id || clan?.clan_id;
       if (
         payload?.clan_id &&

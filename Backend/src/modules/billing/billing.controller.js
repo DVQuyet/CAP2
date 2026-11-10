@@ -57,7 +57,6 @@ async function getPlans(req, res) {
     return res.status(500).json({
       success: false,
       message: 'Không lấy được danh sách gói.',
-      error: error.message,
     });
   }
 }
@@ -136,7 +135,6 @@ async function getClanBilling(req, res) {
     return res.status(500).json({
       success: false,
       message: 'Không lấy được thông tin gói clan.',
-      error: error.message,
     });
   }
 }
@@ -241,7 +239,6 @@ return res.json({
     return res.status(500).json({
       success: false,
       message: 'Không lấy được lịch sử thanh toán.',
-      error: error.message,
     });
   }
 }
@@ -397,7 +394,6 @@ async function manualUpgradeClan(req, res) {
     return res.status(500).json({
       success: false,
       message: 'Không nâng cấp thủ công được.',
-      error: error.message,
     });
   } finally {
     connection.release();
@@ -522,8 +518,7 @@ async function createPlan(req, res) {
     const status = error.status || (error.code === 'ER_DUP_ENTRY' ? 409 : 500);
     return res.status(status).json({
       success: false,
-      message: error.code === 'ER_DUP_ENTRY' ? 'Mã gói đã tồn tại.' : (error.message || 'Không thêm được gói sử dụng.'),
-      error: error.message,
+      message: error.code === 'ER_DUP_ENTRY' ? 'Mã gói đã tồn tại.' : ((error.status && error.message) || 'Không thêm được gói sử dụng.'),
     });
   }
 }
@@ -559,8 +554,7 @@ async function updatePlan(req, res) {
     const status = error.status || (error.code === 'ER_DUP_ENTRY' ? 409 : 500);
     return res.status(status).json({
       success: false,
-      message: error.code === 'ER_DUP_ENTRY' ? 'Mã gói đã tồn tại.' : (error.message || 'Không cập nhật được gói sử dụng.'),
-      error: error.message,
+      message: error.code === 'ER_DUP_ENTRY' ? 'Mã gói đã tồn tại.' : ((error.status && error.message) || 'Không cập nhật được gói sử dụng.'),
     });
   }
 }

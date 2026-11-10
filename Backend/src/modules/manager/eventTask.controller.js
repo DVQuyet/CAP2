@@ -508,10 +508,9 @@ const assignTask = async(req, res) => {
                         assigned_at: new Date().toISOString(),
                     });
 
-                    console.log(`✅ Đã emit new_notification + task_assigned tới account_${member.account_id}`);
                 }
             } else {
-                console.log('⚠️ Không tìm thấy req.app.locals.io trong assignTask');
+                console.warn('⚠️ Không tìm thấy req.app.locals.io trong assignTask');
             }
         const emailSummary = {
             sent: 0,
@@ -877,7 +876,6 @@ for (const job of notificationJobs) {
             assigned_at: new Date().toISOString(),
         });
 
-        console.log(`✅ Đã emit bulk task_assigned tới account_${job.member.account_id}`);
     }
 }
 
@@ -931,7 +929,7 @@ for (const job of notificationJobs) {
 
         return res.status(error.status || 500).json({
             success: false,
-            message: error.message || 'Không thể giao danh sách công việc',
+            message: (error.status && error.message) || 'Không thể giao danh sách công việc',
             error: process.env.NODE_ENV === 'development' ? error.message : undefined,
         });
     } finally {

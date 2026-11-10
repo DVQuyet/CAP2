@@ -77,8 +77,6 @@ export default function FamilyTreePage() {
     connectSocketFromStorage();
 
     const offTreeUpdated = onSocketEvent("tree_updated", (payload) => {
-      console.log("[Member FamilyTreePage] tree_updated:", payload);
-
       const currentClanId = dashboard?.clan?.id || dashboard?.clan?.clan_id;
 
       if (
@@ -147,6 +145,8 @@ export default function FamilyTreePage() {
           return;
         }
         saveTreeEditSession({ key, expiresAt });
+        // Tải lại cây kèm khóa để nhận thông tin liên hệ của những người được phép sửa (thiếu thì lưu form sẽ ghi đè rỗng).
+        loadTree();
         setPermission({
           canEdit: true,
           editScope: "limited",
@@ -165,7 +165,7 @@ export default function FamilyTreePage() {
         setKeySaving(false);
       }
     },
-    [resetTemporaryPermission, resolvePermissionExpiry],
+    [resetTemporaryPermission, resolvePermissionExpiry, loadTree],
   );
 
   useEffect(() => {

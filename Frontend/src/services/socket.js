@@ -45,9 +45,7 @@ export function connectSocket(accountId, token) {
   }
 
   socket.on("connect", () => {
-    console.log("Socket connected:", socket.id);
     socket.emit("register_user");
-    console.log("Registered socket for current account");
   });
 
   socket.on("connect_error", (error) => {
@@ -56,7 +54,6 @@ export function connectSocket(accountId, token) {
 
   const thisSocket = socket;
   socket.on("disconnect", (reason) => {
-    console.log("Socket disconnected:", reason);
     // Server chủ động ngắt (đổi mật khẩu, đổi vai trò, khóa tài khoản): client không tự nối lại.
     // Thử một lần với token hiện hành; token bị thu hồi hay tài khoản bị khóa thì server từ chối (connect_error) và dừng ở đây.
     if (reason === "io server disconnect") {

@@ -465,8 +465,6 @@ export default function GeneralPosts() {
     }
 
     const handlePostFeedUpdated = (payload) => {
-      console.log("Realtime post_feed_updated received:", payload);
-
       loadPosts();
 
       if (selectedPost?.id && Number(payload?.post_id) === Number(selectedPost.id)) {

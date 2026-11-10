@@ -813,8 +813,6 @@ export default function FamilyTreeEditor({
     if (!enableRealtime) return undefined;
 
     const offTreeUpdated = onSocketEvent("tree_updated", async (data) => {
-      console.log("[FamilyTreeEditor] tree_updated:", data);
-
       if (data?.clan_id && clan?.id && Number(data.clan_id) !== Number(clan.id)) {
         return;
       }
@@ -1004,18 +1002,6 @@ const coupleActionPerson = useMemo(
   useEffect(() => {
     displayNodeByPersonIdRef.current = displayNodeByPersonId;
   }, [displayNodeByPersonId]);
-
-  useEffect(() => {
-    if (!import.meta.env.DEV) return;
-    const localStorageKeys = listFamilyTreeLocalStorageKeys();
-    console.log({
-      clanId: clan?.id,
-      sourceOfLayout: USE_LOCAL_DRAFT_LAYOUT ? "localDraft" : "database",
-      localStorageKeys,
-      dbPositionCount: visiblePeople.filter((person) => toInt(person.tree_x, 0) !== 0 || toInt(person.tree_y, 0) !== 0).length,
-      localPositionCount: Object.keys(displayNodePositions || {}).length,
-    });
-  }, [clan?.id, displayNodePositions, visiblePeople]);
 
   const selectedCoupleNode = useMemo(
     () => displayNodes.find((node) => node.id === selectedCoupleId) || null,

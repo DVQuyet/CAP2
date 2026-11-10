@@ -120,8 +120,7 @@ useEffect(() => {
 
   const cleanupPendingChanged = onSocketEvent(
     "pending_approval_changed",
-    (payload) => {
-      console.log("Pending approval changed:", payload);
+    () => {
       loadPending();
     }
   );

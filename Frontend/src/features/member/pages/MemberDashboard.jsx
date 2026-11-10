@@ -115,13 +115,11 @@ export default function MemberDashboard() {
       return false;
     }
 
-    const handleTaskAssigned = (payload) => {
-      console.log("Dashboard realtime task_assigned received:", payload);
+    const handleTaskAssigned = () => {
       loadDashboard(true);
     };
 
-    const handleNewNotification = (payload) => {
-      console.log("Dashboard realtime new_notification received:", payload);
+    const handleNewNotification = () => {
       loadDashboard(true);
     };
 

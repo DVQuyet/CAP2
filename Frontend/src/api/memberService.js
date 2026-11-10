@@ -1,5 +1,6 @@
 import { buildApiUrl } from "../services/api";
 import { mediaUrlFromId } from "../shared/utils/media";
+import { getTreeEditKeyHeader } from "../services/treeEditSession";
 
 const BASE_URL = "/api/member";
 
@@ -43,7 +44,8 @@ export const getMemberDashboard = async () =>
   requestJson(
     "/dashboard",
     {
-      headers: getAuthHeaders(),
+      // Kèm khóa sửa tạm (nếu có) để server trả thông tin liên hệ của những người được phép sửa.
+      headers: { ...getAuthHeaders(), ...getTreeEditKeyHeader() },
     },
     "Không thể tải dữ liệu thành viên",
   );

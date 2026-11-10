@@ -482,8 +482,6 @@ export default function ProfileDrawer({
           body: formData,
         });
 
-        console.log("Kết quả upload ảnh:", uploadResult);
-
         nextAvatarUrl =
           uploadResult.url ||
           uploadResult.imageUrl ||

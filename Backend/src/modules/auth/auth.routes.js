@@ -139,7 +139,7 @@ function oauthCallback(provider) {
                 console.error(`${provider} OAuth callback error:`, error);
                 return res.redirect(buildOAuthRedirectUrl({
                     error: error.code || 'oauth_failed',
-                    message: error.message || 'Dang nhap mang xa hoi that bai.',
+                    message: 'Dang nhap mang xa hoi that bai.',
                 }));
             }
             if (!result?.token) {

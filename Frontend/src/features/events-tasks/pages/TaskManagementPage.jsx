@@ -594,13 +594,11 @@ recognition.onerror = (event) => {
       return false;
     }
 
-    const handleTaskAssigned = (payload) => {
-      console.log("Realtime task_assigned received:", payload);
+    const handleTaskAssigned = () => {
       loadData();
     };
 
-    const handleTaskStatusUpdated = (payload) => {
-      console.log("Realtime task_status_updated received:", payload);
+    const handleTaskStatusUpdated = () => {
       loadData();
     };
 

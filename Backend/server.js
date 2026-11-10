@@ -15,6 +15,7 @@ const { getJwtSecret } = require('./src/config/jwt');
 const passport = require('passport');
 const db = require('./src/config/db');
 const { securityHeaders } = require('./src/middleware/securityHeaders');
+const { buildAllowedOrigins } = require('./src/config/cors');
 
 // Dừng ngay khi khởi động nếu thiếu JWT_SECRET thay vì chạy với khóa đoán được.
 getJwtSecret();
@@ -23,20 +24,7 @@ const app = express();
 app.set("trust proxy", 1);
 
 // 1. Cấu hình middleware toàn cục
-const allowedOrigins = [
-    process.env.FRONTEND_URL,
-    'https://cap-2-seven.vercel.app',
-    'https://dinhvietquyet.website',
-    'http://dinhvietquyet.website',
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-    'http://localhost:5174',
-    'http://127.0.0.1:5174',
-    'http://localhost:5175',
-    'http://127.0.0.1:5175',
-    'http://localhost:4173',
-    'http://127.0.0.1:4173',
-].filter(Boolean);
+const allowedOrigins = buildAllowedOrigins();
 
 app.use(cors({
     origin: (origin, callback) => {
@@ -195,7 +183,6 @@ io.on('connection', (socket) => {
     const clanId = Number(context.clan_id);
     const personId = Number(context.person_id);
 
-    console.log(`Socket connected: ${socket.id}`);
     if (accountId) {
         app.locals.onlineUsers[accountId] = socket.id;
         socket.join(`account_${accountId}`);

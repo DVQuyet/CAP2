@@ -123,8 +123,6 @@ export default function NotificationBell({ role = "member", buttonClassName = ""
 
   useEffect(() => {
     const cleanupNewNotification = onSocketEvent("new_notification", (notification) => {
-      console.log("New realtime notification:", notification);
-
       const normalizedNotification = normalizeRealtimeNotification(notification, t);
 
       let shouldIncreaseUnread = false;

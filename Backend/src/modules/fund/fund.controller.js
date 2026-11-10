@@ -746,7 +746,6 @@ exports.reportPayment = async (req, res) => {
                     created_at: new Date().toISOString(),
                 });
 
-                console.log(`✅ Đã gửi realtime payment report notification tới account_${m.id}`);
             }
         }
 

@@ -226,7 +226,7 @@ const emitCalendarUpdated = (req, event, action = 'calendar_updated') => {
   const io = req.app?.locals?.io;
 
   if (!io || !event) {
-    console.log('⚠️ Không thể emit calendar_updated: thiếu io hoặc event');
+    console.warn('⚠️ Không thể emit calendar_updated: thiếu io hoặc event');
     return;
   }
 
@@ -241,7 +241,6 @@ const emitCalendarUpdated = (req, event, action = 'calendar_updated') => {
 
   if (payload.visibility === 'global' && payload.clan_id) {
     io.to(`clan_${payload.clan_id}`).emit('calendar_updated', payload);
-    console.log(`📅 Đã emit calendar_updated ${action} tới clan_${payload.clan_id}`);
     return;
   }
 
@@ -249,7 +248,6 @@ const emitCalendarUpdated = (req, event, action = 'calendar_updated') => {
 
   if (accountId) {
     io.to(`account_${accountId}`).emit('calendar_updated', payload);
-    console.log(`📅 Đã emit calendar_updated ${action} tới account_${accountId}`);
   }
 };
 

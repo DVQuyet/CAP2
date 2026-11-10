@@ -2,7 +2,7 @@ function emitTreeUpdated(req, clanId, payload = {}) {
   const io = req.app?.locals?.io;
 
   if (!io || !clanId) {
-    console.log(" Không thể emit tree_updated: thiếu io hoặc clanId", {
+    console.warn(" Không thể emit tree_updated: thiếu io hoặc clanId", {
       hasIo: Boolean(io),
       clanId,
     });
@@ -21,7 +21,6 @@ function emitTreeUpdated(req, clanId, payload = {}) {
 
   io.to(`clan_${clanId}`).emit("tree_updated", data);
 
-  console.log(` Đã emit tree_updated tới clan_${clanId}`, data);
 }
 
 module.exports = {

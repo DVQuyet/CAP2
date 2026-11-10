@@ -239,9 +239,6 @@ export default function ClanFundPage() {
           const response = await apiRequest(url);
           const list = normalizeMembers(response);
 
-          console.log("Member API:", url, response);
-          console.log("Normalized members:", list);
-
           if (list.length > 0) {
             memData = response;
             normalizedMembers = list;

@@ -502,7 +502,6 @@ if (pendingPayments.length) {
     return res.status(500).json({
       success: false,
       message: 'Không tạo được thanh toán SePay.',
-      error: error.message,
     });
   }
 }
@@ -751,7 +750,6 @@ async function getPaymentStatus(req, res) {
     return res.status(500).json({
       success: false,
       message: 'Không lấy được trạng thái thanh toán.',
-      error: error.message,
     });
   }
 }
@@ -826,7 +824,6 @@ async function cancelPendingPayment(req, res) {
     return res.status(500).json({
       success: false,
       message: 'Không thể hủy giao dịch.',
-      error: error.message,
     });
   }
 }

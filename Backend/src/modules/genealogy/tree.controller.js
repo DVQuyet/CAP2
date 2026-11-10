@@ -457,7 +457,7 @@ const createPerson = async (req, res) => {
 
         return res.status(responseStatus).json({
             success: false,
-            message: error.message || 'Lỗi tạo người trong gia phả',
+            message: (error.status && error.message) || 'Lỗi tạo người trong gia phả',
         });
     } finally {
         if (connection) {
