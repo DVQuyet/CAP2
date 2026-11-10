@@ -1,6 +1,6 @@
 # Việc chưa làm — CAP2 (Gia Phả Việt)
 
-Cập nhật 23/10/2026, quét lại mã ở commit `03e5681`. Lộ trình dài hạn: `KE_HOACH_TONG_THE.md` (đang ở Giai đoạn 0 → 1). Đây là **danh sách duy nhất** các việc còn mở; gộp từ
+Cập nhật 23/10/2026, quét lại mã ở commit `03e5681`. Lộ trình dài hạn: `KE_HOACH_TONG_THE.md` (Giai đoạn 0 và 1 xong phần mã, đang dở Giai đoạn 2, xem Đợt 14). Đây là **danh sách duy nhất** các việc còn mở; gộp từ
 `nhat-ky/CAI_THIEN_HE_THONG.md` (mục "Chưa làm"), `nhat-ky/TOI_UU_AI_VA_GIA_PHA.md` (mục 2–6) và `nhat-ky/TIEP_TUC_AI_TRA_LOI.md` (mục "Chờ nhóm quyết định").
 Các file đó giữ làm nhật ký; việc mới thêm vào đây.
 
@@ -61,6 +61,16 @@ Còn mở từ đợt 4:
 - Ảnh đại diện khi xuất cây vẫn là chữ cái đầu, chưa nhúng ảnh thật.
 - Validate chưa phủ route calendar/events.
 - "ba co toi" vẫn mơ hồ (cụ vs bà cô).
+
+Đợt 14 (10/11) — Giai đoạn 2 (A2: tương tác mượt), **đang làm dở, làm tiếp từ đây**:
+- **Đã xong, đã push** (`0de1aa4`): A2.1 công cụ đo `Frontend/dev/tree-perf.mjs` + trang xem thử nhận `?n=500|2000`, `?expand=1`, `?profile=1`; A2.2 `hooks/useNodeDrag.js` thay 4 handler kéo (trong lúc kéo chỉ đổi transform, thả mới ghi state; đường nối mờ đi vì chưa đi theo); A2.3 thẻ đặt vị trí bằng `transform: translate()`.
+- **Số đo** (Vite dev, React bản dev, Chrome headless không GPU; chỉ để so trước/sau), kéo một thẻ 60 bước: 500 người 62 commit × 65 ms, 23 fps → 5 commit, 49 fps. 2.000 người trước khi sửa: 63 commit × 227 ms, 3,8 fps; DOM 26.484 phần tử.
+- **Đang dở, CHƯA xong, nằm ở nhánh local `wip/a2-memo-culling`** (commit `4ea0091`, chưa push, không gộp vào main khi chưa sửa lỗi): A2.4 thẻ bọc `React.memo` với props nguyên thủy (`TreeCanvasNodes.jsx`, `TreeCanvasLines.jsx`, `useStableHandlers.js`) và A2.5 chỉ vẽ phần cây đang nhìn (`utils/tree-editor/treeViewport.js`, state `viewRect`, hàm `syncView`/`moveView` trong `FamilyTreeEditor.jsx`).
+  - **Lỗi phải sửa trước**: cây từ 150 thẻ trở lên, kéo nền đi xa thì màn hình trống thẻ. Đo 2.000 người sau 3 lần kéo nền 900px: 0 React commit, 0 thẻ trong vùng nhìn, tức `viewRect` không được cập nhật khi kéo nền. Nghi `onTransformed` của react-zoom-pan-pinch 4.0.3 không gọi khi kéo nền (chưa xác nhận). Hướng thử: thêm `onPanning`/`onPanningStop` gọi `syncView`, rồi chạy lại `node dev/tree-perf.mjs 2000` và xem dòng "sau các thao tác" có `cardsInView` > 0.
+  - Số đo của nhánh dở (chưa tin được cho tới khi sửa lỗi trên): 500 người kéo thẻ 4 commit, 59 fps, DOM 6.633 → 1.738 phần tử; 2.000 người kéo thẻ 59 fps, DOM 26.484 → 1.842.
+  - Chưa làm ở nhánh dở: test cho `treeViewport.js`; kiểm tra lại bộ ảnh `dev/tree-shots.sh` (đặc biệt chọn người, tô đường quan hệ, thẻ tham chiếu); thử kéo thẻ vợ chồng, kéo nhiều thẻ, đổi cỡ thẻ; lúc mới mở cây lớn vẫn vẽ hết một lần trước khi biết vùng nhìn.
+- **Chưa bắt đầu**: A2.6 mức chi tiết theo zoom (state chỉ đổi khi vượt ngưỡng; hiện mỗi nấc lăn chuột vẫn render lại editor), A2.7 bỏ `backdrop-filter` trong vùng cây, A2.8 chuyển động 120–180 ms, tách tiếp `FamilyTreeEditor.jsx` (còn 3.905 dòng trên main; đích E7.2 là dưới 300).
+- **Chưa thử tay**: mọi thứ của A1 và A2 mới kiểm bằng Chrome headless; cần kéo thả, rê chuột, điện thoại thật.
 
 Đợt 13 (10/11) — Giai đoạn 1 (A1: thẻ trên cây), xem `docs/anh/cay-A1/README.md`:
 - **Đã xong**: A1.1 bộ ảnh trước/sau (15 ảnh mỗi bên, script `Frontend/dev/tree-shots.sh`); A1.2 biến `--tc-*`, `--tl-*` và màu trạng thái trong `tokens.css`; A1.3 kiểu thẻ gom về `styles/TreeCard.css` + `TreeCardExtras.css` (571 dòng), gỡ 238 rule thẻ/đường nối khỏi hai file cũ (5.750 → 4.049 dòng), `.fte-cardName` còn một khai báo gốc; A1.4 thứ bậc thông tin; A1.5 `TreeCardToolbar.jsx`, thẻ thường còn 5 phần tử DOM; A1.6 `styles/TreeLines.css`.
