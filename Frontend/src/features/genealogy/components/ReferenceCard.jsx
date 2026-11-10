@@ -1,4 +1,5 @@
 import { useLanguage } from "../../../i18n/LanguageContext";
+import { nodeTransform } from "../hooks/useNodeDrag";
 import { fullName } from "../utils/tree-editor/treePersonUtils";
 
 // Thẻ tham chiếu: người này được vẽ ở vị trí chính nơi khác trên cây (con nuôi/thừa tự tại nhà cha mẹ đẻ,
@@ -12,7 +13,7 @@ export default function ReferenceCard({ node, related = false, dimmed = false, o
       type="button"
       id={`fte-display-${node.id}`}
       className={`fte-referenceCard ${related ? "is-related" : ""} ${dimmed ? "is-dimmed" : ""}`}
-      style={{ left: node.x, top: node.y, width: node.width, height: node.height }}
+      style={{ transform: nodeTransform(node.x, node.y), width: node.width, height: node.height }}
       title={t("tree.reference.goTo", { name: fullName(person, t("tree.card.fallbackName")) })}
       onPointerDown={(event) => event.stopPropagation()}
       onClick={(event) => {

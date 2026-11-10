@@ -72,3 +72,8 @@
     --tl-w: var(--tl-width-grab);
     opacity: 1;
 }
+
+/* Đang kéo thẻ: đường nối chưa đi theo (vị trí chỉ ghi vào state khi thả), nên làm mờ để không gây hiểu nhầm. */
+.fte-canvas.is-nodeDragging .fte-line {
+    opacity: 0.3;
+}

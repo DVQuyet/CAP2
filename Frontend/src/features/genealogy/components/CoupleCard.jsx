@@ -2,6 +2,7 @@ import { useLanguage } from "../../../i18n/LanguageContext";
 import { fullName } from "../utils/tree-editor/treePersonUtils";
 import { WEB_CARD_HEIGHT, WEB_CARD_WIDTH } from "../utils/tree-editor/treeDisplayNodes";
 import { useCardActive } from "../hooks/useCardActive";
+import { nodeTransform } from "../hooks/useNodeDrag";
 import { cardExtraInfo, cardMeta, genderKey } from "../utils/tree-editor/treeCardInfo";
 import { CardPersonBody } from "./TreeCardParts";
 import TreeCardToolbar from "./TreeCardToolbar";
@@ -159,8 +160,7 @@ export default function CoupleCard({
       id={`fte-display-${node.id}`}
       className={`fte-coupleCard is-${cardOrientation} is-${displayMode} is-union-${status} ${looseUnion ? "is-looseUnion" : ""} ${selectedCouple ? "is-selected" : ""} ${related ? "is-related" : ""} ${dimmed ? "is-dimmed" : ""} ${dragging ? "is-dragging" : ""}`}
       style={{
-        left: node.x,
-        top: node.y,
+        transform: nodeTransform(node.x, node.y),
         "--fte-card-width": `${node.width || WEB_CARD_WIDTH}px`,
         "--fte-card-height": `${node.height || WEB_CARD_HEIGHT}px`,
         "--fte-card-name-size": `${Number(fontSize) || 17}px`,

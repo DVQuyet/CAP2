@@ -14,6 +14,7 @@ import CoupleCard from "./CoupleCard";
 import TreeNodeCard from "./TreeNodeCard";
 import { useLanguage } from "../../../i18n/LanguageContext";
 import { useTreeSearch } from "../hooks/useTreeSearch";
+import { useNodeDrag } from "../hooks/useNodeDrag";
 import { useTreeViewMode } from "../hooks/useTreeViewMode";
 import { useTreeRealtime } from "../hooks/useTreeRealtime";
 import { buildFamilyIndexes, getAncestorIds, getDescendantIds, getHiddenDescendantIds } from "../utils/treeFilter";
@@ -232,15 +233,6 @@ const loadDisplayNodePositions = (clanId) => {
     return parsed && typeof parsed === "object" ? parsed : {};
   } catch {
     return {};
-  }
-};
-
-const saveDisplayNodePositions = (clanId, value) => {
-  if (!USE_LOCAL_DRAFT_LAYOUT) return;
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(getDisplayNodePositionStorageKey(clanId), JSON.stringify(value || {}));
-  } catch {
   }
 };
 
@@ -528,8 +520,6 @@ export default function FamilyTreeEditor({
   );
   const [currentScale, setCurrentScale] = useState(0.85);
   const [transformReady, setTransformReady] = useState(0);
-  const lastDragRef = useRef(null);
-  const dragGroupRef = useRef(null);
   const bulkSelectRef = useRef(null);
   const lineDragRef = useRef(null);
   const titleDragRef = useRef(null);
@@ -1786,315 +1776,110 @@ const coupleActionPerson = useMemo(
     });
   }, [people, validationErrors]);
 
+  const startNodeDrag = useNodeDrag({ scaleRef, snap, canvasRef: treeRef });
+
+  // Phần tử DOM và vị trí gốc của các thẻ chứa những người bị kéo theo.
+  const dragTargetsForPeople = useCallback((personIds) => {
+    const seen = new Set();
+    const targets = [];
+    asArray(personIds).forEach((personId) => {
+      const node = displayNodeByPersonIdRef.current.get(Number(personId));
+      if (!node || seen.has(node.id)) return;
+      seen.add(node.id);
+      const element = document.getElementById(
+        node.type === DISPLAY_NODE_TYPE.SINGLE ? `fte-person-${node.person?.id}` : `fte-display-${node.id}`,
+      );
+      if (element) targets.push({ element, x: toInt(node.x, 0), y: toInt(node.y, 0) });
+    });
+    return targets;
+  }, []);
+
+  const originPositionsOf = useCallback((personIds) => {
+    const ids = new Set(asArray(personIds).map(Number));
+    return new Map(
+      people
+        .filter((item) => ids.has(Number(item.id)))
+        .map((item) => [Number(item.id), { tree_x: toInt(item.tree_x, 0), tree_y: toInt(item.tree_y, 0) }]),
+    );
+  }, [people]);
+
+  // Thả chuột: ghi vị trí mới vào state một lần và xếp hàng lưu.
+  const commitNodeMove = useCallback((originPeople, deltaX, deltaY) => {
+    if (!originPeople.size || (!deltaX && !deltaY)) return;
+    setPeople((current) => current.map((item) => {
+      const origin = originPeople.get(Number(item.id));
+      if (!origin) return item;
+      return { ...item, tree_x: snap(origin.tree_x + deltaX), tree_y: snap(origin.tree_y + deltaY) };
+    }));
+    enqueueLayoutChanges({
+      nodes: Array.from(originPeople.entries()).map(([personId, origin]) => ({
+        person_id: personId,
+        tree_x: snap(origin.tree_x + deltaX),
+        tree_y: snap(origin.tree_y + deltaY),
+      })),
+    });
+  }, [enqueueLayoutChanges]);
+
   const beginDrag = useCallback((event, person) => {
     if (event.button != null && event.button !== 0) return;
     event.preventDefault();
     event.stopPropagation();
-    setDraggingId(person.id);
 
-    const startX = event.clientX;
-    const startY = event.clientY;
-    const originX = toInt(person.tree_x, 0);
-    const originY = toInt(person.tree_y, 0);
-    lastDragRef.current = { tree_x: originX, tree_y: originY };
     const draggedPersonId = Number(person.id);
+    // Nhánh đang thu gọn đi theo người được kéo (các thẻ đó không hiện nên chỉ cần dời trong state).
     const collapsedBranchIds = treeViewMode.collapsedIds.has(draggedPersonId)
       ? getHiddenDescendantIds([draggedPersonId], people, canonicalTree.families, canonicalTree.childRows)
       : new Set();
-    const movedIds = new Set([draggedPersonId, ...collapsedBranchIds]);
-    const originPositions = new Map(
-      people
-        .filter((item) => movedIds.has(Number(item.id)))
-        .map((item) => [Number(item.id), {
-          tree_x: toInt(item.tree_x, 0),
-          tree_y: toInt(item.tree_y, 0),
-        }]),
-    );
-    dragGroupRef.current = { movedIds, originPositions };
+    const originPeople = originPositionsOf([draggedPersonId, ...collapsedBranchIds]);
 
-    const handleMove = (moveEvent) => {
-      moveEvent.preventDefault();
-      const scale = scaleRef.current || 1;
-      const nextPosition = {
-        tree_x: snap(originX + (moveEvent.clientX - startX) / scale),
-        tree_y: snap(originY + (moveEvent.clientY - startY) / scale),
-      };
-      const deltaX = nextPosition.tree_x - originX;
-      const deltaY = nextPosition.tree_y - originY;
-      lastDragRef.current = nextPosition;
-      const dragGroup = dragGroupRef.current;
-      setPeople((current) => current.map((item) => {
-        const origin = dragGroup?.originPositions.get(Number(item.id));
-        if (!origin) return item;
-        return {
-          ...item,
-          tree_x: snap(origin.tree_x + deltaX),
-          tree_y: snap(origin.tree_y + deltaY),
-        };
-      }));
-    };
-
-    const handleUp = async () => {
-      window.removeEventListener("pointermove", handleMove);
-      window.removeEventListener("pointerup", handleUp);
-      setDraggingId(null);
-      const finalPosition = lastDragRef.current;
-      const dragGroup = dragGroupRef.current;
-      dragGroupRef.current = null;
-      if (!finalPosition) return;
-      if (finalPosition.tree_x === originX && finalPosition.tree_y === originY) {
-        // Bấm mà không kéo: chọn người này để tô sáng các đường nối của họ.
-        setSelectedType("person");
-        setSelectedCoupleId(null);
-        setSelectedId(person.id);
-        return;
-      }
-      if (finalPosition.tree_x !== originX || finalPosition.tree_y !== originY) {
-        const deltaX = finalPosition.tree_x - originX;
-        const deltaY = finalPosition.tree_y - originY;
-        const nodes = Array.from(dragGroup?.originPositions.entries() || []).map(([personId, origin]) => ({
-          person_id: personId,
-          tree_x: snap(origin.tree_x + deltaX),
-          tree_y: snap(origin.tree_y + deltaY),
-        }));
-        enqueueLayoutChanges({
-          nodes: nodes.length ? nodes : [{ person_id: person.id, ...finalPosition }],
-        });
-      }
-    };
-
-    window.addEventListener("pointermove", handleMove, { passive: false });
-    window.addEventListener("pointerup", handleUp);
-  }, [canonicalTree.childRows, canonicalTree.families, enqueueLayoutChanges, people, treeViewMode.collapsedIds]);
+    startNodeDrag(event, {
+      targets: dragTargetsForPeople([draggedPersonId]),
+      onStart: () => setDraggingId(person.id),
+      onEnd: ({ deltaX, deltaY }) => {
+        setDraggingId(null);
+        if (!deltaX && !deltaY) {
+          // Bấm mà không kéo: chọn người này để tô sáng các đường nối của họ.
+          setSelectedType("person");
+          setSelectedCoupleId(null);
+          setSelectedId(person.id);
+          return;
+        }
+        commitNodeMove(originPeople, deltaX, deltaY);
+      },
+    });
+  }, [canonicalTree.childRows, canonicalTree.families, commitNodeMove, dragTargetsForPeople, originPositionsOf, people, startNodeDrag, treeViewMode.collapsedIds]);
 
   const beginDisplayNodeDrag = useCallback((event, node, options = {}) => {
     if (!node || (event.button != null && event.button !== 0)) return;
-    const movableIds = asArray(node.personIds).filter((personId) => canEditPerson(personId));
     event.preventDefault();
     event.stopPropagation();
 
-    const startX = event.clientX;
-    const startY = event.clientY;
-    const originX = toInt(node.x, 0);
-    const originY = toInt(node.y, 0);
-    let hasDragged = false;
-    lastDragRef.current = { tree_x: originX, tree_y: originY };
-    const selectedGroupNodes = bulkMoveMode && selectedDisplayNodeIds.has(node.id) && selectedDisplayNodeIds.size > 1
+    const movableIds = asArray(node.personIds).filter((personId) => canEditPerson(personId));
+    // Đang chọn nhiều thẻ ở chế độ dời hàng loạt: kéo một thẻ thì cả nhóm đi theo.
+    const groupNodes = bulkMoveMode && selectedDisplayNodeIds.has(node.id) && selectedDisplayNodeIds.size > 1
       ? displayNodes.filter((item) => selectedDisplayNodeIds.has(item.id) && asArray(item.personIds).some((personId) => canEditPerson(personId)))
       : [];
+    const movedPersonIds = groupNodes.length > 1
+      ? groupNodes.flatMap((item) => asArray(item.personIds).map(Number)).filter(Number.isFinite)
+      : movableIds;
+    const originPeople = originPositionsOf(movedPersonIds);
 
-    if (selectedGroupNodes.length > 1) {
-      let nextSavedPositions = displayNodePositions;
-      const originNodes = new Map(selectedGroupNodes.map((item) => [item.id, {
-        type: item.type,
-        x: toInt(item.x, 0),
-        y: toInt(item.y, 0),
-      }]));
-      const movedPersonIds = new Set(
-        selectedGroupNodes
-          .flatMap((item) => asArray(item.personIds).map(Number))
-          .filter(Number.isFinite),
-      );
-      const originPeople = new Map(
-        people
-          .filter((item) => movedPersonIds.has(Number(item.id)))
-          .map((item) => [Number(item.id), {
-            tree_x: toInt(item.tree_x, 0),
-            tree_y: toInt(item.tree_y, 0),
-          }]),
-      );
-
-      const handleMove = (moveEvent) => {
-        moveEvent.preventDefault();
-        const scale = scaleRef.current || 1;
-        const movedDistance = Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY);
-        if (!hasDragged && movedDistance < 4) return;
-        if (!hasDragged) {
-          hasDragged = true;
-          setDraggingId(node.id);
-        }
-        const nextPosition = {
-          x: snap(originX + (moveEvent.clientX - startX) / scale),
-          y: snap(originY + (moveEvent.clientY - startY) / scale),
-        };
-        const deltaX = nextPosition.x - originX;
-        const deltaY = nextPosition.y - originY;
-        lastDragRef.current = { tree_x: nextPosition.x, tree_y: nextPosition.y };
-
-        setPeople((current) => current.map((item) => {
-          const origin = originPeople.get(Number(item.id));
-          if (!origin) return item;
-          return {
-            ...item,
-            tree_x: snap(origin.tree_x + deltaX),
-            tree_y: snap(origin.tree_y + deltaY),
-          };
-        }));
-      };
-
-      const handleUp = () => {
-        window.removeEventListener("pointermove", handleMove);
-        window.removeEventListener("pointerup", handleUp);
+    startNodeDrag(event, {
+      targets: groupNodes.length > 1
+        ? dragTargetsForPeople(movedPersonIds)
+        : (movableIds.length ? dragTargetsForPeople(node.personIds) : []),
+      threshold: 4,
+      onStart: () => setDraggingId(node.id),
+      onEnd: ({ moved, deltaX, deltaY }) => {
         setDraggingId(null);
-        if (!hasDragged) {
+        if (!moved) {
           options.onClick?.();
           return;
         }
-        const finalPosition = lastDragRef.current;
-        if (!finalPosition) return;
-        if (finalPosition.tree_x !== originX || finalPosition.tree_y !== originY) {
-          if (USE_LOCAL_DRAFT_LAYOUT && Array.from(originNodes.values()).some((origin) => origin.type === DISPLAY_NODE_TYPE.COUPLE)) {
-            saveDisplayNodePositions(clan?.id, nextSavedPositions);
-          }
-          const deltaX = finalPosition.tree_x - originX;
-          const deltaY = finalPosition.tree_y - originY;
-          const nodes = Array.from(originPeople.entries()).map(([personId, origin]) => ({
-            person_id: personId,
-            tree_x: snap(origin.tree_x + deltaX),
-            tree_y: snap(origin.tree_y + deltaY),
-          }));
-          if (nodes.length) enqueueLayoutChanges({ nodes });
-        }
-      };
-
-      window.addEventListener("pointermove", handleMove, { passive: false });
-      window.addEventListener("pointerup", handleUp);
-      return;
-    }
-
-    if (node.type === DISPLAY_NODE_TYPE.COUPLE) {
-      const originPeople = new Map(
-        people
-          .filter((item) => movableIds.map(Number).includes(Number(item.id)))
-          .map((item) => [Number(item.id), {
-            tree_x: toInt(item.tree_x, 0),
-            tree_y: toInt(item.tree_y, 0),
-          }]),
-      );
-
-      const handleMove = (moveEvent) => {
-        moveEvent.preventDefault();
-        const scale = scaleRef.current || 1;
-        const movedDistance = Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY);
-        if (!hasDragged && movedDistance < 4) return;
-        if (!hasDragged) {
-          hasDragged = true;
-          setDraggingId(node.id);
-        }
-        if (!movableIds.length) return;
-        const nextPosition = {
-          x: snap(originX + (moveEvent.clientX - startX) / scale),
-          y: snap(originY + (moveEvent.clientY - startY) / scale),
-        };
-        lastDragRef.current = { tree_x: nextPosition.x, tree_y: nextPosition.y };
-        const deltaX = nextPosition.x - originX;
-        const deltaY = nextPosition.y - originY;
-        setPeople((current) => current.map((item) => {
-          const origin = originPeople.get(Number(item.id));
-          if (!origin) return item;
-          return {
-            ...item,
-            tree_x: snap(origin.tree_x + deltaX),
-            tree_y: snap(origin.tree_y + deltaY),
-          };
-        }));
-      };
-
-      const handleUp = () => {
-        window.removeEventListener("pointermove", handleMove);
-        window.removeEventListener("pointerup", handleUp);
-        setDraggingId(null);
-        if (!hasDragged) {
-          options.onClick?.();
-          return;
-        }
-        const finalPosition = lastDragRef.current;
-        if (!finalPosition) return;
-        if (finalPosition.tree_x !== originX || finalPosition.tree_y !== originY) {
-          const deltaX = finalPosition.tree_x - originX;
-          const deltaY = finalPosition.tree_y - originY;
-          const nodes = Array.from(originPeople.entries()).map(([personId, origin]) => ({
-            person_id: personId,
-            tree_x: snap(origin.tree_x + deltaX),
-            tree_y: snap(origin.tree_y + deltaY),
-          }));
-          if (nodes.length) enqueueLayoutChanges({ nodes });
-        }
-      };
-
-      window.addEventListener("pointermove", handleMove, { passive: false });
-      window.addEventListener("pointerup", handleUp);
-      return;
-    }
-
-    const movedIds = new Set(movableIds.map(Number));
-    const originPositions = new Map(
-      people
-        .filter((item) => movedIds.has(Number(item.id)))
-        .map((item) => [Number(item.id), {
-          tree_x: toInt(item.tree_x, 0),
-          tree_y: toInt(item.tree_y, 0),
-        }]),
-    );
-    dragGroupRef.current = { movedIds, originPositions };
-
-    const handleMove = (moveEvent) => {
-      moveEvent.preventDefault();
-      const scale = scaleRef.current || 1;
-      const movedDistance = Math.hypot(moveEvent.clientX - startX, moveEvent.clientY - startY);
-      if (!hasDragged && movedDistance < 4) return;
-      if (!hasDragged) {
-        hasDragged = true;
-        setDraggingId(node.id);
-      }
-      if (!movableIds.length) return;
-      const nextPosition = {
-        tree_x: snap(originX + (moveEvent.clientX - startX) / scale),
-        tree_y: snap(originY + (moveEvent.clientY - startY) / scale),
-      };
-      const deltaX = nextPosition.tree_x - originX;
-      const deltaY = nextPosition.tree_y - originY;
-      lastDragRef.current = nextPosition;
-      const dragGroup = dragGroupRef.current;
-      setPeople((current) => current.map((item) => {
-        const origin = dragGroup?.originPositions.get(Number(item.id));
-        if (!origin) return item;
-        return {
-          ...item,
-          tree_x: snap(origin.tree_x + deltaX),
-          tree_y: snap(origin.tree_y + deltaY),
-        };
-      }));
-    };
-
-    const handleUp = () => {
-      window.removeEventListener("pointermove", handleMove);
-      window.removeEventListener("pointerup", handleUp);
-      setDraggingId(null);
-      if (!hasDragged) {
-        options.onClick?.();
-        dragGroupRef.current = null;
-        return;
-      }
-      const finalPosition = lastDragRef.current;
-      const dragGroup = dragGroupRef.current;
-      dragGroupRef.current = null;
-      if (!finalPosition) return;
-      if (finalPosition.tree_x !== originX || finalPosition.tree_y !== originY) {
-        const deltaX = finalPosition.tree_x - originX;
-        const deltaY = finalPosition.tree_y - originY;
-        const nodes = Array.from(dragGroup?.originPositions.entries() || []).map(([personId, origin]) => ({
-          person_id: personId,
-          tree_x: snap(origin.tree_x + deltaX),
-          tree_y: snap(origin.tree_y + deltaY),
-        }));
-        enqueueLayoutChanges({ nodes });
-      }
-    };
-
-    window.addEventListener("pointermove", handleMove, { passive: false });
-    window.addEventListener("pointerup", handleUp);
-  }, [bulkMoveMode, canEditPerson, clan?.id, displayNodePositions, displayNodes, enqueueLayoutChanges, people, selectedDisplayNodeIds]);
+        commitNodeMove(originPeople, deltaX, deltaY);
+      },
+    });
+  }, [bulkMoveMode, canEditPerson, commitNodeMove, displayNodes, dragTargetsForPeople, originPositionsOf, selectedDisplayNodeIds, startNodeDrag]);
 
   const openPersonEditor = useCallback((person) => {
     if (!person) return;

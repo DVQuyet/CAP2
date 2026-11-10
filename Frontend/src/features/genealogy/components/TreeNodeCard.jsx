@@ -3,6 +3,7 @@ import { getPersonHighlightState, highlightClassNames } from "../utils/treeHighl
 import { CARD_HEIGHT, CARD_WIDTH, NAME_FONT_SIZE } from "../utils/tree-editor/treeConstants";
 import { TREE_DISPLAY_MODE, getTreeDisplayConfig } from "../utils/tree-editor/treeDisplayConfig";
 import { useCardActive } from "../hooks/useCardActive";
+import { nodeTransform } from "../hooks/useNodeDrag";
 import { cardExtraInfo, cardMeta } from "../utils/tree-editor/treeCardInfo";
 import { CardPersonBody } from "./TreeCardParts";
 import TreeCardToolbar from "./TreeCardToolbar";
@@ -100,8 +101,7 @@ export default function TreeNodeCard({
       id={`fte-person-${person.id}`}
       className={`fte-personCard is-${displayMode} is-${cardOrientation} ${genderClass} ${directLineage ? "is-direct" : "is-inLaw"} ${founder ? "is-founder" : ""} ${deceased ? "is-deceased" : ""} ${stateClasses} ${related ? "is-related" : ""} ${dimmed ? "is-dimmed" : ""} ${dragging ? "is-dragging" : ""}`}
       style={{
-        left: person.tree_x,
-        top: person.tree_y,
+        transform: nodeTransform(person.tree_x, person.tree_y),
         "--fte-card-width": `${size.width}px`,
         "--fte-card-height": `${size.height}px`,
         "--fte-card-name-size": `${resolvedFontSize}px`,

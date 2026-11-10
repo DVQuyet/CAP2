@@ -1,8 +1,9 @@
 // Trang xem thử trình chỉnh sửa cây gia phả với dữ liệu mẫu, không cần backend.
 // Chạy `npm run dev` rồi mở /dev/tree-preview.html
-// (tham số: ?readonly=1, ?theme=modern|dark, ?orient=vertical, ?mode=overview, ?select=<id người>, ?lang=en).
+// (tham số: ?readonly=1, ?theme=modern|dark, ?orient=vertical, ?mode=overview, ?focus=<id người>, ?lang=en,
+//  ?expand=1 mở mọi nhánh, ?n=500|2000 sinh cây lớn để đo hiệu năng, ?profile=1 ghi thời gian React commit vào window.__commits).
 // Không được import từ app chính nên không nằm trong bản build.
-import React from "react";
+import React, { Profiler } from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import "../styles/tokens.css";
@@ -60,22 +61,66 @@ const children = [
   { id: 9, family_id: 4, person_id: 14, sort_order: 3 },
 ];
 
+// Sinh cây lớn có tính lặp lại được (không ngẫu nhiên) để đo hiệu năng: mỗi người dòng chính lấy vợ/chồng và có 2-4 con.
+function generateTree(total) {
+  const bigPeople = [];
+  const bigFamilies = [];
+  const bigChildren = [];
+  let nextId = 1;
+  const add = (gender, generation) => {
+    const id = nextId++;
+    bigPeople.push(person(id, `${gender === 1 ? "Nguyễn Văn" : "Nguyễn Thị"} Mẫu ${id}`, gender, generation, `${1900 + generation * 25}-01-01`, generation <= 2 ? `${1970 + generation * 25}-01-01` : null));
+    return id;
+  };
+  let queue = [add(1, 1)];
+  while (queue.length && bigPeople.length < total) {
+    const next = [];
+    for (const parentId of queue) {
+      if (bigPeople.length >= total) break;
+      const parent = bigPeople[parentId - 1];
+      const spouseId = add(parent.gender === 1 ? 2 : 1, parent.generation);
+      const familyId = bigFamilies.length + 1;
+      bigFamilies.push({ id: familyId, clan_id: 1, father_id: parent.gender === 1 ? parentId : spouseId, mother_id: parent.gender === 1 ? spouseId : parentId });
+      const childCount = 2 + (parentId % 3);
+      for (let index = 0; index < childCount && bigPeople.length < total; index += 1) {
+        const childId = add(index % 2 === 0 ? 1 : 2, parent.generation + 1);
+        bigChildren.push({ id: bigChildren.length + 1, family_id: familyId, person_id: childId, sort_order: index + 1 });
+        next.push(childId);
+      }
+    }
+    queue = next;
+  }
+  return { people: bigPeople, families: bigFamilies, children: bigChildren };
+}
+
+const bigCount = Number(params.get("n")) || 0;
+const data = bigCount > 0 ? generateTree(bigCount) : { people, families, children };
+if (bigCount > 0) localStorage.setItem("auth_user", JSON.stringify({ id: 1, role_id: 2, role_name: "manager", person_id: 1 }));
+const previewClanId = bigCount > 0 ? 1000 + bigCount : 1;
+// Cây lớn (hoặc ?expand=1): mở sẵn mọi nhánh thay cho mặc định "3 đời quanh tôi", để đo với đủ số thẻ.
+if (bigCount > 0 || params.get("expand") === "1") {
+  localStorage.setItem(`cap2.tree.collapsed.1.${previewClanId}`, JSON.stringify({ collapsed: [], hiddenAncestors: [] }));
+}
+window.__commits = [];
+const onCommit = (id, phase, actualDuration) => window.__commits.push(actualDuration);
+const withProfiler = (node) => (params.get("profile") === "1" ? <Profiler id="tree" onRender={onCommit}>{node}</Profiler> : node);
+
 ReactDOM.createRoot(document.getElementById("root")).render(
   <BrowserRouter>
     <LanguageProvider>
       <ConfirmProvider>
       <div style={{ padding: 16, minHeight: "100vh", boxSizing: "border-box" }}>
-        <FamilyTreeEditor
-          clan={{ id: 1, clan_name: "Họ Nguyễn" }}
-          people={people}
-          families={families}
-          children={children}
+        {withProfiler(<FamilyTreeEditor
+          clan={{ id: previewClanId, clan_name: "Họ Nguyễn" }}
+          people={data.people}
+          families={data.families}
+          children={data.children}
           readOnly={params.get("readonly") === "1"}
           layoutSettings={{ tree_style: { theme: params.get("theme") || undefined, cardOrientation: params.get("orient") || undefined } }}
           initialDisplayMode={params.get("mode") === "overview" ? "overview" : "detail"}
           enableRealtime={false}
           onReload={() => {}}
-        />
+        />)}
       </div>
       </ConfirmProvider>
     </LanguageProvider>

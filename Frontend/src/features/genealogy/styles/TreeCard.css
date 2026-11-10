@@ -38,7 +38,10 @@
 /* ===== Khung thẻ ===== */
 .fte-personCard,
 .fte-coupleCard {
+    /* Vị trí đặt bằng transform (hooks/useNodeDrag.js): di chuyển thẻ không gây tính lại layout. */
     position: absolute;
+    left: 0;
+    top: 0;
     z-index: 2;
     box-sizing: border-box;
     width: var(--fte-card-width, 240px);
@@ -363,6 +366,7 @@
 .fte-personCard.is-dragging,
 .fte-coupleCard.is-dragging {
     z-index: 4;
+    will-change: transform;
     cursor: grabbing;
     box-shadow: var(--tc-shadow-raised);
 }
