@@ -1,6 +1,6 @@
 # Việc chưa làm — CAP2 (Gia Phả Việt)
 
-Cập nhật 23/10/2026, quét lại mã ở commit `03e5681`. Đây là **danh sách duy nhất** các việc còn mở; gộp từ
+Cập nhật 23/10/2026, quét lại mã ở commit `03e5681`. Lộ trình dài hạn: `KE_HOACH_TONG_THE.md` (đang ở Giai đoạn 0 → 1). Đây là **danh sách duy nhất** các việc còn mở; gộp từ
 `nhat-ky/CAI_THIEN_HE_THONG.md` (mục "Chưa làm"), `nhat-ky/TOI_UU_AI_VA_GIA_PHA.md` (mục 2–6) và `nhat-ky/TIEP_TUC_AI_TRA_LOI.md` (mục "Chờ nhóm quyết định").
 Các file đó giữ làm nhật ký; việc mới thêm vào đây.
 
@@ -61,6 +61,17 @@ Còn mở từ đợt 4:
 - Ảnh đại diện khi xuất cây vẫn là chữ cái đầu, chưa nhúng ảnh thật.
 - Validate chưa phủ route calendar/events.
 - "ba co toi" vẫn mơ hồ (cụ vs bà cô).
+
+Đợt 12 (10/11) — Giai đoạn 0 của `KE_HOACH_TONG_THE.md` (sửa gấp và dọn dẹp), commit `73bb25a`..:
+- **Đã xong trong mã**: ẩn SĐT/email/địa chỉ với thành viên thường (H2.3, `genealogy/contactPrivacy.js`); CORS theo `FRONTEND_URL` + `CORS_ORIGINS` (H3.3); không trả `error.message` thô (H3.2); bỏ `console.log` (H4.6); `npm audit` về 0 ở cả hai phía: `xlsx` → `exceljs`, `react-router-dom` 6 → 7 (H3.4); dọn gốc dự án, `CLAUDE.md`, ảnh nền WebP 6,2 MB → 175 KB (E7.1); MySQL local trong `docker/docker-compose.yml` (H2.5); workflow sao lưu `.github/workflows/backup.yml` + `docs/SAO_LUU.md` (H2.1). G0 (model Groq) và H3.1 (token trên URL ảnh) đã xong từ đợt 6.
+- **Kiểm tra đã chạy**: Backend 291 test, e2e chatbot 199/199, Frontend 89 test, ESLint 0 lỗi/114 cảnh báo, build. Chưa mở trình duyệt.
+- **Phải làm tay trước khi coi Giai đoạn 0 là xong**:
+  1. Sao lưu: đặt 6 secret `BACKUP_*` trên GitHub, chạy tay workflow một lần, thử khôi phục theo `docs/SAO_LUU.md`. Workflow chưa chạy lần nào.
+  2. MySQL local: bật Docker Desktop rồi `docker compose -f docker/docker-compose.yml up -d` + `npm run migrate`. File compose mới chỉ kiểm cú pháp, chưa chạy thật (Docker trên máy đang tắt).
+  3. Render: nếu frontend chạy ở tên miền khác hai tên miền mặc định trong `config/cors.js` thì đặt `CORS_ORIGINS`. Xem `GROQ_MODEL` có còn trỏ model đã ngừng không (G-1) và xem hạn mức thật trong trang quản trị Groq để điền bảng G2/E2.
+  4. Trình duyệt: đi nhanh đăng nhập → cây → quay lại/đổi trang (router 7), ảnh nền mới ở trang chủ/đăng nhập/layout, logo ở thanh bên, xuất và nhập Excel quỹ (chỉ còn nhận `.xlsx`), thành viên thường mở hồ sơ người khác trên cây không còn thấy SĐT/email/địa chỉ; thành viên nhập khóa sửa tạm thì các ô liên hệ của người được sửa hiện lại và lưu không bị xóa trắng.
+  5. `database/schema/defaultdb.sql` (đã gỡ ở `14710e5`) chứa email và mã băm mật khẩu tài khoản thật và vẫn nằm trong lịch sử git từ commit đầu. Nếu repo công khai: đổi mật khẩu các tài khoản đó; muốn xóa hẳn khỏi lịch sử thì phải viết lại lịch sử (git filter-repo) và force-push.
+- **Còn mở của E7.1**: gộp hai `vercel.json` (cần biết Root Directory của project trên Vercel); `public/sodogiapha.png` 4 MB không thấy mã nào dùng, giữ lại vì nội dung trang chủ trong DB có thể trỏ tới; `init.sql` chỉ có 18 bảng, phần còn lại do `npm run migrate` tạo (sinh lại `init.sql` đầy đủ thuộc E7.9).
 
 Đợt 11 (30/10) — trang chủ do admin quản lý, commit `90586db` (backend), `3d8aaa9` (frontend):
 - **Đã xong:** admin thêm/sửa/xóa/sắp xếp/ẩn-hiện nội dung trang chủ không cần sửa mã. Mô hình 2 bảng `landing_sections` (mỗi mục 1 dòng: hero, about, features, stats, news, guide; chữ vi/en, ảnh, thứ tự, hiển thị) và `landing_items` (mục con: tiêu đề/nội dung/giá trị-ngày/nhãn liên kết vi-en, ảnh, link, icon). Chọn 2 bảng thay vì JSON mỗi mục để sửa/xóa/sắp xếp từng mục con bằng một câu SQL, không phải đọc-sửa-ghi cả khối.

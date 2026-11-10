@@ -1,14 +1,47 @@
+# MySQL cho máy cá nhân, để không ai phải trỏ Backend/.env vào DB thật.
+# Chạy:  docker compose -f docker/docker-compose.yml up -d
+# Sau đó sao chép Backend/.env.local.example thành Backend/.env.local (đã trỏ sẵn vào MySQL này)
+# rồi chạy:  cd Backend && npm run migrate   (bổ sung bảng/cột mà init.sql chưa có)
+# Xóa sạch dữ liệu local:  docker compose -f docker/docker-compose.yml down -v
 services:
+  mysql:
+    image: mysql:8.0
+    container_name: cap2-mysql
+    restart: unless-stopped
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    environment:
+      MYSQL_ROOT_PASSWORD: ${LOCAL_MYSQL_ROOT_PASSWORD:-cap2_dev_root}
+      MYSQL_DATABASE: cap2_dev
+    ports:
+      # Cổng 3307 để không đụng MySQL đã cài sẵn trên máy (3306). Chỉ nghe trên máy mình.
+      - "127.0.0.1:${LOCAL_MYSQL_PORT:-3307}:3306"
+    volumes:
+      - cap2_mysql_data:/var/lib/mysql
+      # Chỉ chạy ở lần khởi tạo đầu tiên (khi volume còn trống).
+      - ../database/schema/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
   phpmyadmin:
     image: phpmyadmin/phpmyadmin:5.2
     container_name: cap2-phpmyadmin
     restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
     environment:
-      PMA_HOST: ${DB_HOST}
-      PMA_PORT: ${DB_PORT}
-      PMA_USER: ${DB_USER}
-      PMA_PASSWORD: ${DB_PASSWORD}
+      # Mặc định xem MySQL local ở trên. Không đặt các biến này trỏ sang DB thật.
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: ${LOCAL_MYSQL_ROOT_PASSWORD:-cap2_dev_root}
       PMA_ABSOLUTE_URI: http://localhost:${PHPMYADMIN_PORT:-16001}/
       UPLOAD_LIMIT: 256M
     ports:
-      - "${PHPMYADMIN_PORT:-16001}:80"
+      - "127.0.0.1:${PHPMYADMIN_PORT:-16001}:80"
+
+volumes:
+  cap2_mysql_data:

@@ -1,0 +1,69 @@
+name: Sao lưu database
+
+# Mỗi ngày dump toàn bộ MySQL, mã hóa bằng BACKUP_PASSPHRASE rồi lưu làm artifact (giữ 30 ngày).
+# Cần đặt các secret: BACKUP_DB_HOST, BACKUP_DB_PORT, BACKUP_DB_USER, BACKUP_DB_PASSWORD, BACKUP_DB_NAME, BACKUP_PASSPHRASE.
+# Cách khôi phục: docs/SAO_LUU.md.
+on:
+  schedule:
+    - cron: "30 19 * * *" # 02:30 giờ Việt Nam
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DB_HOST: ${{ secrets.BACKUP_DB_HOST }}
+      DB_PORT: ${{ secrets.BACKUP_DB_PORT }}
+      DB_USER: ${{ secrets.BACKUP_DB_USER }}
+      DB_NAME: ${{ secrets.BACKUP_DB_NAME }}
+      MYSQL_PWD: ${{ secrets.BACKUP_DB_PASSWORD }}
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+    steps:
+      - name: Kiểm tra secret
+        run: |
+          missing=""
+          for name in DB_HOST DB_PORT DB_USER DB_NAME MYSQL_PWD BACKUP_PASSPHRASE; do
+            if [ -z "${!name}" ]; then missing="$missing $name"; fi
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Thiếu secret cho sao lưu:$missing (xem docs/SAO_LUU.md)"
+            exit 1
+          fi
+
+      - name: Dump và mã hóa
+        run: |
+          set -euo pipefail
+          file="cap2-$(date -u +%Y%m%d-%H%M%S).sql.gz.gpg"
+          mysqldump \
+            --host="$DB_HOST" --port="$DB_PORT" --user="$DB_USER" \
+            --ssl-mode=REQUIRED \
+            --single-transaction --quick --routines --triggers --hex-blob \
+            --no-tablespaces --set-gtid-purged=OFF \
+            "$DB_NAME" \
+            | gzip -9 \
+            | gpg --batch --yes --pinentry-mode loopback --symmetric --cipher-algo AES256 --passphrase-fd 3 -o "$file" 3<<<"$BACKUP_PASSPHRASE"
+          size=$(stat -c %s "$file")
+          echo "Kích thước bản sao lưu: $size byte"
+          # Bản dump rỗng hoặc quá nhỏ nghĩa là có lỗi kết nối: báo đỏ thay vì lưu file vô dụng.
+          if [ "$size" -lt 2048 ]; then
+            echo "::error::Bản sao lưu nhỏ bất thường ($size byte)"
+            exit 1
+          fi
+          echo "BACKUP_FILE=$file" >> "$GITHUB_ENV"
+
+      - name: Lưu artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BACKUP_FILE }}
+          path: ${{ env.BACKUP_FILE }}
+          retention-days: 30
+          compression-level: 0
+          if-no-files-found: error
