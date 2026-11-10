@@ -4,8 +4,10 @@ import { BrowserRouter } from "react-router-dom";
 import AOS from "aos";
 import "aos/dist/aos.css";
 import App from "./App";
+import "../styles/tokens.css";
 import "../index.css";
-import "../i18n/i18n";
+import "../styles/a11y.css";
+import { i18nReady } from "../i18n/i18n";
 
 // Chạy dev ở máy: nếu còn service worker/caches của bản build (PWA) trên localhost thì gỡ và tải lại,
 // để localhost luôn hiện code đang sửa thay vì bản build cũ (vốn gọi backend thật).
@@ -31,10 +33,13 @@ AOS.init({
   offset: 80,
 });
 
-ReactDOM.createRoot(document.getElementById("root")).render(
+const renderApp = () => ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>
       <App />
     </BrowserRouter>
   </React.StrictMode>
 );
+
+// Chờ bản dịch của ngôn ngữ hiện tại tải xong rồi mới render (tránh nháy khóa dịch).
+i18nReady.then(renderApp, renderApp);

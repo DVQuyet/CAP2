@@ -1,31 +1,6 @@
 import { useTranslation } from "react-i18next";
-
-const featuredPosts = [
-  {
-    image: "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=900&q=80",
-    date: "public.news.items.f0.date",
-    title: "public.news.items.f0.title",
-    desc: "public.news.items.f0.desc",
-  },
-  {
-    image: "https://images.unsplash.com/photo-1505798577917-a65157d3320a?auto=format&fit=crop&w=900&q=80",
-    date: "public.news.items.f1.date",
-    title: "public.news.items.f1.title",
-    desc: "public.news.items.f1.desc",
-  },
-  {
-    image: "https://images.unsplash.com/photo-1518895949257-7621c3c786d7?auto=format&fit=crop&w=900&q=80",
-    date: "public.news.items.f2.date",
-    title: "public.news.items.f2.title",
-    desc: "public.news.items.f2.desc",
-  },
-  {
-    image: "https://images.unsplash.com/photo-1525920980995-f8a1b3cbbf0f?auto=format&fit=crop&w=900&q=80",
-    date: "public.news.items.f3.date",
-    title: "public.news.items.f3.title",
-    desc: "public.news.items.f3.desc",
-  },
-];
+import useLandingContent from "../landing/useLandingContent";
+import { sectionOf, mergeItems, itemKey, isSafeLink, isSectionVisible, DEFAULT_NEWS } from "../landing/landingContent";
 
 const latestNews = [
   {
@@ -44,6 +19,15 @@ const latestNews = [
 
 export default function NewsDetailPage() {
   const { t } = useTranslation();
+  const { content } = useLandingContent();
+  const defaultPosts = DEFAULT_NEWS.map(([id, image]) => ({
+    image_url: image,
+    meta: t(`public.news.items.${id}.date`),
+    title: t(`public.news.items.${id}.title`),
+    body: t(`public.news.items.${id}.desc`),
+    link_url: "",
+  }));
+  const posts = isSectionVisible(content, "news") ? mergeItems(sectionOf(content, "news"), defaultPosts) : [];
 
   const categories = [
     { name: t("public.news.categoryList.history"), count: 28 },
@@ -65,45 +49,17 @@ export default function NewsDetailPage() {
       <div className="news-surface">
         <div className="container news-layout">
           <section className="news-grid">
-            <article className="news-card feature-card wide-card">
-              <img src={featuredPosts[0].image} alt={t(featuredPosts[0].title)} />
-              <div className="news-card-body">
-                <span className="news-date">{t(featuredPosts[0].date)}</span>
-                <h2>{t(featuredPosts[0].title)}</h2>
-                <p>{t(featuredPosts[0].desc)}</p>
-                <a href="#">{t("public.news.readMore")}</a>
-              </div>
-            </article>
-
-            <article className="news-card feature-card wide-card">
-              <img src={featuredPosts[1].image} alt={t(featuredPosts[1].title)} />
-              <div className="news-card-body">
-                <span className="news-date">{t(featuredPosts[1].date)}</span>
-                <h2>{t(featuredPosts[1].title)}</h2>
-                <p>{t(featuredPosts[1].desc)}</p>
-                <a href="#">{t("public.news.readMore")}</a>
-              </div>
-            </article>
-
-            <article className="news-card feature-card small-card">
-              <img src={featuredPosts[2].image} alt={t(featuredPosts[2].title)} />
-              <div className="news-card-body">
-                <span className="news-date">{t(featuredPosts[2].date)}</span>
-                <h2>{t(featuredPosts[2].title)}</h2>
-                <p>{t(featuredPosts[2].desc)}</p>
-                <a href="#">{t("public.news.readMore")}</a>
-              </div>
-            </article>
-
-            <article className="news-card feature-card small-card">
-              <img src={featuredPosts[3].image} alt={t(featuredPosts[3].title)} />
-              <div className="news-card-body">
-                <span className="news-date">{t(featuredPosts[3].date)}</span>
-                <h2>{t(featuredPosts[3].title)}</h2>
-                <p>{t(featuredPosts[3].desc)}</p>
-                <a href="#">{t("public.news.readMore")}</a>
-              </div>
-            </article>
+            {posts.map((post, index) => (
+              <article key={itemKey(post, index)} className={`news-card feature-card ${index < 2 ? "wide-card" : "small-card"}`}>
+                {post.image_url && <img src={post.image_url} alt={post.title} />}
+                <div className="news-card-body">
+                  <span className="news-date">{post.meta}</span>
+                  <h2>{post.title}</h2>
+                  <p>{post.body}</p>
+                  <a href={isSafeLink(post.link_url) ? post.link_url : "#"}>{post.link_label || t("public.news.readMore")}</a>
+                </div>
+              </article>
+            ))}
 
             <div className="news-pagination">
               <button type="button">‹</button>

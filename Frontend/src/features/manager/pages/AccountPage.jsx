@@ -655,7 +655,7 @@ export default function AccountPage() {
                     required
                   />
 
-                  <select
+                  <select aria-label={t("common.gender")}
                     className="mgr-field"
                     name="gender"
                     value={createForm.gender}
@@ -958,7 +958,7 @@ export default function AccountPage() {
                 required
               />
 
-              <select
+              <select aria-label={t("common.gender")}
                 className="mgr-field"
                 name="gender"
                 value={createForm.gender}
@@ -1048,14 +1048,14 @@ export default function AccountPage() {
         </div>
 
         <div className="member-pro-filter-grid">
-          <input
+          <input aria-label={t("common.search")}
             className="mgr-field"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder={t("common.search") + "..."}
           />
 
-          <select
+          <select aria-label={t("common.gender")}
             className="mgr-field"
             value={genderFilter}
             onChange={(e) => setGenderFilter(e.target.value)}
@@ -1065,7 +1065,7 @@ export default function AccountPage() {
             <option value="2">{t("manager.accounts.form.genderFemale")}</option>
           </select>
 
-          <select
+          <select aria-label={t("a11y.living")}
             className="mgr-field"
             value={livingFilter}
             onChange={(e) => setLivingFilter(e.target.value)}
@@ -1075,7 +1075,7 @@ export default function AccountPage() {
             <option value="dead">{t("manager.accounts.form.statusDead")}</option>
           </select>
 
-          <select
+          <select aria-label={t("a11y.status")}
             className="mgr-field"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -1087,7 +1087,7 @@ export default function AccountPage() {
             <option value="no_account">{t("manager.accounts.status.noAccount")}</option>
           </select>
 
-          <select
+          <select aria-label={t("a11y.generation")}
             className="mgr-field"
             value={generationFilter}
             onChange={(e) => setGenerationFilter(e.target.value)}
@@ -1195,14 +1195,14 @@ export default function AccountPage() {
             <div className="mgr-overviewFormGrid mgr-modalGrid">
               <input className="mgr-field" name="email" type="email" value={editForm.email} onChange={updateEditField} placeholder={t("manager.accounts.form.placeholderEmail")} />
 
-              <select className="mgr-field" name="status" value={editForm.status} onChange={updateEditField}>
+              <select aria-label={t("a11y.status")} className="mgr-field" name="status" value={editForm.status} onChange={updateEditField}>
                 <option value="active">{t("common.status.active")}</option>
                 <option value="pending">{t("common.status.pending")}</option>
                 <option value="rejected">{t("common.status.rejected")}</option>
               </select>
 
               {canAssignManager && (
-                <select className="mgr-field" name="role_id" value={editForm.role_id} onChange={updateEditField}>
+                <select aria-label={t("a11y.role")} className="mgr-field" name="role_id" value={editForm.role_id} onChange={updateEditField}>
                   <option value="3">Member</option>
                   <option value="2">Manager</option>
                 </select>
@@ -1213,7 +1213,7 @@ export default function AccountPage() {
               <input className="mgr-field" name="middle_name" value={editForm.middle_name} onChange={updateEditField} placeholder={t("manager.accounts.form.placeholderMiddleName")} />
               <input className="mgr-field" name="first_name" value={editForm.first_name} onChange={updateEditField} placeholder={t("manager.accounts.form.placeholderFirstName")} />
 
-              <select className="mgr-field" name="gender" value={editForm.gender} onChange={updateEditField}>
+              <select aria-label={t("common.gender")} className="mgr-field" name="gender" value={editForm.gender} onChange={updateEditField}>
                 <option value="1">{t("manager.accounts.form.genderMale")}</option>
                 <option value="2">{t("manager.accounts.form.genderFemale")}</option>
                 <option value="">{t("manager.accounts.form.genderUnknown")}</option>
@@ -1229,7 +1229,7 @@ export default function AccountPage() {
                 <LunarDateHint value={editForm.death_date} label={t("manager.accounts.form.placeholderDeathDate") + " (L)"} />
               </div>
 
-              <select className="mgr-field" name="is_living" value={editForm.is_living} onChange={updateEditField}>
+              <select aria-label={t("a11y.living")} className="mgr-field" name="is_living" value={editForm.is_living} onChange={updateEditField}>
                 <option value="1">{t("manager.accounts.form.statusLiving")}</option>
                 <option value="0">{t("manager.accounts.form.statusDead")}</option>
               </select>

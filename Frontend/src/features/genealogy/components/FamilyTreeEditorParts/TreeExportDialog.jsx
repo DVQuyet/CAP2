@@ -38,7 +38,7 @@ export default function TreeExportDialog({ treeStyle, onTreeStyleChange, onClose
             <span>{t("tree.export.eyebrow")}</span>
             <h3>{t("tree.export.title")}</h3>
           </div>
-          <button type="button" className="fte-iconButton" onClick={onClose} disabled={busy} title={t("common.close")}>
+          <button type="button" className="fte-iconButton" onClick={onClose} disabled={busy} title={t("common.close")} aria-label={t("common.close")}>
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>

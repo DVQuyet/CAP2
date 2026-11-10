@@ -1,4 +1,4 @@
-// Tham số "Xem trên cây" từ trợ lý AI: ?focus=<id>&highlight=<id,id,...>
+// Tham số "Xem trên cây" từ trợ lý AI: ?focus=<id>&highlight=<id,id,...>&path=<id,id,...> (path = đường quan hệ theo thứ tự, chỉ id người)
 export const TREE_FOCUS_EVENT = "cap2:tree-focus";
 
 function toIds(values) {
@@ -14,14 +14,18 @@ function toIds(values) {
   return ids;
 }
 
-// Đọc từ chuỗi query (vd. window.location.search). Trả { focus, highlight } hoặc null nếu không có người hợp lệ.
+// Đọc từ chuỗi query (vd. window.location.search). Trả { focus, highlight, path? } hoặc null nếu không có người hợp lệ.
+// path chỉ có nghĩa khi có từ 2 người trở lên, giữ nguyên thứ tự.
 export function parseTreeFocusParams(search = "") {
   const params = new URLSearchParams(String(search || ""));
   const highlight = toIds(String(params.get("highlight") || "").split(","));
   const [focus] = toIds([params.get("focus")]);
-  const target = focus || highlight[0];
+  const pathIds = toIds(String(params.get("path") || "").split(","));
+  const target = focus || highlight[0] || pathIds[0];
   if (!target) return null;
-  return { focus: target, highlight: highlight.length ? highlight : [target] };
+  const result = { focus: target, highlight: highlight.length ? highlight : [target] };
+  if (pathIds.length >= 2) result.path = pathIds;
+  return result;
 }
 
 // Đường dẫn trang cây theo vai trò.
@@ -33,9 +37,11 @@ export function isTreePath(pathname = "") {
   return pathname === "/user/family-tree" || pathname === "/manager/genealogy";
 }
 
-export function buildTreeFocusUrl(role, personIds = []) {
+export function buildTreeFocusUrl(role, personIds = [], pathIds = []) {
   const ids = toIds(personIds);
   if (!ids.length) return null;
   const query = new URLSearchParams({ focus: String(ids[0]), highlight: ids.join(",") });
+  const path = toIds(pathIds);
+  if (path.length >= 2) query.set("path", path.join(","));
   return `${treePathForRole(role)}?${query.toString()}`;
 }

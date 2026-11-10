@@ -4,6 +4,8 @@ const moderationController = require('./moderation.controller');
 const eventTaskController = require('./eventTask.controller');
 const treeController = require('../genealogy/tree.controller');
 const genealogyAuditController = require('../genealogy/genealogyAudit.controller');
+const duplicatesController = require('../genealogy/duplicates.controller');
+const gedcomController = require('../genealogy/gedcom.controller');
 
 module.exports = {
     ...dashboardController,
@@ -12,4 +14,6 @@ module.exports = {
     ...eventTaskController,
     ...treeController,
     ...genealogyAuditController,
+    ...duplicatesController,
+    ...gedcomController,
 };

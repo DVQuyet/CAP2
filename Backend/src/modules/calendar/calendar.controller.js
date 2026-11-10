@@ -1118,6 +1118,7 @@ exports.startCalendarReminderScheduler = (app) => {
 
 exports.ensureCalendarSchema = ensureCalendarSchema;
 exports.hasPersonLinkColumns = hasPersonLinkColumns;
+exports.resolveClanId = resolveClanId;
 exports.processDueReminders = processDueReminders;
 
 exports.buildYearlyPersonEvents = buildYearlyPersonEvents;

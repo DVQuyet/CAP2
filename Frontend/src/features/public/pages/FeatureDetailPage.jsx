@@ -1,26 +1,42 @@
 import { useTranslation } from "react-i18next";
 import LandingFamilyTree from "./LandingFamilyTree";
+import useLandingContent from "../landing/useLandingContent";
+import { sectionOf, mergeSectionText, mergeItems, itemKey, DEFAULT_FEATURES_IMAGE, DEFAULT_STATS } from "../landing/landingContent";
 
 export default function FeatureDetailPage() {
   const { t } = useTranslation();
+  const { content } = useLandingContent();
+  const featuresSection = sectionOf(content, "features");
+  const featuresText = mergeSectionText(featuresSection, {
+    tag: t("public.features.advanced.tag"),
+    title: t("public.features.advanced.title"),
+    image_url: DEFAULT_FEATURES_IMAGE,
+  });
 
-  const advancedCards = [
+  const defaultAdvancedCards = [
     {
       icon: "bolt",
       title: t("public.features.advanced.items.auto.title"),
-      desc: t("public.features.advanced.items.auto.desc"),
+      body: t("public.features.advanced.items.auto.desc"),
     },
     {
       icon: "notifications_active",
       title: t("public.features.advanced.items.events.title"),
-      desc: t("public.features.advanced.items.events.desc"),
+      body: t("public.features.advanced.items.events.desc"),
     },
     {
       icon: "security",
       title: t("public.features.advanced.items.security.title"),
-      desc: t("public.features.advanced.items.security.desc"),
+      body: t("public.features.advanced.items.security.desc"),
     },
   ];
+
+  const advancedCards = mergeItems(featuresSection, defaultAdvancedCards);
+
+  const stats = mergeItems(
+    sectionOf(content, "stats"),
+    DEFAULT_STATS.map(([id, value]) => ({ meta: value, title: t(`public.stats.${id}`) }))
+  );
 
   const eventCards = [
     {
@@ -87,24 +103,24 @@ export default function FeatureDetailPage() {
         <section className="feature-advanced stitch-split second">
           <div className="feature-advanced-image">
             <img
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuAd6zBRvZR3R4FNjtUr2lLEx9nhgeCvjODU75n1JNSZXsYbZbBF_gkjblSR6pitSFdONbGyENkDH6yqIi4uS-Ykb6p6ILCjP0nXnqvGTlFy9hTWmvVSDjpMIx7HWlHJsTVzyp8Eupx2Tm3Xyjng359b4cGX8X6_EDIt4xaLllWGrajQxWqaRni5VzHCLHVKEAERaVpCv2KL8n9_4GnV-fPjGCzGNfAwYlnkE_xJidn-Rg1rLL1S3goPoSirM6dhlbwjipscoiT16iOH"
-              alt={t("public.features.advanced.tag")}
+              src={featuresText.image_url}
+              alt={featuresText.tag}
             />
           </div>
 
           <div>
             <div className="feature-advanced-heading">
-              <span className="section-tag">{t("public.features.advanced.tag")}</span>
-              <h2>{t("public.features.advanced.title")}</h2>
+              <span className="section-tag">{featuresText.tag}</span>
+              <h2>{featuresText.title}</h2>
             </div>
 
             <div className="feature-advanced-grid">
-              {advancedCards.map((card) => (
-                <article key={card.title} className="feature-card-detail">
+              {advancedCards.map((card, index) => (
+                <article key={itemKey(card, index)} className="feature-card-detail">
                   <span className="material-symbols-outlined card-icon">{card.icon}</span>
                   <div>
                     <h3>{card.title}</h3>
-                    <p>{card.desc}</p>
+                    <p>{card.body}</p>
                   </div>
                 </article>
               ))}
@@ -113,22 +129,12 @@ export default function FeatureDetailPage() {
         </section>
 
         <section className="feature-kpi-grid">
-          <div>
-            <strong>1,200+</strong>
-            <p>{t("public.stats.clans")}</p>
-          </div>
-          <div>
-            <strong>500k+</strong>
-            <p>{t("public.stats.members")}</p>
-          </div>
-          <div>
-            <strong>250k+</strong>
-            <p>{t("public.stats.documents")}</p>
-          </div>
-          <div>
-            <strong>63</strong>
-            <p>{t("public.stats.provinces")}</p>
-          </div>
+          {stats.map((item, index) => (
+            <div key={itemKey(item, index)}>
+              <strong>{item.meta}</strong>
+              <p>{item.title}</p>
+            </div>
+          ))}
         </section>
 
         <section className="feature-event-section">

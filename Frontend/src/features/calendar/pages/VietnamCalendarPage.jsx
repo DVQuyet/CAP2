@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useLocation, useNavigate } from "react-router-dom";
 import { apiRequest } from "../../../services/api";
 import { getStoredUser } from "../../../shared/utils/auth";
 import { getSocket } from "../../../services/socket";
@@ -8,6 +9,7 @@ import { getLunarInfoFromSolar as getLunarInfo } from "../../../shared/utils/lun
 import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 import "../../../shared/components/StateComponents.css";
 import { useConfirm } from "../../../shared/components/confirmContext.js";
+import { canDraftAnnouncement, postsPathFromCalendarPath, toIsoLocal } from "../../posts/postAiHelpers";
 import "./VietnamCalendarPage.css";
 
 function pad2(v) {
@@ -149,6 +151,10 @@ export default function VietnamCalendarPage() {
 
   const today = useMemo(() => new Date(), []);
   const currentUser = useMemo(() => getStoredUser() || {}, []);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const postsPath = postsPathFromCalendarPath(location.pathname);
+  const todayIso = toIsoLocal(today);
   const currentRole = String(currentUser.role_name || currentUser.role || "").toLowerCase();
   const canCreateGlobal = currentRole === "manager" || currentRole === "admin";
 
@@ -538,13 +544,13 @@ export default function VietnamCalendarPage() {
             </div>
             <input value={eventForm.title} onChange={(event) => setEventForm((current) => ({ ...current, title: event.target.value }))} placeholder={t("vnCalendar.form.titlePlaceholder")} />
             <div className="vn-event-form-row">
-              <select value={eventForm.type} onChange={(event) => setEventForm((current) => ({ ...current, type: event.target.value }))}>
+              <select aria-label={t("a11y.type")} value={eventForm.type} onChange={(event) => setEventForm((current) => ({ ...current, type: event.target.value }))}>
                 <option value="holiday">{t("vnCalendar.types.holiday")}</option>
                 <option value="family">{t("vnCalendar.types.family")}</option>
                 <option value="study">{t("vnCalendar.types.study")}</option>
                 <option value="personal">{t("vnCalendar.types.personal")}</option>
               </select>
-              <input type="time" value={eventForm.time} onChange={(event) => setEventForm((current) => ({ ...current, time: event.target.value }))} />
+              <input aria-label={t("a11y.time")} type="time" value={eventForm.time} onChange={(event) => setEventForm((current) => ({ ...current, time: event.target.value }))} />
             </div>
 
             <label className="vn-reminder-field">
@@ -612,15 +618,25 @@ export default function VietnamCalendarPage() {
                   {event.creator_name ? <small>{t("vnCalendar.creator")}: {event.creator_name}</small> : null}
                   {event.note ? <p>{event.note}</p> : null}
                 </div>
-                {event.source !== "system" && (event.can_edit || event.can_delete) ? (
+                {(postsPath && canDraftAnnouncement(event, todayIso)) || (event.source !== "system" && (event.can_edit || event.can_delete)) ? (
                   <div className="vn-event-item-actions">
-                    {event.can_edit ? (
-                      <button type="button" onClick={() => openEditForm(event)} title={t("vnCalendar.editTitle")}>
+                    {postsPath && canDraftAnnouncement(event, todayIso) ? (
+                      <button
+                        type="button"
+                        title={t("vnCalendar.draftAnnouncement")}
+                        aria-label={t("vnCalendar.draftAnnouncement")}
+                        onClick={() => navigate(`${postsPath}?compose=1&event=${encodeURIComponent(String(event.id))}`)}
+                      >
+                        <span className="material-symbols-outlined">campaign</span>
+                      </button>
+                    ) : null}
+                    {event.source !== "system" && event.can_edit ? (
+                      <button type="button" onClick={() => openEditForm(event)} title={t("vnCalendar.editTitle")} aria-label={t("vnCalendar.editTitle")}>
                         <span className="material-symbols-outlined">edit</span>
                       </button>
                     ) : null}
-                    {event.can_delete ? (
-                      <button type="button" onClick={() => deleteEvent(event)} title={t("common.delete")}>
+                    {event.source !== "system" && event.can_delete ? (
+                      <button type="button" onClick={() => deleteEvent(event)} title={t("common.delete")} aria-label={t("common.delete")}>
                         <span className="material-symbols-outlined">delete</span>
                       </button>
                     ) : null}

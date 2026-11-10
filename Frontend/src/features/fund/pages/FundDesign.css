@@ -84,7 +84,7 @@
     gap: 10px;
     min-height: 50px;
     padding: 12px 18px;
-    border-radius: 16px;
+    border-radius: var(--radius-2xl);
     border: 1px solid var(--fund-border);
     font-weight: 800;
     cursor: pointer;
@@ -104,26 +104,26 @@
 }
 
 .btn-outline {
-    background: #fffaf0;
+    background: var(--color-cream-3);
     color: var(--fund-text);
 }
 
 .btn-gold {
     background: linear-gradient(135deg, #d9aa31, #b88316);
-    color: #fff;
+    color: var(--color-white);
     border-color: #d9aa31;
 }
 
 .btn-green {
     background: linear-gradient(135deg, #3f9046, #25642b);
-    color: #fff;
+    color: var(--color-white);
     border-color: #3f9046;
 }
 
 .btn-export-v2,
 .btn-approve-v3-active {
     border: 0;
-    border-radius: 14px;
+    border-radius: var(--radius-xl);
     padding: 11px 16px;
     font-weight: 800;
     cursor: pointer;
@@ -131,12 +131,12 @@
 
 .btn-export-v2 {
     background: linear-gradient(135deg, #8e241b, #a13c2c);
-    color: #fff;
+    color: var(--color-white);
 }
 
 .btn-approve-v3-active {
     background: linear-gradient(135deg, #3f9046, #25642b);
-    color: #fff;
+    color: var(--color-white);
 }
 
 .section-title {
@@ -176,8 +176,8 @@
 
 .pill {
     padding: 4px 10px;
-    border-radius: 8px;
-    font-size: 0.8rem;
+    border-radius: var(--radius-sm);
+    font-size: var(--fs-xs-plus);
     font-weight: 800;
     text-transform: uppercase;
 }
@@ -199,7 +199,7 @@
     top: 7px;
     bottom: 7px;
     width: 5px;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     background: linear-gradient(#ddb75b, #8e241b);
 }
 
@@ -307,7 +307,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     padding: 5px 12px;
     font-size: .78rem;
     font-weight: 800;
@@ -322,7 +322,7 @@
 .status-dot {
     width: 12px;
     height: 12px;
-    border-radius: 50%;
+    border-radius: var(--radius-round);
     box-shadow: 0 0 0 4px rgba(0, 0, 0, .05);
 }
 
@@ -338,7 +338,7 @@
     height: 10px;
     margin: 16px 0 12px;
     overflow: hidden;
-    border-radius: 999px;
+    border-radius: var(--radius-pill);
     background: rgba(201, 154, 50, .18);
 }
 
@@ -483,7 +483,7 @@
     align-items: center;
     justify-content: center;
     border: 1px solid var(--fund-border);
-    border-radius: 14px;
+    border-radius: var(--radius-xl);
     background: #fff8ea;
     color: var(--fund-red);
     font-size: 1.8rem;
@@ -517,7 +517,7 @@
     border: 1px solid rgba(201, 154, 50, .42);
     background: rgba(255, 252, 246, .95);
     color: var(--fund-text);
-    border-radius: 14px;
+    border-radius: var(--radius-xl);
     padding: 14px 16px;
     outline: 0;
 }
@@ -529,7 +529,7 @@
 .mgmt-item input:focus {
     border-color: var(--fund-red);
     box-shadow: 0 0 0 4px rgba(142, 36, 27, .08);
-    background: #fff;
+    background: var(--color-white);
 }
 
 .premium-form textarea {
@@ -551,7 +551,7 @@
     gap: 10px;
     min-height: 52px;
     padding: 14px 16px;
-    border-radius: 14px;
+    border-radius: var(--radius-xl);
     border: 1.5px dashed rgba(201, 154, 50, .68);
     background: rgba(255, 251, 243, .8);
     color: var(--fund-muted);
@@ -589,7 +589,7 @@
 .bill-img-v3,
 .qr-box-v3 img {
     max-width: 100%;
-    border-radius: 18px;
+    border-radius: var(--radius-3xl);
     border: 1px solid rgba(201, 154, 50, .34);
     box-shadow: 0 12px 24px rgba(31, 14, 7, .12);
 }
@@ -638,7 +638,7 @@
     justify-content: center;
     margin: 0;
     padding: 12px 14px;
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     color: var(--fund-muted);
     cursor: pointer;
     font-weight: 800;
@@ -660,7 +660,7 @@
 .card-info-box {
     margin-top: 16px;
     padding: 16px;
-    border-radius: 18px;
+    border-radius: var(--radius-3xl);
     background: rgba(201, 154, 50, .08);
     border: 1px solid rgba(201, 154, 50, .22);
 }
@@ -686,7 +686,7 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
     padding: 6px;
-    border-radius: 18px;
+    border-radius: var(--radius-3xl);
     background: rgba(230, 214, 180, .35);
     border: 1px solid rgba(201, 154, 50, .24);
     margin-bottom: 24px;
@@ -698,7 +698,7 @@
     justify-content: center;
     gap: 8px;
     min-height: 50px;
-    border-radius: 14px;
+    border-radius: var(--radius-xl);
     color: var(--fund-muted);
     font-weight: 800;
     cursor: pointer;
@@ -826,7 +826,7 @@
     .ledger-box,
     .campaign-card-v3,
     .campaign-member-v2 {
-        border-radius: 18px;
+        border-radius: var(--radius-3xl);
     }
     .btn-premium {
         width: 100%;

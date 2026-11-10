@@ -1,0 +1,86 @@
+/* Design tokens (giá trị gốc, KHÔNG đổi giao diện).
+ * Chỉ định nghĩa biến; các file CSS khác dùng var(--...) thay cho giá trị lặp lại đúng bằng token.
+ * Nạp đầu tiên ở app/main.jsx. Chủ đề tối sau này: ghi đè các biến --color-* trong :root[data-theme="dark"]
+ * (hoặc thêm lớp ngữ nghĩa --surface-*, --text-* trỏ vào các biến này rồi chỉ đổi lớp đó).
+ * Các cụm màu gần giống nhau (brick-1..4, cream-1..4, ink-brown-1..2) CỐ Ý giữ riêng; gộp cần QA trình duyệt
+ * (xem docs/UI_TOI_UU_DE_XUAT.md). */
+:root {
+  /* Màu */
+  --color-white: #ffffff;
+  --color-maroon-deep: #610000;
+  --color-maroon: #8b0000;
+  --color-red-900: #7f1d1d;
+  --color-red-800: #991b1b;
+  --color-red-600: #dc2626;
+  --color-brick-1: #8b1e13;
+  --color-brick-2: #8b1e17;
+  --color-brick-3: #9e2f24;
+  --color-brick-4: #9f2f23;
+  --color-ink-brown-1: #4a160f;
+  --color-ink-brown-2: #4a1d12;
+  --color-brown-mid: #7d5b43;
+  --color-rust: #7c2d12;
+  --color-gold: #c99a2c;
+  --color-gold-light: #d6bf84;
+  --color-gold-bright: #f3c63f;
+  --color-gold-soft: #c9a55a;
+  --color-gold-metal: #d4af37;
+  --color-cream-1: #fff7e8;
+  --color-cream-2: #fff8df;
+  --color-cream-3: #fffaf0;
+  --color-cream-4: #fffaf1;
+  --color-parchment: #f8f3e8;
+  --color-amber-100: #fef3c7;
+  --color-slate-50: #f8fafc;
+  --color-slate-200: #e2e8f0;
+  --color-slate-500: #64748b;
+  --color-gray-500: #6b7280;
+  --color-navy: #1d2b44;
+
+  /* Bo góc */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 14px;
+  --radius-2xl: 16px;
+  --radius-3xl: 18px;
+  --radius-4xl: 20px;
+  --radius-5xl: 24px;
+  --radius-pill: 999px;
+  --radius-round: 50%;
+
+  /* Cỡ chữ */
+  --fs-2xs: 0.75rem;
+  --fs-xs: 0.78rem;
+  --fs-xs-plus: 0.8rem;
+  --fs-sm-minus: 0.82rem;
+  --fs-sm: 0.85rem;
+  --fs-sm-plus: 0.86rem;
+  --fs-base-minus: 0.9rem;
+  --fs-base-minus-plus: 0.92rem;
+  --fs-base-plus: 0.95rem;
+  --fs-base: 1rem;
+  --fs-13: 13px;
+  --fs-14: 14px;
+
+  /* Lớp z-index (các lớp phủ). Giá trị 1-80 trong từng component vẫn để cục bộ. */
+  --z-overlay: 9000;
+  --z-modal: 9999;
+  --z-toast: 10000;
+  --z-sticky: 1000;
+
+  /* Bóng đổ hay lặp (chưa thay thế hàng loạt) */
+  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.05);
+  --shadow-pop: 0 8px 18px rgba(0, 0, 0, 0.18);
+  --shadow-modal: 0 24px 60px rgba(0, 0, 0, 0.32);
+
+  /* Khoảng cách (thang 4px, dùng cho code mới) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+}

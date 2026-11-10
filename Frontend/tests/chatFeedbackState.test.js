@@ -32,3 +32,10 @@ test("getInitialFeedbackRating lấy 1/-1 từ lịch sử, còn lại là null"
   assert.equal(getInitialFeedbackRating({ feedbackRating: 5 }), null);
   assert.equal(getInitialFeedbackRating({}), null);
 });
+
+test("getMessagePathIds lấy đường quan hệ có thứ tự, bỏ khi dưới 2 người", async () => {
+  const { getMessagePathIds } = await import("../src/features/ai-chat/utils/feedbackState.js");
+  assert.deepEqual(getMessagePathIds({ metadata: { pathNodes: [6, "3", { id: 5 }] } }), [6, 3, 5]);
+  assert.deepEqual(getMessagePathIds({ metadata: { pathNodes: [6] } }), []);
+  assert.deepEqual(getMessagePathIds({}), []);
+});

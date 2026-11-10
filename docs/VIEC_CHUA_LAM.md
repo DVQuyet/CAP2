@@ -19,7 +19,7 @@ Ký hiệu công sức: **S** < 2 giờ · **M** nửa ngày–1 ngày · **L** 
 
 ## Xong trong đợt 22/10/2026 (commit `3c4c6c8`..`ffba8f8`)
 
-- 2.1 i18n: ~330 chuỗi trong 21 file + test so khớp key vi/en (`Frontend/tests/localeParity.test.js`). Còn sót: tiêu đề cột bảng sự kiện ở `TaskManagementPage.jsx` (~dòng 1599).
+- 2.1 i18n: ~330 chuỗi trong 21 file + test so khớp key vi/en (`Frontend/tests/localeParity.test.js`). Tiêu đề cột bảng sự kiện ở `TaskManagementPage.jsx` đã dùng `t()` (kiểm lại ở đợt 6).
 - 2.2 "Xem trên cây" từ chat (`?focus=&highlight=`), 2.3 "Tải thêm" thông báo/kỷ niệm/sự kiện quản lý, 2.4 log câu chưa hiểu + `scripts/chatbot-unknown-report.js`, 2.5 👍/👎.
 - Chat: giao diện mới, màn chào, mobile toàn màn hình, báo máy chủ khởi động, xóa lịch sử (ẩn mềm), chuẩn hóa cách gõ (không dấu, viết tắt) an toàn với tên người. E2E 107/107.
 - Test backend không thể chạm DB thật (`tests/setup.env.js`).
@@ -61,6 +61,53 @@ Còn mở từ đợt 4:
 - Ảnh đại diện khi xuất cây vẫn là chữ cái đầu, chưa nhúng ảnh thật.
 - Validate chưa phủ route calendar/events.
 - "ba co toi" vẫn mơ hồ (cụ vs bà cô).
+
+Đợt 11 (30/10) — trang chủ do admin quản lý, commit `90586db` (backend), `3d8aaa9` (frontend):
+- **Đã xong:** admin thêm/sửa/xóa/sắp xếp/ẩn-hiện nội dung trang chủ không cần sửa mã. Mô hình 2 bảng `landing_sections` (mỗi mục 1 dòng: hero, about, features, stats, news, guide; chữ vi/en, ảnh, thứ tự, hiển thị) và `landing_items` (mục con: tiêu đề/nội dung/giá trị-ngày/nhãn liên kết vi-en, ảnh, link, icon). Chọn 2 bảng thay vì JSON mỗi mục để sửa/xóa/sắp xếp từng mục con bằng một câu SQL, không phải đọc-sửa-ghi cả khối.
+- API: `GET /api/public/landing?lang=` (không đăng nhập, cache 60s, `content: null` khi chưa có dữ liệu/chưa migrate nên trang giữ nguyên i18n) và `/api/admin/landing/*` (chỉ admin; sửa mục, CRUD + sắp xếp mục con, khôi phục mặc định, seed). Chi tiết trong `docs/API_LIST.md`. Chỉ lưu văn bản thuần (bỏ thẻ HTML), link/ảnh chỉ `http(s)` hoặc `/...`; validate bằng bộ `validate` sẵn có của repo (không dùng zod).
+- Frontend: `useLandingContent()` + hàm ghép `features/public/landing/landingContent.js`; Hero, Giới thiệu, Tính năng, Số liệu và trang Tính năng/Tin tức/Hướng dẫn dùng chung dữ liệu; trang admin `/dashboard/landing` ("Trang chủ" trong menu admin). Test: backend +10 (226 tổng), frontend +10 (78 tổng); ESLint 138 cảnh báo (không tăng).
+- **Deploy cần:** sao lưu DB, rồi `npm run migrate` (hoặc chạy `database/migrations/2026_10_30_site_content.sql`) tạo `landing_sections`, `landing_items`. Chưa migrate thì trang chủ vẫn chạy như cũ; trang admin báo "chưa tạo bảng". Sau khi deploy: vào `/dashboard/landing` bấm "Lấy nội dung hiện tại" để sao chép chữ vi/en đang dùng vào DB rồi mới sửa.
+- **Cần QA trình duyệt (chưa chạy được vì không chạy server/DB thật):** (1) chưa seed: trang chủ giống hệt cũ; (2) seed rồi sửa tiêu đề hero/ảnh nền/nút, kiểm tra xuống dòng và ảnh nền; (3) ẩn từng khối rồi đổi thứ tự khối trên trang chủ; (4) thêm/sửa/xóa/đổi thứ tự thẻ Tính năng, Số liệu, Tin tức, Hướng dẫn rồi xem /tinh-nang, /tin-tuc, /huong-dan; (5) tải ảnh lên (≤ 5MB) và dán URL; nhập `javascript:` vào link phải bị chặn; (6) đổi ngôn ngữ vi/en; (7) "Khôi phục mặc định" có hộp xác nhận; (8) điện thoại 390px; (9) thành viên/quản lý vào `/dashboard/landing` bị chặn (403).
+- **Việc còn mở:** khối "demo" của Tính năng (tiêu đề + 2 nút + cây mẫu), khối Lợi ích (`/loi-ich`), sidebar Tin tức (tin mới, danh mục, đăng ký), video và FAQ của Hướng dẫn, chân trang vẫn là i18n cứng; `News` chưa có trang chi tiết từng bài (nút "Đọc thêm" trỏ `link_url` nếu admin nhập). Mục "custom" (khối tự thêm) chưa làm. Bản tiếng Anh để trống thì mục con dùng chữ tiếng Việt, còn chữ cấp mục dùng i18n mặc định. Cache công khai là bộ nhớ từng tiến trình (nhiều instance sẽ chậm tối đa 60s mới đồng bộ). Ảnh upload lưu trong `media_files` (LONGBLOB) nên ảnh lớn làm DB phình; cân nhắc CDN.
+
+Đợt 10 (30/10) — tối ưu UI (không đổi giao diện), commit `016e263`, `cd146de`, `0e8660c`, `95befcf`:
+- **Bundle vào trang** (`016e263`): bản dịch tải theo ngôn ngữ đang dùng (`i18n.js` + `i18nReady` trong `main.jsx`), `AdminLayout`/`ManagerLayout`/`MemberLayout` lazy (kéo theo socket.io-client), biểu đồ `ManagerDashboard` tách chunk. `index.js` 120,6 → 23,6 KB gzip; JS ban đầu ~196 → ~134 KB (kể cả bản dịch vi); `index.css` 30,9 → 22,2 KB.
+- **Design tokens** (`cd146de`): `Frontend/src/styles/tokens.css` (67 biến: 30 màu, bo góc, cỡ chữ, z-index, bóng, khoảng cách), thay 1.945 giá trị CSS trùng khớp tuyệt đối bằng `var(--…)` trong 39 file; đã so CSS build trước/sau (chỉ khác cách minifier viết lại). Chưa gộp màu gần giống, chưa có dark mode.
+- **A11y** (`95befcf`): `aria-label` cho 59 nút chỉ có icon và 29 ô nhập thiếu nhãn, alt i18n cho ảnh, `role="button"` + Enter/Space cho 9 thẻ/dòng bấm được (`shared/utils/a11yClick.js`), `styles/a11y.css` giảm chuyển động theo `prefers-reduced-motion`; 17 key `a11y.*`. ESLint 139 → 138.
+- **Đề xuất cần QA trình duyệt**: `docs/UI_TOI_UU_DE_XUAT.md` (915 màu hex khác nhau, 122 kiểu nút, `.btn-primary` định nghĩa 2 lần trong `App.css`, ~140 chỗ nghi lỗi mobile, ảnh nền `backgroundbanner.png` 6,2 MB / `sodogiapha.png` 4,1 MB nên đổi WebP).
+- **Deploy cần**: không có migration.
+- **Cần QA trình duyệt**: lần tải đầu chờ bản dịch, đổi ngôn ngữ (import động), fallback khi tải layout theo vai trò, dashboard quản lý hiện `LoadingState` trước biểu đồ; Tab/Enter/Space trên thẻ thư mục dòng họ và dòng quỹ (nút bên trong vẫn bấm riêng được); viền focus mới trên các thẻ đó.
+- Còn mở: các mục trong `UI_TOI_UU_DE_XUAT.md`; `html-to-image` không dùng (gỡ được); Login/Register vừa import tĩnh vừa lazy nên lazy không có tác dụng; `DashboardHome` còn import recharts trực tiếp; logo trùng trong `public/`.
+
+Đợt 9 (30/10) — nút soạn thông báo từ lịch, xuất GEDCOM, AI tóm tắt quỹ:
+- **Nút "Soạn thông báo cho sự kiện này"** (trang lịch `/user|/manager/calendar`): sự kiện chưa qua, không phải lịch hệ thống/sinh nhật → chuyển tới `/user|/manager/posts?compose=1&event=<id>`; form đăng bài mở sẵn panel AI với sự kiện đã chọn (dùng lại `POST /api/ai/post-draft/generate`). Trang lịch của admin (`/dashboard/calendar`) chưa có nút vì không dùng form đăng bài này. Chỉ frontend, test `postAiHelpers.test.js`.
+- **2.3 "Tải thêm"** ✅: kiểm lại thì đã làm từ đợt 22/10 (thông báo, kỷ niệm, sự kiện member/manager đều có `before_id` + `has_more`/`next_before_id` + nút FE + test) → chỉ cập nhật tài liệu, không đổi code.
+- **4.5 Xuất GEDCOM (một phần)**: `GET /api/manager/tree/export.gedcom` (admin/manager; admin thêm `clan_id`) → file `.ged` GEDCOM 5.5.1 UTF-8, CRLF: INDI (NAME `Tên /Họ/`, SEX, BIRT/DEAT theo `*_date_precision`, PLAC = quê quán, NOTE = tiểu sử), FAM (HUSB/WIFE/CHIL, MARR), có cả quan hệ `visibility=managers`; không có SĐT/email/địa chỉ; tên file qua `buildContentDisposition`. `gedcom.service.js` (hàm thuần) + `gedcom.controller.js`; nút "Xuất GEDCOM" ở trang cây quản lý. Test `genealogy.gedcom.test.js`.
+- **AI tóm tắt quỹ**: `POST /api/ai/fund-summary/generate` (admin/manager/member như xem thống kê quỹ, `aiRateLimit`, zod `generateFundSummary`, 503 `AI_UNAVAILABLE`). Server tự tính số liệu khoản đã duyệt theo kỳ tháng/quý/năm hoặc khoảng ngày (`fundSummary.service.js`), prompt chỉ có số liệu (không tên người), trả `summary` + `numbers` + `unverified[]` (số trong lời tóm tắt không có trong số liệu); kỳ không có giao dịch thì không gọi AI. FE: `FundAISummary.jsx` trong `FundAnalytics`. Test `ai.fundSummary.test.js` (DB và Groq giả).
+- **Deploy cần**: không có migration mới. Backend chỉ thêm endpoint; cần `GROQ_API_KEY` thì AI tóm tắt mới chạy (không có thì 503, UI báo thân thiện).
+- **Cần QA trình duyệt** (chưa ai mở): nút soạn thông báo trên lịch → form đăng bài (390px/1280px, id `death-…`/`manager-event-…`); nút "Xuất GEDCOM" tải file và mở thử bằng phần mềm gia phả (Gramps/Ancestry); khung "AI tóm tắt" ở trang quỹ của quản lý (mobile, kỳ tùy chọn, key Groq thật).
+- Còn mở: **nhập GEDCOM** chưa làm (cần map id, xử lý tên/ngày không chuẩn, đối chiếu trùng với `duplicates.service`); GEDCOM chưa xuất DIV (ly hôn), OBJE (ảnh), nơi sinh riêng (PLAC đang là quê quán); AI tóm tắt chưa có nút ở trang quỹ của member và chưa so sánh với kỳ trước; ngưỡng "giao dịch lớn" (≥ 10% tổng kỳ, tối thiểu 1 triệu) là giả định cần nhóm xác nhận.
+
+Đợt 8 (30/10) — AI soạn bài đăng, tô sáng đường quan hệ, người trùng lặp:
+- **AI soạn bài/thông báo**: `POST /api/ai/post-draft/generate` (`postDraft.service.js`, zod `generatePostDraft`, quyền admin/manager/member như đăng bài, `aiRateLimit`, 503 `AI_UNAVAILABLE`). Nhận `idea` và/hoặc `event_id` (id lịch số, `birthday-/death-<người>-<năm>`, `manager-event-<id>-<ngày>`); server tự đọc sự kiện trong dòng họ, 404 nếu không được xem; trả `unverified[]` (ngày/giờ AI tự thêm). FE: `PostAIAssist.jsx` trong form tạo bài (chọn sự kiện sắp 30 ngày, loại, giọng). Test `ai.postDraft.test.js`, `postAiHelpers.test.js`. Không cần migration.
+- **2.2 ✅ Tô sáng đường quan hệ**: nút "Xem đường quan hệ trên cây" gửi `path` (id người theo thứ tự) qua `?path=`/sự kiện; `treePathHighlight.js` (hàm thuần) tính node + cạnh; cây tô cam, làm mờ phần còn lại, hiện tạm người trong nhánh đang thu gọn (`revealIds` trong `useTreeViewMode`, không lưu), thu phóng vừa, nút "Bỏ tô sáng". Test `treePathHighlight.test.js`.
+- **Người trùng lặp**: `GET /api/manager/tree/duplicates` (admin/manager, `limit`/`offset`), `POST /api/manager/tree/duplicates/dismiss`. `duplicates.service.js` chấm điểm (tên bỏ dấu, lệch 1 ký tự, năm sinh theo precision, giới tính, cha mẹ, đời), gom xô theo tên gọi, loại cặp cha-con/vợ-chồng. Trang `/manager/duplicates` so sánh cạnh nhau, "Mở hồ sơ" (tới cây), "Không trùng" (có xác nhận). Test `genealogy.duplicates.test.js`.
+- **Deploy cần**: sao lưu DB rồi `npm run migrate` (bảng `genealogy_duplicate_dismissals`, file `database/migrations/2026_10_30_genealogy_duplicate_dismissals.sql`). Chưa migrate thì danh sách vẫn chạy, chỉ "Không trùng" tự tạo bảng khi lưu lần đầu (nếu DDL runtime bị tắt thì báo lỗi).
+- **Cần QA trình duyệt** (chưa ai mở): form đăng bài + AI trên 390px; "Xem đường quan hệ trên cây" với đường đi qua nhánh thu gọn (desktop/mobile, cả `.fte2`); trang `/manager/duplicates`.
+- Còn mở: KHÔNG có gộp tự động (rủi ro cao: phải dời cha mẹ/con/vợ chồng/tài khoản/media); hoàn tác "Không trùng" chưa có UI; gợi ý trùng chưa xét tên vợ/chồng/quê quán; "Soạn thông báo cho sự kiện" mới ở form đăng bài (chưa có nút trên trang lịch); đường quan hệ bị lọc quyền riêng tư có thể thiếu cạnh (vẫn tô node).
+
+Đợt 7 (30/10) — AI gợi ý tiểu sử:
+- `POST /api/ai/person-biography/generate` (`ai.controller.js`, `personBiography.service.js`, zod `generatePersonBiography`): server tự đọc dữ kiện theo `person_id` (ngày theo `*_date_precision`, quê quán, cha mẹ, vợ/chồng, con; bỏ qua quan hệ `visibility=managers` với người không phải admin/manager), kiểm quyền như sửa hồ sơ (`assertTreeMutationPermission` + `assertCanManagePersonId`), prompt không có SĐT/địa chỉ, ghi chú người dùng coi là dữ liệu không đáng tin. Chỉ trả bản nháp.
+- Frontend: `BiographyAIButton.jsx` trong `PersonInspector` điền ô tiểu sử, hỏi xác nhận khi ô đã có chữ; i18n vi/en.
+- Test: `tests/ai.personBiography.test.js` (8 test, DB và Groq giả). Không cần migration.
+- Còn mở: QA trên trình duyệt (desktop + điện thoại), chưa dùng family_memories vì bảng không gắn với người cụ thể; hỏi nhóm có cho đưa nơi sinh/địa chỉ vào bản nháp không.
+
+Đợt 6 (30/10, Sonnet) — rà lại B3, 2.4, 2.5 theo `KE_HOACH_SONNET_1H.md`; **không cần code mới**:
+- B3: tiêu đề cột bảng sự kiện ở `TaskManagementPage.jsx` đã dùng `t()` từ trước.
+- 2.4 (log câu chưa hiểu + `scripts/chatbot-unknown-report.js`) và 2.5 (👍/👎: bảng `chatbot_feedback`, `POST /api/chatbot/messages/:id/feedback`, nút trong chat, i18n vi/en, test `chatbot.feedback.test.js`) đã có từ đợt 22/10; bảng P2 giờ đánh dấu ✅.
+- Baseline kiểm tra: Backend 167 test pass; Frontend 53 test pass, ESLint 0 lỗi / 139 cảnh báo (không đổi), `vite build` OK.
+- Migration cần khi deploy: không có thêm; vẫn là các file của đợt 5 và 22/10 (`password_changed_at`, `chatbot_feedback`, `chatbot_messages.hidden_at`).
+- Còn mở: như danh sách "Còn mở từ đợt này" của đợt 5 (QA trình duyệt, `<style>` ở `ClanFundPage`/`FundAnalytics`, cảnh báo ESLint cần người xác nhận).
 
 Đợt 5 (29/10, Sonnet theo `KE_HOACH_SONNET_1H.md`) — 6 commit `c8b8ef5`..`fcab1ab`, chưa push:
 - Dependency: `npm audit fix` + nodemailer 10 (API `createTransport/sendMail` đã thử). Backend chỉ còn `xlsx` (không có bản vá; chỉ dùng để ghi file nên giữ lại). Frontend còn 2 lỗi moderate của `react-router` (cần nhảy lên v7, breaking) — để sau.
@@ -135,10 +182,10 @@ Không làm được từ máy local vì `Backend/.env` trỏ vào DB thật; c�
 | # | Việc | Hiện trạng đã kiểm | Ai làm | Công sức |
 |---|---|---|---|---|
 | 2.1 | **i18n**: đưa chuỗi tiếng Việt viết cứng vào `vi.json`/`en.json` | 36 file `.jsx` còn chuỗi có dấu; nhiều nhất là `ArchivedMembersDialog` (~23), `TimeCapsulePage` (~15), `GeneralPosts` (~8). Nhiều chỗ dạng `t(key) \|\| "fallback"` thì chỉ cần thêm key | Frontend | M |
-| 2.2 | **Tô sáng đường quan hệ trên cây** khi AI trả lời câu quan hệ | `relationshipPath` mới chỉ vẽ trong chat (`FamilyPathVisualizer.jsx`, `RelationshipCard.jsx`); cây đã có `focusedPersonId` để nối vào | Frontend | M |
-| 2.3 | "Tải thêm" cho thông báo, sự kiện, kỷ niệm | `member.controller.js:798` lấy thông báo `LIMIT 50`, `:745` lấy sự kiện `LIMIT 50`, kỷ niệm có trần; dùng lại mẫu `beforeId` của bảng tin | Fullstack | M |
-| 2.4 | Ghi log câu chatbot không hiểu (`intent = 'unknown'` hoặc phải nhờ LLM) + script lấy top 20 câu mỗi tuần | Chưa có log hay script nào | Backend | S |
-| 2.5 | Nút 👍/👎 cho câu trả lời của chatbot (lưu vào `chatbot_messages`) | Chưa có | Fullstack | S |
+| 2.2 ✅ | **Tô sáng đường quan hệ trên cây** khi AI trả lời câu quan hệ | `relationshipPath` mới chỉ vẽ trong chat (`FamilyPathVisualizer.jsx`, `RelationshipCard.jsx`); cây đã có `focusedPersonId` để nối vào | Frontend | M |
+| 2.3 ✅ | "Tải thêm" cho thông báo, sự kiện, kỷ niệm | Đã có từ đợt 22/10 (kiểm lại ở đợt 9, không cần code mới): `GET /api/member/notifications`, `/api/member/memories`, `/api/member/events`, `/api/manager/events` đều nhận `limit`/`before_id` (keyset `(created_at, id) < (...)`) và trả thêm `has_more`/`next_before_id`; FE có nút "Tải thêm" ở `NotificationBell`, `TimeCapsulePage`, `TaskManagementPage`; test `pagination.lists.test.js`, `pagination.test.js`. Chỉ `getDashboard` còn `LIMIT 50` cố định (trang chủ chỉ hiện 5 mục nên không cần). Ghi chú cũ: `member.controller.js:798` lấy thông báo `LIMIT 50`, `:745` lấy sự kiện `LIMIT 50`, kỷ niệm có trần; dùng lại mẫu `beforeId` của bảng tin | Fullstack | M |
+| 2.4 ✅ | Ghi log câu chatbot không hiểu (`intent = 'unknown'` hoặc phải nhờ LLM) + script lấy top 20 câu mỗi tuần | Xong ở đợt 22/10: `scripts/chatbot-unknown-report.js` (đọc `chatbot_messages`, gom nhóm), có test | Backend | S |
+| 2.5 ✅ | Nút 👍/👎 cho câu trả lời của chatbot (lưu vào `chatbot_messages`) | Xong ở đợt 22/10: bảng `chatbot_feedback` + `POST /api/chatbot/messages/:id/feedback` + nút trong chat | Fullstack | S |
 | 2.6 ✅ | Rà UI mobile 390px: tràn ngang, modal không đóng bằng Esc/click ra ngoài, nút bị che | Lấy danh sách từ lần chạy `KICH_BAN_TEST_FULL.md` | Design | M |
 | 2.7 ✅ | Thay 17 chỗ `window.confirm` bằng dialog chung của app | Giữ lại có chủ đích vì handler phải chuyển sang async; nên làm cùng 2.6 | Design | M |
 
@@ -160,7 +207,7 @@ Không làm được từ máy local vì `Backend/.env` trỏ vào DB thật; c�
 | 4.2 ✅ | Sửa/xóa sự kiện qua chat, gợi ý chủ động ("sắp tới giỗ cụ X") | Luôn có bước xác nhận; chỉ trên sự kiện do chính người dùng tạo | M |
 | 4.3 ✅ | Thu gọn/mở rộng nhánh, nhớ theo từng người dùng | Mặc định mở 3 đời quanh người đang xem | M |
 | 4.4 một phần | Xuất báo cáo PDF gia phả | Đã có trang in "Sổ gia phả" (in/lưu PDF bằng trình duyệt); chưa tạo file PDF thật | M |
-| 4.5 | Nhập/xuất GEDCOM | | L |
+| 4.5 (một phần: xuất) | Nhập/xuất GEDCOM | Xuất xong ở đợt 9: `GET /api/manager/tree/export.gedcom` (`gedcom.service.js`, nút "Xuất GEDCOM" ở trang cây của quản lý). **Nhập chưa làm** (cần map id, phát hiện trùng với `duplicates.service`, xử lý tên/ngày không chuẩn) | L |
 | 4.6 | Hoàn tác thay đổi cây | Cần bảng lịch sử trước/sau | L |
 | 4.7 | Đối soát quỹ qua SePay, web push | | L |
 

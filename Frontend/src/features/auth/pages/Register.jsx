@@ -229,7 +229,7 @@ export default function Register({ isOpen, onClose, onLoginClick }) {
           <input name="display_name" value={form.display_name} placeholder={t("auth.register.displayName")} onChange={handleChange} required />
 
           <div className="input-row input-row--two">
-            <select name="gender" value={form.gender} onChange={handleChange} required>
+            <select aria-label={t("common.gender")} name="gender" value={form.gender} onChange={handleChange} required>
               <option value="1">{t("auth.register.male")}</option>
               <option value="2">{t("auth.register.female")}</option>
               <option value="0">{t("auth.register.unknown")}</option>

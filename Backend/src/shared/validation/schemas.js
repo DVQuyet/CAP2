@@ -387,7 +387,106 @@ const createCalendarEvent = validate({ body: calendarEventBody });
 const updateCalendarEvent = validate({ params: calendarEventId, body: calendarEventBody });
 const deleteCalendarEvent = validate({ params: calendarEventId });
 
+const generatePersonBiography = validate({
+    body: {
+        person_id: v.id({ required: true, label: 'person_id', message: 'person_id không hợp lệ' }),
+        tone: v.enum(['formal', 'friendly'], { label: 'giọng văn' }),
+        length: v.enum(['short', 'medium'], { label: 'độ dài' }),
+        language: v.enum(['vi', 'en'], { label: 'ngôn ngữ' }),
+        notes: v.string({ max: 600, label: 'ghi chú cho AI' }),
+    },
+});
+
+const generatePostDraft = validate({
+    body: {
+        idea: v.string({ max: 1000, label: 'ý tưởng' }),
+        event_id: v.string({ max: 80, pattern: /^[A-Za-z0-9_-]+$/, label: 'sự kiện' }),
+        kind: v.enum(['meeting', 'anniversary', 'celebration', 'general'], { label: 'loại bài' }),
+        tone: v.enum(['formal', 'friendly'], { label: 'giọng văn' }),
+    },
+});
+
+const generateFundSummary = validate({
+    body: {
+        period: v.enum(['month', 'quarter', 'year'], { required: true, label: 'kỳ tóm tắt' }),
+        from: v.date({ label: 'từ ngày' }),
+        to: v.date({ label: 'đến ngày' }),
+        clan_id: v.id({ label: 'ID dòng họ' }),
+    },
+});
+
+const dismissDuplicate = validate({
+    body: {
+        person_a_id: v.id({ required: true, label: 'người thứ nhất' }),
+        person_b_id: v.id({ required: true, label: 'người thứ hai' }),
+    },
+});
+
+// ---- Nội dung trang chủ do admin quản lý (chỉ văn bản thuần; URL chỉ http(s) hoặc đường dẫn nội bộ "/...") ----
+const LANDING_SECTION_KEYS = [
+    'hero', 'about', 'features', 'stats', 'news', 'guide',
+    'demo', 'benefits', 'benefits_why', 'news_latest', 'news_categories', 'news_subscribe',
+    'guide_videos', 'faq', 'footer', 'footer_contact', 'footer_links', 'footer_social',
+];
+const LANDING_URL_RE = /^(https?:\/\/[^\s<>"']+|\/(?!\/)[^\s<>"']*)$/i;
+const landingText = (label, max) => v.string({ max, label });
+const landingUrl = (label) => v.string({ max: 1000, pattern: LANDING_URL_RE, label, message: `${label} chỉ nhận http(s):// hoặc đường dẫn bắt đầu bằng "/".` });
+const landingBilingual = (field, label, max) => ({
+    [`${field}_vi`]: landingText(`${label} (VI)`, max),
+    [`${field}_en`]: landingText(`${label} (EN)`, max),
+});
+const landingSectionShape = () => ({
+    ...landingBilingual('tag', 'nhãn', 255),
+    ...landingBilingual('title', 'tiêu đề', 500),
+    ...landingBilingual('body', 'nội dung', 5000),
+    ...landingBilingual('quote', 'trích dẫn', 1000),
+    image_url: landingUrl('ảnh'),
+    is_visible: v.boolean({ label: 'hiển thị' }),
+    sort_order: v.int({ min: 0, max: 100000, label: 'thứ tự' }),
+});
+const landingItemShape = () => ({
+    ...landingBilingual('title', 'tiêu đề', 500),
+    ...landingBilingual('body', 'nội dung', 3000),
+    ...landingBilingual('meta', 'giá trị/ngày', 255),
+    ...landingBilingual('link_label', 'nhãn liên kết', 255),
+    ...landingBilingual('content', 'nội dung chi tiết', 20000),
+    image_url: landingUrl('ảnh'),
+    link_url: landingUrl('liên kết'),
+    icon: v.string({ max: 60, pattern: /^[a-z0-9_]+$/i, label: 'biểu tượng' }),
+    is_visible: v.boolean({ label: 'hiển thị' }),
+    sort_order: v.int({ min: 0, max: 100000, label: 'thứ tự' }),
+});
+const landingKeyParam = () => ({ key: v.enum(LANDING_SECTION_KEYS, { required: true, label: 'mục trang chủ' }) });
+
+const landingSectionKey = validate({ params: landingKeyParam() });
+const landingSection = validate({ params: landingKeyParam(), body: landingSectionShape() });
+const landingReorderSections = validate({
+    body: { keys: v.array(v.enum(LANDING_SECTION_KEYS), { required: true, min: 1, max: LANDING_SECTION_KEYS.length, label: 'danh sách mục' }) },
+});
+const landingItemCreate = validate({ params: landingKeyParam(), body: landingItemShape() });
+const landingItemUpdate = validate({ params: { id: v.id({ required: true, label: 'ID mục' }) }, body: landingItemShape() });
+const landingItemId = validate({ params: { id: v.id({ required: true, label: 'ID mục' }) } });
+const landingReorderItems = validate({
+    params: landingKeyParam(),
+    body: { ids: v.array(v.id(), { required: true, max: 100, label: 'danh sách mục' }) },
+});
+const landingSeed = validate({
+    body: {
+        overwrite: v.boolean({ label: 'ghi đè' }),
+        sections: v.array(
+            v.object({
+                section_key: v.enum(LANDING_SECTION_KEYS, { required: true, label: 'mục trang chủ' }),
+                ...landingSectionShape(),
+                items: v.array(v.object(landingItemShape()), { max: 50, label: 'danh sách mục con' }),
+            }),
+            { required: true, min: 1, max: LANDING_SECTION_KEYS.length, label: 'danh sách mục' }
+        ),
+    },
+});
+
 module.exports = {
+    landingSectionKey, landingSection, landingReorderSections, landingItemCreate, landingItemUpdate, landingItemId, landingReorderItems, landingSeed,
+    generatePersonBiography, generatePostDraft, generateFundSummary, dismissDuplicate,
     createCalendarEvent, updateCalendarEvent, deleteCalendarEvent,
     assignTask, createEventTask, bulkAssignTasks, updateAssignedTask, taskIdParam, updateTaskStatus,
     createFamilyMemory, updateFamilyMemory, updateMemberProfile, updateMyProfile,

@@ -39,4 +39,33 @@ router.post(
     aiController.generateBiographyDraft
 );
 
+router.post(
+    '/person-biography/generate',
+    verifyToken,
+    checkRole(['admin', 'manager', 'member']),
+    aiRateLimit,
+    schemas.generatePersonBiography,
+    aiController.generatePersonBiographyAI
+);
+
+// Quyền giống đăng bài (POST /api/member/content/post): admin, manager, member.
+router.post(
+    '/post-draft/generate',
+    verifyToken,
+    checkRole(['admin', 'manager', 'member']),
+    aiRateLimit,
+    schemas.generatePostDraft,
+    aiController.generatePostDraftAI
+);
+
+// Số liệu do server tự tính; quyền như xem thống kê quỹ (/api/member/fund/stats).
+router.post(
+    '/fund-summary/generate',
+    verifyToken,
+    checkRole(['admin', 'manager', 'member']),
+    aiRateLimit,
+    schemas.generateFundSummary,
+    aiController.generateFundSummaryAI
+);
+
 module.exports = router;

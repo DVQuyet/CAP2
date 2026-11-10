@@ -23,6 +23,14 @@ export function nextFeedbackState(current, clicked) {
   return { rating: clicked, send: true };
 }
 
+// Đường quan hệ (id người theo thứ tự) của câu trả lời quan hệ; [] nếu không có đường từ 2 người trở lên.
+export function getMessagePathIds(message) {
+  const raw = message?.pathNodes || message?.metadata?.pathNodes;
+  if (!Array.isArray(raw)) return [];
+  const ids = raw.map((item) => Number(item?.id ?? item)).filter((id) => Number.isInteger(id) && id > 0);
+  return ids.length >= 2 ? ids : [];
+}
+
 // Id người được nhắc trong câu trả lời, người trọng tâm đứng đầu.
 export function getMessagePersonIds(message) {
   const raw = message?.personIds || message?.metadata?.personIds;

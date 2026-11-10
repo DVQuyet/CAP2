@@ -110,6 +110,9 @@ Prefix: `/api/ai`
 | Method | Endpoint | Quyền | Mô tả ngắn |
 |---|---|---|---|
 | POST | `/api/ai/event-form/generate` | admin, manager | Gọi Groq (qua backend) để sinh form sự kiện và danh sách task |
+| POST | `/api/ai/person-biography/generate` | admin, manager, member (quyền sửa hồ sơ người đó; member cần temporary edit key) | Body `{person_id, tone?: formal/friendly, length?: short/medium, language?: vi/en, notes?≤600}`. Server tự đọc dữ kiện, trả bản nháp `{success, draft:true, biography, facts_used[], options}`; 503 `AI_UNAVAILABLE` khi thiếu GROQ_API_KEY/AI lỗi. Không ghi DB |
+| POST | `/api/ai/fund-summary/generate` | admin, manager, member (như xem thống kê quỹ), `aiRateLimit` | Body `{period: month/quarter/year (bắt buộc), from?, to? (YYYY-MM-DD, phải đi cùng nhau, ≤ 3660 ngày), clan_id? (chỉ admin)}`. Server tự tính số liệu khoản đã duyệt trong kỳ (kỳ hiện tại nếu không có from/to): tổng thu/chi, chênh lệch, số dư đầu/cuối kỳ, số người đóng góp, top hạng mục chi/nguồn thu, số giao dịch lớn (≥ 10% tổng kỳ và ≥ 1.000.000 đ); không đưa tên người vào prompt. Trả `{success, clan_id, period, from, to, numbers, summary, unverified[], ai}` (`unverified` = số trong lời tóm tắt không có trong số liệu; `ai:false` khi kỳ không có giao dịch nên không gọi AI); 400 kỳ/khoảng ngày sai, 403 xem quỹ dòng họ khác, 503 `AI_UNAVAILABLE` khi thiếu GROQ_API_KEY/AI lỗi. Không ghi DB |
+| POST | `/api/ai/post-draft/generate` | admin, manager, member (như quyền đăng bài) | Body `{idea?≤1000, event_id?, kind?: meeting/anniversary/celebration/general, tone?: formal/friendly}` (cần `idea` hoặc `event_id`). `event_id` = id lịch số, `birthday-/death-<người>-<năm>` hoặc `manager-event-<id>-<ngày>`; server tự đọc dữ kiện trong dòng họ của người dùng (404 nếu không thấy/không được xem). Trả bản nháp `{success, draft:true, title, content, facts_used[], unverified[], options}` (`unverified` = ngày/giờ AI thêm mà đầu vào không có); 503 `AI_UNAVAILABLE` khi thiếu GROQ_API_KEY/AI lỗi. Không ghi DB |
 
 ## Admin
 
@@ -143,6 +146,26 @@ Prefix: `/api/admin`
 | GET | `/api/admin/posts/clan/:clanId` | admin | Lấy bài viết theo dòng họ |
 | PATCH | `/api/admin/posts/:postId/status` | admin | Cập nhật trạng thái bài viết |
 | DELETE | `/api/admin/posts/:postId` | admin | Xóa bài viết |
+
+## Trang chủ do admin quản lý
+
+Nội dung trang chủ công khai (hero, giới thiệu, tính năng, số liệu, tin tức, hướng dẫn). Chưa có dữ liệu hoặc chưa migrate `2026_10_30_site_content.sql` thì `content` là `null` và giao diện dùng nội dung i18n mặc định. Chỉ lưu văn bản thuần; link/ảnh chỉ nhận `http(s)://` hoặc đường dẫn bắt đầu bằng `/`.
+
+| Method | Endpoint | Quyền | Mô tả ngắn |
+|---|---|---|---|
+| GET | `/api/public/landing?lang=vi|en` | Public | `{ success, lang, content }`; `content` = `{ sections: { <key>: { visible, tag, title, body, quote, image_url, items_custom, items[] } }, order[] }` hoặc `null`. Cache bộ nhớ 60s, xóa khi admin ghi |
+| GET | `/api/public/landing/news/:id?lang=vi|en` | Public | Chi tiết một bài tin: `{ success, lang, item: { id, title, body, meta, image_url, link_url, content, ... } }`; 404 nếu bài/mục Tin tức bị ẩn, chưa tùy chỉnh hoặc không tồn tại. Danh sách công khai chỉ có `has_content`, không kèm nội dung dài |
+| GET | `/api/admin/landing` | admin | Toàn bộ mục + mục con (kể cả ẩn), đủ vi/en; `tableMissing: true` nếu chưa migrate |
+| PUT | `/api/admin/landing/sections/:key` | admin | Cập nhật mục (`hero|about|features|stats|news|guide` và đợt 12: `demo|benefits|benefits_why|news_latest|news_categories|news_subscribe|guide_videos|faq|footer|footer_contact|footer_links|footer_social`): tag/title/body/quote_vi/en, image_url, is_visible, sort_order; tự tạo dòng mục nếu chưa có |
+| PUT | `/api/admin/landing/sections/order` | admin | Sắp xếp các mục, body `{ keys: [] }` |
+| DELETE | `/api/admin/landing/sections/:key` | admin | Khôi phục mặc định: xóa mục và mọi mục con |
+| POST | `/api/admin/landing/sections/:key/items` | admin | Thêm mục con (title/body/meta/link_label_vi/en, image_url, link_url, icon, is_visible) |
+| PUT | `/api/admin/landing/sections/:key/items/order` | admin | Sắp xếp mục con, body `{ ids: [] }` |
+| PUT | `/api/admin/landing/items/:id` | admin | Sửa mục con |
+| DELETE | `/api/admin/landing/items/:id` | admin | Xóa mục con |
+| POST | `/api/admin/landing/seed` | admin | "Lấy nội dung hiện tại": body `{ sections: [{ section_key, ..., items: [] }], overwrite? }`; chỉ tạo mục chưa có (trừ khi `overwrite`) |
+
+Đợt 12: mục con tin tức có thêm `content_vi/content_en` (văn bản thuần, tối đa 20000 ký tự, cần migration `2026_10_30_site_content_more.sql`; chưa migrate thì ghi nội dung dài trả 503). Quy tắc riêng: `guide_videos.link_url` chỉ nhận https YouTube/Vimeo hoặc tệp `.mp4`; `footer_social` chỉ nhận `link_url` https và `icon` trong `facebook|youtube|tiktok|zalo|instagram|x|linkedin|telegram|other`; `footer_contact.icon` chỉ `location_on|call|mail`; `content_*` chỉ cho mục `news`. Vi phạm trả 400.
 
 ## Manager
 
@@ -190,6 +213,9 @@ Prefix: `/api/manager`
 | PATCH | `/api/manager/tasks/:id/complete` | admin, manager | Đánh dấu task hoàn thành |
 | GET | `/api/manager/clans/:clanId/family-tree` | admin, manager | Lấy cây gia phả theo dòng họ |
 | PATCH | `/api/manager/clans/:clanId/family-tree/layout` | admin, manager | Lưu layout cây gia phả theo dòng họ |
+| GET | `/api/manager/tree/duplicates` | admin, manager (dòng họ của mình; admin thêm `clan_id`) | Gợi ý cặp người có thể trùng lặp (chỉ đọc), query `limit` (≤100), `offset`. Trả `{success, clan_id, total, limit, offset, pairs:[{key, score, confidence: high/medium/low, reasons:[{code,points}], a, b}]}`; không có API tự gộp |
+| GET | `/api/manager/tree/export.gedcom` | admin, manager (dòng họ của mình; admin thêm `clan_id`) | Tải file GEDCOM 5.5.1 UTF-8 (`Content-Disposition: attachment`, CRLF): INDI (NAME `Tên /Họ/`, SEX, BIRT/DEAT theo `*_date_precision`, PLAC = quê quán, NOTE = tiểu sử), FAM (HUSB/WIFE/CHIL, MARR), gồm cả quan hệ `visibility=managers`; không có SĐT/email/địa chỉ. Chưa hỗ trợ nhập |
+| POST | `/api/manager/tree/duplicates/dismiss` | admin, manager | Body `{person_a_id, person_b_id}`: lưu "không trùng" (bảng `genealogy_duplicate_dismissals`, tự tạo nếu thiếu) |
 | POST | `/api/manager/people` | admin, manager, member | Tạo người trong gia phả |
 | POST | `/api/manager/people/create` | admin, manager, member | Alias tạo người trong gia phả |
 | PATCH | `/api/manager/people/link` | admin, manager, member | Liên kết quan hệ |

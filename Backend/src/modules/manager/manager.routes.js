@@ -73,6 +73,11 @@
     router.post('/people/link/preview', verifyToken, checkRole(['admin', 'manager', 'member']), schemas.linkRelations, managerController.previewRelations);
     // Kiểm tra toàn cây, sửa đời hàng loạt, chính sách gia phả, lịch sử xác nhận, tra xưng hô.
     router.get('/tree/audit', verifyToken, checkRole(['admin', 'manager']), managerController.auditFamilyTree);
+    // Gợi ý người trùng lặp (chỉ đọc) và bỏ qua cặp đã xem; không tự gộp.
+    router.get('/tree/duplicates', verifyToken, checkRole(['admin', 'manager']), managerController.listDuplicateCandidates);
+    // Xuất GEDCOM 5.5.1 (chỉ xuất; chưa hỗ trợ nhập).
+    router.get('/tree/export.gedcom', verifyToken, checkRole(['admin', 'manager']), managerController.exportGedcom);
+    router.post('/tree/duplicates/dismiss', verifyToken, checkRole(['admin', 'manager']), schemas.dismissDuplicate, managerController.dismissDuplicate);
     router.post('/tree/recompute-generations', verifyToken, checkRole(['admin', 'manager']), managerController.recomputeGenerations);
     router.get('/tree/genealogy-policy', verifyToken, checkRole(['admin', 'manager']), managerController.getGenealogyPolicy);
     router.put('/tree/genealogy-policy', verifyToken, checkRole(['admin', 'manager']), managerController.updateGenealogyPolicy);

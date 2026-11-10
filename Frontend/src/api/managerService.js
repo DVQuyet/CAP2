@@ -1,4 +1,4 @@
-import { apiRequest } from "../services/api";
+import { apiRequest, buildApiUrl } from "../services/api";
 import { getTreeEditKeyHeader } from "../services/treeEditSession";
 
 const BASE_URL = "/api/manager";
@@ -938,3 +938,34 @@ export const rejectMemoryAPI = (id, reason) =>
   );
 
 
+
+// Gợi ý người trùng lặp (chỉ đọc) và đánh dấu "không trùng"; không có thao tác gộp.
+export const getDuplicateCandidates = ({ limit = 20, offset = 0 } = {}) =>
+  request(`/tree/duplicates?limit=${encodeURIComponent(limit)}&offset=${encodeURIComponent(offset)}`, {}, "Không thể tải gợi ý người trùng lặp");
+
+export const dismissDuplicatePair = (personAId, personBId) =>
+  request("/tree/duplicates/dismiss", {
+    method: "POST",
+    body: JSON.stringify({ person_a_id: personAId, person_b_id: personBId }),
+  }, "Không thể lưu trạng thái không trùng");
+
+// Tải file GEDCOM 5.5.1 của dòng họ (chỉ xuất). Trả { blob, filename } để trang tự lưu.
+export const downloadTreeGedcom = async () => {
+  const token = localStorage.getItem("auth_token");
+  const response = await fetch(buildApiUrl(`${BASE_URL}/tree/export.gedcom`), {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => ({}));
+    throw Object.assign(new Error(data.message || "Không thể xuất file GEDCOM"), { status: response.status });
+  }
+  const disposition = response.headers.get("Content-Disposition") || "";
+  const encoded = /filename\*=UTF-8''([^;]+)/i.exec(disposition);
+  let filename = "gia-pha.ged";
+  try {
+    if (encoded) filename = decodeURIComponent(encoded[1]);
+  } catch {
+    // giữ tên mặc định
+  }
+  return { blob: await response.blob(), filename };
+};

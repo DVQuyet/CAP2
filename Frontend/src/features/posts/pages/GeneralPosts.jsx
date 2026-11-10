@@ -19,6 +19,7 @@ import { formatDateTimeVN } from "../../../shared/utils/dateFormat";
 import { getSocket } from "../../../services/socket";
 import { useConfirm } from "../../../shared/components/confirmContext.js";
 import useDismissable from "../../../shared/hooks/useDismissable";
+import PostAIAssist from "../components/PostAIAssist";
 import "./GeneralPosts.css";
 
 const emptyPostForm = {
@@ -95,8 +96,8 @@ function PostCard({ post, onOpen, onLike, liking, onDelete, onEdit, canModify, t
         </button>
         {canModify && (
           <div className="feed-post-card-actions">
-            <button type="button" className="feed-post-action-btn" onClick={() => onEdit(post)} title={t("posts.card.edit")}><span className="material-symbols-outlined">edit</span></button>
-            <button type="button" className="feed-post-action-btn is-danger" onClick={() => onDelete(post.id)} title={t("posts.card.delete")}><span className="material-symbols-outlined">delete</span></button>
+            <button type="button" className="feed-post-action-btn" onClick={() => onEdit(post)} title={t("posts.card.edit")} aria-label={t("posts.card.edit")}><span className="material-symbols-outlined">edit</span></button>
+            <button type="button" className="feed-post-action-btn is-danger" onClick={() => onDelete(post.id)} title={t("posts.card.delete")} aria-label={t("posts.card.delete")}><span className="material-symbols-outlined">delete</span></button>
           </div>
         )}
       </header>
@@ -160,7 +161,7 @@ function FeedComposer({ onOpen, t }) {
   );
 }
 
-function AddPostModal({ form, error, notice, submitting, onChange, onClose, onSubmit, t }) {
+function AddPostModal({ form, error, notice, submitting, onChange, onClose, onSubmit, initialEventId = "", t }) {
   const { requestClose, backdropProps } = useDismissable();
   // Có nội dung đang soạn thì hỏi lại trước khi đóng.
   const dirty = Boolean(form.description?.trim() || form.content?.trim() || form.image_url);
@@ -199,6 +200,16 @@ function AddPostModal({ form, error, notice, submitting, onChange, onClose, onSu
               {t("posts.modal.create.tabs.story")}
             </button>
           </div>
+
+          <PostAIAssist
+            hasContent={Boolean(form.description?.trim() || form.content?.trim())}
+            disabled={submitting}
+            initialEventId={initialEventId}
+            onDraft={({ title, content }) => {
+              onChange("description", title.slice(0, 255));
+              onChange("content", content);
+            }}
+          />
 
           <label className="post-field">
             <span>{t("posts.modal.create.fields.title")}</span>
@@ -515,6 +526,7 @@ export default function GeneralPosts() {
     if (searchParams.get("compose")) {
       const nextParams = new URLSearchParams(searchParams);
       nextParams.delete("compose");
+      nextParams.delete("event");
       setSearchParams(nextParams, { replace: true });
     }
   };
@@ -717,6 +729,7 @@ export default function GeneralPosts() {
           onChange={changeFormField}
           onClose={closeAddModal}
           onSubmit={handleSubmitPost}
+          initialEventId={searchParams.get("event") || ""}
           t={t}
         />
       )}
@@ -747,7 +760,7 @@ export default function GeneralPosts() {
           <section className="post-modal post-compose-modal" role="dialog" aria-modal="true" onMouseDown={(e) => e.stopPropagation()}>
             <header className="post-modal-head">
               <h2>{t("posts.modal.edit.title")}</h2>
-              <button type="button" className="post-icon-btn" onClick={() => requestClose(closeEditPost, isEditPostDirty)}><span className="material-symbols-outlined">close</span></button>
+              <button aria-label={t("common.close")} type="button" className="post-icon-btn" onClick={() => requestClose(closeEditPost, isEditPostDirty)}><span className="material-symbols-outlined">close</span></button>
             </header>
             <div className="post-compose-form">
               <label className="post-field">

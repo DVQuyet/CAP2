@@ -3,10 +3,11 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import ProtectedRoute from "../shared/components/ProtectedRoute";
 import UserLayout from "../layouts/PublicLayout";
-import AdminLayout from "../layouts/AdminLayout";
-import ManagerLayout from "../layouts/ManagerLayout";
-import MemberLayout from "../layouts/MemberLayout";
 
+// Layout theo vai trò chỉ tải khi vào khu đăng nhập (kéo theo socket, chuông thông báo, chatbot).
+const AdminLayout = lazy(() => import("../layouts/AdminLayout"));
+const ManagerLayout = lazy(() => import("../layouts/ManagerLayout"));
+const MemberLayout = lazy(() => import("../layouts/MemberLayout"));
 const Login = lazy(() => import("../features/auth/pages/Login"));
 const Register = lazy(() => import("../features/auth/pages/Register"));
 const Home = lazy(() => import("../features/public/pages/Home"));
@@ -29,6 +30,7 @@ const DashboardHome = lazy(() => import("../features/admin/pages/DashboardHome")
 const GenealogyManagement = lazy(() => import("../features/admin/pages/GenealogyManagement"));
 const PostsPage = lazy(() => import("../features/admin/pages/PostsPage"));
 const MembersPage = lazy(() => import("../features/admin/pages/MembersPage"));
+const LandingManagement = lazy(() => import("../features/admin/pages/LandingManagement"));
 
 const AccountPage = lazy(() => import("../features/manager/pages/AccountPage"));
 const GenealogySection = lazy(() => import("../features/genealogy/pages/ManagerGenealogy"));
@@ -40,6 +42,7 @@ const MemberFundPage = lazy(() => import("../features/fund/pages/MemberFundPage"
 
 const FamilyTreePage = lazy(() => import("../features/genealogy/pages/UserFamilyTree"));
 const GenealogyBookPage = lazy(() => import("../features/genealogy-book/pages/GenealogyBookPage"));
+const DuplicatesPage = lazy(() => import("../features/duplicates/pages/DuplicatesPage"));
 const MemberDashboard = lazy(() => import("../features/member/pages/MemberDashboard"));
 const MemberProfile = lazy(() => import("../features/member/pages/MemberProfile"));
 const MemberSubmissions = lazy(() => import("../features/member/pages/MemberSubmissions"));
@@ -129,6 +132,7 @@ export default function AppRoutes() {
             <Route path="/manager/invitations" element={<InvitationPage />} />
             <Route path="/manager/genealogy" element={<GenealogySection />} />
             <Route path="/manager/genealogy-book" element={<GenealogyBookPage role="manager" />} />
+            <Route path="/manager/duplicates" element={<DuplicatesPage />} />
             <Route path="/manager/tasks" element={<TaskManagementPage role="manager" />} />
             <Route path="/manager/tasks/:taskId" element={<TaskManagementPage role="manager" />} />
             <Route path="/manager/time-capsule" element={<TimeCapsulePage role="manager" />} />
@@ -151,6 +155,7 @@ export default function AppRoutes() {
             <Route path="/dashboard/tasks" element={<TaskManagementPage role="admin" />} />
             <Route path="/dashboard/tasks/clan/:clanId" element={<TaskManagementPage role="admin" />} />
             <Route path="/dashboard/members" element={<MembersPage />} />
+            <Route path="/dashboard/landing" element={<LandingManagement />} />
             <Route path="/dashboard/invitations" element={<InvitationPage />} />
             <Route path="/dashboard/events" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard/gallery" element={<Navigate to="/dashboard" replace />} />

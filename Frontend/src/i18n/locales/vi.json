@@ -1,4 +1,23 @@
 {
+  "a11y": {
+    "firstPage": "Trang đầu",
+    "previousPage": "Trang trước",
+    "nextPage": "Trang sau",
+    "lastPage": "Trang cuối",
+    "clearSearch": "Xóa tìm kiếm",
+    "qrCode": "Mã QR",
+    "evidence": "Ảnh minh chứng",
+    "bill": "Ảnh hóa đơn",
+    "preview": "Ảnh xem trước",
+    "type": "Loại",
+    "time": "Giờ",
+    "datePrecision": "Độ chính xác của ngày",
+    "calendarType": "Loại lịch",
+    "living": "Còn sống hay đã mất",
+    "status": "Trạng thái",
+    "generation": "Đời",
+    "role": "Vai trò"
+  },
   "common": {
     "all": "Tất cả",
     "approved": "Đã duyệt",
@@ -153,6 +172,7 @@
       "passwordChangeFailed": "Không thể đổi mật khẩu."
     },
     "adminMenu": {
+      "landing": "Trang chủ",
       "overview": "Tổng quan",
       "genealogy": "Quản lý phả hệ",
       "accounts": "Quản lý Tài khoản",
@@ -431,6 +451,7 @@
     "agendaTitle": "Lịch trong ngày",
     "viewToggleAria": "Chọn kiểu xem",
     "originalLunarDeath": "Ngày mất âm lịch gốc",
+    "draftAnnouncement": "Soạn thông báo cho sự kiện này",
     "anniversaryLunarYear": "Ngày giỗ âm lịch năm này",
     "birthdayLunarYear": "Ngày sinh âm lịch năm này",
     "creator": "Người tạo",
@@ -894,6 +915,78 @@
       "upcoming": "Sắp diễn ra"
     },
     "admin": {
+    "landing": {
+      "title": "Quản lý trang chủ",
+      "subtitle": "Thêm, sửa, xóa và sắp xếp nội dung hiển thị ở trang chủ công khai mà không cần sửa mã.",
+      "preview": "Xem trước",
+      "seedAll": "Lấy nội dung hiện tại",
+      "seedSection": "Lấy nội dung hiện tại cho mục này",
+      "seedHint": "Mục này đang dùng nội dung mặc định của hệ thống. Hãy lấy nội dung hiện tại về để bắt đầu chỉnh sửa; trang chủ vẫn giữ nguyên cho tới khi bạn sửa.",
+      "seedDone": "Đã lấy nội dung hiện tại về để chỉnh sửa.",
+      "tableMissing": "Chưa tạo bảng nội dung trang chủ trong cơ sở dữ liệu. Hãy chạy migration 2026_10_30_site_content.sql rồi tải lại trang.",
+      "tabsAria": "Các mục của trang chủ",
+      "usingDefault": "Mặc định",
+      "customized": "Đã tùy chỉnh",
+      "hiddenBadge": "Đang ẩn",
+      "sections": {
+        "hero": "Banner đầu trang",
+        "about": "Giới thiệu",
+        "features": "Tính năng",
+        "stats": "Số liệu",
+        "news": "Tin tức",
+        "guide": "Hướng dẫn"
+      },
+      "sectionHints": {
+        "hero": "Tiêu đề lớn (xuống dòng để ngắt dòng), mô tả, ảnh nền và các nút ở đầu trang chủ.",
+        "about": "Nhãn, tiêu đề, đoạn giới thiệu (mỗi đoạn một dòng), câu trích dẫn và ảnh ở mục Về chúng tôi.",
+        "features": "Khối Tính năng vượt trội ở trang chủ và trang Tính năng: nhãn, tiêu đề, ảnh và danh sách thẻ.",
+        "stats": "Các con số nổi bật ở trang chủ và trang Tính năng: số liệu và nhãn.",
+        "news": "Các bài nổi bật ở trang Tin tức: ngày, tiêu đề, mô tả, ảnh và liên kết.",
+        "guide": "Các bước ở trang Hướng dẫn: biểu tượng, tiêu đề và mô tả (số thứ tự tự đánh theo vị trí)."
+      },
+      "visibleSection": "Hiển thị mục này trên trang",
+      "visibleItem": "Hiển thị mục con này",
+      "moveSectionUp": "Đưa mục lên trước",
+      "moveSectionDown": "Đưa mục xuống sau",
+      "moveUp": "Đưa lên",
+      "moveDown": "Đưa xuống",
+      "reset": "Khôi phục mặc định",
+      "resetTitle": "Khôi phục nội dung mặc định?",
+      "resetMessage": "Mọi chỉnh sửa của mục \"{{section}}\" sẽ bị xóa và trang chủ dùng lại nội dung mặc định của hệ thống.",
+      "resetDone": "Đã khôi phục nội dung mặc định.",
+      "saveSection": "Lưu mục",
+      "saved": "Đã lưu.",
+      "items": "Danh sách",
+      "itemsDefault": "Danh sách đang dùng nội dung mặc định.",
+      "noItems": "Chưa có mục nào. Bấm \"Thêm mục\" để tạo.",
+      "addItem": "Thêm mục",
+      "untitled": "(chưa có tiêu đề)",
+      "deleteItemTitle": "Xóa mục này?",
+      "deleteItemMessage": "Mục \"{{name}}\" sẽ bị xóa khỏi trang chủ.",
+      "itemDeleted": "Đã xóa mục.",
+      "uploadImage": "Tải ảnh lên",
+      "imageHint": "Tải ảnh lên hoặc dán đường dẫn ảnh (http/https).",
+      "linkHint": "Đường dẫn nội bộ bắt đầu bằng \"/\" (ví dụ /clan-register) hoặc địa chỉ http(s). Để trống nếu không có liên kết.",
+      "iconHint": "Tên biểu tượng Material Symbols, ví dụ bolt, security, schema.",
+      "lang": {
+        "vi": "(Tiếng Việt)",
+        "en": "(English)"
+      },
+      "fields": {
+        "tag": "Nhãn nhỏ",
+        "title": "Tiêu đề",
+        "body": "Nội dung",
+        "quote": "Trích dẫn",
+        "image_url": "Ảnh",
+        "meta": "Giá trị / ngày",
+        "metaStats": "Con số",
+        "statLabel": "Nhãn",
+        "metaNews": "Ngày đăng",
+        "link_label": "Chữ trên nút / liên kết",
+        "link_url": "Liên kết",
+        "icon": "Biểu tượng"
+      }
+    },
       "title": "Sự kiện & Công việc toàn hệ thống",
       "description": "Theo dõi và quản lý công việc, sự kiện của tất cả dòng tộc.",
       "clanTasks": "Công việc dòng họ {{clanName}}",
@@ -1154,7 +1247,36 @@
       "expense": "Chi ra",
       "yearLabel": "Năm {{year}}",
       "loadError": "Không tải được số liệu quỹ. Vui lòng thử lại.",
-      "empty": "Chưa có khoản thu chi nào được duyệt để thống kê."
+      "empty": "Chưa có khoản thu chi nào được duyệt để thống kê.",
+      "ai": {
+        "title": "AI tóm tắt",
+        "hint": "Hệ thống tự tính số liệu các khoản đã duyệt trong kỳ rồi nhờ AI viết lời tóm tắt. Không nêu tên người đóng góp.",
+        "periodLabel": "Kỳ",
+        "period": { "month": "Tháng này", "quarter": "Quý này", "year": "Năm nay" },
+        "customRange": "Chọn khoảng ngày",
+        "from": "Từ ngày",
+        "to": "Đến ngày",
+        "run": "AI tóm tắt",
+        "loading": "Đang tóm tắt...",
+        "rangeInvalid": "Hãy chọn đủ ngày bắt đầu và kết thúc (bắt đầu không sau kết thúc).",
+        "unavailable": "AI chưa sẵn sàng. Bạn vẫn xem được các biểu đồ bên dưới.",
+        "error": "Không tạo được bản tóm tắt. Vui lòng thử lại.",
+        "unverified": "Có số chưa khớp với số liệu quỹ: {{items}}. Hãy đối chiếu với bảng số liệu bên dưới trước khi dùng.",
+        "numbersTitle": "Số liệu đã dùng ({{label}})",
+        "note": "Bản tóm tắt do AI viết dựa trên số liệu trên; hãy kiểm tra trước khi đăng hoặc báo cáo.",
+        "n": {
+          "income": "Tổng thu (số khoản)",
+          "expense": "Tổng chi (số khoản)",
+          "net": "Chênh lệch thu - chi",
+          "opening": "Số dư đầu kỳ",
+          "closing": "Số dư cuối kỳ",
+          "contributors": "Số người đóng góp",
+          "large": "Giao dịch lớn (từ {{amount}})",
+          "largeValue": "{{income}} thu, {{expense}} chi",
+          "topExpense": "Hạng mục chi lớn nhất",
+          "topIncome": "Nguồn thu lớn nhất"
+        }
+      }
     },
     "campaigns": {
       "title": "Danh sách đợt thu",
@@ -1957,6 +2079,28 @@
         },
         "submit": "Gửi bài đăng"
       },
+      "ai": {
+        "button": "AI soạn giúp",
+        "hint": "Gõ ý chính hoặc chọn sự kiện sắp tới; AI chỉ soạn bản nháp từ thông tin bạn cung cấp. Hãy kiểm tra ngày, giờ, địa điểm trước khi gửi.",
+        "eventLabel": "Soạn thông báo cho sự kiện này",
+        "eventNone": "Không chọn sự kiện",
+        "eventSelected": "Sự kiện đã chọn từ lịch",
+        "ideaLabel": "Ý chính của bài",
+        "ideaPlaceholder": "Ví dụ: họp họ 15/11 tại nhà thờ họ, bàn việc tu sửa mộ",
+        "kindLabel": "Loại bài",
+        "kind": { "auto": "Tự nhận biết", "meeting": "Thông báo họp họ", "anniversary": "Giỗ", "celebration": "Hiếu hỷ", "general": "Chung" },
+        "toneLabel": "Giọng văn",
+        "tone": { "formal": "Trang trọng", "friendly": "Thân mật" },
+        "run": "Soạn bản nháp",
+        "loading": "Đang soạn...",
+        "confirmReplace": "Bài đang có nội dung. Thay bằng bản nháp của AI?",
+        "replace": "Thay thế",
+        "done": "Đã điền bản nháp vào bài. Chưa gửi cho đến khi bạn bấm Gửi bài đăng.",
+        "unverified": "Hãy kiểm tra lại các mốc ngày/giờ AI thêm vào: {{items}}",
+        "eventNotFound": "Không tìm thấy sự kiện hoặc bạn không có quyền xem.",
+        "unavailable": "AI tạm thời không khả dụng. Vui lòng soạn thủ công.",
+        "error": "Không thể soạn bản nháp lúc này."
+      },
       "detail": {
         "comments": "Bình luận",
         "loadingComments": "Đang tải bình luận...",
@@ -1995,6 +2139,10 @@
     }
   },
   "tree": {
+    "pathHighlight": {
+      "banner": "Đang tô sáng đường quan hệ ({{count}} người)",
+      "clear": "Bỏ tô sáng"
+    },
     "page": {
       "memberFallback": "Thành viên",
       "clanFallback": "Dòng họ",
@@ -2019,6 +2167,8 @@
       "saving": "Đang lưu...",
       "saveClanInfo": "Lưu thông tin dòng họ",
       "temporaryEditKey": "Khóa sửa tạm thời",
+      "exportGedcom": "Xuất GEDCOM",
+      "gedcomHint": "Tải file .ged (GEDCOM 5.5.1) để dùng ở phần mềm gia phả khác. Chỉ xuất; không gồm số điện thoại, email, địa chỉ.",
       "temporaryEditKeyHelp": "Hiệu lực 1 giờ từ lúc tạo key",
       "searchMemberByName": "Tìm member theo tên",
       "searchMemberPlaceholder": "Nhập tên, email hoặc account id",
@@ -2257,6 +2407,24 @@
       "unknownName": "Chưa rõ"
     },
     "inspector": {
+      "bioAi": {
+        "button": "AI gợi ý tiểu sử",
+        "loading": "Đang soạn...",
+        "tone": "Giọng văn",
+        "toneFormal": "Trang trọng",
+        "toneFriendly": "Gần gũi",
+        "length": "Độ dài",
+        "lengthShort": "Ngắn",
+        "lengthMedium": "Vừa",
+        "notes": "Ghi chú thêm cho AI (không bắt buộc)",
+        "notesPlaceholder": "Ví dụ: nhấn mạnh quê quán, giọng văn nhẹ nhàng...",
+        "hint": "AI chỉ soạn bản nháp từ dữ liệu gia phả. Hãy kiểm tra và chỉnh sửa trước khi lưu.",
+        "confirmReplace": "Ô tiểu sử đang có nội dung. Thay bằng bản nháp của AI?",
+        "replace": "Thay thế",
+        "error": "Không thể tạo gợi ý tiểu sử lúc này.",
+        "unavailable": "AI tạm thời không khả dụng. Vui lòng nhập thủ công.",
+        "done": "Đã điền bản nháp vào ô tiểu sử. Chưa lưu cho đến khi bạn bấm lưu."
+      },
       "title": "Thông tin thành viên",
       "spouseLabel": "Vợ/chồng: {{name}}",
       "fallbackSubtitle": "Thông tin hồ sơ gia phả",
@@ -2718,6 +2886,8 @@
     "feedbackError": "Không gửi được phản hồi, thử lại sau.",
     "viewOnTree": "Xem trên cây",
     "viewOnTreeTitle": "Mở cây gia phả và làm nổi bật người được nhắc tới",
+    "viewPathOnTree": "Xem đường quan hệ trên cây",
+    "viewPathOnTreeTitle": "Mở cây gia phả và tô sáng đường quan hệ giữa hai người",
     "coldStartNotice": "Máy chủ đang khởi động, lần đầu có thể mất tới 1 phút…",
     "clearHistory": "Xóa lịch sử trò chuyện",
     "clearHistoryConfirm": "Xóa toàn bộ lịch sử trò chuyện của bạn trong dòng họ này?",
@@ -3184,6 +3354,31 @@
       "closing": [
         "Chúng tôi sẽ xử lý yêu cầu xóa dữ liệu trong thời gian sớm nhất."
       ]
+    }
+  },
+  "duplicates": {
+    "title": "Người có thể trùng lặp",
+    "intro": "Gợi ý các cặp hồ sơ có thể là cùng một người (dựa trên tên, năm sinh, cha mẹ, đời). Chỉ để xem và đối chiếu; hệ thống không tự gộp hồ sơ. Nếu đúng là trùng, hãy mở hồ sơ và chỉnh hoặc xóa thủ công.",
+    "entryLink": "Người trùng lặp",
+    "backToTree": "Về cây gia phả",
+    "emptyTitle": "Không có cặp nào đáng ngờ",
+    "emptyHint": "Chưa thấy hồ sơ nào có thể trùng, hoặc bạn đã xem hết.",
+    "count": "Đang hiện {{shown}} / {{total}} cặp",
+    "loadMore": "Tải thêm",
+    "score": "Điểm {{score}}/100",
+    "confidence": { "high": "Rất nghi trùng", "medium": "Khá nghi", "low": "Cần xem lại" },
+    "field": { "name": "Họ tên", "gender": "Giới tính", "generation": "Đời", "birth": "Sinh", "death": "Mất", "father": "Cha", "mother": "Mẹ" },
+    "gender": { "male": "Nam", "female": "Nữ" },
+    "unknown": "Chưa rõ",
+    "openProfile": "Mở hồ sơ {{name}}",
+    "notDuplicate": "Không trùng",
+    "confirmDismiss": "Đánh dấu {{a}} và {{b}} là hai người khác nhau? Cặp này sẽ không được gợi ý nữa.",
+    "reason": {
+      "name_exact": "Tên giống hệt (bỏ dấu)", "name_typo": "Tên gần giống (lệch 1 ký tự)", "name_similar": "Cùng họ và tên gọi",
+      "same_gender": "Cùng giới tính", "birth_year_same": "Cùng năm sinh", "birth_date_same": "Cùng ngày sinh",
+      "birth_year_close": "Năm sinh lệch 1-2 năm", "birth_year_far": "Năm sinh lệch nhiều", "death_year_far": "Năm mất lệch nhiều",
+      "same_parents": "Cùng cha và mẹ", "shared_parent": "Chung cha hoặc mẹ", "similar_parents": "Cha/mẹ trùng tên",
+      "same_generation": "Cùng đời", "generation_far": "Khác đời nhiều"
     }
   },
   "genealogyBook": {

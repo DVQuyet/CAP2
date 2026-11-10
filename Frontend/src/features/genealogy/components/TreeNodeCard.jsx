@@ -118,7 +118,7 @@ export default function TreeNodeCard({
         <button
           type="button"
           className="fte-collapseButton"
-          title={collapsed ? t("tree.card.collapse.expand") : t("tree.card.collapse.collapse")}
+          title={collapsed ? t("tree.card.collapse.expand") : t("tree.card.collapse.collapse")} aria-label={collapsed ? t("tree.card.collapse.expand") : t("tree.card.collapse.collapse")}
           onPointerDown={stopActionPointer}
           onClick={(event) => {
             event.stopPropagation();
@@ -142,14 +142,14 @@ export default function TreeNodeCard({
       {canEdit || canDelete || hasChildren || hasAncestors ? (
         <div className="fte-cardHoverActions" aria-label={t("posts.modal.create.tabs.ariaLabel")}>
           {canEdit ? (
-            <button type="button" className="is-create" title={t("tree.card.addRelation")} onPointerDown={stopActionPointer} onClick={(event) => { event.stopPropagation(); onQuickCreate?.(person); }}>
+            <button type="button" className="is-create" title={t("tree.card.addRelation")} aria-label={t("tree.card.addRelation")} onPointerDown={stopActionPointer} onClick={(event) => { event.stopPropagation(); onQuickCreate?.(person); }}>
               <span className="material-symbols-outlined">add</span>
             </button>
           ) : null}
           {hasChildren ? (
             <button
               type="button"
-              title={collapsed ? t("tree.card.descendantsExpand") : t("tree.card.descendantsCollapse")}
+              title={collapsed ? t("tree.card.descendantsExpand") : t("tree.card.descendantsCollapse")} aria-label={collapsed ? t("tree.card.descendantsExpand") : t("tree.card.descendantsCollapse")}
               onPointerDown={stopActionPointer}
               onClick={(event) => { event.stopPropagation(); onToggleDescendants?.(person.id); }}
             >
@@ -159,7 +159,7 @@ export default function TreeNodeCard({
           {hasAncestors ? (
             <button
               type="button"
-              title={ancestorsCollapsed ? t("tree.card.ancestorsExpand") : t("tree.card.ancestorsCollapse")}
+              title={ancestorsCollapsed ? t("tree.card.ancestorsExpand") : t("tree.card.ancestorsCollapse")} aria-label={ancestorsCollapsed ? t("tree.card.ancestorsExpand") : t("tree.card.ancestorsCollapse")}
               onPointerDown={stopActionPointer}
               onClick={(event) => { event.stopPropagation(); onToggleAncestors?.(person.id); }}
             >
@@ -167,12 +167,12 @@ export default function TreeNodeCard({
             </button>
           ) : null}
           {canEdit ? (
-            <button type="button" title={t("tree.card.edit")} onPointerDown={stopActionPointer} onClick={(event) => { event.stopPropagation(); onEdit(person); }}>
+            <button type="button" title={t("tree.card.edit")} aria-label={t("tree.card.edit")} onPointerDown={stopActionPointer} onClick={(event) => { event.stopPropagation(); onEdit(person); }}>
               <span className="material-symbols-outlined">edit</span>
             </button>
           ) : null}
           {canDelete ? (
-            <button type="button" className="is-danger" title={t("tree.card.delete")} onPointerDown={stopActionPointer} onClick={(event) => { event.stopPropagation(); onDelete(person); }}>
+            <button type="button" className="is-danger" title={t("tree.card.delete")} aria-label={t("tree.card.delete")} onPointerDown={stopActionPointer} onClick={(event) => { event.stopPropagation(); onDelete(person); }}>
               <span className="material-symbols-outlined">delete</span>
             </button>
           ) : null}

@@ -41,7 +41,7 @@ export default function TreeSearchPanel({
             onChange={(event) => onQueryChange?.(event.target.value)}
           />
         </label>
-        <button type="submit" className="fte-iconButton" title={t("tree.sidebar.search")}>
+        <button type="submit" className="fte-iconButton" title={t("tree.sidebar.search")} aria-label={t("tree.sidebar.search")}>
           <span className="material-symbols-outlined">search</span>
         </button>
         {showFindMe ? (
@@ -50,13 +50,13 @@ export default function TreeSearchPanel({
             className="fte-iconButton"
             onClick={onFindMe}
             disabled={findMeDisabled}
-            title={t("tree.sidebar.findMe")}
+            title={t("tree.sidebar.findMe")} aria-label={t("tree.sidebar.findMe")}
           >
             <span className="material-symbols-outlined">my_location</span>
           </button>
         ) : null}
         {showClear ? (
-          <button type="button" className="fte-iconButton" onClick={onClear} title={t("common.close")}>
+          <button type="button" className="fte-iconButton" onClick={onClear} title={t("common.close")} aria-label={t("common.close")}>
             <span className="material-symbols-outlined">close</span>
           </button>
         ) : null}

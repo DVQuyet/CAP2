@@ -53,7 +53,7 @@ export default function TreeViewModeSelector({
               type="button"
               className={mode === "full" ? "is-active" : ""}
               onClick={onFullMode}
-              title={t("tree.viewMode.full")}
+              title={t("tree.viewMode.full")} aria-label={t("tree.viewMode.full")}
             >
               <span className="material-symbols-outlined">account_tree</span>
             </button>

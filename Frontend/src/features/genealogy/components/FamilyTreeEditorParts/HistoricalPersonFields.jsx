@@ -19,7 +19,7 @@ function DateWithPrecision({ prefix, form, setField, disabled, label, lunarHintL
     <div className="fte-historicalDate">
       <span className="fte-fieldLabel">{label}</span>
       <div className="fte-historicalDateRow">
-        <select
+        <select aria-label={t("a11y.datePrecision")}
           value={precision}
           disabled={disabled}
           onChange={(event) => setField(`${prefix}_date_precision`, event.target.value)}
@@ -42,7 +42,7 @@ function DateWithPrecision({ prefix, form, setField, disabled, label, lunarHintL
           />
         ) : (
           <>
-            <select
+            <select aria-label={t("a11y.calendarType")}
               value={calendar}
               disabled={disabled}
               onChange={(event) => setField(`${prefix}_calendar`, event.target.value)}

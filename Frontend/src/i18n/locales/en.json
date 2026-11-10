@@ -1,4 +1,23 @@
 {
+  "a11y": {
+    "firstPage": "First page",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
+    "lastPage": "Last page",
+    "clearSearch": "Clear search",
+    "qrCode": "QR code",
+    "evidence": "Evidence image",
+    "bill": "Receipt image",
+    "preview": "Preview image",
+    "type": "Type",
+    "time": "Time",
+    "datePrecision": "Date precision",
+    "calendarType": "Calendar type",
+    "living": "Living or deceased",
+    "status": "Status",
+    "generation": "Generation",
+    "role": "Role"
+  },
   "common": {
     "all": "All",
     "approved": "Approved",
@@ -155,6 +174,7 @@
       "passwordChangeFailed": "Unable to change password."
     },
     "adminMenu": {
+      "landing": "Homepage",
       "overview": "Overview",
       "genealogy": "Genealogy management",
       "accounts": "Account management",
@@ -431,6 +451,7 @@
     "agendaTitle": "Agenda for today",
     "viewToggleAria": "Choose view mode",
     "originalLunarDeath": "Original lunar death date",
+    "draftAnnouncement": "Draft an announcement for this event",
     "anniversaryLunarYear": "Lunar anniversary this year",
     "birthdayLunarYear": "Lunar birthday this year",
     "creator": "Created by",
@@ -894,6 +915,78 @@
       "upcoming": "Upcoming"
     },
     "admin": {
+    "landing": {
+      "title": "Homepage management",
+      "subtitle": "Add, edit, delete and reorder what the public homepage shows, without changing code.",
+      "preview": "Preview",
+      "seedAll": "Load current content",
+      "seedSection": "Load current content for this section",
+      "seedHint": "This section uses the built-in default content. Load the current content to start editing; the homepage stays the same until you change something.",
+      "seedDone": "Current content loaded for editing.",
+      "tableMissing": "The homepage content tables do not exist in the database yet. Run migration 2026_10_30_site_content.sql and reload this page.",
+      "tabsAria": "Homepage sections",
+      "usingDefault": "Default",
+      "customized": "Customized",
+      "hiddenBadge": "Hidden",
+      "sections": {
+        "hero": "Hero banner",
+        "about": "About",
+        "features": "Features",
+        "stats": "Statistics",
+        "news": "News",
+        "guide": "Guide"
+      },
+      "sectionHints": {
+        "hero": "The large title (use line breaks), description, background image and buttons at the top of the homepage.",
+        "about": "Tag, title, intro paragraphs (one per line), quote and image in the About Us block.",
+        "features": "The Outstanding Features block on the homepage and the Features page: tag, title, image and cards.",
+        "stats": "The highlighted numbers on the homepage and the Features page: value and label.",
+        "news": "Featured posts on the News page: date, title, description, image and link.",
+        "guide": "The steps on the Guide page: icon, title and description (numbers follow the position)."
+      },
+      "visibleSection": "Show this section on the page",
+      "visibleItem": "Show this item",
+      "moveSectionUp": "Move section earlier",
+      "moveSectionDown": "Move section later",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "reset": "Restore defaults",
+      "resetTitle": "Restore default content?",
+      "resetMessage": "All edits to \"{{section}}\" will be removed and the homepage will use the built-in default content again.",
+      "resetDone": "Default content restored.",
+      "saveSection": "Save section",
+      "saved": "Saved.",
+      "items": "Items",
+      "itemsDefault": "The list uses the default content.",
+      "noItems": "No items yet. Press \"Add item\" to create one.",
+      "addItem": "Add item",
+      "untitled": "(untitled)",
+      "deleteItemTitle": "Delete this item?",
+      "deleteItemMessage": "The item \"{{name}}\" will be removed from the homepage.",
+      "itemDeleted": "Item deleted.",
+      "uploadImage": "Upload image",
+      "imageHint": "Upload an image or paste an image URL (http/https).",
+      "linkHint": "An internal path starting with \"/\" (for example /clan-register) or an http(s) address. Leave empty for no link.",
+      "iconHint": "A Material Symbols icon name, for example bolt, security, schema.",
+      "lang": {
+        "vi": "(Vietnamese)",
+        "en": "(English)"
+      },
+      "fields": {
+        "tag": "Small tag",
+        "title": "Title",
+        "body": "Content",
+        "quote": "Quote",
+        "image_url": "Image",
+        "meta": "Value / date",
+        "metaStats": "Number",
+        "statLabel": "Label",
+        "metaNews": "Publish date",
+        "link_label": "Button / link text",
+        "link_url": "Link",
+        "icon": "Icon"
+      }
+    },
       "title": "System Events & Tasks",
       "description": "Monitor and manage tasks and events for all clans.",
       "clanTasks": "Clan Tasks: {{clanName}}",
@@ -1154,7 +1247,36 @@
       "expense": "Expense",
       "yearLabel": "Year {{year}}",
       "loadError": "Could not load fund statistics. Please try again.",
-      "empty": "No approved income or expenses to analyse yet."
+      "empty": "No approved income or expenses to analyse yet.",
+      "ai": {
+        "title": "AI summary",
+        "hint": "The system computes the approved figures for the period itself, then asks AI to write the summary. Contributor names are not included.",
+        "periodLabel": "Period",
+        "period": { "month": "This month", "quarter": "This quarter", "year": "This year" },
+        "customRange": "Pick a date range",
+        "from": "From",
+        "to": "To",
+        "run": "AI summary",
+        "loading": "Summarizing...",
+        "rangeInvalid": "Pick both a start and an end date (start must not be after end).",
+        "unavailable": "AI is not available. You can still use the charts below.",
+        "error": "Could not create the summary. Please try again.",
+        "unverified": "Some numbers do not match the fund figures: {{items}}. Check them against the figures below before using.",
+        "numbersTitle": "Figures used ({{label}})",
+        "note": "This summary is written by AI from the figures above; check it before posting or reporting.",
+        "n": {
+          "income": "Total income (entries)",
+          "expense": "Total expenses (entries)",
+          "net": "Income minus expenses",
+          "opening": "Opening balance",
+          "closing": "Closing balance",
+          "contributors": "Contributors",
+          "large": "Large transactions (from {{amount}})",
+          "largeValue": "{{income}} income, {{expense}} expense",
+          "topExpense": "Largest expense categories",
+          "topIncome": "Largest income sources"
+        }
+      }
     },
     "campaigns": {
       "title": "Campaign List",
@@ -1957,6 +2079,28 @@
         },
         "submit": "Send post"
       },
+      "ai": {
+        "button": "Draft with AI",
+        "hint": "Type the main idea or pick an upcoming event; AI only drafts from what you provide. Check dates, times and places before posting.",
+        "eventLabel": "Draft an announcement for this event",
+        "eventNone": "No event",
+        "eventSelected": "Event selected from the calendar",
+        "ideaLabel": "Main idea",
+        "ideaPlaceholder": "Example: clan meeting on 15/11 at the ancestral hall to discuss repairing the graves",
+        "kindLabel": "Post type",
+        "kind": { "auto": "Detect automatically", "meeting": "Clan meeting notice", "anniversary": "Death anniversary", "celebration": "Weddings and joyful events", "general": "General" },
+        "toneLabel": "Tone",
+        "tone": { "formal": "Formal", "friendly": "Friendly" },
+        "run": "Write draft",
+        "loading": "Drafting...",
+        "confirmReplace": "The post already has content. Replace it with the AI draft?",
+        "replace": "Replace",
+        "done": "Draft filled in. Nothing is sent until you press Send post.",
+        "unverified": "Please double-check the dates/times the AI added: {{items}}",
+        "eventNotFound": "Event not found or you are not allowed to view it.",
+        "unavailable": "AI is temporarily unavailable. Please write it manually.",
+        "error": "Could not draft right now."
+      },
       "detail": {
         "comments": "Comments",
         "loadingComments": "Loading comments...",
@@ -1996,6 +2140,10 @@
   },
   "tree": {
     "title": "Family Tree",
+    "pathHighlight": {
+      "banner": "Highlighting relationship path ({{count}} people)",
+      "clear": "Clear highlight"
+    },
     "page": {
       "memberFallback": "Member",
       "clanFallback": "Clan",
@@ -2020,6 +2168,8 @@
       "saving": "Saving...",
       "saveClanInfo": "Save clan information",
       "temporaryEditKey": "Temporary edit key",
+      "exportGedcom": "Export GEDCOM",
+      "gedcomHint": "Download a .ged file (GEDCOM 5.5.1) for other genealogy software. Export only; excludes phone, email and address.",
       "temporaryEditKeyHelp": "Valid for 1 hour from key creation",
       "searchMemberByName": "Find member by name",
       "searchMemberPlaceholder": "Enter name, email, or account ID",
@@ -2257,6 +2407,24 @@
       "unknownName": "Unknown"
     },
     "inspector": {
+      "bioAi": {
+        "button": "AI biography suggestion",
+        "loading": "Drafting...",
+        "tone": "Tone",
+        "toneFormal": "Formal",
+        "toneFriendly": "Friendly",
+        "length": "Length",
+        "lengthShort": "Short",
+        "lengthMedium": "Medium",
+        "notes": "Extra notes for the AI (optional)",
+        "notesPlaceholder": "E.g. emphasize hometown, gentle tone...",
+        "hint": "The AI only drafts from family tree data. Review and edit before saving.",
+        "confirmReplace": "The biography field already has text. Replace it with the AI draft?",
+        "replace": "Replace",
+        "error": "Could not generate a biography suggestion right now.",
+        "unavailable": "AI is temporarily unavailable. Please write it manually.",
+        "done": "Draft filled into the biography field. Nothing is saved until you save."
+      },
       "title": "Member Information",
       "spouseLabel": "Spouse: {{name}}",
       "fallbackSubtitle": "Genealogy profile",
@@ -2718,6 +2886,8 @@
     "feedbackError": "Could not send feedback, please try again.",
     "viewOnTree": "View on tree",
     "viewOnTreeTitle": "Open the family tree and highlight the people mentioned",
+    "viewPathOnTree": "Show relationship on tree",
+    "viewPathOnTreeTitle": "Open the family tree and highlight the relationship path between the two people",
     "coldStartNotice": "The server is starting up, the first reply may take up to 1 minute…",
     "clearHistory": "Clear chat history",
     "clearHistoryConfirm": "Delete all of your chat history in this clan?",
@@ -3184,6 +3354,31 @@
       "closing": [
         "We will process data deletion requests as soon as possible."
       ]
+    }
+  },
+  "duplicates": {
+    "title": "Possible duplicate people",
+    "intro": "Pairs of records that may be the same person (based on name, birth year, parents, generation). For review only; the system never merges records automatically. If they really are duplicates, open the profiles and edit or delete manually.",
+    "entryLink": "Duplicate people",
+    "backToTree": "Back to the tree",
+    "emptyTitle": "No suspicious pairs",
+    "emptyHint": "No records look like duplicates, or you have reviewed them all.",
+    "count": "Showing {{shown}} of {{total}} pairs",
+    "loadMore": "Load more",
+    "score": "Score {{score}}/100",
+    "confidence": { "high": "Very likely", "medium": "Fairly likely", "low": "Worth a look" },
+    "field": { "name": "Full name", "gender": "Gender", "generation": "Generation", "birth": "Born", "death": "Died", "father": "Father", "mother": "Mother" },
+    "gender": { "male": "Male", "female": "Female" },
+    "unknown": "Unknown",
+    "openProfile": "Open profile of {{name}}",
+    "notDuplicate": "Not a duplicate",
+    "confirmDismiss": "Mark {{a}} and {{b}} as different people? This pair will no longer be suggested.",
+    "reason": {
+      "name_exact": "Identical name (ignoring accents)", "name_typo": "Nearly identical name (1 character off)", "name_similar": "Same surname and given name",
+      "same_gender": "Same gender", "birth_year_same": "Same birth year", "birth_date_same": "Same birth date",
+      "birth_year_close": "Birth years 1-2 apart", "birth_year_far": "Birth years far apart", "death_year_far": "Death years far apart",
+      "same_parents": "Same father and mother", "shared_parent": "Share a parent", "similar_parents": "Parents have the same names",
+      "same_generation": "Same generation", "generation_far": "Generations far apart"
     }
   },
   "genealogyBook": {

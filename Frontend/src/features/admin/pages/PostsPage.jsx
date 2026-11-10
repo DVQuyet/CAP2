@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { buttonLikeProps } from "../../../shared/utils/a11yClick";
 import { useTranslation } from "react-i18next";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { getAdminClans, getAdminPostsByClan, updateAdminPostStatus, deleteAdminPost } from "../../../api/adminService";
@@ -161,7 +162,7 @@ export default function PostsPage() {
             {!clanId ? (
                 <div className="clan-folder-grid">
                     {clans.map(clan => (
-                        <div key={clan.id} className="clan-folder-card" onClick={() => navigate(`/dashboard/posts/clan/${clan.id}`)}>
+                        <div {...buttonLikeProps} key={clan.id} className="clan-folder-card" onClick={() => navigate(`/dashboard/posts/clan/${clan.id}`)}>
                             <div className="folder-icon">
                                 <span className="material-symbols-outlined">folder_shared</span>
                                 <span className="count-badge">{clan.post_count}</span>
@@ -216,7 +217,7 @@ export default function PostsPage() {
                                                             <div className="image-preview-trigger">
                                                                 <span className="material-symbols-outlined has-image-icon">image</span>
                                                                 <div className="image-hover-popup">
-                                                                    <img src={postImageUrl} alt="Preview" loading="lazy" />
+                                                                    <img src={postImageUrl} alt={t("a11y.preview")} loading="lazy" />
                                                                     <div className="popup-caption">{t("admin.posts.list.table.previewImage")}</div>
                                                                 </div>
                                                             </div>
@@ -238,7 +239,7 @@ export default function PostsPage() {
                                                         {post.status !== 'approved' && (
                                                             <button 
                                                                 className="icon-btn-check" 
-                                                                title={t("admin.posts.actions.approve")}
+                                                                title={t("admin.posts.actions.approve")} aria-label={t("admin.posts.actions.approve")}
                                                                 onClick={() => handleUpdateStatus(post.id, 'approved')}
                                                             >
                                                                 <span className="material-symbols-outlined">check_circle</span>
@@ -247,7 +248,7 @@ export default function PostsPage() {
                                                         {post.status !== 'rejected' && (
                                                             <button 
                                                                 className="icon-btn-hide" 
-                                                                title={t("admin.posts.actions.hide")}
+                                                                title={t("admin.posts.actions.hide")} aria-label={t("admin.posts.actions.hide")}
                                                                 onClick={() => handleUpdateStatus(post.id, 'rejected')}
                                                             >
                                                                 <span className="material-symbols-outlined">visibility_off</span>
@@ -255,7 +256,7 @@ export default function PostsPage() {
                                                         )}
                                                         <button 
                                                             className="icon-btn-delete" 
-                                                            title={t("admin.posts.actions.delete")}
+                                                            title={t("admin.posts.actions.delete")} aria-label={t("admin.posts.actions.delete")}
                                                             onClick={() => setConfirmDelete({ show: true, postId: post.id })}
                                                         >
                                                             <span className="material-symbols-outlined">delete</span>
@@ -278,7 +279,7 @@ export default function PostsPage() {
                                         })}
                                     </span>
                                     <div className="pagination-controls">
-                                        <button 
+                                        <button aria-label={t("a11y.previousPage")} 
                                             disabled={currentPage === 1} 
                                             onClick={() => setCurrentPage(p => p - 1)}
                                             className="page-nav-btn"
@@ -296,7 +297,7 @@ export default function PostsPage() {
                                             </button>
                                         ))}
 
-                                        <button 
+                                        <button aria-label={t("a11y.nextPage")} 
                                             disabled={currentPage === totalPages} 
                                             onClick={() => setCurrentPage(p => p + 1)}
                                             className="page-nav-btn"
@@ -319,7 +320,7 @@ export default function PostsPage() {
                     </span>
                     <span className="toast-msg">{toast.message}</span>
                 </div>
-                <button onClick={() => setToast(prev => ({ ...prev, show: false }))} className="toast-close">
+                <button aria-label={t("common.close")} onClick={() => setToast(prev => ({ ...prev, show: false }))} className="toast-close">
                     <span className="material-symbols-outlined">close</span>
                 </button>
             </div>

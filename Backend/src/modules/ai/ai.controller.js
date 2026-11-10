@@ -1,7 +1,15 @@
-const { callGroq } = require('../chatbot/groqClient');
 const db = require('../../config/db');
 const { buildBiographyFacts } = require('./biographyFacts');
 const { generateBiographyDraft, assertCanDraftBiography } = require('./biographyService');
+const groqClient = require('../chatbot/groqClient');
+const { callGroq } = groqClient;
+const { assertTreeMutationPermission } = require('../../shared/utils/treeEditPermissions');
+const { assertCanManagePersonId } = require('../manager/managerClan.service');
+const personBio = require('./personBiography.service');
+const postDraft = require('./postDraft.service');
+const fundSummary = require('./fundSummary.service');
+const fundController = require('../fund/fund.controller');
+const calendar = require('../calendar/calendar.controller');
 
 const MAX_EVENT_PROMPT_LENGTH = 2000;
 const MAX_GENEALOGY_PROMPT_LENGTH = 6000;
@@ -407,6 +415,176 @@ exports.generateBiographyDraft = async (req, res) => {
                 errorText,
             ]
         ).catch(() => {});
+    }
+};
+
+// Gợi ý tiểu sử: chỉ trả bản nháp, không ghi DB. Quyền = quyền sửa hồ sơ người đó.
+exports.generatePersonBiographyAI = async (req, res) => {
+    try {
+        const accountId = req.user?.account_id || req.user?.id || null;
+        if (!accountId) {
+            return res.status(401).json({ success: false, message: 'Bạn cần đăng nhập để sử dụng AI gợi ý tiểu sử' });
+        }
+
+        const body = req.body || {};
+        const personId = Number(body.person_id);
+        if (!Number.isSafeInteger(personId) || personId <= 0) {
+            return res.status(400).json({ success: false, message: 'person_id không hợp lệ' });
+        }
+
+        const permission = await assertTreeMutationPermission(req, { action: 'update_person', affectedPersonIds: [personId] });
+        if (!permission.ok) {
+            return res.status(permission.status).json({ success: false, message: permission.message });
+        }
+        const gate = await assertCanManagePersonId(req, personId);
+        if (!gate.ok) {
+            return res.status(gate.status).json({ success: false, message: gate.message });
+        }
+
+        if (!groqClient.isGroqConfigured()) {
+            return res.status(503).json({
+                success: false,
+                code: 'AI_UNAVAILABLE',
+                message: 'AI chưa được cấu hình. Vui lòng nhập tiểu sử thủ công.',
+            });
+        }
+
+        const facts = await personBio.loadPersonFacts(personId, req.user);
+        if (!facts) {
+            return res.status(404).json({ success: false, message: 'Không tìm thấy người trong gia phả' });
+        }
+
+        const options = personBio.normalizeOptions(body);
+        const factList = personBio.factsToList(facts);
+        const raw = await groqClient.callGroq(
+            personBio.buildSystemPrompt(options),
+            personBio.buildUserPrompt(facts, options),
+            900
+        );
+        const biography = String(raw || '').replace(/```/g, '').trim();
+        if (!biography) {
+            return res.status(503).json({
+                success: false,
+                code: 'AI_UNAVAILABLE',
+                message: 'AI tạm thời không phản hồi. Vui lòng thử lại sau hoặc nhập tiểu sử thủ công.',
+            });
+        }
+        return res.json({ success: true, draft: true, biography, facts_used: factList, options });
+    } catch (error) {
+        console.error('generatePersonBiographyAI error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Không thể tạo gợi ý tiểu sử',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+        });
+    }
+};
+
+// Soạn bài đăng/thông báo: chỉ trả bản nháp, không ghi DB. Dữ kiện sự kiện do server đọc theo event_id.
+exports.generatePostDraftAI = async (req, res) => {
+    try {
+        const accountId = req.user?.account_id || req.user?.id || null;
+        if (!accountId) {
+            return res.status(401).json({ success: false, message: 'Bạn cần đăng nhập để sử dụng AI soạn bài' });
+        }
+
+        const body = req.body || {};
+        const options = postDraft.normalizeOptions(body);
+        const eventId = body.event_id === undefined || body.event_id === null ? '' : String(body.event_id).trim();
+        if (!options.idea && !eventId) {
+            return res.status(400).json({ success: false, message: 'Vui lòng nhập ý tưởng hoặc chọn một sự kiện' });
+        }
+
+        if (!groqClient.isGroqConfigured()) {
+            return res.status(503).json({
+                success: false,
+                code: 'AI_UNAVAILABLE',
+                message: 'AI chưa được cấu hình. Vui lòng soạn bài thủ công.',
+            });
+        }
+
+        let eventFacts = null;
+        if (eventId) {
+            const clanId = await calendar.resolveClanId(req);
+            eventFacts = await postDraft.loadEventFacts(eventId, { clanId, userId: req.user.id });
+            if (!eventFacts) {
+                return res.status(404).json({ success: false, message: 'Không tìm thấy sự kiện hoặc bạn không có quyền xem' });
+            }
+            if (!body.kind) options.kind = postDraft.kindFromEventType(eventFacts.type);
+        }
+
+        const userPrompt = postDraft.buildUserPrompt(eventFacts, options);
+        const raw = await groqClient.callGroq(postDraft.buildSystemPrompt(options), userPrompt, 900);
+        const draft = postDraft.parseDraft(raw);
+        if (!draft) {
+            return res.status(503).json({
+                success: false,
+                code: 'AI_UNAVAILABLE',
+                message: 'AI tạm thời không phản hồi. Vui lòng thử lại sau hoặc soạn bài thủ công.',
+            });
+        }
+        const warnings = postDraft.findUnverifiedDateTimes(`${draft.title} ${draft.content}`, userPrompt);
+        return res.json({
+            success: true,
+            draft: true,
+            title: draft.title,
+            content: draft.content,
+            facts_used: postDraft.eventFactsToList(eventFacts),
+            unverified: warnings,
+            options,
+        });
+    } catch (error) {
+        console.error('generatePostDraftAI error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Không thể tạo bản nháp bài đăng',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+        });
+    }
+};
+
+// Tóm tắt quỹ: server tự tính số liệu đã duyệt trong kỳ, AI chỉ diễn đạt; chỉ trả kết quả, không ghi DB.
+exports.generateFundSummaryAI = async (req, res) => {
+    try {
+        const body = req.body || {};
+        const range = fundSummary.resolveRange(body);
+        if (range.error) return res.status(400).json({ success: false, message: range.error });
+
+        if (!groqClient.isGroqConfigured()) {
+            return res.status(503).json({
+                success: false,
+                code: 'AI_UNAVAILABLE',
+                message: 'AI chưa được cấu hình. Bạn vẫn xem được các số liệu quỹ bên dưới.',
+            });
+        }
+
+        const scope = await fundController.resolveReadableClanId({
+            user: req.user,
+            query: { clan_id: body.clan_id ?? req.query?.clan_id },
+        });
+        if (!scope.clanId) return res.status(scope.status || 400).json({ success: false, message: scope.message });
+
+        const numbers = await fundSummary.loadFundAggregates(scope.clanId, range);
+        const base = { success: true, clan_id: scope.clanId, period: range.period, from: range.from, to: range.to, numbers };
+        if (!fundSummary.hasActivity(numbers)) {
+            return res.json({ ...base, summary: `Trong ${range.label} chưa có khoản thu hoặc chi nào đã được duyệt.`, unverified: [], ai: false });
+        }
+
+        const factsText = fundSummary.buildFactsText(numbers);
+        const raw = await groqClient.callGroq(fundSummary.buildSystemPrompt(), `SỐ LIỆU QUỸ:
+${factsText}`, 600);
+        const summary = fundSummary.parseSummary(raw);
+        if (!summary) {
+            return res.status(503).json({
+                success: false,
+                code: 'AI_UNAVAILABLE',
+                message: 'AI tạm thời không phản hồi. Vui lòng thử lại sau.',
+            });
+        }
+        return res.json({ ...base, summary, unverified: fundSummary.findUnverifiedNumbers(summary, numbers, factsText), ai: true });
+    } catch (error) {
+        console.error('generateFundSummaryAI error:', error);
+        return res.status(500).json({ success: false, message: 'Không thể tạo tóm tắt quỹ' });
     }
 };
 

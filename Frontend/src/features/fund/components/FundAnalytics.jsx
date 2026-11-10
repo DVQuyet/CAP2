@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { apiRequest } from "../../../services/api";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
+import FundAISummary from "./FundAISummary";
 
 export default function FundAnalytics() {
   const { t } = useTranslation();
@@ -64,6 +65,8 @@ export default function FundAnalytics() {
       <div className="stats-header" style={{marginBottom: '2rem'}}>
         <h2 className="section-title">{t("fund.analytics.title")}</h2>
       </div>
+
+      <FundAISummary />
 
       <div className="charts-container-v5">
         <div className="glass-card chart-box">

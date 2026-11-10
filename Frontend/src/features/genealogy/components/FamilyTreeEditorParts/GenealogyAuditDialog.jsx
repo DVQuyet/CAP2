@@ -108,7 +108,7 @@ export default function GenealogyAuditDialog({ open, clanId, people = [], canMan
             <span>{t("tree.title")}</span>
             <h3>{t("tree.audit.title")}</h3>
           </div>
-          <button type="button" className="fte-iconButton" onClick={onClose} title={t("common.close")}>
+          <button type="button" className="fte-iconButton" onClick={onClose} title={t("common.close")} aria-label={t("common.close")}>
             <span className="material-symbols-outlined">close</span>
           </button>
         </div>
