@@ -523,7 +523,7 @@ export default function ClanFundPage() {
             <input
               type="file"
               hidden
-              accept=".xlsx,.xls"
+              accept=".xlsx"
               onChange={handleImportExcel}
               disabled={importing}
             />

@@ -1,5 +1,5 @@
 const db = require('../../config/db');
-const XLSX = require('xlsx');
+const { rowsToWorkbookBuffer, readFirstSheetRows } = require('../../shared/utils/workbook');
 const { sanitizeSpreadsheetRows } = require('../../shared/utils/spreadsheet');
 const { getManagerClanId } = require('../manager/managerClan.service');
 
@@ -945,18 +945,10 @@ exports.exportFundExcel = async (req, res) => {
         const [income] = await db.query(incomeQuery, params);
         const [expense] = await db.query(expenseQuery, params);
 
-        const wb = XLSX.utils.book_new();
-
-        const wsIncome = XLSX.utils.json_to_sheet(sanitizeSpreadsheetRows(income));
-        const wsExpense = XLSX.utils.json_to_sheet(sanitizeSpreadsheetRows(expense));
-
-        XLSX.utils.book_append_sheet(wb, wsIncome, "Thu Quỹ");
-        XLSX.utils.book_append_sheet(wb, wsExpense, "Chi Quỹ");
-
-        const buf = XLSX.write(wb, {
-            type: 'buffer',
-            bookType: 'xlsx'
-        });
+        const buf = await rowsToWorkbookBuffer([
+            { name: 'Thu Quỹ', rows: sanitizeSpreadsheetRows(income) },
+            { name: 'Chi Quỹ', rows: sanitizeSpreadsheetRows(expense) },
+        ]);
 
         const filename = campaign_id
             ? `Bao_Cao_Chien_Dich_${campaign_id}.xlsx`
@@ -985,12 +977,15 @@ exports.importFundExcel = async (req, res) => {
 
         const clanId = await getUserClanId(req.user.id);
 
-        const workbook = XLSX.read(req.file.buffer, {
-            type: 'buffer'
-        });
-
-        const sheetName = workbook.SheetNames[0];
-        const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+        let data;
+        try {
+            data = await readFirstSheetRows(req.file.buffer);
+        } catch (_) {
+            return res.status(400).json({
+                success: false,
+                message: 'Không đọc được file. Vui lòng dùng file Excel định dạng .xlsx.'
+            });
+        }
 
         for (let row of data) {
             const {
