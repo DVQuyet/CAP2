@@ -97,6 +97,7 @@ Còn mở từ đợt 4:
 - Còn mở: KHÔNG có gộp tự động (rủi ro cao: phải dời cha mẹ/con/vợ chồng/tài khoản/media); hoàn tác "Không trùng" chưa có UI; gợi ý trùng chưa xét tên vợ/chồng/quê quán; "Soạn thông báo cho sự kiện" mới ở form đăng bài (chưa có nút trên trang lịch); đường quan hệ bị lọc quyền riêng tư có thể thiếu cạnh (vẫn tô node).
 
 Đợt 7 (30/10) — AI gợi ý tiểu sử:
+- **Đã gỡ (10/11, khi merge origin/main):** trùng chức năng với `POST /api/ai/person/:id/biography-draft` + `BiographyDraftDialog` (đợt 6 nhánh local). Đã xóa endpoint, `personBiography.service.js`, schema, `BiographyAIButton.jsx`, i18n `tree.inspector.bioAi`, CSS `.fte-bioAi*` và test. Các dòng dưới chỉ là lịch sử.
 - `POST /api/ai/person-biography/generate` (`ai.controller.js`, `personBiography.service.js`, zod `generatePersonBiography`): server tự đọc dữ kiện theo `person_id` (ngày theo `*_date_precision`, quê quán, cha mẹ, vợ/chồng, con; bỏ qua quan hệ `visibility=managers` với người không phải admin/manager), kiểm quyền như sửa hồ sơ (`assertTreeMutationPermission` + `assertCanManagePersonId`), prompt không có SĐT/địa chỉ, ghi chú người dùng coi là dữ liệu không đáng tin. Chỉ trả bản nháp.
 - Frontend: `BiographyAIButton.jsx` trong `PersonInspector` điền ô tiểu sử, hỏi xác nhận khi ô đã có chữ; i18n vi/en.
 - Test: `tests/ai.personBiography.test.js` (8 test, DB và Groq giả). Không cần migration.

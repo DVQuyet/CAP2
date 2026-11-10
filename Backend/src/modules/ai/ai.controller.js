@@ -3,9 +3,6 @@ const { buildBiographyFacts } = require('./biographyFacts');
 const { generateBiographyDraft, assertCanDraftBiography } = require('./biographyService');
 const groqClient = require('../chatbot/groqClient');
 const { callGroq } = groqClient;
-const { assertTreeMutationPermission } = require('../../shared/utils/treeEditPermissions');
-const { assertCanManagePersonId } = require('../manager/managerClan.service');
-const personBio = require('./personBiography.service');
 const postDraft = require('./postDraft.service');
 const fundSummary = require('./fundSummary.service');
 const fundController = require('../fund/fund.controller');
@@ -415,68 +412,6 @@ exports.generateBiographyDraft = async (req, res) => {
                 errorText,
             ]
         ).catch(() => {});
-    }
-};
-
-// Gợi ý tiểu sử: chỉ trả bản nháp, không ghi DB. Quyền = quyền sửa hồ sơ người đó.
-exports.generatePersonBiographyAI = async (req, res) => {
-    try {
-        const accountId = req.user?.account_id || req.user?.id || null;
-        if (!accountId) {
-            return res.status(401).json({ success: false, message: 'Bạn cần đăng nhập để sử dụng AI gợi ý tiểu sử' });
-        }
-
-        const body = req.body || {};
-        const personId = Number(body.person_id);
-        if (!Number.isSafeInteger(personId) || personId <= 0) {
-            return res.status(400).json({ success: false, message: 'person_id không hợp lệ' });
-        }
-
-        const permission = await assertTreeMutationPermission(req, { action: 'update_person', affectedPersonIds: [personId] });
-        if (!permission.ok) {
-            return res.status(permission.status).json({ success: false, message: permission.message });
-        }
-        const gate = await assertCanManagePersonId(req, personId);
-        if (!gate.ok) {
-            return res.status(gate.status).json({ success: false, message: gate.message });
-        }
-
-        if (!groqClient.isGroqConfigured()) {
-            return res.status(503).json({
-                success: false,
-                code: 'AI_UNAVAILABLE',
-                message: 'AI chưa được cấu hình. Vui lòng nhập tiểu sử thủ công.',
-            });
-        }
-
-        const facts = await personBio.loadPersonFacts(personId, req.user);
-        if (!facts) {
-            return res.status(404).json({ success: false, message: 'Không tìm thấy người trong gia phả' });
-        }
-
-        const options = personBio.normalizeOptions(body);
-        const factList = personBio.factsToList(facts);
-        const raw = await groqClient.callGroq(
-            personBio.buildSystemPrompt(options),
-            personBio.buildUserPrompt(facts, options),
-            900
-        );
-        const biography = String(raw || '').replace(/```/g, '').trim();
-        if (!biography) {
-            return res.status(503).json({
-                success: false,
-                code: 'AI_UNAVAILABLE',
-                message: 'AI tạm thời không phản hồi. Vui lòng thử lại sau hoặc nhập tiểu sử thủ công.',
-            });
-        }
-        return res.json({ success: true, draft: true, biography, facts_used: factList, options });
-    } catch (error) {
-        console.error('generatePersonBiographyAI error:', error);
-        return res.status(500).json({
-            success: false,
-            message: 'Không thể tạo gợi ý tiểu sử',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-        });
     }
 };
 
