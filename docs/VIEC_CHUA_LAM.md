@@ -1,6 +1,6 @@
 # Việc chưa làm — CAP2 (Gia Phả Việt)
 
-Cập nhật 23/10/2026, quét lại mã ở commit `03e5681`. Lộ trình dài hạn: `KE_HOACH_TONG_THE.md` (Giai đoạn 0 và 1 xong phần mã, đang dở Giai đoạn 2, xem Đợt 14). Đây là **danh sách duy nhất** các việc còn mở; gộp từ
+Cập nhật 23/10/2026, quét lại mã ở commit `03e5681`. Lộ trình dài hạn: `KE_HOACH_TONG_THE.md` (Giai đoạn 0–2 xong phần mã, xem Đợt 16). Đây là **danh sách duy nhất** các việc còn mở; gộp từ
 `nhat-ky/CAI_THIEN_HE_THONG.md` (mục "Chưa làm"), `nhat-ky/TOI_UU_AI_VA_GIA_PHA.md` (mục 2–6) và `nhat-ky/TIEP_TUC_AI_TRA_LOI.md` (mục "Chờ nhóm quyết định").
 Các file đó giữ làm nhật ký; việc mới thêm vào đây.
 
@@ -62,6 +62,20 @@ Còn mở từ đợt 4:
 - Validate chưa phủ route calendar/events.
 - "ba co toi" vẫn mơ hồ (cụ vs bà cô).
 
+Đợt 16 (12/11) — Giai đoạn 2 phần còn lại (A2.4–A2.8), làm lại từ đầu vì nhánh dở của Đợt 14 không có trên máy này:
+- **A2.4** thẻ một người, thẻ vợ chồng, thẻ tham chiếu bọc `React.memo`; vị trí/cỡ truyền dạng số; hàm xử lý ổn định qua `hooks/useStableCallback.js`; tô sáng gom một object memo. Lớp vẽ tách ra `components/TreeCanvasLayers.jsx` (`TreeLinesLayer` memo, `TreeNodesLayer`).
+- **A2.5** chỉ vẽ thẻ/đường nối giao với cửa sổ vẽ = vùng nhìn + 1 màn hình mỗi phía (`utils/tree-editor/treeViewport.js`, `hooks/useTreeViewport.js`). Cửa sổ chỉ đổi khi vùng nhìn chạm mép nên kéo nền thường 0 commit. Thẻ đang kéo/chọn luôn được giữ.
+  - **Nguyên nhân lỗi màn hình trống ở Đợt 14:** react-zoom-pan-pinch 4 không có `onTransformed` (tên đúng là `onTransform(ref, state)`), nên callback cũ chưa bao giờ chạy. Giờ `onTransform` gọi `syncView` ở mọi lần biến đổi, kể cả khi đang chạy hoạt ảnh.
+- **A2.6** mức zoom nằm trong ref; `--fte-inv-scale`/`--fte2-zoom-comp` ghi thẳng lên canvas; nhãn % đọc qua `useSyncExternalStore`. State chỉ đổi khi qua ngưỡng: dưới 35% `is-zoomFar` (chỉ tên), 35–70% `is-zoomMid` (tên + năm), từ 70% đầy đủ. Bỏ việc ghi mức zoom trước `setTransform` (trước đây trên điện thoại "vừa khít" lúc mở bị thư viện bỏ qua, nhưng chế độ thu nhỏ xa vẫn bật ở 68%).
+- **A2.7** cụm nút zoom bỏ `backdrop-filter`; thẻ `contain: layout style` (không dùng `paint` vì thanh thao tác và huy hiệu tràn ngoài mép thẻ); thu nhỏ xa bỏ bóng thẻ. **A2.8** chuyển động rê/chọn 150 ms qua `--tc-motion`/`--tl-motion`, tắt khi `prefers-reduced-motion`.
+- **Số đo** (cùng cách đo Đợt 14), 2.000 người, trước → sau: DOM 26.484 → ~1.800 phần tử; chọn một người commit 207 → 20 ms; zoom 157 → 9 ms/commit; kéo thẻ 104 → 20 ms/commit, khung p95 33 → 17 ms. 500 người: chọn người 35 → 17 ms, kéo thẻ 50 → 60 fps.
+- Kiểm tra: Frontend 116 test (+6 `tests/treeViewport.test.js`), ESLint 0 lỗi / 110 cảnh báo (như trước), build OK. Bộ ảnh `dev/tree-shots.sh` 1280×800 giống `docs/anh/cay-A1/sau`. Đã thử trên trình duyệt (pane): kéo nền xa nhiều lần không lộ khoảng trống, zoom, rê chuột hiện thanh thao tác, bấm mở hồ sơ, nút vừa khít ở 390px.
+- **Còn mở:**
+  - Ảnh 390px khác ảnh mẫu vì hai việc có từ trước: (1) trạng thái thu gọn mặc định "3 đời quanh tôi" ẩn Đời 1 của dữ liệu xem thử (`hiddenAncestors [1,2]`); (2) lần "vừa khít" tự động lúc mở cây trên điện thoại bị thư viện bỏ qua (cây ở 68%, lệch sang phải). Nên xem ở A3.3.
+  - Thu gọn/mở nhánh vẫn "nhảy" (chưa có hoạt ảnh vị trí: hoạt ảnh transform sẽ đánh nhau với kéo thẻ). Lúc mới mở cây lớn vẫn vẽ hết một lần trước khi biết vùng nhìn.
+  - `FamilyTreeEditor.jsx` còn 3.807 dòng, trước 3.896 (E7.2: tách file, commit riêng chỉ di chuyển). Chưa thử trên điện thoại thật, chưa thử kéo nhiều thẻ / đổi cỡ thẻ bằng tay.
+- Backend: `.env` trỏ `mysql-…aivencloud.com` nhưng tên máy này không còn phân giải DNS (dịch vụ Aiven có thể đã tắt/xóa), nên backend chạy local không vào được DB. Cần kiểm tra trên trang Aiven.
+
 Đợt 15 (12/11) — phần còn lại của trang chủ do admin quản lý (việc của đợt 11, không thuộc giai đoạn nào trong `KE_HOACH_TONG_THE.md`) (backend `89acfe8`, frontend đợt này):
 - **Đã xong:** khối demo ở `/tinh-nang`, trang `/loi-ich` (benefits, benefits_why), sidebar `/tin-tuc` (tin mới, danh mục, đăng ký), trang chi tiết bài `/tin-tuc/:id` (`NewsArticlePage.jsx`, `fetchPublicNewsItem`), video và FAQ ở `/huong-dan` (nhúng chỉ qua `buildVideoEmbed`, không dùng link admin nhập làm `src`), chân trang (`SiteFooter.jsx` + `.css`: thương hiệu, liên hệ, cột link, mạng xã hội). Mọi khối ẩn được; chưa có dữ liệu DB thì giao diện như cũ.
 - Trang admin `/dashboard/landing`: 5 tab theo nhóm trang, đủ 18 mục, ô "Nội dung chi tiết" cho bài tin, chọn biểu tượng liên hệ/mạng xã hội, kiểm link/ảnh/video trước khi lưu. Tách thành `landingAdminConfig.js`, `LandingFields.jsx`, `LandingEditors.jsx` (file gốc 439 → 300 dòng).
@@ -72,7 +86,7 @@ Còn mở từ đợt 4:
 - **Cần QA trình duyệt (chưa chạy):** 4 trang công khai và chân trang khi chưa seed (phải giống cũ); seed rồi sửa từng mục mới; video YouTube/Vimeo/.mp4 và link sai bị chặn; bài tin có nội dung mở `/tin-tuc/:id`, id sai hiện "Không tìm thấy"; 390px; nút demo giờ là `<button>` gọi `navigate`/`window.open` (giữ CSS cũ).
 - Còn mở: khối "custom" chưa làm; phân trang ở `/tin-tuc` vẫn là nút giả; ô đăng ký nhận tin chưa gửi đi đâu; `App.css` có hai khối `.site-footer` chồng nhau.
 
-Đợt 14 (10/11) — Giai đoạn 2 (A2: tương tác mượt), **đang làm dở, làm tiếp từ đây**:
+Đợt 14 (10/11) — Giai đoạn 2 (A2: tương tác mượt), phần đầu (phần còn lại xong ở Đợt 16; nhánh `wip/a2-memo-culling` không còn cần):
 - **Đã xong, đã push** (`0de1aa4`): A2.1 công cụ đo `Frontend/dev/tree-perf.mjs` + trang xem thử nhận `?n=500|2000`, `?expand=1`, `?profile=1`; A2.2 `hooks/useNodeDrag.js` thay 4 handler kéo (trong lúc kéo chỉ đổi transform, thả mới ghi state; đường nối mờ đi vì chưa đi theo); A2.3 thẻ đặt vị trí bằng `transform: translate()`.
 - **Số đo** (Vite dev, React bản dev, Chrome headless không GPU; chỉ để so trước/sau), kéo một thẻ 60 bước: 500 người 62 commit × 65 ms, 23 fps → 5 commit, 49 fps. 2.000 người trước khi sửa: 63 commit × 227 ms, 3,8 fps; DOM 26.484 phần tử.
 - **Đang dở, CHƯA xong, nằm ở nhánh local `wip/a2-memo-culling`** (commit `4ea0091`, chưa push, không gộp vào main khi chưa sửa lỗi): A2.4 thẻ bọc `React.memo` với props nguyên thủy (`TreeCanvasNodes.jsx`, `TreeCanvasLines.jsx`, `useStableHandlers.js`) và A2.5 chỉ vẽ phần cây đang nhìn (`utils/tree-editor/treeViewport.js`, state `viewRect`, hàm `syncView`/`moveView` trong `FamilyTreeEditor.jsx`).

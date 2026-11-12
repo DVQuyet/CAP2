@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { useLanguage } from "../../../i18n/LanguageContext";
 import { fullName } from "../utils/tree-editor/treePersonUtils";
 import { WEB_CARD_HEIGHT, WEB_CARD_WIDTH } from "../utils/tree-editor/treeDisplayNodes";
@@ -86,7 +87,10 @@ function PersonHalf({
   );
 }
 
-export default function CoupleCard({
+// React.memo: cha chỉ truyền selectedPersonId khi người đó thuộc cặp này, Set/Map đã memo, hàm ổn định.
+export default memo(CoupleCard);
+
+function CoupleCard({
   node,
   selectedPersonId,
   selectedCouple,

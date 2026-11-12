@@ -1,10 +1,13 @@
+import { memo } from "react";
 import { useLanguage } from "../../../i18n/LanguageContext";
 import { nodeTransform } from "../hooks/useNodeDrag";
 import { fullName } from "../utils/tree-editor/treePersonUtils";
 
+export default memo(ReferenceCard);
+
 // Thẻ tham chiếu: người này được vẽ ở vị trí chính nơi khác trên cây (con nuôi/thừa tự tại nhà cha mẹ đẻ,
 // con gái lấy chồng thuộc nhánh khác trong họ...). Bấm để chuyển tới vị trí chính.
-export default function ReferenceCard({ node, related = false, dimmed = false, onOpen }) {
+function ReferenceCard({ node, related = false, dimmed = false, onOpen }) {
   const { t } = useLanguage();
   const person = node?.person;
   const typeKey = ["adopted", "heir", "step", "foster"].includes(node?.childType) ? node.childType : "elsewhere";

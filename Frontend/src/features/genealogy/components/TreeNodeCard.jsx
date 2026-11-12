@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { useLanguage } from "../../../i18n/LanguageContext";
 import { getPersonHighlightState, highlightClassNames } from "../utils/treeHighlight";
 import { CARD_HEIGHT, CARD_WIDTH, NAME_FONT_SIZE } from "../utils/tree-editor/treeConstants";
@@ -12,8 +13,14 @@ function fullName(person, fallback) {
   return person?.display_name || [person?.surname, person?.middle_name, person?.first_name].filter(Boolean).join(" ").trim() || fallback;
 }
 
-export default function TreeNodeCard({
+// React.memo: mọi prop là giá trị nguyên thủy, Set/Map đã memo ở cha, hoặc hàm ổn định (useStableCallback),
+// nên chọn/kéo một thẻ không làm cả nghìn thẻ khác vẽ lại.
+export default memo(TreeNodeCard);
+
+function TreeNodeCard({
   person,
+  x = 0,
+  y = 0,
   selected,
   dragging,
   canDrag = true,
@@ -21,7 +28,8 @@ export default function TreeNodeCard({
   canDelete = false,
   founder = false,
   directLineage = false,
-  size = { width: CARD_WIDTH, height: CARD_HEIGHT },
+  width = CARD_WIDTH,
+  height = CARD_HEIGHT,
   displayMode = TREE_DISPLAY_MODE.DETAIL,
   cardOrientation = "horizontal",
   fontSize,
@@ -101,9 +109,9 @@ export default function TreeNodeCard({
       id={`fte-person-${person.id}`}
       className={`fte-personCard is-${displayMode} is-${cardOrientation} ${genderClass} ${directLineage ? "is-direct" : "is-inLaw"} ${founder ? "is-founder" : ""} ${deceased ? "is-deceased" : ""} ${stateClasses} ${related ? "is-related" : ""} ${dimmed ? "is-dimmed" : ""} ${dragging ? "is-dragging" : ""}`}
       style={{
-        transform: nodeTransform(person.tree_x, person.tree_y),
-        "--fte-card-width": `${size.width}px`,
-        "--fte-card-height": `${size.height}px`,
+        transform: nodeTransform(x, y),
+        "--fte-card-width": `${width}px`,
+        "--fte-card-height": `${height}px`,
         "--fte-card-name-size": `${resolvedFontSize}px`,
       }}
       role="group"

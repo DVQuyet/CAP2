@@ -175,3 +175,37 @@
 .fte-referenceText small {
     color: var(--t-muted);
 }
+
+/* ===== Mức chi tiết theo zoom (canvas: is-zoomMid 35–70%, is-zoomFar dưới 35% ở TreeCard.css) ===== */
+.fte-canvas.is-zoomMid .fte2-avatar,
+.fte-canvas.is-zoomMid .fte-cornerBadge,
+.fte-canvas.is-zoomMid .fte-coupleStatus {
+    display: none;
+}
+
+.fte-canvas.is-zoomMid .fte-cardName {
+    font-size: calc(var(--tc-name-size) * var(--fte2-zoom-comp, 1));
+    line-height: 1.15;
+}
+
+/* Thu nhỏ xa: bỏ bóng thẻ, cả nghìn bóng mờ là phần tốn nhất khi zoom. */
+.fte-canvas.is-zoomFar .fte-personCard,
+.fte-canvas.is-zoomFar .fte-coupleCard {
+    box-shadow: none;
+}
+
+/* Đổi nội dung một thẻ không bắt tính lại layout cả cây. Không dùng contain: paint vì thanh thao tác
+ * và huy hiệu nằm tràn ra ngoài mép thẻ. */
+.fte-personCard,
+.fte-coupleCard,
+.fte-referenceCard {
+    contain: layout style;
+}
+
+/* Chuyển động rê/chọn 150 ms (--tc-motion, --tl-motion); tắt hẳn khi hệ điều hành yêu cầu giảm chuyển động. */
+@media (prefers-reduced-motion: reduce) {
+    .fte2 {
+        --tc-motion: 0s;
+        --tl-motion: 0s;
+    }
+}

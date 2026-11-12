@@ -1,14 +1,21 @@
+import { useSyncExternalStore } from "react";
 import { useLanguage } from "../../../../i18n/LanguageContext";
 
+function ZoomValue({ scaleStore }) {
+  const scale = useSyncExternalStore(scaleStore.subscribe, scaleStore.get);
+  return <span className="fte2-zoomValue" aria-live="polite">{Math.round(scale * 100)}%</span>;
+}
+
 // Cụm nút zoom nổi ở góc dưới phải vùng vẽ (dùng cho cả máy tính và điện thoại).
-export default function TreeZoomControls({ scale, onZoomIn, onZoomOut, onFit, onToggleFullscreen, fullscreen, compact = false }) {
+// Mức zoom đọc qua scaleStore ({ get, subscribe }) nên khi zoom chỉ nhãn % vẽ lại.
+export default function TreeZoomControls({ scaleStore, onZoomIn, onZoomOut, onFit, onToggleFullscreen, fullscreen, compact = false }) {
   const { t } = useLanguage();
   return (
     <div className={`fte2-zoom ${compact ? "is-compact" : ""}`} role="group" aria-label={t("tree.toolbar.fitScreen")}>
       <button type="button" onClick={onZoomIn} title={t("tree.toolbar.zoomIn")} aria-label={t("tree.toolbar.zoomIn")}>
         <span className="material-symbols-outlined" aria-hidden="true">add</span>
       </button>
-      {compact ? null : <span className="fte2-zoomValue" aria-live="polite">{Math.round(scale * 100)}%</span>}
+      {compact ? null : <ZoomValue scaleStore={scaleStore} />}
       <button type="button" onClick={onZoomOut} title={t("tree.toolbar.zoomOut")} aria-label={t("tree.toolbar.zoomOut")}>
         <span className="material-symbols-outlined" aria-hidden="true">remove</span>
       </button>

@@ -565,8 +565,8 @@
     padding: 4px;
     border: 1px solid var(--t-border);
     border-radius: var(--radius-xl);
-    background: color-mix(in srgb, var(--t-surface) 88%, transparent);
-    backdrop-filter: blur(8px);
+    /* Nền đặc, không backdrop-filter: làm mờ phần cây phía sau buộc vẽ lại mỗi khung hình khi kéo/zoom. */
+    background: var(--t-surface);
     box-shadow: var(--t-shadow);
 }
 

@@ -10,11 +10,13 @@ import TreeToolbar from "./TreeToolbarParts/TreeToolbar";
 import TreeMobileControls from "./TreeToolbarParts/TreeMobileControls";
 import TreeZoomControls from "./TreeToolbarParts/TreeZoomControls";
 import TreeStyleControls from "./TreeToolbarParts/TreeStyleControls";
-import CoupleCard from "./CoupleCard";
-import TreeNodeCard from "./TreeNodeCard";
+import { TreeLinesLayer, TreeNodesLayer } from "./TreeCanvasLayers";
 import { useLanguage } from "../../../i18n/LanguageContext";
 import { useTreeSearch } from "../hooks/useTreeSearch";
 import { useNodeDrag } from "../hooks/useNodeDrag";
+import { useStableCallback } from "../hooks/useStableCallback";
+import { useTreeViewport } from "../hooks/useTreeViewport";
+import { filterLinesInWindow, filterNodesInWindow, lineBounds } from "../utils/tree-editor/treeViewport";
 import { useTreeViewMode } from "../hooks/useTreeViewMode";
 import { useTreeRealtime } from "../hooks/useTreeRealtime";
 import { buildFamilyIndexes, getAncestorIds, getDescendantIds, getHiddenDescendantIds } from "../utils/treeFilter";
@@ -25,10 +27,9 @@ import { asArray, extractCreatedPersonId, fullName, normalizePerson, readCurrent
 import { clearCardSizes, clearLineRoutes, getCardSize, loadCardSizes, loadLineRoutes, normalizeCardSize, normalizeLayoutObject, normalizeLayoutSettings, saveCardSizes, saveLineRoutes } from "../utils/tree-editor/treeStorage";
 import { dedupePeopleByAccount, remapChildrenByPeople, remapFamiliesByPeople } from "../utils/tree-editor/treeNormalize";
 import { autoLayoutPeople, computeReferencePlacements, findFounderIds, generationY, mergeManualAndAutoLayout } from "../utils/tree-editor/treeLayout";
-import ReferenceCard from "./ReferenceCard";
 import { buildCollapseStorageKey, resolveSelfPersonId } from "../utils/tree-editor/treeCollapse";
 import { parseTreeFocusParams, TREE_FOCUS_EVENT } from "../utils/treeFocusParams";
-import { computePathHighlight, isLineOnPath, normalizePathIds } from "../utils/treePathHighlight";
+import { computePathHighlight, normalizePathIds } from "../utils/treePathHighlight";
 import GenealogyAuditDialog from "./FamilyTreeEditorParts/GenealogyAuditDialog";
 import { blankCreateForm, buildCreateRelationFields, buildLinkPayload, defaultRelationOptions, findParentFamilyForChild, findSpouse, findSpouseFamily, getChildOrderMapForFamily, getChildrenForFamily, relationCandidates, relationLinkedIds } from "../utils/tree-editor/treeRelations";
 import { downloadBlob, exportFileName, exportPreparedTree, prepareTreeExportPayload } from "../utils/tree-editor/treeExport";
@@ -144,8 +145,6 @@ const DEFAULT_TREE_STYLE = {
 const LEGACY_DEFAULT_BACKGROUND = "#f8f2e8";
 
 const TREE_MOBILE_QUERY = "(max-width: 760px)";
-// Dưới mức zoom này thẻ chỉ hiện tên (chữ lớn hơn) để vẫn đọc được khi xem toàn cây.
-const FAR_ZOOM_SCALE = 0.55;
 // Hệ số phóng chữ = FAR_ZOOM_TEXT_TARGET / zoom, để tên trên màn hình luôn khoảng 9px trở lên.
 const FAR_ZOOM_TEXT_TARGET = 0.66;
 // Khoảng trống bên trái cây dành cho nhãn "Đời N".
@@ -512,13 +511,16 @@ export default function FamilyTreeEditor({
   const transformApiRef = useRef(null);
   const genealogyRecognitionRef = useRef(null);
   const lastAutoFitKeyRef = useRef("");
+  // Mức zoom trong ref + biến CSS ghi thẳng lên canvas; state chỉ đổi khi qua ngưỡng hoặc cửa sổ vẽ dời.
   const scaleRef = useRef(0.85);
+  const { zoomLevel, renderWindow, syncView, scaleStore } = useTreeViewport({
+    scaleRef, canvasRef: treeRef, viewportRef, initialScale: 0.85, farZoomTextTarget: FAR_ZOOM_TEXT_TARGET,
+  });
   const defaultTreeTitleText = String(clan?.clan_name || t("tree.card.fallbackName")).toUpperCase();
   const databaseTreeStyle = useMemo(
     () => normalizeTreeStyle(layoutSettings?.tree_style || clan?.tree_style || null),
     [clan?.tree_style, layoutSettings?.tree_style],
   );
-  const [currentScale, setCurrentScale] = useState(0.85);
   const [transformReady, setTransformReady] = useState(0);
   const bulkSelectRef = useRef(null);
   const lineDragRef = useRef(null);
@@ -1280,9 +1282,7 @@ const coupleActionPerson = useMemo(
         const targetCenterY = targetNode ? targetNode.y + targetNode.height / 2 : toInt(target.tree_y, 0) + CARD_HEIGHT / 2;
         const nextX = rect.width / 2 - targetCenterX * nextScale;
         const nextY = rect.height / 2 - targetCenterY * nextScale;
-        // Cập nhật mức zoom ngay (như khi "vừa khít màn hình"): nếu chờ thư viện báo lại thì nhãn % và chế độ thu nhỏ xa bị cũ.
-        scaleRef.current = nextScale;
-        setCurrentScale(nextScale);
+        // Không ghi mức zoom trước: onTransform báo lại từng khung hình, ghi trước thì lệch khi lệnh bị thư viện bỏ qua.
         api.setTransform(nextX, nextY, nextScale, 320);
         return;
       }
@@ -2746,6 +2746,46 @@ const submitCreateDialog = async () => {
     window.addEventListener("pointerup", handleUp);
   }, [canEditPerson, cardSizes, clan?.id, enqueueLayoutChanges]);
 
+  // A2.4: hàm ổn định cho thẻ React.memo. A2.5: chỉ vẽ thẻ/đường nối giao với cửa sổ vẽ (vùng nhìn + 1 màn hình).
+  const stableBeginLineDrag = useStableCallback(beginLineDrag);
+  const stableCardHandlers = {
+    onCardPointerDown: useStableCallback(handleCardPointerDown),
+    onCardResizePointerDown: useStableCallback(beginCardResize),
+    onEditPerson: useStableCallback(openPersonEditor),
+    onDeletePerson: useStableCallback(handleDeletePersonByCard),
+    onQuickCreate: useStableCallback(openQuickCreateDialog),
+    onCouplePointerDown: useStableCallback(handleCouplePointerDown),
+    onOpenReference: useStableCallback((personId) => focusPerson(personId, { scale: 1.1 })),
+    onToggleCollapse: useStableCallback(treeViewMode.toggleCollapse),
+    onToggleDescendants: useStableCallback(treeViewMode.toggleDescendantBranch),
+    onToggleAncestors: useStableCallback(treeViewMode.toggleAncestorBranch),
+  };
+  const cardHighlightOptions = useMemo(() => ({
+    onlinePersonIds: treeRealtime.onlinePersonIds,
+    editingPersonIds: treeRealtime.editingPersonIds,
+    searchPersonId: treeSearch.highlightedPersonId,
+    searchPersonIds: pathHighlight ? null : chatHighlightIds,
+    pathPersonIds: pathHighlight?.nodeIds,
+    selfPersonId,
+    validationErrors,
+  }), [chatHighlightIds, pathHighlight, selfPersonId, treeRealtime.editingPersonIds, treeRealtime.onlinePersonIds, treeSearch.highlightedPersonId, validationErrors]);
+  const lineBoundsByLine = useMemo(() => new Map(lines.map((line) => [line, lineBounds(line)])), [lines]);
+  const visibleLines = useMemo(
+    () => filterLinesInWindow(lines, lineBoundsByLine, renderWindow),
+    [lineBoundsByLine, lines, renderWindow],
+  );
+  const visibleNodes = useMemo(() => {
+    // Thẻ đang kéo hoặc đang chọn luôn được giữ để không mất focus bàn phím/thao tác khi ra khỏi cửa sổ.
+    const keepIds = new Set(selectedDisplayNodeIds);
+    const keepPersonIds = [draggingId, selectedId, focusedPersonId].filter((id) => id != null).map(Number);
+    keepPersonIds.forEach((personId) => {
+      const node = displayNodeByPersonId.get(personId);
+      if (node) keepIds.add(node.id);
+    });
+    if (draggingId != null) keepIds.add(draggingId);
+    return filterNodesInWindow(displayNodes, renderWindow, keepIds);
+  }, [displayNodeByPersonId, displayNodes, draggingId, focusedPersonId, renderWindow, selectedDisplayNodeIds, selectedId]);
+
   const selectedCanEdit = selectedPerson ? canEditPerson(selectedPerson.id) : false;
   const selectedNotice = selectedPerson
     ? canEditAll
@@ -2773,8 +2813,6 @@ const submitCreateDialog = async () => {
       const bottom = Math.max(...nodes.map((node) => toInt(node.y, 0) + node.height));
       const padding = isTreeMobile ? 36 : 90;
       const scale = Math.min(1.4, Math.max(0.3, Math.min((rect.width - padding * 2) / Math.max(1, right - left), (rect.height - padding * 2) / Math.max(1, bottom - top))));
-      scaleRef.current = scale;
-      setCurrentScale(scale);
       api.setTransform(rect.width / 2 - ((left + right) / 2) * scale, rect.height / 2 - ((top + bottom) / 2) * scale, scale, 320);
     }, 260);
   }, [isTreeMobile]);
@@ -2818,8 +2856,6 @@ const submitCreateDialog = async () => {
       ? padding + (isTreeMobile ? 48 : 0) - bounds.top * nextScale
       : rect.height / 2 - treeCenterY * nextScale;
 
-    scaleRef.current = nextScale;
-    setCurrentScale(nextScale);
     api.setTransform(nextX, nextY, nextScale, duration);
     return true;
   }, [displayNodes, generationLanes.length, isTreeMobile]);
@@ -2980,6 +3016,13 @@ const submitCreateDialog = async () => {
     { key: "save", icon: "save", label: t("tree.toolbar.saveLayout"), onClick: saveLayoutToDatabase, disabled: busy, hidden: !canEditAll },
     { key: "export", icon: "download", label: t("tree.toolbar.exportPng"), onClick: openExportDialog, disabled: busy },
   ];
+  const cardLayerContext = {
+    selectedRelatedIds, selectedType, selectedId, focusedPersonId, selectedCoupleId, selectedDisplayNodeIds,
+    pathPersonIds: pathHighlight?.nodeIds, draggingId, canEditPerson, canEditAll, bloodLinePersonIds, founderIds,
+    childCountByParentId, lineageControlsByPersonId, collapsedIds: treeViewMode.collapsedIds,
+    hiddenAncestorIds: treeViewMode.hiddenAncestorIds, cardOrientation: treeStyle.cardOrientation,
+    displayMode: treeDisplayMode, fontSize: treeStyle.fontSize, highlightOptions: cardHighlightOptions, ...stableCardHandlers,
+  };
   const treeStyleControls = <TreeStyleControls treeStyle={treeStyle} onChange={updateTreeStyle} />;
 
   const treeEditorShell = (
@@ -2998,21 +3041,10 @@ const submitCreateDialog = async () => {
         alignmentAnimation={{ sizeX: 0, sizeY: 0, animationTime: 220 }}
         onInit={(ref) => {
           transformApiRef.current = ref;
-          const scale = ref?.state?.scale || 0.85;
-          scaleRef.current = scale;
-          setCurrentScale(scale);
+          syncView(ref?.state);
           setTransformReady((value) => value + 1);
         }}
-        onZoom={(ref) => {
-          const scale = ref?.state?.scale || 0.85;
-          scaleRef.current = scale;
-          setCurrentScale(scale);
-        }}
-        onTransformed={(ref) => {
-          const scale = ref?.state?.scale || 0.85;
-          scaleRef.current = scale;
-          setCurrentScale(scale);
-        }}
+        onTransform={(_ref, state) => syncView(state)}
       >
         {({ zoomIn, zoomOut }) => (
           <>
@@ -3091,15 +3123,8 @@ const submitCreateDialog = async () => {
                     <div
                       id="family-tree"
                       ref={treeRef}
-                      className={`fte-canvas ${treeRelationPicker ? "is-relation-picking" : ""} ${bulkMoveMode ? "is-bulkMoveMode" : ""} ${currentScale < FAR_ZOOM_SCALE ? "is-zoomFar" : ""}`}
-                      style={{
-                        width: canvasSize.width,
-                        height: canvasSize.height,
-                        // Khi thu nhỏ, phóng chữ trên thẻ để tên vẫn đọc được (thu phóng theo ngữ nghĩa).
-                        "--fte2-zoom-comp": clamp(FAR_ZOOM_TEXT_TARGET / Math.max(currentScale, 0.12), 1, 3).toFixed(3),
-                        // Nghịch đảo mức zoom: đường nối giữ nguyên độ dày trên màn hình (styles/TreeLines.css).
-                        "--fte-inv-scale": (1 / Math.max(currentScale, 0.12)).toFixed(3),
-                      }}
+                      className={`fte-canvas ${treeRelationPicker ? "is-relation-picking" : ""} ${bulkMoveMode ? "is-bulkMoveMode" : ""} ${zoomLevel === "far" ? "is-zoomFar" : zoomLevel === "mid" ? "is-zoomMid" : ""}`}
+                      style={{ width: canvasSize.width, height: canvasSize.height }}
                       onPointerDown={beginBulkSelection}
                     >
                       {bulkSelectionRect ? (
@@ -3163,131 +3188,17 @@ const submitCreateDialog = async () => {
                           <span className="fte2-laneLabel">{t("tree.lanes.generation", { count: lane.generation })}</span>
                         </div>
                       ))}
-                      <svg className="fte-lines" width={canvasSize.width} height={canvasSize.height} aria-hidden={false}>
-                        {lines.filter((line) => line.type !== "route-control").map((line, index) => (
-                          (() => {
-                            const lineRelated = !selectedRelatedIds.size || asArray(line.relatedPersonIds).some((id) => selectedRelatedIds.has(Number(id)));
-                            return (
-                          <path
-                            key={line.id || `${line.type}-${index}`}
-                            className={`fte-line is-${line.type} ${line.variant ? `is-variant-${line.variant}` : ""} ${line.branchLevel === 0 && line.type === "blood" ? "is-mainBranch" : ""} ${selectedRelatedIds.size ? (lineRelated ? "is-related" : "is-dimmed") : ""} ${isLineOnPath(line, pathHighlight) ? "is-onPath" : ""} ${line.dragAxis ? `is-axis-${line.dragAxis}` : ""} ${canEditAll && line.dragAxis ? "is-draggable" : ""} ${draggingLineId === `${Number(line.familyId)}:${line.routeKey || "baseY"}` ? "is-dragging" : ""}`}
-                            d={line.d}
-                            style={line.color ? { "--line-color": line.color } : undefined}
-                            onPointerDown={canEditAll && line.dragAxis ? (event) => beginLineDrag(event, line) : undefined}
-                          />
-                            );
-                          })()
-                        ))}
-                        {canEditAll ? lines.filter((line) => line.type === "route-control").map((line) => (
-                          <g
-                            key={line.id}
-                            className={`fte-lineControl ${line.dragAxis ? `is-axis-${line.dragAxis}` : ""} ${draggingLineId === `${Number(line.familyId)}:${line.routeKey || "baseY"}` ? "is-dragging" : ""}`}
-                            transform={`translate(${line.x}, ${line.y})`}
-                            onPointerDown={(event) => beginLineDrag(event, line)}
-                          >
-                            {line.dragAxis === "xy" ? (
-                              <>
-                                <line x1="0" y1="-28" x2="0" y2="28" />
-                                <line x1="-28" y1="0" x2="28" y2="0" />
-                              </>
-                            ) : line.dragAxis === "x" ? (
-                              <line x1="0" y1="-28" x2="0" y2="28" />
-                            ) : (
-                              <line x1="-28" y1="0" x2="28" y2="0" />
-                            )}
-                            <circle cx="0" cy="0" r="12" />
-                            <path d={line.dragAxis === "xy" ? "M -7 -7 L -2 -7 M 7 -7 L 2 -7 M -7 7 L -2 7 M 7 7 L 2 7 M -7 -7 L -7 -2 M -7 7 L -7 2 M 7 -7 L 7 -2 M 7 7 L 7 2" : line.dragAxis === "x" ? "M -3 -5 L -8 0 L -3 5 M 3 -5 L 8 0 L 3 5" : "M -5 -3 L 0 -8 L 5 -3 M -5 3 L 0 8 L 5 3"} />
-                          </g>
-                        )) : null}
-                      </svg>
-                      {displayNodes.map((node) => {
-                        const related = asArray(node.personIds).some((personId) => selectedRelatedIds.has(Number(personId)));
-                        const dimmed = selectedRelatedIds.size > 0 && !related;
-                        if (node.type === DISPLAY_NODE_TYPE.REFERENCE) {
-                          const referenceRelated = selectedRelatedIds.has(Number(node.refPersonId));
-                          return (
-                            <ReferenceCard
-                              key={node.id}
-                              node={node}
-                              related={referenceRelated}
-                              dimmed={selectedRelatedIds.size > 0 && !referenceRelated}
-                              onOpen={(personId) => focusPerson(personId, { scale: 1.1 })}
-                            />
-                          );
-                        }
-                        if (node.type === DISPLAY_NODE_TYPE.COUPLE) {
-                          return (
-                            <CoupleCard
-                              key={node.id}
-                              node={node}
-                              selectedPersonId={selectedType === "person" ? (selectedId ?? focusedPersonId) : null}
-                              selectedCouple={(selectedType === "couple" && selectedCoupleId === node.id) || selectedDisplayNodeIds.has(node.id)}
-                              pathPersonIds={pathHighlight?.nodeIds}
-                              related={related}
-                              dimmed={dimmed}
-                              dragging={draggingId === node.id}
-                              canDrag={node.personIds.some((personId) => canEditPerson(personId))}
-                              directLineagePersonIds={bloodLinePersonIds}
-                              lineageControlsByPersonId={lineageControlsByPersonId}
-                              collapsedIds={treeViewMode.collapsedIds}
-                              hiddenAncestorIds={treeViewMode.hiddenAncestorIds}
-                              cardOrientation={treeStyle.cardOrientation}
-                              displayMode={treeDisplayMode}
-                              fontSize={treeStyle.fontSize}
-                              onToggleDescendants={treeViewMode.toggleDescendantBranch}
-                              onToggleAncestors={treeViewMode.toggleAncestorBranch}
-                              onPointerDown={handleCouplePointerDown}
-                            />
-                          );
-                        }
-
-                        const person = node.person;
-                        const renderPerson = {
-                          ...person,
-                          tree_x: node.x,
-                          tree_y: node.y,
-                        };
-                        return (
-                          <TreeNodeCard
-                            key={node.id}
-                            person={renderPerson}
-                            selected={(selectedType === "person" && (selectedId === person.id || (selectedId == null && focusedPersonId === person.id))) || selectedDisplayNodeIds.has(node.id)}
-                            dragging={draggingId === person.id}
-                            canDrag={canEditPerson(person.id)}
-                            canEdit={canEditPerson(person.id)}
-                            canDelete={canEditAll && canEditPerson(person.id)}
-                            founder={founderIds.has(Number(person.id))}
-                            directLineage={bloodLinePersonIds.has(Number(person.id))}
-                            size={{ width: node.width, height: node.height }}
-                            displayMode={treeDisplayMode}
-                            cardOrientation={treeStyle.cardOrientation}
-                            fontSize={treeStyle.fontSize}
-                            related={related}
-                            dimmed={dimmed}
-                            hasChildren={(childCountByParentId.get(Number(person.id)) || 0) > 0}
-                            hasAncestors={lineageControlsByPersonId.get(Number(person.id))?.hasAncestors}
-                            collapsed={treeViewMode.collapsedIds.has(Number(person.id))}
-                            ancestorsCollapsed={lineageControlsByPersonId.get(Number(person.id))?.ancestorIds?.some((id) => treeViewMode.hiddenAncestorIds.has(Number(id)))}
-                            highlightOptions={{
-                              onlinePersonIds: treeRealtime.onlinePersonIds,
-                              editingPersonIds: treeRealtime.editingPersonIds,
-                              searchPersonId: treeSearch.highlightedPersonId,
-                              searchPersonIds: pathHighlight ? null : chatHighlightIds,
-                              pathPersonIds: pathHighlight?.nodeIds,
-                              selfPersonId,
-                              validationErrors,
-                            }}
-                            onPointerDown={(event) => handleCardPointerDown(event, person)}
-                            onResizePointerDown={(event) => beginCardResize(event, person)}
-                            onEdit={() => openPersonEditor(person)}
-                            onDelete={() => handleDeletePersonByCard(person)}
-                            onQuickCreate={() => openQuickCreateDialog(person)}
-                            onToggleCollapse={treeViewMode.toggleCollapse}
-                            onToggleDescendants={treeViewMode.toggleDescendantBranch}
-                            onToggleAncestors={treeViewMode.toggleAncestorBranch}
-                          />
-                        );
-                      })}
+                      <TreeLinesLayer
+                        width={canvasSize.width}
+                        height={canvasSize.height}
+                        lines={visibleLines}
+                        selectedRelatedIds={selectedRelatedIds}
+                        pathHighlight={pathHighlight}
+                        draggingLineId={draggingLineId}
+                        canEditAll={canEditAll}
+                        onLinePointerDown={stableBeginLineDrag}
+                      />
+                      <TreeNodesLayer nodes={visibleNodes} ctx={cardLayerContext} />
                     </div>
                   </TransformComponent>
                 )}
@@ -3300,7 +3211,7 @@ const submitCreateDialog = async () => {
                 </div>
               ) : null}
               <TreeZoomControls
-                scale={currentScale}
+                scaleStore={scaleStore}
                 compact={isTreeMobile}
                 onZoomIn={() => zoomIn(0.16, 180)}
                 onZoomOut={() => zoomOut(0.16, 180)}

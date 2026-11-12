@@ -5,18 +5,18 @@
     --tl-width-main: 2.25;
     --tl-width-active: 2.5;
     --tl-width-grab: 4;
+    --tl-motion: 0.15s ease;
 }
 
 .fte-line {
     fill: none;
     stroke: var(--t-line);
-    /* Nét giữ nguyên độ dày trên màn hình khi zoom (thu nhỏ 40% vẫn thấy rõ nhánh chính): nhân với nghịch đảo
-     * mức zoom do FamilyTreeEditor đặt vào --fte-inv-scale. Không dùng vector-effect: non-scaling-stroke vì Chrome
-     * vẽ mờ hoặc bỏ nét dọc khi zoom nhỏ. */
+    /* Nét giữ nguyên độ dày trên màn hình khi zoom: nhân với --fte-inv-scale (hooks/useTreeViewport.js). Không dùng
+     * vector-effect: non-scaling-stroke vì Chrome vẽ mờ hoặc bỏ nét dọc khi zoom nhỏ. */
     stroke-width: calc(var(--tl-w, var(--tl-width)) * var(--fte-inv-scale, 1) * 1px);
     stroke-linecap: round;
     stroke-linejoin: round;
-    transition: opacity 0.15s ease, stroke 0.15s ease;
+    transition: opacity var(--tl-motion), stroke var(--tl-motion);
 }
 
 .fte-line.is-spouse,
