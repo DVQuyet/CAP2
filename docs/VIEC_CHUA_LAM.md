@@ -67,7 +67,7 @@ Còn mở từ đợt 4:
 - Trang admin `/dashboard/landing`: 5 tab theo nhóm trang, đủ 18 mục, ô "Nội dung chi tiết" cho bài tin, chọn biểu tượng liên hệ/mạng xã hội, kiểm link/ảnh/video trước khi lưu. Tách thành `landingAdminConfig.js`, `LandingFields.jsx`, `LandingEditors.jsx` (file gốc 439 → 300 dòng).
 - **Sửa lỗi i18n:** khối `admin.landing` nằm nhầm ở `eventsTasks.admin.landing` trong vi/en nên trang admin trang chủ hiện khóa thô; đã chuyển về đúng chỗ (không đổi chuỗi nào), thêm 60 key mới.
 - `buildDefaultSection("demo")` lấy đủ 3 điểm nổi bật (trước chỉ 2, "Lấy nội dung hiện tại" sẽ làm mất điểm thứ 3).
-- Test: `tests/landingContent12.test.js` (+16, Frontend 94 tổng); ESLint 0 lỗi / 138 cảnh báo (không tăng); `vite build` OK.
+- Test: `tests/landingContent12.test.js` (+16). Sau khi gộp lên `origin/main` (Giai đoạn 0–2 của Fable): Frontend 110 test, ESLint 0 lỗi / 110 cảnh báo, `vite build` OK; đã mở lại trên trình duyệt với router 7. Đổi chỉ ở Frontend nên không chạy lại test Backend.
 - **Deploy cần:** sao lưu DB rồi `npm run migrate` (file `database/migrations/2026_10_30_site_content_more.sql`: cột `content_vi`/`content_en`).
 - **Cần QA trình duyệt (chưa chạy):** 4 trang công khai và chân trang khi chưa seed (phải giống cũ); seed rồi sửa từng mục mới; video YouTube/Vimeo/.mp4 và link sai bị chặn; bài tin có nội dung mở `/tin-tuc/:id`, id sai hiện "Không tìm thấy"; 390px; nút demo giờ là `<button>` gọi `navigate`/`window.open` (giữ CSS cũ).
 - Còn mở: khối "custom" chưa làm; phân trang ở `/tin-tuc` vẫn là nút giả; ô đăng ký nhận tin chưa gửi đi đâu; `App.css` có hai khối `.site-footer` chồng nhau.
