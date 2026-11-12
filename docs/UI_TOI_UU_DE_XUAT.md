@@ -94,7 +94,7 @@ Lưu ý: `index.css:60-80` đã có luật chung ở ≤ 760px (input 16px, nút
 
 | Việc | Ở đâu | Vì sao | Công sức | Ưu tiên |
 |---|---|---|---|---|
-| Tách `FamilyTreeEditor.jsx` (4061 dòng) + `FamilyTreeEditor.css` (4087) + `.v2.css` (1596): toolbar, modal, panel tìm kiếm, xuất ảnh | `features/genealogy/components/` | Hai CSS song song `fte-` và `fte2-` chồng luật (`position: fixed !important` ở :1857); sửa 1 chỗ dễ vỡ chỗ khác | L | P2 |
+| Tách `FamilyTreeEditor.jsx` (4061 dòng) + `FamilyTreeEditor.css` (4087) + `.v2.css` (1596): toolbar, modal, panel tìm kiếm, xuất ảnh | `features/tree/components/` | Hai CSS song song `fte-` và `fte2-` chồng luật (`position: fixed !important` ở :1857); sửa 1 chỗ dễ vỡ chỗ khác | L | P2 |
 | `TaskManagementPage.jsx` (2098 dòng, **61 inline style**) + `.css` 2427 dòng | `features/events-tasks/pages/` | Inline style không nhìn thấy trong CSS, không đổi được theo token/dark mode | M | P2 |
 | `MemberFundPage.jsx` (34 inline style) | `features/fund/pages/` | như trên | S | P3 |
 | **`ClanFundPage.jsx` khối `<style dangerouslySetInnerHTML>` (~1190 dòng, `:1573`) và `FundAnalytics.jsx:112`: KHÔNG chuyển ra `.css` khi chưa QA** | `ClanFundPage.jsx:1573`, `FundAnalytics.jsx:112` | Chúng đè `FundDesign.css` nhờ nằm sau trong DOM; chuyển file đổi thứ tự cascade. Cách an toàn: tách thành `ClanFund.override.css` nạp **sau** `FundDesign.css` và so ảnh | M | P3 (chỉ sau khi có QA) |

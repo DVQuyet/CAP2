@@ -8,8 +8,8 @@ import {
   parseCollapseState,
   resolveSelfPersonId,
   serializeCollapseState,
-} from "../src/features/genealogy/utils/tree-editor/treeCollapse.js";
-import { getHiddenDescendantIds } from "../src/features/genealogy/utils/treeFilter.js";
+} from "../src/features/tree/utils/tree-editor/treeCollapse.js";
+import { getHiddenDescendantIds } from "../src/features/tree/utils/treeFilter.js";
 
 // 1 (+2 vợ) -> 3 (+4 vợ) -> 5 -> 6 -> 7 ; 3 cũng có con 8
 const people = [1, 2, 3, 4, 5, 6, 7, 8].map((id) => ({ id }));

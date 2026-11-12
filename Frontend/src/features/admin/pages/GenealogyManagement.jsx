@@ -8,7 +8,7 @@ import {
     getAdminClanTree,
     updateAdminClan,
 } from "../../../api/adminService";
-import FamilyTreeEditor from "../../genealogy/components/FamilyTreeEditor.jsx";
+import FamilyTreeEditor from "../../tree/components/FamilyTreeEditor.jsx";
 import { onSocketEvent } from "../../../services/socket";
 import "./GenealogyManagement.css";
 import { notify } from "../../../shared/utils/toast";

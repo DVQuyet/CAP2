@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { cardExtraInfo, cardMeta, genderKey, initialsOf, lifeYears } from "../src/features/genealogy/utils/tree-editor/treeCardInfo.js";
+import { cardExtraInfo, cardMeta, genderKey, initialsOf, lifeYears } from "../src/features/tree/utils/tree-editor/treeCardInfo.js";
 
 // Bộ dịch giả: trả về khóa kèm tham số để kiểm tra đúng chuỗi được chọn.
 const t = (key, params) => (params ? `${key}:${Object.values(params).join(",")}` : key);

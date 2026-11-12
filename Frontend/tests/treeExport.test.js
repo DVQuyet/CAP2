@@ -8,7 +8,7 @@ import {
   exportFileName,
   exportSlug,
   normalizeExportScale,
-} from "../src/features/genealogy/utils/tree-editor/treeExportMath.js";
+} from "../src/features/tree/utils/tree-editor/treeExportMath.js";
 
 test("normalizeExportScale accepts 1-4 and defaults to 3", () => {
   assert.equal(normalizeExportScale(2), 2);

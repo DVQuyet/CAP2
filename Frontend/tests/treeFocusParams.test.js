@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { buildTreeFocusUrl, isTreePath, parseTreeFocusParams, treePathForRole } from "../src/features/genealogy/utils/treeFocusParams.js";
+import { buildTreeFocusUrl, isTreePath, parseTreeFocusParams, treePathForRole } from "../src/features/tree/utils/treeFocusParams.js";
 
 test("parseTreeFocusParams đọc focus và highlight", () => {
   assert.deepEqual(parseTreeFocusParams("?focus=5&highlight=5,7,9"), { focus: 5, highlight: [5, 7, 9] });

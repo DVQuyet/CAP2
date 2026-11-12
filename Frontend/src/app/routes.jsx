@@ -35,14 +35,14 @@ const MembersPage = lazy(() => import("../features/admin/pages/MembersPage"));
 const LandingManagement = lazy(() => import("../features/admin/pages/LandingManagement"));
 
 const AccountPage = lazy(() => import("../features/manager/pages/AccountPage"));
-const GenealogySection = lazy(() => import("../features/genealogy/pages/ManagerGenealogy"));
+const GenealogySection = lazy(() => import("../features/tree/pages/ManagerGenealogy"));
 const ManagerDashboard = lazy(() => import("../features/manager/pages/ManagerDashboard"));
 const PendingApprovals = lazy(() => import("../features/manager/pages/PendingApprovals"));
 const BillingPage = lazy(() => import("../features/billing-payment/pages/BillingPage"));
 const ClanFundPage = lazy(() => import("../features/fund/pages/ClanFundPage"));
 const MemberFundPage = lazy(() => import("../features/fund/pages/MemberFundPage"));
 
-const FamilyTreePage = lazy(() => import("../features/genealogy/pages/UserFamilyTree"));
+const FamilyTreePage = lazy(() => import("../features/tree/pages/UserFamilyTree"));
 const GenealogyBookPage = lazy(() => import("../features/genealogy-book/pages/GenealogyBookPage"));
 const DuplicatesPage = lazy(() => import("../features/duplicates/pages/DuplicatesPage"));
 const MemberDashboard = lazy(() => import("../features/member/pages/MemberDashboard"));

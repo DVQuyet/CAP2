@@ -12,7 +12,7 @@ import "../app/App.css";
 import "../i18n/i18n";
 import { LanguageProvider } from "../i18n/LanguageContext";
 import ConfirmProvider from "../shared/components/ConfirmProvider";
-import FamilyTreeEditor from "../features/genealogy/components/FamilyTreeEditor.jsx";
+import FamilyTreeEditor from "../features/tree/components/FamilyTreeEditor.jsx";
 
 const params = new URLSearchParams(window.location.search);
 localStorage.setItem("auth_user", JSON.stringify({ id: 1, role_id: 2, role_name: "manager", person_id: 8 }));

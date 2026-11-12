@@ -5,8 +5,8 @@ import {
   isBirthDateInFuture,
   parentChildAgeConstraintMessage,
   personFormError,
-} from "../src/features/genealogy/utils/tree-editor/personFormRules.js";
-import { motionMs } from "../src/features/genealogy/utils/tree-editor/treeFlash.js";
+} from "../src/features/tree/utils/tree-editor/personFormRules.js";
+import { motionMs } from "../src/features/tree/utils/tree-editor/treeFlash.js";
 
 const t = (key, params) => (params ? `${key}:${JSON.stringify(params)}` : key);
 

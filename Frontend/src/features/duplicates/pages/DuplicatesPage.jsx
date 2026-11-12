@@ -7,7 +7,7 @@ import EmptyState from "../../../shared/components/EmptyState";
 import ErrorState from "../../../shared/components/ErrorState";
 import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 import { useConfirm } from "../../../shared/components/confirmContext.js";
-import { buildTreeFocusUrl } from "../../genealogy/utils/treeFocusParams";
+import { buildTreeFocusUrl } from "../../tree/utils/treeFocusParams";
 import { buildCompareRows, normalizeReasons, removePairByKey } from "../duplicateHelpers";
 import "./DuplicatesPage.css";
 

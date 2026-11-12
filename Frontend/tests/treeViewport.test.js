@@ -10,7 +10,7 @@ import {
   pathBounds,
   viewRectFromTransform,
   zoomLevelFor,
-} from "../src/features/genealogy/utils/tree-editor/treeViewport.js";
+} from "../src/features/tree/utils/tree-editor/treeViewport.js";
 
 test("vùng nhìn tính ngược từ vị trí và mức zoom", () => {
   assert.deepEqual(viewRectFromTransform({ positionX: -200, positionY: -100, scale: 2 }, 800, 600), {

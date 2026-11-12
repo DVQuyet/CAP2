@@ -26,7 +26,7 @@ Không dùng dịch vụ trả phí.
 ## Cây gia phả
 - Không gọi setState trong pointermove; kéo bằng ref + requestAnimationFrame.
 - Thẻ đặt vị trí bằng transform; thẻ là React.memo, props phải ổn định.
-- Kiểu thẻ chỉ sửa ở Frontend/src/features/genealogy/styles/TreeCard.css và TreeCardExtras.css; đường nối ở TreeLines.css.
+- Kiểu thẻ chỉ sửa ở Frontend/src/features/tree/styles/TreeCard.css và TreeCardExtras.css; đường nối ở TreeLines.css.
   Đổi kiểu qua biến --tc-* / --tl-*; màu lấy từ biến chủ đề --t-* và tokens.css, không thêm mã hex.
 - Thẻ thường không mang nút: thao tác nằm trong TreeCardToolbar, chỉ render khi rê chuột, focus hoặc chọn.
 

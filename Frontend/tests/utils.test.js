@@ -7,8 +7,8 @@ import {
   buildFamilyIndexes,
   getAncestorIds,
   getDescendantIds,
-} from "../src/features/genealogy/utils/treeFilter.js";
-import { validateTreeData } from "../src/features/genealogy/utils/treeValidation.js";
+} from "../src/features/tree/utils/treeFilter.js";
+import { validateTreeData } from "../src/features/tree/utils/treeValidation.js";
 
 test("đổi qua lại giữa ISO và dd/mm/yyyy", () => {
   assert.equal(isoToVietnamDate("2024-02-10"), "10/02/2024");

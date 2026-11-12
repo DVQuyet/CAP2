@@ -8,8 +8,8 @@ import {
   parentEdgeKey,
   revealHiddenIds,
   spouseEdgeKey,
-} from "../src/features/genealogy/utils/treePathHighlight.js";
-import { buildTreeFocusUrl, parseTreeFocusParams } from "../src/features/genealogy/utils/treeFocusParams.js";
+} from "../src/features/tree/utils/treePathHighlight.js";
+import { buildTreeFocusUrl, parseTreeFocusParams } from "../src/features/tree/utils/treeFocusParams.js";
 
 // 1 = ông, 2 = bà (family 10); con 3 và 4 (family 10); 3 lấy 5 (family 11); con 6 của 3 và 5.
 const families = [

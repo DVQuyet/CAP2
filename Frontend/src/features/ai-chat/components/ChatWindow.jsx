@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import { getStoredUser } from "../../../shared/utils/auth";
-import { buildTreeFocusUrl, isTreePath, TREE_FOCUS_EVENT } from "../../genealogy/utils/treeFocusParams";
+import { buildTreeFocusUrl, isTreePath, TREE_FOCUS_EVENT } from "../../tree/utils/treeFocusParams";
 import { askChatbot, clearChatbotHistory, getChatbotHistory, getChatbotSuggestions } from "../../../api/chatbotService";
 import MessageBubble from "./MessageBubble";
 import PersonContextSelector from "./PersonContextSelector";
