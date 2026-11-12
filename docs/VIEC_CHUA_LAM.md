@@ -1,6 +1,6 @@
 # Việc chưa làm — CAP2 (Gia Phả Việt)
 
-Cập nhật 23/10/2026, quét lại mã ở commit `03e5681`. Lộ trình dài hạn: `KE_HOACH_TONG_THE.md` (Giai đoạn 0–2 xong phần mã, xem Đợt 16). Đây là **danh sách duy nhất** các việc còn mở; gộp từ
+Cập nhật 23/10/2026, quét lại mã ở commit `03e5681`. Lộ trình dài hạn: `KE_HOACH_TONG_THE.md` (Giai đoạn 0–3 xong phần mã, xem Đợt 16–17). Đây là **danh sách duy nhất** các việc còn mở; gộp từ
 `nhat-ky/CAI_THIEN_HE_THONG.md` (mục "Chưa làm"), `nhat-ky/TOI_UU_AI_VA_GIA_PHA.md` (mục 2–6) và `nhat-ky/TIEP_TUC_AI_TRA_LOI.md` (mục "Chờ nhóm quyết định").
 Các file đó giữ làm nhật ký; việc mới thêm vào đây.
 
@@ -61,6 +61,22 @@ Còn mở từ đợt 4:
 - Ảnh đại diện khi xuất cây vẫn là chữ cái đầu, chưa nhúng ảnh thật.
 - Validate chưa phủ route calendar/events.
 - "ba co toi" vẫn mơ hồ (cụ vs bà cô).
+
+Đợt 17 (12/11) — Giai đoạn 3 (A3, H1.1, H1.4, H1.5, H4.2, H4.4; E7.3 làm sau, commit riêng):
+- **A3.1** nhãn "Đời N" tách khỏi dải đời thành lớp riêng, dính mép trái vùng nhìn (`--fte-view-left` do `useTreeViewport` ghi thẳng lên DOM), nằm dưới thẻ để không che tên.
+- **A3.2** cụm nút zoom thêm "Tìm tôi" và "Về thủy tổ"; tìm người/nhảy tới làm thẻ nháy sáng (`utils/tree-editor/treeFlash.js`, class `is-flash` trong `TreeCardExtras.css`). Phóng/di chuyển cây chạy ngay khi bật giảm chuyển động (`motionMs`).
+- **A3.3** điện thoại: nút zoom, nút thanh thao tác thẻ và các nút trong bảng ≥ 44px (`pointer: coarse`); bảng chi tiết vợ chồng thành bảng trượt từ dưới lên ở ≤ 680px; `100vh` → `100dvh` ở CSS cây, layout, auth, manager, time-capsule; popup kết quả tìm không tràn. Sửa lỗi Đợt 16: "vừa khít" lúc mở cây trên điện thoại bị `centerOnInit` ghi đè → tắt `centerOnInit`, kiểm lại sau 520 ms và đặt thẳng nếu chưa tới đích.
+- **A3.4/H4.4** khung chờ chung báo "Máy chủ đang khởi động…" sau 5 giây (`shared/hooks/useSlowLoading.js`); trang cây quản lý hiện khung chờ thay vì vùng trắng; `RouteErrorBoundary` bọc nội dung từng trang trong 4 layout, lỗi render chỉ thay phần nội dung và tự reset khi đổi đường dẫn.
+- **H1.1/H1.4/H1.5** `index.html` bỏ font không dùng hoặc tải trùng (Old Standard TT; Cinzel Decorative, Lora đã có `@import` trong CSS), Merriweather bỏ 900, Material Symbols chỉ tải wght 300–700; thêm meta description, Open Graph, Twitter card. Ô nhập trên điện thoại ≥ 16px (iOS không tự phóng to).
+- **H4.2/A3.5** `Frontend/dev/tree-shots-compare.mjs` so ảnh tự động (mã thoát 1 khi lệch); ảnh mẫu mới ở `docs/anh/cay-A3/mau`, chụp 2 lần lệch 0%. Kịch bản thử tay U06–U14 trong `KICH_BAN_TEST_FULL.md`.
+- Hàm kiểm tra form người chuyển sang `utils/tree-editor/personFormRules.js` (+3 test) để `FamilyTreeEditor.jsx` không dài thêm: 3.807 → 3.775 dòng.
+- Kiểm tra: Frontend 122 test, ESLint 0 lỗi / 110 cảnh báo, build OK; gốc repo test + lint OK. Không đổi backend.
+- **Còn mở:**
+  - Bảng trượt từ dưới lên mới thử bằng CSS ở 390px giả lập; chưa thử điện thoại thật, chưa có thao tác vuốt xuống để đóng.
+  - Ảnh "390" của `tree-shots.sh` bị cắt vì Chrome headless trên Windows không thu cửa sổ dưới ~500px (xem `docs/anh/cay-A3/README.md`).
+  - `Frontend/public/sodogiapha.png` (4 MB) không được dùng ở đâu; xóa nếu nhóm đồng ý.
+  - Thu gọn mặc định "3 đời quanh tôi" ẩn Đời 1 với dữ liệu xem thử; xem lại quy tắc khi người xem ở đời thấp.
+  - E7.2 (tách `FamilyTreeEditor.jsx`) vẫn mở.
 
 Đợt 16 (12/11) — Giai đoạn 2 phần còn lại (A2.4–A2.8), làm lại từ đầu vì nhánh dở của Đợt 14 không có trên máy này:
 - **A2.4** thẻ một người, thẻ vợ chồng, thẻ tham chiếu bọc `React.memo`; vị trí/cỡ truyền dạng số; hàm xử lý ổn định qua `hooks/useStableCallback.js`; tô sáng gom một object memo. Lớp vẽ tách ra `components/TreeCanvasLayers.jsx` (`TreeLinesLayer` memo, `TreeNodesLayer`).

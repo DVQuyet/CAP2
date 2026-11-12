@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import useSlowLoading from "../hooks/useSlowLoading";
 import "./StateComponents.css";
 
 // Khung chờ dạng skeleton. variant: "rows" (dòng danh sách), "cards" (lưới thẻ), "block" (một khối lớn).
@@ -6,10 +7,12 @@ export default function LoadingState({ variant = "rows", count, label, className
   const { t } = useTranslation();
   const items = count ?? (variant === "cards" ? 3 : variant === "block" ? 1 : 4);
   const text = label || t("common.states.loading");
+  const slow = useSlowLoading(true);
 
   return (
     <div className={`state-loading is-${variant} ${className}`.trim()} role="status" aria-busy="true" aria-live="polite">
       <span className="state-sr-only">{text}</span>
+      {slow && <p className="state-hint">{t("common.states.coldStart")}</p>}
       {Array.from({ length: items }, (_, index) => (
         <div className="state-skeleton" key={index} aria-hidden="true">
           {variant === "rows" && (

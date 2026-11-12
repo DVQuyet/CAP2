@@ -8,7 +8,7 @@ function ZoomValue({ scaleStore }) {
 
 // Cụm nút zoom nổi ở góc dưới phải vùng vẽ (dùng cho cả máy tính và điện thoại).
 // Mức zoom đọc qua scaleStore ({ get, subscribe }) nên khi zoom chỉ nhãn % vẽ lại.
-export default function TreeZoomControls({ scaleStore, onZoomIn, onZoomOut, onFit, onToggleFullscreen, fullscreen, compact = false }) {
+export default function TreeZoomControls({ scaleStore, onZoomIn, onZoomOut, onFit, onGoToMe, onGoToFounder, onToggleFullscreen, fullscreen, compact = false }) {
   const { t } = useLanguage();
   return (
     <div className={`fte2-zoom ${compact ? "is-compact" : ""}`} role="group" aria-label={t("tree.toolbar.fitScreen")}>
@@ -20,6 +20,17 @@ export default function TreeZoomControls({ scaleStore, onZoomIn, onZoomOut, onFi
         <span className="material-symbols-outlined" aria-hidden="true">remove</span>
       </button>
       <span className="fte2-zoomDivider" aria-hidden="true" />
+      {/* Cụm "đi đâu": về thẻ của tôi, về thủy tổ, vừa khít cả cây. */}
+      {onGoToMe ? (
+        <button type="button" onClick={onGoToMe} title={t("tree.toolbar.findMe")} aria-label={t("tree.toolbar.findMe")}>
+          <span className="material-symbols-outlined" aria-hidden="true">my_location</span>
+        </button>
+      ) : null}
+      {onGoToFounder ? (
+        <button type="button" onClick={onGoToFounder} title={t("tree.toolbar.goToFounder")} aria-label={t("tree.toolbar.goToFounder")}>
+          <span className="material-symbols-outlined" aria-hidden="true">family_history</span>
+        </button>
+      ) : null}
       <button type="button" onClick={onFit} title={t("tree.toolbar.fitScreen")} aria-label={t("tree.toolbar.fitScreen")}>
         <span className="material-symbols-outlined" aria-hidden="true">fit_screen</span>
       </button>

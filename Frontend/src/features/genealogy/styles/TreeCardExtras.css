@@ -209,3 +209,30 @@
         --tl-motion: 0s;
     }
 }
+
+/* ===== Nháy sáng thẻ sau khi nhảy tới (utils/tree-editor/treeFlash.js) ===== */
+@keyframes tc-flash {
+    0%, 100% { box-shadow: var(--tc-shadow); }
+    25%, 65% { box-shadow: 0 0 0 calc(var(--tc-ring) * 2) color-mix(in srgb, var(--tc-state-search) 70%, transparent), var(--tc-shadow-raised); }
+}
+
+.fte-personCard.is-flash,
+.fte-coupleHalf.is-flash {
+    animation: tc-flash 0.6s ease-in-out 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .fte-personCard.is-flash,
+    .fte-coupleHalf.is-flash {
+        animation: none;
+        box-shadow: 0 0 0 calc(var(--tc-ring) * 2) var(--tc-state-search);
+    }
+}
+
+/* Màn hình cảm ứng: nút trên thanh thao tác của thẻ đủ 44px để chạm bằng ngón tay. */
+@media (pointer: coarse) {
+    .fte-cardToolbar button {
+        width: 44px;
+        height: 44px;
+    }
+}

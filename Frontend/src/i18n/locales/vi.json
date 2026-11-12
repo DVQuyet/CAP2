@@ -45,6 +45,16 @@
     "help": "Hỗ trợ",
     "currentPlan": "gói hiện tại",
     "loading": "Đang tải...",
+    "routeError": {
+
+      "title": "Trang này gặp sự cố",
+
+      "hint": "Có lỗi khi hiển thị nội dung. Bạn có thể thử lại hoặc quay về trang chủ.",
+
+      "home": "Về trang chủ"
+
+    },
+
     "states": {
       "loading": "Đang tải dữ liệu...",
       "retry": "Thử lại",
@@ -2328,6 +2338,7 @@
       "more": "Thêm công cụ",
       "fitScreen": "Vừa màn hình",
       "findMe": "Tìm tôi",
+      "goToFounder": "Về thủy tổ",
       "search": "Tìm người",
       "cardHorizontal": "Thẻ ngang",
       "cardVertical": "Thẻ dọc",

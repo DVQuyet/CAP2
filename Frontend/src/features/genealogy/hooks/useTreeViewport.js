@@ -8,7 +8,7 @@ const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 // - React chỉ nhận state khi qua ngưỡng mức chi tiết (zoomLevel) hoặc khi cửa sổ vẽ phải dời;
 // - nhãn % đọc qua scaleStore (useSyncExternalStore) nên chỉ cụm nút zoom vẽ lại.
 // scaleRef do nơi gọi tạo (useRef) vì nhiều hàm kéo/thả đọc mức zoom trực tiếp từ đó.
-export function useTreeViewport({ scaleRef, canvasRef, viewportRef, initialScale, farZoomTextTarget }) {
+export function useTreeViewport({ scaleRef, canvasRef, laneLabelsRef, viewportRef, initialScale, farZoomTextTarget }) {
   const listenersRef = useRef(new Set());
   const windowRef = useRef(null);
   const [zoomLevel, setZoomLevel] = useState(() => zoomLevelFor(initialScale));
@@ -42,6 +42,8 @@ export function useTreeViewport({ scaleRef, canvasRef, viewportRef, initialScale
   const syncView = useCallback((state) => {
     if (!state) return;
     setScale(state.scale);
+    // Mép trái vùng nhìn theo tọa độ canvas: nhãn "Đời N" dịch theo để luôn thấy khi kéo ngang.
+    laneLabelsRef?.current?.style.setProperty("--fte-view-left", String(-(Number(state.positionX) || 0) / Math.max(Number(state.scale) || 1, 0.01)));
     const viewport = viewportRef.current;
     if (!viewport) return;
     const view = viewRectFromTransform(state, viewport.clientWidth, viewport.clientHeight);
@@ -49,7 +51,7 @@ export function useTreeViewport({ scaleRef, canvasRef, viewportRef, initialScale
     if (next === windowRef.current) return;
     windowRef.current = next;
     setRenderWindow(next);
-  }, [setScale, viewportRef]);
+  }, [laneLabelsRef, setScale, viewportRef]);
 
   const scaleStore = useMemo(() => ({
     get: () => scaleRef.current,

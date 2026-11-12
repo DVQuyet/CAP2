@@ -4,7 +4,6 @@ import { createPortal } from "react-dom";
 import { createPersonAPI, deletePersonAPI, linkRelationsAPI, previewRelationsAPI, saveTreeLayoutBatchAPI, saveTreeLayoutAPI, updatePersonAPI } from "../../../api/managerService";
 import { extractGenealogyAI } from "../../../api/aiServerService";
 import { onSocketEvent } from "../../../services/socket";
-import { vietnamDateToIso } from "../../../shared/utils/dateFormat";
 import { notify } from "../../../shared/utils/toast";
 import TreeToolbar from "./TreeToolbarParts/TreeToolbar";
 import TreeMobileControls from "./TreeToolbarParts/TreeMobileControls";
@@ -16,6 +15,8 @@ import { useTreeSearch } from "../hooks/useTreeSearch";
 import { useNodeDrag } from "../hooks/useNodeDrag";
 import { useStableCallback } from "../hooks/useStableCallback";
 import { useTreeViewport } from "../hooks/useTreeViewport";
+import { flashTreeCard, motionMs } from "../utils/tree-editor/treeFlash";
+import { isBirthDateInFuture, parentChildAgeConstraintMessage, personFormError } from "../utils/tree-editor/personFormRules";
 import { filterLinesInWindow, filterNodesInWindow, lineBounds } from "../utils/tree-editor/treeViewport";
 import { useTreeViewMode } from "../hooks/useTreeViewMode";
 import { useTreeRealtime } from "../hooks/useTreeRealtime";
@@ -47,72 +48,6 @@ import "../styles/TreeLines.css";
 import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 
 const shouldSuppressInlineRelationError = (error) => Boolean(error?.__centeredNoticeShown);
-
-const todayIsoDate = () => {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
-
-// Kiểm tra form người: ngày nhập sai (vd 99/99/2000) không được lưu im lặng thành rỗng; số điện thoại hợp lệ.
-const PHONE_PATTERN = /^\+?[0-9 .-]{8,15}$/;
-const personFormError = (form, t) => {
-  for (const [field, label] of [["birth_date", "birthDate"], ["death_date", "deathDate"]]) {
-    const text = String(form?.[field] || "").trim();
-    const yearOnly = ["year", "approximate", "unknown"].includes(form?.[`${field.replace("_date", "")}_date_precision`]);
-    if (text && !yearOnly && !vietnamDateToIso(text)) {
-      return t("tree.formErrors.invalidDate", { field: t(`tree.inspector.fields.${label}`) });
-    }
-  }
-  const phone = String(form?.phone || "").trim();
-  if (phone && !PHONE_PATTERN.test(phone)) return t("tree.formErrors.invalidPhone");
-  return "";
-};
-
-const isBirthDateInFuture = (birthDate) => {
-  const birthIso = vietnamDateToIso(birthDate);
-  return Boolean(birthIso && birthIso > todayIsoDate());
-};
-
-
-
-const isoDateOnlyValue = (value) => {
-  const converted = vietnamDateToIso(value);
-  if (converted) return converted;
-  const text = String(value || "").trim().slice(0, 10);
-  return /^\d{4}-\d{2}-\d{2}$/.test(text) ? text : "";
-};
-
-const addYearsToIsoDate = (value, years) => {
-  const iso = isoDateOnlyValue(value);
-  if (!iso) return "";
-  const [year, month, day] = iso.split("-").map(Number);
-  const target = new Date(Date.UTC(year + years, month - 1, day));
-  return Number.isNaN(target.getTime()) ? "" : target.toISOString().slice(0, 10);
-};
-
-const parentChildAgeConstraintMessage = (childBirthDate, parentBirthDate, t) => {
-  const childBirth = isoDateOnlyValue(childBirthDate);
-  const parentBirth = isoDateOnlyValue(parentBirthDate);
-  if (!childBirth || !parentBirth) return "";
-
-  if (childBirth === parentBirth) {
-    return t("tree.ageConstraint.sameBirth");
-  }
-
-  if (childBirth < parentBirth) {
-    return t("tree.ageConstraint.childOlder");
-  }
-
-  const minChildBirth = addYearsToIsoDate(parentBirth, 16);
-  if (minChildBirth && childBirth < minChildBirth) {
-    return t("tree.ageConstraint.parentTooYoung", { years: 16 });
-  }
-
-  return "";
-};
 
 const personBirthValue = (person) => person?.birth_date || person?.birthDate || person?.birth || "";
 
@@ -513,8 +448,9 @@ export default function FamilyTreeEditor({
   const lastAutoFitKeyRef = useRef("");
   // Mức zoom trong ref + biến CSS ghi thẳng lên canvas; state chỉ đổi khi qua ngưỡng hoặc cửa sổ vẽ dời.
   const scaleRef = useRef(0.85);
+  const laneLabelsRef = useRef(null);
   const { zoomLevel, renderWindow, syncView, scaleStore } = useTreeViewport({
-    scaleRef, canvasRef: treeRef, viewportRef, initialScale: 0.85, farZoomTextTarget: FAR_ZOOM_TEXT_TARGET,
+    scaleRef, canvasRef: treeRef, laneLabelsRef, viewportRef, initialScale: 0.85, farZoomTextTarget: FAR_ZOOM_TEXT_TARGET,
   });
   const defaultTreeTitleText = String(clan?.clan_name || t("tree.card.fallbackName")).toUpperCase();
   const databaseTreeStyle = useMemo(
@@ -1283,13 +1219,16 @@ const coupleActionPerson = useMemo(
         const nextX = rect.width / 2 - targetCenterX * nextScale;
         const nextY = rect.height / 2 - targetCenterY * nextScale;
         // Không ghi mức zoom trước: onTransform báo lại từng khung hình, ghi trước thì lệch khi lệnh bị thư viện bỏ qua.
-        api.setTransform(nextX, nextY, nextScale, 320);
+        api.setTransform(nextX, nextY, nextScale, motionMs(320));
+        // Chờ hoạt ảnh 320 ms xong và thẻ được vẽ trong cửa sổ mới rồi mới nháy.
+        window.setTimeout(() => flashTreeCard(id), 420);
         return;
       }
 
       const element = document.getElementById(`fte-person-${id}`);
       if (element?.scrollIntoView) {
         element.scrollIntoView({ block: "center", inline: "center", behavior: "smooth" });
+        flashTreeCard(id);
       }
     }, 120);
     return true;
@@ -2813,7 +2752,7 @@ const submitCreateDialog = async () => {
       const bottom = Math.max(...nodes.map((node) => toInt(node.y, 0) + node.height));
       const padding = isTreeMobile ? 36 : 90;
       const scale = Math.min(1.4, Math.max(0.3, Math.min((rect.width - padding * 2) / Math.max(1, right - left), (rect.height - padding * 2) / Math.max(1, bottom - top))));
-      api.setTransform(rect.width / 2 - ((left + right) / 2) * scale, rect.height / 2 - ((top + bottom) / 2) * scale, scale, 320);
+      api.setTransform(rect.width / 2 - ((left + right) / 2) * scale, rect.height / 2 - ((top + bottom) / 2) * scale, scale, motionMs(320));
     }, 260);
   }, [isTreeMobile]);
   useEffect(() => {
@@ -2856,8 +2795,8 @@ const submitCreateDialog = async () => {
       ? padding + (isTreeMobile ? 48 : 0) - bounds.top * nextScale
       : rect.height / 2 - treeCenterY * nextScale;
 
-    api.setTransform(nextX, nextY, nextScale, duration);
-    return true;
+    api.setTransform(nextX, nextY, nextScale, motionMs(duration));
+    return nextScale;
   }, [displayNodes, generationLanes.length, isTreeMobile]);
 
   useEffect(() => {
@@ -2883,11 +2822,22 @@ const submitCreateDialog = async () => {
     if (loading || !displayNodes.length || draggingId !== null || draggingLineId !== null || draggingTitleLabel) return undefined;
     if (lastAutoFitKeyRef.current === autoFitSignature) return undefined;
 
+    let verifyTimer = 0;
     const timer = window.setTimeout(() => {
-      if (fitTreeToScreen(360)) lastAutoFitKeyRef.current = autoFitSignature;
+      const targetScale = fitTreeToScreen(360);
+      if (!targetScale) return;
+      lastAutoFitKeyRef.current = autoFitSignature;
+      // Hoạt ảnh lần đầu có thể bị thư viện ngắt (đổi props lúc chuyển sang điện thoại): chưa tới đích thì đặt thẳng.
+      verifyTimer = window.setTimeout(() => {
+        const scale = transformApiRef.current?.state?.scale;
+        if (Number.isFinite(scale) && Math.abs(scale - targetScale) > 0.01) fitTreeToScreen(0);
+      }, 520);
     }, 90);
 
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(timer);
+      window.clearTimeout(verifyTimer);
+    };
   }, [autoFitSignature, displayNodes.length, draggingId, draggingLineId, draggingTitleLabel, fitTreeToScreen, loading, transformReady]);
 
   const updateTreeTitleLabel = useCallback((patch) => {
@@ -3009,6 +2959,14 @@ const submitCreateDialog = async () => {
       ],
     },
   ];
+  // Về thủy tổ: người gốc ở đời nhỏ nhất (nhiều gốc thì lấy id nhỏ nhất); không có thì vừa khít cả cây.
+  const handleGoToFounder = () => {
+    const founder = people
+      .filter((person) => founderIds.has(Number(person.id)))
+      .sort((a, b) => (toInt(a.generation, 0) - toInt(b.generation, 0)) || (Number(a.id) - Number(b.id)))[0];
+    if (!founder || !focusPerson(founder.id, { scale: 1.1 })) fitTreeToScreen(260);
+  };
+
   const mobileSpeedDialActions = [
     { key: "add", icon: "person_add", label: t("tree.toolbar.addPerson"), onClick: () => openCreateDialog("person"), disabled: busy, hidden: !canEditAll },
     { key: "findMe", icon: "my_location", label: t("tree.toolbar.findMe"), onClick: handleFindMe },
@@ -3031,7 +2989,8 @@ const submitCreateDialog = async () => {
         initialScale={isTreeMobile ? 0.68 : 0.85}
         minScale={isTreeMobile ? 0.12 : 0.18}
         maxScale={2.6}
-        centerOnInit={true}
+        // Không tự canh giữa lúc khởi tạo: hiệu ứng "vừa khít" đặt vị trí; canh giữa chạy sau ghi đè nó (lỗi trên điện thoại).
+        centerOnInit={false}
         limitToBounds={false}
         panning={{ disabled: bulkMoveMode || draggingId !== null || draggingLineId !== null || draggingTitleLabel, velocityDisabled: false }}
         doubleClick={{ disabled: true }}
@@ -3184,9 +3143,7 @@ const submitCreateDialog = async () => {
                           className={`fte2-lane ${lane.striped ? "is-striped" : ""}`}
                           style={{ left: lane.left, top: lane.top, width: lane.width, height: lane.height }}
                           aria-hidden="true"
-                        >
-                          <span className="fte2-laneLabel">{t("tree.lanes.generation", { count: lane.generation })}</span>
-                        </div>
+                        />
                       ))}
                       <TreeLinesLayer
                         width={canvasSize.width}
@@ -3199,6 +3156,14 @@ const submitCreateDialog = async () => {
                         onLinePointerDown={stableBeginLineDrag}
                       />
                       <TreeNodesLayer nodes={visibleNodes} ctx={cardLayerContext} />
+                      {/* Nhãn "Đời N" nằm trên thẻ và dính mép trái vùng nhìn (--fte-view-left do useTreeViewport ghi). */}
+                      <div className="fte2-laneLabels" ref={laneLabelsRef} aria-hidden="true">
+                        {generationLanes.map((lane) => (
+                          <span key={`lane-label-${lane.generation}`} className="fte2-laneLabel" style={{ "--lane-left": lane.left, left: lane.left, top: lane.top + lane.height / 2 }}>
+                            {t("tree.lanes.generation", { count: lane.generation })}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   </TransformComponent>
                 )}
@@ -3213,9 +3178,11 @@ const submitCreateDialog = async () => {
               <TreeZoomControls
                 scaleStore={scaleStore}
                 compact={isTreeMobile}
-                onZoomIn={() => zoomIn(0.16, 180)}
-                onZoomOut={() => zoomOut(0.16, 180)}
+                onZoomIn={() => zoomIn(0.16, motionMs(180))}
+                onZoomOut={() => zoomOut(0.16, motionMs(180))}
                 onFit={() => fitTreeToScreen(260)}
+                onGoToMe={handleFindMe}
+                onGoToFounder={handleGoToFounder}
                 fullscreen={treeFullscreen}
                 onToggleFullscreen={toggleTreeFullscreen}
               />

@@ -7,6 +7,7 @@ import FamilyTreeEditor from "../components/FamilyTreeEditor.jsx";
 import { formatDateTimeVN } from "../../../shared/utils/dateFormat";
 import { onSocketEvent } from "../../../services/socket";
 import ErrorState from "../../../shared/components/ErrorState";
+import LoadingState from "../../../shared/components/LoadingState";
 import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 import { notify } from "../../../shared/utils/toast";
 import "../../manager/pages/manager.css";
@@ -364,7 +365,10 @@ export default function GenealogySection() {
     </div>
   );
 
-  const renderEditor = () => (
+  // Lần tải đầu chưa có cây: hiện khung chờ (kèm thông báo khi máy chủ khởi động lâu) thay vì vùng trắng.
+  const renderEditor = () => (loading && !clan && people.length === 0 ? (
+    <LoadingState variant="block" label={t("tree.messages.loading")} />
+  ) : (
     <FamilyTreeEditor
       clan={clan}
       people={people}
@@ -374,7 +378,7 @@ export default function GenealogySection() {
       onReload={scheduleReloadTree}
       layoutSettings={layoutSettings}
     />
-  );
+  ));
 
   const renderTemporaryKeyPanel = () => (
     <div className="panel-card tree-key-panel tree-key-panel--compact">

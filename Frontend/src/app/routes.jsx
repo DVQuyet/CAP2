@@ -1,7 +1,8 @@
 import { lazy, Suspense } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import ProtectedRoute from "../shared/components/ProtectedRoute";
+import RouteErrorBoundary from "../shared/components/RouteErrorBoundary";
 import UserLayout from "../layouts/PublicLayout";
 
 // Layout theo vai trò chỉ tải khi vào khu đăng nhập (kéo theo socket, chuông thông báo, chatbot).
@@ -52,6 +53,11 @@ const GeneralPosts = lazy(() => import("../features/posts/pages/GeneralPosts"));
 const TimeCapsulePage = lazy(() => import("../features/time-capsule/pages/TimeCapsulePage"));
 const VietnamCalendarPage = lazy(() => import("../features/calendar/pages/VietnamCalendarPage"));
 
+// Lỗi render của một trang chỉ thay phần nội dung; layout và thanh điều hướng vẫn còn.
+function PageBoundary() {
+  return (<RouteErrorBoundary><Outlet /></RouteErrorBoundary>);
+}
+
 function RouteFallback() {
   const { t } = useTranslation();
   return (
@@ -96,73 +102,81 @@ export default function AppRoutes() {
 
         {/* Public Routes under UserLayout */}
         <Route element={<UserLayout />}>
-          <Route path="/" element={<Home />} />
-          <Route path="/tinh-nang" element={<FeatureDetailPage />} />
-          <Route path="/loi-ich" element={<BenefitsDetailPage />} />
-          <Route path="/tin-tuc" element={<NewsDetailPage />} />
-          <Route path="/tin-tuc/:id" element={<NewsArticlePage />} />
-          <Route path="/huong-dan" element={<GuideDetailPage />} />
-          <Route path="/privacy-policy" element={<LegalPage type="privacy" />} />
-          <Route path="/terms" element={<LegalPage type="terms" />} />
-          <Route path="/delete-data" element={<LegalPage type="deleteData" />} />
+          <Route element={<PageBoundary />}>
+            <Route path="/" element={<Home />} />
+            <Route path="/tinh-nang" element={<FeatureDetailPage />} />
+            <Route path="/loi-ich" element={<BenefitsDetailPage />} />
+            <Route path="/tin-tuc" element={<NewsDetailPage />} />
+            <Route path="/tin-tuc/:id" element={<NewsArticlePage />} />
+            <Route path="/huong-dan" element={<GuideDetailPage />} />
+            <Route path="/privacy-policy" element={<LegalPage type="privacy" />} />
+            <Route path="/terms" element={<LegalPage type="terms" />} />
+            <Route path="/delete-data" element={<LegalPage type="deleteData" />} />
+          </Route>
         </Route>
 
         {/* Protected Member Portal Routes */}
         <Route element={<ProtectedRoute allowedRoles={["member", "manager", "admin"]} />}>
           <Route element={<MemberLayout />}>
-            <Route path="/user/dashboard" element={<MemberDashboard />} />
-            <Route path="/user/family-tree" element={<FamilyTreePage />} />
-            <Route path="/user/genealogy-book" element={<GenealogyBookPage role="member" />} />
-            <Route path="/user/posts" element={<GeneralPosts />} />
-            <Route path="/posts/general" element={<GeneralPosts />} />
-            <Route path="/user/tasks" element={<TaskManagementPage role="member" />} />
-            <Route path="/user/time-capsule" element={<TimeCapsulePage role="member" />} />
-            <Route path="/member/tasks/:taskId" element={<Navigate to="/user/tasks" replace />} />
-            <Route path="/user/submissions" element={<MemberSubmissions />} />
-            <Route path="/user/profile" element={<MemberProfile />} />
-            <Route path="/user/fund" element={<MemberFundPage />} />
-            <Route path="/user/calendar" element={<VietnamCalendarPage />} />
+            <Route element={<PageBoundary />}>
+              <Route path="/user/dashboard" element={<MemberDashboard />} />
+              <Route path="/user/family-tree" element={<FamilyTreePage />} />
+              <Route path="/user/genealogy-book" element={<GenealogyBookPage role="member" />} />
+              <Route path="/user/posts" element={<GeneralPosts />} />
+              <Route path="/posts/general" element={<GeneralPosts />} />
+              <Route path="/user/tasks" element={<TaskManagementPage role="member" />} />
+              <Route path="/user/time-capsule" element={<TimeCapsulePage role="member" />} />
+              <Route path="/member/tasks/:taskId" element={<Navigate to="/user/tasks" replace />} />
+              <Route path="/user/submissions" element={<MemberSubmissions />} />
+              <Route path="/user/profile" element={<MemberProfile />} />
+              <Route path="/user/fund" element={<MemberFundPage />} />
+              <Route path="/user/calendar" element={<VietnamCalendarPage />} />
+            </Route>
           </Route>
         </Route>
 
         {/* Protected Manager Routes */}
         <Route element={<ProtectedRoute allowedRoles={["manager", "admin"]} />}>
           <Route element={<ManagerLayout />}>
-            <Route path="/manager" element={<Navigate to="/manager/dashboard" replace />} />
-            <Route path="/manager/dashboard" element={<ManagerDashboard />} />
-            <Route path="/manager/account" element={<AccountPage />} />
-            <Route path="/manager/invitations" element={<InvitationPage />} />
-            <Route path="/manager/genealogy" element={<GenealogySection />} />
-            <Route path="/manager/genealogy-book" element={<GenealogyBookPage role="manager" />} />
-            <Route path="/manager/duplicates" element={<DuplicatesPage />} />
-            <Route path="/manager/tasks" element={<TaskManagementPage role="manager" />} />
-            <Route path="/manager/tasks/:taskId" element={<TaskManagementPage role="manager" />} />
-            <Route path="/manager/time-capsule" element={<TimeCapsulePage role="manager" />} />
-            <Route path="/manager/posts" element={<GeneralPosts />} />
-            <Route path="/manager/pending" element={<PendingApprovals />} />
-            <Route path="/manager/media" element={<Navigate to="/manager/posts" replace />} />
-            <Route path="/manager/billing" element={<BillingPage />} />
-            <Route path="/manager/fund" element={<ClanFundPage />} />
-            <Route path="/manager/calendar" element={<VietnamCalendarPage />} />
+            <Route element={<PageBoundary />}>
+              <Route path="/manager" element={<Navigate to="/manager/dashboard" replace />} />
+              <Route path="/manager/dashboard" element={<ManagerDashboard />} />
+              <Route path="/manager/account" element={<AccountPage />} />
+              <Route path="/manager/invitations" element={<InvitationPage />} />
+              <Route path="/manager/genealogy" element={<GenealogySection />} />
+              <Route path="/manager/genealogy-book" element={<GenealogyBookPage role="manager" />} />
+              <Route path="/manager/duplicates" element={<DuplicatesPage />} />
+              <Route path="/manager/tasks" element={<TaskManagementPage role="manager" />} />
+              <Route path="/manager/tasks/:taskId" element={<TaskManagementPage role="manager" />} />
+              <Route path="/manager/time-capsule" element={<TimeCapsulePage role="manager" />} />
+              <Route path="/manager/posts" element={<GeneralPosts />} />
+              <Route path="/manager/pending" element={<PendingApprovals />} />
+              <Route path="/manager/media" element={<Navigate to="/manager/posts" replace />} />
+              <Route path="/manager/billing" element={<BillingPage />} />
+              <Route path="/manager/fund" element={<ClanFundPage />} />
+              <Route path="/manager/calendar" element={<VietnamCalendarPage />} />
+            </Route>
           </Route>
         </Route>
 
         {/* Protected Admin Routes */}
         <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
           <Route element={<AdminLayout />}>
-            <Route path="/dashboard" element={<DashboardHome />} />
-            <Route path="/dashboard/genealogy" element={<GenealogyManagement />} />
-            <Route path="/dashboard/posts" element={<PostsPage />} />
-            <Route path="/dashboard/posts/clan/:clanId" element={<PostsPage />} />
-            <Route path="/dashboard/tasks" element={<TaskManagementPage role="admin" />} />
-            <Route path="/dashboard/tasks/clan/:clanId" element={<TaskManagementPage role="admin" />} />
-            <Route path="/dashboard/members" element={<MembersPage />} />
-            <Route path="/dashboard/landing" element={<LandingManagement />} />
-            <Route path="/dashboard/invitations" element={<InvitationPage />} />
-            <Route path="/dashboard/events" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard/gallery" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard/billing" element={<BillingPage />} />
-            <Route path="/dashboard/calendar" element={<VietnamCalendarPage />} />
+            <Route element={<PageBoundary />}>
+              <Route path="/dashboard" element={<DashboardHome />} />
+              <Route path="/dashboard/genealogy" element={<GenealogyManagement />} />
+              <Route path="/dashboard/posts" element={<PostsPage />} />
+              <Route path="/dashboard/posts/clan/:clanId" element={<PostsPage />} />
+              <Route path="/dashboard/tasks" element={<TaskManagementPage role="admin" />} />
+              <Route path="/dashboard/tasks/clan/:clanId" element={<TaskManagementPage role="admin" />} />
+              <Route path="/dashboard/members" element={<MembersPage />} />
+              <Route path="/dashboard/landing" element={<LandingManagement />} />
+              <Route path="/dashboard/invitations" element={<InvitationPage />} />
+              <Route path="/dashboard/events" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard/gallery" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard/billing" element={<BillingPage />} />
+              <Route path="/dashboard/calendar" element={<VietnamCalendarPage />} />
+            </Route>
           </Route>
         </Route>
 

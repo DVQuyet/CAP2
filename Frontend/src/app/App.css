@@ -505,6 +505,7 @@ body {
 
 .account-page {
     min-height: 100vh;
+    min-height: 100dvh;
     padding-top: 8.8rem;
     background: linear-gradient(180deg, #fbf4e7 0%, #f2e5cc 100%);
 }
@@ -547,6 +548,7 @@ body {
 
 .news-page {
     min-height: 100vh;
+    min-height: 100dvh;
     padding-top: 7.9rem;
     background: linear-gradient(180deg, #efe3b9 0%, #d8e0c2 38%, #90b39f 72%, #2a5f57 100%);
 }
@@ -1300,6 +1302,7 @@ body {
 .benefits-page {
     padding: 9rem 0 4rem;
     min-height: 100vh;
+    min-height: 100dvh;
     background:
         radial-gradient(circle at 1px 1px, rgba(203, 177, 131, 0.22) 1px, transparent 0) 0 0 / 28px 28px,
         #f6f0e0;
@@ -1558,6 +1561,7 @@ body {
 .guide-page {
     padding-top: 7.9rem;
     min-height: 100vh;
+    min-height: 100dvh;
     background: linear-gradient(to bottom, #fff9eb 0%, #f5f0e0 100%);
 }
 
@@ -2426,6 +2430,7 @@ body {
 .dashboard-container {
     display: flex;
     min-height: 100vh;
+    min-height: 100dvh;
     background: #f5f0e0;
 }
 
@@ -2437,6 +2442,7 @@ body {
     flex-direction: column;
     position: fixed;
     height: 100vh;
+    height: 100dvh;
     left: 0;
     top: 0;
     z-index: 100;
@@ -3616,6 +3622,7 @@ input:checked + .slider:before { transform: translateX(26px); }
 .dashboard-container {
   display: flex;
   min-height: 100vh;
+  min-height: 100dvh;
   background-color: #fdfbf7; /* Warm Ivory */
   margin: 0;
   padding: 0;
@@ -3902,6 +3909,7 @@ input:checked + .slider:before { transform: translateX(26px); }
   position: relative;
   height: 52px;
   width: 310px;
+  max-width: 100%;
   margin: 0 auto;
 }
 .landing-tree-lines span {

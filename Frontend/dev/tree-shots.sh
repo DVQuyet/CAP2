@@ -3,15 +3,21 @@
 # Dùng để so ảnh trước/sau khi sửa giao diện cây.
 #   1) cd Frontend && npx vite --port 5199 --strictPort
 #   2) bash dev/tree-shots.sh <thư mục ra> [đường dẫn chrome]
+#   3) So tự động với ảnh mẫu (in % điểm ảnh khác, ghi ảnh diff, mã thoát 1 nếu lệch):
+#      node dev/tree-shots-compare.mjs ../docs/anh/cay-A1/sau <thư mục ra> <thư mục diff> [ngưỡng %]
+# Mỗi ảnh dùng một profile Chrome mới (xóa ngay sau khi chụp) để trạng thái thu gọn lưu trong
+# localStorage không làm ảnh khác nhau giữa các lần chụp.
 out="${1:?Cần thư mục ra}"; mkdir -p "$out"
 chrome="${2:-/c/Program Files/Google/Chrome/Application/chrome.exe}"
 base="${TREE_PREVIEW_URL:-http://localhost:5199/dev/tree-preview.html}"
-profile="${TMPDIR:-${TEMP:-/tmp}}/tree-shots-profile"
+tmproot="${TMPDIR:-${TEMP:-/tmp}}"
 shoot() { # tên, cỡ, query
-  local file="$out/$1.png"
+  local file="$out/$1.png" profile
+  profile="$(mktemp -d "$tmproot/tree-shots-XXXXXX")"
   command -v cygpath >/dev/null && file="$(cygpath -w "$file")"
-  "$chrome" --headless=new --disable-gpu --hide-scrollbars --no-first-run --user-data-dir="$profile" \
+  "$chrome" --headless=new --disable-gpu --hide-scrollbars --no-first-run --force-prefers-reduced-motion --user-data-dir="$profile" \
     --window-size="$2" --virtual-time-budget=9000 --screenshot="$file" "$base?$3" >/dev/null 2>&1
+  rm -rf "$profile"
 }
 for size in 1280,800 390,844; do
   w=${size%%,*}

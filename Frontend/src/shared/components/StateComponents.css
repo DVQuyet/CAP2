@@ -99,6 +99,12 @@
   cursor: pointer;
 }
 
+a.state-action {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+
 .state-action:hover {
   filter: brightness(1.08);
 }

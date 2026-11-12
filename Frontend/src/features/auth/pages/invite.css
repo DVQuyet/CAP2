@@ -1,5 +1,6 @@
 .invite-auth-page {
   min-height: 100vh;
+  min-height: 100dvh;
   background: #f7f2ec;
   color: #2f221b;
   display: grid;

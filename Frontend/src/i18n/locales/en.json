@@ -45,6 +45,16 @@
     "help": "Help",
     "currentPlan": "current plan",
     "loading": "Loading...",
+    "routeError": {
+
+      "title": "This page ran into a problem",
+
+      "hint": "Something went wrong while showing this content. You can try again or go back home.",
+
+      "home": "Back to home"
+
+    },
+
     "states": {
       "loading": "Loading data...",
       "retry": "Try again",
@@ -2328,6 +2338,7 @@
       "more": "More tools",
       "fitScreen": "Fit to screen",
       "findMe": "Find me",
+      "goToFounder": "Go to founder",
       "search": "Find person",
       "cardHorizontal": "Horizontal cards",
       "cardVertical": "Vertical cards",

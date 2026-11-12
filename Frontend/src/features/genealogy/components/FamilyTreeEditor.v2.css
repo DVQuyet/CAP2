@@ -875,21 +875,28 @@
     background: var(--t-lane);
 }
 
+/* Lớp nhãn đời nằm trên đường nối, dưới thẻ (không che tên); nhãn dính mép trái vùng nhìn: dịch thêm (mép trái - mép dải) khi dải đã trôi khỏi màn hình. */
+.fte2 .fte-canvas .fte2-laneLabels {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+}
+
 .fte2-laneLabel {
     position: absolute;
-    left: 14px;
-    top: 50%;
-    transform: translateY(-50%);
-    padding: 4px 10px;
+    margin-left: 14px;
+    transform: translate(max(0px, calc((var(--fte-view-left, 0) - var(--lane-left, 0)) * 1px + 12px * var(--fte-inv-scale, 1) - 14px)), -50%);
+    padding: 0.25em 0.65em;
     border: 1px solid var(--t-border);
     border-radius: var(--radius-pill);
     background: var(--t-surface);
     color: var(--t-muted);
     font-family: var(--t-font-title);
-    font-size: calc(16px * var(--fte2-zoom-comp, 1));
+    /* Khoảng 13px trên màn hình ở mọi mức zoom; thu nhỏ xa thì dừng ở 26px canvas để nằm gọn trong lề 120px của dải. */
+    font-size: min(calc(13px * var(--fte-inv-scale, 1)), 26px);
     font-weight: 800;
     white-space: nowrap;
-    transform-origin: left center;
 }
 
 .fte2 .fte-canvas .fte-lines {
@@ -1191,4 +1198,39 @@
 .fte2-menu,
 .fte2-menu--root {
     max-width: calc(100vw - 24px);
+}
+
+/* ===== Điện thoại (A3.3): hồ sơ người dạng bảng kéo từ dưới lên, nút chạm tối thiểu 44px ===== */
+@media (max-width: 680px) {
+    .fte-inspectorOverlay {
+        align-items: end;
+        justify-items: stretch;
+        padding: 0;
+    }
+
+    .fte-inspectorOverlay > .fte-inspector {
+        width: 100%;
+        max-height: 85dvh;
+        border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+        padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+        animation: fte2-sheet-in 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+}
+
+@media (pointer: coarse) {
+    .fte2-zoom button,
+    .fte2-zoom.is-compact button,
+    .fte2-sheetHeader button,
+    .fte2-segmented button,
+    .fte2 .fte-searchPanel--compact .fte-iconButton,
+    .fte2 .fte-rootPicker label > button {
+        min-width: 44px;
+        min-height: 44px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .fte-inspectorOverlay > .fte-inspector {
+        animation: none;
+    }
 }

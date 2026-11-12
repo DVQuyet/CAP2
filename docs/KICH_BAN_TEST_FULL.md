@@ -415,6 +415,15 @@ Bong bóng chat ở góc màn hình.
 | U03 | Tất cả trang chính ở 390px, 768px, 1440px | Không tràn ngang, không chồng chữ |
 | U04 | Chế độ tối của hệ điều hành (nếu app hỗ trợ) | Chữ đọc được |
 | U05 | Mọi thông báo toast tự tắt / nút × tắt được | Đúng |
+| U06 | Cây: zoom gần rồi kéo ngang sang phải xa | Nhãn "Đời N" luôn ở mép trái, không che tên trên thẻ |
+| U07 | Cây: bấm "Tìm tôi" rồi "Về thủy tổ" ở cụm nút zoom | Cây chạy tới thẻ, thẻ nháy sáng 2 lần |
+| U08 | Cây: tìm một người trong ô tìm, chọn kết quả | Nhảy tới đúng thẻ và nháy sáng |
+| U09 | Cây ở 390px (điện thoại thật nếu có): mở cây lần đầu | Tự vừa khít, không lệch sang phải; nút zoom và nút thao tác đủ to để chạm |
+| U10 | Cây ở 390px: bấm nền thẻ vợ chồng | Bảng chi tiết trượt từ dưới lên, kéo/cuộn được bằng một tay |
+| U11 | Bật "giảm chuyển động" của hệ điều hành rồi bấm vừa khít, tìm người | Cây nhảy ngay, không có hoạt ảnh |
+| U12 | Ô nhập trên iPhone (Safari) | Chạm vào ô không tự phóng to trang |
+| U13 | Tắt backend rồi mở trang cây | Thấy khung chờ, sau 5 giây có dòng "Máy chủ đang khởi động…", không trắng trang |
+| U14 | Chia sẻ link trang chủ lên Zalo/Facebook | Có tiêu đề, mô tả và ảnh xem trước |
 
 ---
 

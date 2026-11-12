@@ -9,6 +9,7 @@
     position: relative;
     isolation: isolate;
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -368,6 +369,7 @@
     inset: 0;
     z-index: var(--z-modal);
     min-height: 100vh;
+    min-height: 100dvh;
     padding: 24px 16px;
     background:
         radial-gradient(circle at 50% 18%, rgba(243, 198, 63, 0.18), transparent 34%),

@@ -150,3 +150,12 @@ textarea {
     min-height: 44px;
   }
 }
+
+/* Điện thoại: ô nhập >= 16px để iOS không tự phóng to khi focus */
+@media (max-width: 768px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
