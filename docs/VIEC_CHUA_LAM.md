@@ -141,14 +141,14 @@ Còn mở từ đợt 4:
 - Test: `tests/ai.personBiography.test.js` (8 test, DB và Groq giả). Không cần migration.
 - Còn mở: QA trên trình duyệt (desktop + điện thoại), chưa dùng family_memories vì bảng không gắn với người cụ thể; hỏi nhóm có cho đưa nơi sinh/địa chỉ vào bản nháp không.
 
-Đợt 6 (30/10, Sonnet) — rà lại B3, 2.4, 2.5 theo `KE_HOACH_SONNET_1H.md`; **không cần code mới**:
+Đợt 6 (30/10, Sonnet) — rà lại B3, 2.4, 2.5 theo kế hoạch 1 giờ; **không cần code mới**:
 - B3: tiêu đề cột bảng sự kiện ở `TaskManagementPage.jsx` đã dùng `t()` từ trước.
 - 2.4 (log câu chưa hiểu + `scripts/chatbot-unknown-report.js`) và 2.5 (👍/👎: bảng `chatbot_feedback`, `POST /api/chatbot/messages/:id/feedback`, nút trong chat, i18n vi/en, test `chatbot.feedback.test.js`) đã có từ đợt 22/10; bảng P2 giờ đánh dấu ✅.
 - Baseline kiểm tra: Backend 167 test pass; Frontend 53 test pass, ESLint 0 lỗi / 139 cảnh báo (không đổi), `vite build` OK.
 - Migration cần khi deploy: không có thêm; vẫn là các file của đợt 5 và 22/10 (`password_changed_at`, `chatbot_feedback`, `chatbot_messages.hidden_at`).
 - Còn mở: như danh sách "Còn mở từ đợt này" của đợt 5 (QA trình duyệt, `<style>` ở `ClanFundPage`/`FundAnalytics`, cảnh báo ESLint cần người xác nhận).
 
-Đợt 5 (29/10, Sonnet theo `KE_HOACH_SONNET_1H.md`) — 6 commit `c8b8ef5`..`fcab1ab`, chưa push:
+Đợt 5 (29/10, Sonnet theo kế hoạch 1 giờ) — 6 commit `c8b8ef5`..`fcab1ab`, chưa push:
 - Dependency: `npm audit fix` + nodemailer 10 (API `createTransport/sendMail` đã thử). Backend chỉ còn `xlsx` (không có bản vá; chỉ dùng để ghi file nên giữ lại). Frontend còn 2 lỗi moderate của `react-router` (cần nhảy lên v7, breaking) — để sau.
 - Đổi/đặt lại mật khẩu thu hồi token cũ: cột `accounts.password_changed_at`, `verifyToken`/socket/media từ chối token có `iat` sớm hơn mốc; `PUT /api/member/password` trả token mới (frontend tự lưu). Thiếu cột thì chạy như cũ. `isTokenRevoked` dùng chung.
 - Xuất Excel quỹ chống formula injection (`shared/utils/spreadsheet.js`); header `Content-Disposition` của media an toàn với tên file tiếng Việt (`shared/utils/contentDisposition.js`).
@@ -162,9 +162,9 @@ Còn mở từ đợt này:
 - Khối `<style dangerouslySetInnerHTML>` ở `ClanFundPage.jsx` (~1190 dòng) và `FundAnalytics.jsx` **không chuyển ra `.css`**: chúng đang ghi đè `FundDesign.css` nhờ nằm trong DOM, chuyển file sẽ đổi thứ tự cascade — cần QA bằng mắt trên trình duyệt thật.
 - Chưa QA bằng trình duyệt: guard phiên (hết hạn token, đổi mật khẩu rồi dùng tab khác), redirect sau đăng nhập, viền focus.
 - Cảnh báo ESLint còn 139: `set-state-in-effect` 51, `exhaustive-deps` 42, `no-unused-vars` 24 (hàm/state chết ở `ManagerLayout.jsx`, `TaskManagementPage.jsx`, `TimeCapsulePage.jsx`… cần người xác nhận là code chết hay dang dở).
-- Việc lớn đã ghi ở `KE_HOACH_SONNET_1H.md` (token trong URL, JWT trong localStorage, CSP, gom hệ màu).
+- Việc lớn còn lại từ kế hoạch 1 giờ (file kế hoạch đã xóa vì xong): JWT trong `localStorage` thay vì cookie httpOnly (**L**: CORS credentials, CSRF, socket); chuyển CSP từ Report-Only sang chặn sau khi xem báo vi phạm trên bản deploy; ảnh đại diện thật khi xuất cây. Token trong URL đã xong ở đợt 6.
 
-Đợt 6 (30/10, Sonnet theo `KE_HOACH_SONNET_DOT6.md`) — 21 commit `49a5b40`..`90afb83`, chưa push:
+Đợt 6 (30/10, Sonnet; file kế hoạch đợt 6 đã xóa vì xong) — 21 commit `49a5b40`..`90afb83`, chưa push:
 - **Test tích hợp trên DB test:** `cd Backend && npm run test:integration` (49 test, tự tạo/dọn dữ liệu `ITEST_`/`itest_`; không chạy trong CI). Phủ đăng nhập/đổi/đặt lại mật khẩu, khóa tài khoản, **cô lập dòng họ A/B** (20 test kèm đối chứng, **không tìm thấy lỗ hổng**), token media, socket, rate limit, header bảo mật, tiểu sử AI, phân trang row-value và thanh toán `FOR UPDATE`/`DATE_ADD` (xong P0.4 và P3.5). Dọn tay: `node scripts/itest-cleanup.js`.
 - **Bảo mật:** đăng nhập Google/Facebook dùng mã một lần thay JWT trên URL; ảnh/ghi âm dùng token media riêng (scope `media`, `GET /api/auth/media-token`); đổi/đặt lại/đặt hộ mật khẩu, khóa, lưu trữ, đổi vai trò đều ngắt socket (đường admin và manager đặt mật khẩu hộ trước đây **không thu hồi token**, đã sửa); rate limit đổi mật khẩu/upload/xác thực lời mời; HSTS + CSP cho API; CSP **Report-Only** cho frontend (cả hai `vercel.json`).
 - **AI:**

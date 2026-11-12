@@ -1,11 +1,11 @@
 # Việc tiếp theo: trợ lý AI trả lời (bàn giao cho lần làm sau)
 
-Ghi ngày 15/10/2026. Lý do, số liệu kiểm tra và bối cảnh đầy đủ: [KE_HOACH_AI_TRA_LOI.md](KE_HOACH_AI_TRA_LOI.md).
+Ghi ngày 15/10/2026. Kế hoạch gốc (`KE_HOACH_AI_TRA_LOI.md`) đã xong và đã xóa; xem lịch sử git nếu cần lý do ban đầu.
 Số dòng trong file này tính theo commit `1f98244`; sau khi sửa có thể lệch vài dòng, tìm theo tên hàm.
 
 ## Bắt đầu phiên sau
 
-1. `git pull`, đọc file này (danh sách việc) và `KE_HOACH_AI_TRA_LOI.md` (lý do).
+1. `git pull`, đọc file này (danh sách việc).
 2. Chạy mốc hiện tại: `cd Backend && node scripts/chatbot-e2e-check.js`
    → lúc ghi: **47/82 câu đúng, hội thoại 0/5**. Thêm `--all` để xem từng câu.
 3. Làm lần lượt **Giai đoạn 1 → 5**. Xong mỗi giai đoạn:
