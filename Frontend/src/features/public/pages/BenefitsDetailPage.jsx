@@ -11,6 +11,7 @@ import {
   DEFAULT_BENEFIT_CARDS,
   DEFAULT_BENEFIT_REASONS,
 } from "../landing/landingContent";
+import "./BenefitsDetailPage.css";
 
 export default function BenefitsDetailPage() {
   const { t } = useTranslation();

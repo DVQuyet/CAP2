@@ -107,7 +107,7 @@ export const DEFAULT_NEWS = [
   ["f3", "https://images.unsplash.com/photo-1525920980995-f8a1b3cbbf0f?auto=format&fit=crop&w=900&q=80"],
 ];
 export const DEFAULT_NEWS_LATEST = [
-  ["l0", "https://images.unsplash.com/photo-1512684555490-d5f2ec538bd7?auto=format&fit=crop&w=220&q=80"],
+  ["l0", "https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=220&q=80"],
   ["l1", "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=220&q=80"],
   ["l2", "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=220&q=80"],
 ];

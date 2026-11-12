@@ -29,6 +29,7 @@
 
 .footer-columns {
   display: flex;
+  align-items: flex-start;
   flex-wrap: wrap;
   gap: 1.6rem 2.4rem;
 }

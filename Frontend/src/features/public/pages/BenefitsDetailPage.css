@@ -1,0 +1,4 @@
+/* Admin đổi thứ tự: khối "Vì sao" đứng trước lưới thẻ thì lưới cũng cần khoảng cách phía trên. */
+.benefits-why-card + .benefits-card-grid {
+  margin-top: 1.7rem;
+}

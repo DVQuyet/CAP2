@@ -1,6 +1,7 @@
 .news-article-page {
   background: var(--color-parchment);
-  padding: 32px 0 64px;
+  /* Chừa chỗ cho thanh menu cố định, cùng mức với các trang công khai khác. */
+  padding: 10rem 0 4rem;
   min-height: 60vh;
 }
 
@@ -62,5 +63,11 @@
 @media (max-width: 640px) {
   .news-article {
     padding: 18px;
+  }
+}
+
+@media (max-width: 768px) {
+  .news-article-page {
+    padding-top: 11.5rem;
   }
 }
