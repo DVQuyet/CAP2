@@ -7,7 +7,7 @@ import {
   listRelationOverridesAPI,
   recomputeGenerationsAPI,
   updateGenealogyPolicyAPI,
-} from "../../../../api/managerService";
+} from "../../api";
 import { useConfirm } from "../../../../shared/components/confirmContext.js";
 import { friendlyErrorMessage } from "../../../../shared/utils/friendlyError";
 

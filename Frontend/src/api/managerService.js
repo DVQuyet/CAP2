@@ -1,4 +1,4 @@
-import { apiRequest, buildApiUrl } from "../services/api";
+import { apiRequest } from "../services/api";
 import { getTreeEditKeyHeader } from "../services/treeEditSession";
 
 const BASE_URL = "/api/manager";
@@ -394,37 +394,6 @@ export const updateManagerClanInfo = (payload) =>
     "Không thể cập nhật thông tin dòng họ"
   );
 
-export const getActiveTreeEditKeysAPI = (clanId) => {
-  const query = clanId ? `?clan_id=${encodeURIComponent(clanId)}` : "";
-  return request(`/tree-edit-keys${query}`, {}, "Không thể lấy danh sách temporary edit key");
-};
-
-export const createTreeEditKeyAPI = (memberAccountIds) => {
-  const ids = Array.isArray(memberAccountIds) ? memberAccountIds : [memberAccountIds];
-
-  const uniqueIds = [
-    ...new Set(
-      ids
-        .map((id) => Number(id))
-        .filter((id) => Number.isFinite(id) && id > 0)
-    ),
-  ];
-
-  return request(
-    "/tree-edit-keys",
-    {
-      method: "POST",
-      headers: getTreeEditKeyHeader(),
-      body: JSON.stringify(
-        uniqueIds.length === 1
-          ? { member_account_id: uniqueIds[0], member_account_ids: uniqueIds }
-          : { member_account_ids: uniqueIds }
-      ),
-    },
-    "Không thể tạo temporary edit key"
-  );
-};
-
 export const getFundOverviewAPI = () =>
   request("/fund/overview", {}, "Không thể lấy tổng quan quỹ");
 
@@ -488,47 +457,6 @@ export const updateMemberByManager = (accountId, body) =>
       body: JSON.stringify(body),
     },
     "Không thể cập nhật thành viên"
-  );
-
-export const archiveMemberAPI = (accountId, reason) =>
-  request(
-    `/members/${accountId}/archive`,
-    {
-      method: "POST",
-      body: JSON.stringify({ reason }),
-    },
-    "Không thể lưu trữ thành viên"
-  );
-
-export const getArchivedMembersAPI = () =>
-  request("/members-archive", {}, "Không thể lấy kho lưu trữ thành viên");
-
-export const deleteArchivedMemberAPI = (archiveId) =>
-  request(
-    `/members-archive/${archiveId}`,
-    {
-      method: "DELETE",
-    },
-    "Không thể xóa vĩnh viễn bản ghi lưu trữ"
-  );
-
-
-export const deleteAllArchivedMembersAPI = () =>
-  request(
-    `/members-archive`,
-    {
-      method: "DELETE",
-    },
-    "Không thể xóa tất cả bản ghi lưu trữ"
-  );
-
-export const restoreArchivedMemberAPI = (archiveId) =>
-  request(
-    `/members-archive/${archiveId}/restore`,
-    {
-      method: "POST",
-    },
-    "Không thể phục hồi thành viên"
   );
 
 export const getPendingUsers = () =>
@@ -617,81 +545,11 @@ export const getDashboardData = async () => {
 
 export const getMediaLibraryData = async () => asArray(await getMediaAPI());
 
-// Xem trước thay đổi quan hệ: lỗi, cảnh báo, thông báo và các thay đổi đời (không ghi gì).
-export const previewRelationsAPI = (data) =>
-  request(
-    "/people/link/preview",
-    {
-      method: "POST",
-      headers: getTreeEditKeyHeader(),
-      body: JSON.stringify(data),
-    },
-    "Không thể kiểm tra trước quan hệ"
-  );
-
-const clanQuery = (clanId) => (clanId ? `?clan_id=${encodeURIComponent(clanId)}` : "");
-
-export const auditFamilyTreeAPI = (clanId) =>
-  request(`/tree/audit${clanQuery(clanId)}`, { method: "GET" }, "Không thể kiểm tra gia phả");
-
-export const recomputeGenerationsAPI = (clanId) =>
-  request(
-    `/tree/recompute-generations${clanQuery(clanId)}`,
-    { method: "POST", body: JSON.stringify({ clan_id: clanId }) },
-    "Không thể cập nhật đời"
-  );
-
-export const getGenealogyPolicyAPI = (clanId) =>
-  request(`/tree/genealogy-policy${clanQuery(clanId)}`, { method: "GET" }, "Không thể đọc cài đặt gia phả");
-
-export const updateGenealogyPolicyAPI = (clanId, policy) =>
-  request(
-    `/tree/genealogy-policy${clanQuery(clanId)}`,
-    { method: "PUT", body: JSON.stringify({ clan_id: clanId, policy }) },
-    "Không thể lưu cài đặt gia phả"
-  );
-
-export const listRelationOverridesAPI = (clanId) =>
-  request(`/tree/relation-overrides${clanQuery(clanId)}`, { method: "GET" }, "Không thể đọc lịch sử xác nhận");
-
 export const describeKinshipAPI = (clanId, sourcePersonId, targetPersonId) =>
   request(
     `/tree/kinship?source_person_id=${encodeURIComponent(sourcePersonId)}&target_person_id=${encodeURIComponent(targetPersonId)}${clanId ? `&clan_id=${encodeURIComponent(clanId)}` : ""}`,
     { method: "GET" },
     "Không thể tra cứu xưng hô"
-  );
-
-export const createPersonAPI = (data) =>
-  requestWithHistoricalConfirmation(
-    "/people",
-    {
-      method: "POST",
-      headers: getTreeEditKeyHeader(),
-      body: JSON.stringify(data),
-    },
-    "Tạo người trong gia phả thất bại"
-  );
-
-export const linkRelationsAPI = (data) =>
-  requestWithHistoricalConfirmation(
-    "/people/link",
-    {
-      method: "PATCH",
-      headers: getTreeEditKeyHeader(),
-      body: JSON.stringify(data),
-    },
-    "Liên kết quan hệ thất bại"
-  );
-
-export const updatePersonAPI = (personId, data) =>
-  requestWithHistoricalConfirmation(
-    `/people/${personId}`,
-    {
-      method: "PATCH",
-      headers: getTreeEditKeyHeader(),
-      body: JSON.stringify(data),
-    },
-    "Không thể cập nhật người trong gia phả"
   );
 
 export const updatePersonPositionAPI = (personId, data) =>
@@ -703,46 +561,6 @@ export const updatePersonPositionAPI = (personId, data) =>
       body: JSON.stringify(data),
     },
     "Không thể lưu vị trí"
-  );
-
-export const saveTreeLayoutAPI = (people = [], clanId, options = {}) =>
-  request(
-    clanId ? `/clans/${clanId}/family-tree/layout` : "/people/layout",
-    {
-      method: "PATCH",
-      headers: getTreeEditKeyHeader(),
-      body: JSON.stringify({
-        people,
-        positions: people,
-        clan_id: clanId,
-        client_layout_id: options.clientLayoutId || options.client_layout_id,
-        line_routes: options.lineRoutes || options.line_routes,
-        card_sizes: options.cardSizes || options.card_sizes,
-        tree_style: options.treeStyle || options.tree_style,
-      }),
-    },
-    "Không thể lưu bố cục cây"
-  );
-
-export const saveTreeLayoutBatchAPI = (data = {}) =>
-  request(
-    "/tree/layout/batch",
-    {
-      method: "POST",
-      headers: getTreeEditKeyHeader(),
-      body: JSON.stringify(data),
-    },
-    "Khong the luu bo cuc cay"
-  );
-
-export const deletePersonAPI = (personId) =>
-  request(
-    `/people/${personId}`,
-    {
-      method: "DELETE",
-      headers: getTreeEditKeyHeader(),
-    },
-    "Không thể xóa người khỏi gia phả"
   );
 
 export const createFamilyAPI = (data) =>
@@ -949,23 +767,5 @@ export const dismissDuplicatePair = (personAId, personBId) =>
     body: JSON.stringify({ person_a_id: personAId, person_b_id: personBId }),
   }, "Không thể lưu trạng thái không trùng");
 
-// Tải file GEDCOM 5.5.1 của dòng họ (chỉ xuất). Trả { blob, filename } để trang tự lưu.
-export const downloadTreeGedcom = async () => {
-  const token = localStorage.getItem("auth_token");
-  const response = await fetch(buildApiUrl(`${BASE_URL}/tree/export.gedcom`), {
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-  });
-  if (!response.ok) {
-    const data = await response.json().catch(() => ({}));
-    throw Object.assign(new Error(data.message || "Không thể xuất file GEDCOM"), { status: response.status });
-  }
-  const disposition = response.headers.get("Content-Disposition") || "";
-  const encoded = /filename\*=UTF-8''([^;]+)/i.exec(disposition);
-  let filename = "gia-pha.ged";
-  try {
-    if (encoded) filename = decodeURIComponent(encoded[1]);
-  } catch {
-    // giữ tên mặc định
-  }
-  return { blob: await response.blob(), filename };
-};
+// Dùng chung với features/tree/api.js (API cây gia phả tách khỏi file này ở E7.3).
+export { request as managerRequest, requestWithHistoricalConfirmation as managerRequestWithConfirmation, BASE_URL as MANAGER_BASE_URL };

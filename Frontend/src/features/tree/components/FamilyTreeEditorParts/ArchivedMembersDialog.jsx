@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useLanguage } from "../../../../i18n/LanguageContext";
-import { getArchivedMembersAPI, restoreArchivedMemberAPI, deleteArchivedMemberAPI, deleteAllArchivedMembersAPI, archiveMemberAPI } from "../../../../api/managerService";
+import { getArchivedMembersAPI, restoreArchivedMemberAPI, deleteArchivedMemberAPI, deleteAllArchivedMembersAPI, archiveMemberAPI } from "../../api";
 import { fullName } from "../../utils/tree-editor/treePersonUtils";
 import { useConfirm } from "../../../../shared/components/confirmContext.js";
 import { friendlyErrorMessage } from "../../../../shared/utils/friendlyError";

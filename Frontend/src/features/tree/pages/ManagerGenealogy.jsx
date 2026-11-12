@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import useDismissable from "../../../shared/hooks/useDismissable";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { createTreeEditKeyAPI, downloadTreeGedcom, getActiveTreeEditKeysAPI, getManagerTree, updateManagerClanInfo } from "../../../api/managerService";
+import { createTreeEditKeyAPI, downloadTreeGedcom, getActiveTreeEditKeysAPI, getManagerTree, updateManagerClanInfo } from "../api";
 import FamilyTreeEditor from "../components/FamilyTreeEditor.jsx";
 import { formatDateTimeVN } from "../../../shared/utils/dateFormat";
 import { onSocketEvent } from "../../../services/socket";

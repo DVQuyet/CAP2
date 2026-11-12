@@ -62,13 +62,14 @@ Còn mở từ đợt 4:
 - Validate chưa phủ route calendar/events.
 - "ba co toi" vẫn mơ hồ (cụ vs bà cô).
 
-Đợt 17 (12/11) — Giai đoạn 3 (A3, H1.1, H1.4, H1.5, H4.2, H4.4; E7.3 làm sau, commit riêng):
+Đợt 17 (12/11) — Giai đoạn 3 (A3, H1.1, H1.4, H1.5, H4.2, H4.4, E7.3):
 - **A3.1** nhãn "Đời N" tách khỏi dải đời thành lớp riêng, dính mép trái vùng nhìn (`--fte-view-left` do `useTreeViewport` ghi thẳng lên DOM), nằm dưới thẻ để không che tên.
 - **A3.2** cụm nút zoom thêm "Tìm tôi" và "Về thủy tổ"; tìm người/nhảy tới làm thẻ nháy sáng (`utils/tree-editor/treeFlash.js`, class `is-flash` trong `TreeCardExtras.css`). Phóng/di chuyển cây chạy ngay khi bật giảm chuyển động (`motionMs`).
 - **A3.3** điện thoại: nút zoom, nút thanh thao tác thẻ và các nút trong bảng ≥ 44px (`pointer: coarse`); bảng chi tiết vợ chồng thành bảng trượt từ dưới lên ở ≤ 680px; `100vh` → `100dvh` ở CSS cây, layout, auth, manager, time-capsule; popup kết quả tìm không tràn. Sửa lỗi Đợt 16: "vừa khít" lúc mở cây trên điện thoại bị `centerOnInit` ghi đè → tắt `centerOnInit`, kiểm lại sau 520 ms và đặt thẳng nếu chưa tới đích.
 - **A3.4/H4.4** khung chờ chung báo "Máy chủ đang khởi động…" sau 5 giây (`shared/hooks/useSlowLoading.js`); trang cây quản lý hiện khung chờ thay vì vùng trắng; `RouteErrorBoundary` bọc nội dung từng trang trong 4 layout, lỗi render chỉ thay phần nội dung và tự reset khi đổi đường dẫn.
 - **H1.1/H1.4/H1.5** `index.html` bỏ font không dùng hoặc tải trùng (Old Standard TT; Cinzel Decorative, Lora đã có `@import` trong CSS), Merriweather bỏ 900, Material Symbols chỉ tải wght 300–700; thêm meta description, Open Graph, Twitter card. Ô nhập trên điện thoại ≥ 16px (iOS không tự phóng to).
 - **H4.2/A3.5** `Frontend/dev/tree-shots-compare.mjs` so ảnh tự động (mã thoát 1 khi lệch); ảnh mẫu mới ở `docs/anh/cay-A3/mau`, chụp 2 lần lệch 0%. Kịch bản thử tay U06–U14 trong `KICH_BAN_TEST_FULL.md`.
+- **E7.3** (2 commit chỉ di chuyển): `features/genealogy` → `features/tree`; 21 hàm API chỉ cây dùng chuyển từ `api/managerService.js` sang `features/tree/api.js` (managerService export `managerRequest`/`managerRequestWithConfirmation` để giữ nguyên xử lý lỗi; `getManagerTree`, `updateManagerClanInfo` re-export vì trang khác cũng dùng). Thư mục cây không còn import `managerService.js`. Vẫn còn import chéo có từ trước: admin, ai-chat, duplicates import từ `features/tree`.
 - Hàm kiểm tra form người chuyển sang `utils/tree-editor/personFormRules.js` (+3 test) để `FamilyTreeEditor.jsx` không dài thêm: 3.807 → 3.775 dòng.
 - Kiểm tra: Frontend 122 test, ESLint 0 lỗi / 110 cảnh báo, build OK; gốc repo test + lint OK. Không đổi backend.
 - **Còn mở:**
