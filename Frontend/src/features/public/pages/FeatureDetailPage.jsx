@@ -1,11 +1,42 @@
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import LandingFamilyTree from "./LandingFamilyTree";
 import useLandingContent from "../landing/useLandingContent";
-import { sectionOf, mergeSectionText, mergeItems, itemKey, DEFAULT_FEATURES_IMAGE, DEFAULT_STATS } from "../landing/landingContent";
+import {
+  sectionOf,
+  isSectionVisible,
+  mergeSectionText,
+  mergeItems,
+  paragraphsOf,
+  isSafeLink,
+  isExternalLink,
+  itemKey,
+  DEFAULT_FEATURES_IMAGE,
+  DEFAULT_STATS,
+  DEFAULT_DEMO_BUTTONS,
+} from "../landing/landingContent";
 
 export default function FeatureDetailPage() {
   const { t } = useTranslation();
   const { content } = useLandingContent();
+  const navigate = useNavigate();
+  const demoSection = sectionOf(content, "demo");
+  const showDemo = isSectionVisible(content, "demo");
+  const demoText = mergeSectionText(demoSection, {
+    title: t("public.features.demo.title"),
+    body: t("public.features.demo.desc"),
+    quote: [1, 2, 3].map((n) => t(`public.features.demo.point${n}`)).join("\n"),
+  });
+  const demoPoints = paragraphsOf(demoText.quote);
+  const demoButtons = mergeItems(
+    demoSection,
+    DEFAULT_DEMO_BUTTONS.map(([id, icon]) => ({ icon, link_label: t(`public.features.demo.${id}`) }))
+  );
+  const openDemoLink = (url) => {
+    const href = url.trim();
+    if (isExternalLink(href)) window.open(href, "_blank", "noopener,noreferrer");
+    else navigate(href);
+  };
   const featuresSection = sectionOf(content, "features");
   const featuresText = mergeSectionText(featuresSection, {
     tag: t("public.features.advanced.tag"),
@@ -72,33 +103,43 @@ export default function FeatureDetailPage() {
           <p>{t("public.features.demo.desc")}</p>
         </header>
 
-        <section className="feature-detail-block stitch-split">
-          <div className="feature-detail-copy">
-            <h2>{t("public.features.demo.title")}</h2>
-            <p>{t("public.features.demo.desc")}</p>
+        {showDemo && (
+          <section className="feature-detail-block stitch-split">
+            <div className="feature-detail-copy">
+              <h2>{demoText.title}</h2>
+              {paragraphsOf(demoText.body).map((line, index) => (
+                <p key={index}>{line}</p>
+              ))}
 
-            <div className="feature-detail-actions">
-              <button type="button">
-                <span className="material-symbols-outlined">image</span>
-                {t("public.features.demo.viewImage")}
-              </button>
-              <button type="button">
-                <span className="material-symbols-outlined">account_tree</span>
-                {t("public.features.demo.createGenerations")}
-              </button>
+              {demoButtons.length > 0 && (
+                <div className="feature-detail-actions">
+                  {demoButtons.map((button, index) => (
+                    <button
+                      key={itemKey(button, index)}
+                      type="button"
+                      onClick={isSafeLink(button.link_url) ? () => openDemoLink(button.link_url) : undefined}
+                    >
+                      {button.icon && <span className="material-symbols-outlined">{button.icon}</span>}
+                      {button.link_label || button.title}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {demoPoints.length > 0 && (
+                <ul className="feature-detail-points">
+                  {demoPoints.map((point, index) => (
+                    <li key={index}>{point}</li>
+                  ))}
+                </ul>
+              )}
             </div>
 
-            <ul className="feature-detail-points">
-              <li>{t("public.features.demo.point1")}</li>
-              <li>{t("public.features.demo.point2")}</li>
-              <li>{t("public.features.demo.point3")}</li>
-            </ul>
-          </div>
-
-          <div className="feature-detail-visual static-tree-visual">
-            <LandingFamilyTree compact />
-          </div>
-        </section>
+            <div className="feature-detail-visual static-tree-visual">
+              <LandingFamilyTree compact />
+            </div>
+          </section>
+        )}
 
         <section className="feature-advanced stitch-split second">
           <div className="feature-advanced-image">

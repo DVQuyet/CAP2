@@ -17,6 +17,19 @@ export async function fetchPublicLanding(lang) {
   }
 }
 
+// Chi tiết một bài tin: {status:'ok', item} | {status:'notfound'} | {status:'error'} (không ném lỗi).
+export async function fetchPublicNewsItem(id, lang) {
+  try {
+    const res = await fetch(buildApiUrl(`/api/public/landing/news/${encodeURIComponent(id)}?lang=${lang === "en" ? "en" : "vi"}`));
+    if (res.status === 404 || res.status === 400) return { status: "notfound" };
+    if (!res.ok) return { status: "error" };
+    const data = await res.json().catch(() => null);
+    return data && data.item ? { status: "ok", item: data.item } : { status: "error" };
+  } catch {
+    return { status: "error" };
+  }
+}
+
 async function adminRequest(method, path, body, fallbackMessage) {
   const res = await fetch(buildApiUrl(`/api/admin/landing${path}`), {
     method,

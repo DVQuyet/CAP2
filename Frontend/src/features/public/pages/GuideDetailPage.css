@@ -1,0 +1,8 @@
+.video-thumb iframe,
+.video-thumb video {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  background: var(--color-ink-brown-1);
+}

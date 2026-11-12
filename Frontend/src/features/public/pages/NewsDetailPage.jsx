@@ -1,21 +1,19 @@
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import useLandingContent from "../landing/useLandingContent";
-import { sectionOf, mergeItems, itemKey, isSafeLink, isSectionVisible, DEFAULT_NEWS } from "../landing/landingContent";
+import {
+  sectionOf, mergeItems, mergeSectionText, itemKey, isSectionVisible, isExternalLink,
+  newsItemHref, buildDefaultSection, DEFAULT_NEWS,
+} from "../landing/landingContent";
 
-const latestNews = [
-  {
-    image: "https://images.unsplash.com/photo-1512684555490-d5f2ec538bd7?auto=format&fit=crop&w=220&q=80",
-    title: "public.news.items.l0.title",
-  },
-  {
-    image: "https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=220&q=80",
-    title: "public.news.items.l1.title",
-  },
-  {
-    image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=220&q=80",
-    title: "public.news.items.l2.title",
-  },
-];
+// Liên kết theo đích: nội bộ dùng <Link>, ngoài dùng <a> mở tab mới; đích rỗng thì chỉ hiện nội dung.
+function HrefWrap({ href, className, children }) {
+  if (!href) return <div className={className}>{children}</div>;
+  if (isExternalLink(href)) {
+    return <a className={className} href={href} target="_blank" rel="noopener noreferrer">{children}</a>;
+  }
+  return <Link className={className} to={href}>{children}</Link>;
+}
 
 export default function NewsDetailPage() {
   const { t } = useTranslation();
@@ -29,12 +27,19 @@ export default function NewsDetailPage() {
   }));
   const posts = isSectionVisible(content, "news") ? mergeItems(sectionOf(content, "news"), defaultPosts) : [];
 
-  const categories = [
-    { name: t("public.news.categoryList.history"), count: 28 },
-    { name: t("public.news.categoryList.rituals"), count: 19 },
-    { name: t("public.news.categoryList.tech"), count: 14 },
-    { name: t("public.news.categoryList.people"), count: 8 },
-  ];
+  // Sidebar: mỗi khối đọc từ mục riêng, DB trống thì dùng mặc định; ẩn được.
+  const sidebarOf = (key) => {
+    const defaults = buildDefaultSection(key, t);
+    const section = sectionOf(content, key);
+    return {
+      visible: isSectionVisible(content, key),
+      text: mergeSectionText(section, defaults),
+      items: mergeItems(section, defaults.items || []),
+    };
+  };
+  const latest = sidebarOf("news_latest");
+  const categories = sidebarOf("news_categories");
+  const subscribe = sidebarOf("news_subscribe");
 
   return (
     <section className="news-page">
@@ -49,17 +54,25 @@ export default function NewsDetailPage() {
       <div className="news-surface">
         <div className="container news-layout">
           <section className="news-grid">
-            {posts.map((post, index) => (
-              <article key={itemKey(post, index)} className={`news-card feature-card ${index < 2 ? "wide-card" : "small-card"}`}>
-                {post.image_url && <img src={post.image_url} alt={post.title} />}
-                <div className="news-card-body">
-                  <span className="news-date">{post.meta}</span>
-                  <h2>{post.title}</h2>
-                  <p>{post.body}</p>
-                  <a href={isSafeLink(post.link_url) ? post.link_url : "#"}>{post.link_label || t("public.news.readMore")}</a>
-                </div>
-              </article>
-            ))}
+            {posts.map((post, index) => {
+              const href = newsItemHref(post);
+              const label = post.link_label || t("public.news.readMore");
+              return (
+                <article key={itemKey(post, index)} className={`news-card feature-card ${index < 2 ? "wide-card" : "small-card"}`}>
+                  {post.image_url && <img src={post.image_url} alt={post.title} />}
+                  <div className="news-card-body">
+                    <span className="news-date">{post.meta}</span>
+                    <h2>{post.title}</h2>
+                    <p>{post.body}</p>
+                    {href && (
+                      isExternalLink(href)
+                        ? <a href={href} target="_blank" rel="noopener noreferrer">{label}</a>
+                        : <Link to={href}>{label}</Link>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
 
             <div className="news-pagination">
               <button type="button">‹</button>
@@ -71,41 +84,43 @@ export default function NewsDetailPage() {
           </section>
 
           <aside className="news-sidebar">
-            <section className="sidebar-block sidebar-latest">
-              <h3>{t("public.news.featured")}</h3>
-              <div className="latest-list">
-                {latestNews.map((item) => (
-                  <article key={item.title} className="latest-item">
-                    <img src={item.image} alt={t(item.title)} />
-                    <p>{t(item.title)}</p>
-                  </article>
-                ))}
-              </div>
-            </section>
+            {latest.visible && latest.items.length > 0 && (
+              <section className="sidebar-block sidebar-latest">
+                <h3>{latest.text.title}</h3>
+                <div className="latest-list">
+                  {latest.items.map((item, index) => (
+                    <HrefWrap key={itemKey(item, index)} href={newsItemHref(item)} className="latest-item">
+                      {item.image_url && <img src={item.image_url} alt={item.title} />}
+                      <p>{item.title}</p>
+                    </HrefWrap>
+                  ))}
+                </div>
+              </section>
+            )}
 
-            <section className="sidebar-block subscribe-card">
-              <div className="subscribe-icon">✉</div>
-              <h3>{t("public.news.subscribe.title")}</h3>
-              <p>{t("public.news.subscribe.desc")}</p>
-              <input
-                type="email"
-                placeholder={t("public.news.subscribe.placeholder")}
-                aria-label={t("public.news.subscribe.placeholder")}
-              />
-              <button type="button">{t("public.news.subscribe.submit")}</button>
-            </section>
+            {subscribe.visible && (
+              <section className="sidebar-block subscribe-card">
+                <div className="subscribe-icon">✉</div>
+                <h3>{subscribe.text.title}</h3>
+                <p>{subscribe.text.body}</p>
+                <input type="email" placeholder={subscribe.text.tag} aria-label={subscribe.text.tag} />
+                <button type="button">{subscribe.text.quote}</button>
+              </section>
+            )}
 
-            <section className="sidebar-block category-card">
-              <h3>{t("public.news.categories")}</h3>
-              <ul>
-                {categories.map((item) => (
-                  <li key={item.name}>
-                    <span>{item.name}</span>
-                    <strong>{item.count}</strong>
-                  </li>
-                ))}
-              </ul>
-            </section>
+            {categories.visible && categories.items.length > 0 && (
+              <section className="sidebar-block category-card">
+                <h3>{categories.text.title}</h3>
+                <ul>
+                  {categories.items.map((item, index) => (
+                    <li key={itemKey(item, index)}>
+                      <span>{item.title}</span>
+                      <strong>{item.meta}</strong>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
           </aside>
         </div>
       </div>

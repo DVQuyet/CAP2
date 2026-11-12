@@ -12,181 +12,14 @@ import {
   seedLanding,
 } from "../../../api/landingService";
 import { useConfirm } from "../../../shared/components/confirmContext.js";
-import ImageUpload from "../../../shared/components/ImageUpload";
 import ErrorState from "../../../shared/components/ErrorState";
 import LoadingState from "../../../shared/components/LoadingState";
 import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 import { clearLandingCache } from "../../public/landing/useLandingContent";
-import { LANDING_KEYS, buildSeedPayload, makeTranslator, isSafeLink } from "../../public/landing/landingContent";
+import { LANDING_KEYS, LANDING_GROUPS, buildSeedPayload, makeTranslator } from "../../public/landing/landingContent";
+import { ItemEditor, SectionForm } from "./LandingEditors";
+import { ITEM_FIELDS, SECTION_FIELDS, itemSummary } from "./landingAdminConfig";
 import "./LandingManagement.css";
-
-// Trường chữ cấp mục cho từng mục. kind: text | area (xuống dòng được) | image.
-const SECTION_FIELDS = {
-  hero: [{ name: "title", kind: "area", rows: 3 }, { name: "body", kind: "area", rows: 3 }, { name: "image_url", kind: "image" }],
-  about: [{ name: "tag", kind: "text" }, { name: "title", kind: "text" }, { name: "body", kind: "area", rows: 7 }, { name: "quote", kind: "area", rows: 2 }, { name: "image_url", kind: "image" }],
-  features: [{ name: "tag", kind: "text" }, { name: "title", kind: "text" }, { name: "image_url", kind: "image" }],
-  stats: [],
-  news: [],
-  guide: [],
-};
-const ITEM_FIELDS = {
-  hero: [{ name: "link_label", kind: "text" }, { name: "link_url", kind: "link" }],
-  features: [{ name: "icon", kind: "icon" }, { name: "title", kind: "text" }, { name: "body", kind: "area", rows: 3 }],
-  stats: [{ name: "meta", kind: "text", labelKey: "metaStats" }, { name: "title", kind: "text", labelKey: "statLabel" }],
-  news: [{ name: "meta", kind: "text", labelKey: "metaNews" }, { name: "title", kind: "text" }, { name: "body", kind: "area", rows: 4 }, { name: "image_url", kind: "image" }, { name: "link_url", kind: "link" }, { name: "link_label", kind: "text" }],
-  guide: [{ name: "icon", kind: "icon" }, { name: "title", kind: "text" }, { name: "body", kind: "area", rows: 3 }],
-};
-const MAX = { tag: 255, title: 500, body: 3000, quote: 1000, meta: 255, link_label: 255 };
-const SECTION_BODY_MAX = 5000;
-
-const emptyItem = (key) => {
-  const draft = { is_visible: true, icon: "", image_url: "", link_url: "" };
-  for (const field of ["title", "body", "meta", "link_label"]) {
-    draft[`${field}_vi`] = "";
-    draft[`${field}_en`] = "";
-  }
-  if (key === "hero") draft.link_url = "";
-  return draft;
-};
-
-const sectionDraftOf = (section) => {
-  const draft = { image_url: section?.image_url || "" };
-  for (const field of ["tag", "title", "body", "quote"]) {
-    draft[`${field}_vi`] = section?.[`${field}_vi`] || "";
-    draft[`${field}_en`] = section?.[`${field}_en`] || "";
-  }
-  return draft;
-};
-
-const itemDraftOf = (item) => ({ ...emptyItem(), ...item });
-
-function Field({ field, draft, onChange, labelPrefix, t }) {
-  const label = t(`admin.landing.fields.${field.labelKey || field.name}`);
-  const idBase = `${labelPrefix}-${field.name}`;
-
-  if (field.kind === "image") {
-    return (
-      <div className="landing-field landing-field-wide">
-        <span className="landing-field-label">{label}</span>
-        <ImageUpload
-          value={draft[field.name] || ""}
-          usageType="other"
-          crop={false}
-          label={t("admin.landing.uploadImage")}
-          onUploadSuccess={(url) => onChange(field.name, url)}
-        />
-        <small className="landing-hint">{t("admin.landing.imageHint")}</small>
-      </div>
-    );
-  }
-
-  if (field.kind === "link" || field.kind === "icon") {
-    const invalid = field.kind === "link" && draft[field.name] && !isSafeLink(draft[field.name]);
-    return (
-      <div className="landing-field landing-field-wide">
-        <label htmlFor={idBase} className="landing-field-label">{label}</label>
-        <input
-          id={idBase}
-          type="text"
-          value={draft[field.name] || ""}
-          maxLength={field.kind === "icon" ? 60 : 1000}
-          placeholder={field.kind === "link" ? "/clan-register  |  https://..." : "bolt"}
-          aria-invalid={invalid ? "true" : undefined}
-          onChange={(event) => onChange(field.name, event.target.value)}
-        />
-        <small className={`landing-hint ${invalid ? "is-error" : ""}`}>
-          {field.kind === "link" ? t("admin.landing.linkHint") : t("admin.landing.iconHint")}
-        </small>
-      </div>
-    );
-  }
-
-  const max = field.name === "body" && field.kind === "area" && draft.__section ? SECTION_BODY_MAX : MAX[field.name];
-  return (
-    <div className="landing-field landing-field-wide landing-bilingual">
-      {["vi", "en"].map((lang) => {
-        const name = `${field.name}_${lang}`;
-        const id = `${idBase}-${lang}`;
-        return (
-          <div key={lang} className="landing-bilingual-col">
-            <label htmlFor={id} className="landing-field-label">
-              {label} <span className="landing-lang">{t(`admin.landing.lang.${lang}`)}</span>
-            </label>
-            {field.kind === "area" ? (
-              <textarea id={id} rows={field.rows || 3} value={draft[name] || ""} maxLength={max} onChange={(event) => onChange(name, event.target.value)} />
-            ) : (
-              <input id={id} type="text" value={draft[name] || ""} maxLength={max} onChange={(event) => onChange(name, event.target.value)} />
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function ItemEditor({ sectionKey, initial, busy, onSave, onCancel, t }) {
-  const [draft, setDraft] = useState(() => itemDraftOf(initial));
-  const fields = ITEM_FIELDS[sectionKey] || [];
-  const hasBadLink = draft.link_url && !isSafeLink(draft.link_url);
-  const change = (name, value) => setDraft((prev) => ({ ...prev, [name]: value }));
-
-  return (
-    <form
-      className="landing-item-form"
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (!hasBadLink) onSave(draft);
-      }}
-    >
-      {fields.map((field) => (
-        <Field key={field.name} field={field} draft={draft} onChange={change} labelPrefix={`item-${initial?.id || "new"}`} t={t} />
-      ))}
-      <label className="landing-switch">
-        <input type="checkbox" checked={draft.is_visible !== false} onChange={(event) => change("is_visible", event.target.checked)} />
-        <span>{t("admin.landing.visibleItem")}</span>
-      </label>
-      <div className="landing-actions">
-        <button type="submit" className="landing-btn is-primary" disabled={busy || hasBadLink}>
-          {busy ? t("common.saving") : t("common.save")}
-        </button>
-        <button type="button" className="landing-btn" onClick={onCancel} disabled={busy}>{t("common.cancel")}</button>
-      </div>
-    </form>
-  );
-}
-
-function SectionForm({ sectionKey, section, busy, onSave, t }) {
-  const [draft, setDraft] = useState(() => sectionDraftOf(section));
-  const fields = SECTION_FIELDS[sectionKey] || [];
-  const badLink = draft.image_url && !isSafeLink(draft.image_url);
-  const change = (name, value) => setDraft((prev) => ({ ...prev, [name]: value }));
-
-  return (
-    <form
-      className="landing-card"
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (!badLink) onSave(draft);
-      }}
-    >
-      {fields.map((field) => (
-        <Field key={field.name} field={field} draft={{ ...draft, __section: true }} onChange={change} labelPrefix={`section-${sectionKey}`} t={t} />
-      ))}
-      <div className="landing-actions">
-        <button type="submit" className="landing-btn is-primary" disabled={busy || badLink}>
-          {busy ? t("common.saving") : t("admin.landing.saveSection")}
-        </button>
-      </div>
-    </form>
-  );
-}
-
-function itemSummary(item, key) {
-  const title = item.title_vi || item.title_en || item.link_label_vi || item.link_label_en || "";
-  const meta = item.meta_vi || item.meta_en || "";
-  if (key === "stats") return [meta, title].filter(Boolean).join(" — ");
-  return title || meta;
-}
 
 export default function LandingManagement() {
   const { t } = useTranslation();
@@ -194,7 +27,8 @@ export default function LandingManagement() {
   const [data, setData] = useState({ sections: [], tableMissing: false });
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
-  const [activeKey, setActiveKey] = useState("hero");
+  const [activeGroup, setActiveGroup] = useState(LANDING_GROUPS[0].id);
+  const [activeKey, setActiveKey] = useState(LANDING_GROUPS[0].keys[0]);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState(null); // { type: "ok" | "error", text }
   const [editing, setEditing] = useState(null); // "new" | id mục con đang sửa
@@ -273,13 +107,24 @@ export default function LandingManagement() {
     () => [...data.sections].sort((a, b) => a.sort_order - b.sort_order || a.id - b.id).map((s) => s.section_key),
     [data.sections]
   );
+  // Chỉ đổi chỗ với mục kề bên trong cùng nhóm, nhưng luôn gửi đủ danh sách key theo thứ tự hiện tại.
+  const groupKeys = (LANDING_GROUPS.find((g) => g.id === activeGroup) || LANDING_GROUPS[0]).keys;
+  const groupOrder = seededOrder.filter((k) => groupKeys.includes(k));
+  const groupIndex = groupOrder.indexOf(activeKey);
   const moveSection = (delta) => {
-    const index = seededOrder.indexOf(activeKey);
-    const target = index + delta;
-    if (index < 0 || target < 0 || target >= seededOrder.length) return;
+    const neighbor = groupOrder[groupIndex + delta];
+    if (groupIndex < 0 || !neighbor) return;
     const next = [...seededOrder];
-    [next[index], next[target]] = [next[target], next[index]];
+    const a = next.indexOf(activeKey);
+    const b = next.indexOf(neighbor);
+    [next[a], next[b]] = [next[b], next[a]];
     run(() => reorderLandingSections(next), t("admin.landing.saved"));
+  };
+
+  const selectGroup = (group) => {
+    setActiveGroup(group.id);
+    setActiveKey(group.keys[0]);
+    setEditing(null);
   };
 
   const items = section?.items || [];
@@ -329,8 +174,24 @@ export default function LandingManagement() {
         {status && <span className={status.type === "error" ? "is-error" : "is-ok"}>{status.text}</span>}
       </div>
 
-      <div className="landing-tabs" role="tablist" aria-label={t("admin.landing.tabsAria")}>
-        {LANDING_KEYS.map((key) => (
+      <div className="landing-tabs landing-group-tabs" role="tablist" aria-label={t("admin.landing.groupsAria")}>
+        {LANDING_GROUPS.map((group) => (
+          <button
+            key={group.id}
+            type="button"
+            role="tab"
+            id={`landing-group-${group.id}`}
+            aria-selected={activeGroup === group.id}
+            className={`landing-tab ${activeGroup === group.id ? "is-active" : ""}`}
+            onClick={() => selectGroup(group)}
+          >
+            {t(`admin.landing.groups.${group.id}`)}
+          </button>
+        ))}
+      </div>
+
+      <div className="landing-tabs landing-section-tabs" role="tablist" aria-label={t("admin.landing.tabsAria")}>
+        {groupKeys.map((key) => (
           <button
             key={key}
             type="button"
@@ -367,10 +228,10 @@ export default function LandingManagement() {
                 <span>{t("admin.landing.visibleSection")}</span>
               </label>
               <div className="landing-actions">
-                <button type="button" className="landing-btn" onClick={() => moveSection(-1)} disabled={busy || seededOrder.indexOf(activeKey) <= 0} aria-label={t("admin.landing.moveSectionUp")} title={t("admin.landing.moveSectionUp")}>
+                <button type="button" className="landing-btn" onClick={() => moveSection(-1)} disabled={busy || groupIndex <= 0} aria-label={t("admin.landing.moveSectionUp")} title={t("admin.landing.moveSectionUp")}>
                   <span className="material-symbols-outlined" aria-hidden="true">arrow_upward</span>
                 </button>
-                <button type="button" className="landing-btn" onClick={() => moveSection(1)} disabled={busy || seededOrder.indexOf(activeKey) >= seededOrder.length - 1} aria-label={t("admin.landing.moveSectionDown")} title={t("admin.landing.moveSectionDown")}>
+                <button type="button" className="landing-btn" onClick={() => moveSection(1)} disabled={busy || groupIndex < 0 || groupIndex >= groupOrder.length - 1} aria-label={t("admin.landing.moveSectionDown")} title={t("admin.landing.moveSectionDown")}>
                   <span className="material-symbols-outlined" aria-hidden="true">arrow_downward</span>
                 </button>
                 <button type="button" className="landing-btn is-danger" onClick={handleReset} disabled={busy}>{t("admin.landing.reset")}</button>

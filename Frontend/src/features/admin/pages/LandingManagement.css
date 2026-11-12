@@ -189,3 +189,9 @@
 @media (prefers-reduced-motion: reduce) {
   .landing-admin * { transition: none !important; animation: none !important; }
 }
+
+/* Tab nhóm (trang) và tab mục con bên dưới. */
+.landing-group-tabs .landing-tab { min-height: 44px; justify-content: center; font-weight: 600; }
+.landing-section-tabs .landing-tab { min-height: 40px; padding: var(--space-1) var(--space-3); font-size: var(--fs-base-minus); }
+.landing-field select { width: 100%; min-height: 40px; padding: 0 var(--space-2); font: inherit; border: 1px solid var(--color-gold-light); border-radius: var(--radius-lg); background: var(--color-white); }
+.landing-bilingual-hint { grid-column: 1 / -1; }

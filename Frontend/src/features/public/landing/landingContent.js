@@ -215,7 +215,7 @@ export function buildDefaultSection(key, t) {
       return {
         title: t("public.features.demo.title"),
         body: t("public.features.demo.desc"),
-        quote: `${t("public.features.demo.point1")}\n${t("public.features.demo.point2")}`,
+        quote: [1, 2, 3].map((n) => t(`public.features.demo.point${n}`)).join("\n"),
         items: DEFAULT_DEMO_BUTTONS.map(([id, icon]) => ({ ...blankItem, icon, link_label: t(`public.features.demo.${id}`) })),
       };
     case "benefits":

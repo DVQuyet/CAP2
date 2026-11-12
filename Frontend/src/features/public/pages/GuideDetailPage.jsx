@@ -1,6 +1,17 @@
 import { useTranslation } from "react-i18next";
 import useLandingContent from "../landing/useLandingContent";
-import { sectionOf, mergeItems, itemKey, isSectionVisible, DEFAULT_GUIDE_STEPS } from "../landing/landingContent";
+import {
+  sectionOf,
+  mergeItems,
+  mergeSectionText,
+  buildDefaultSection,
+  buildVideoEmbed,
+  paragraphsOf,
+  itemKey,
+  isSectionVisible,
+  DEFAULT_GUIDE_STEPS,
+} from "../landing/landingContent";
+import "./GuideDetailPage.css";
 
 export default function GuideDetailPage() {
   const { t } = useTranslation();
@@ -13,7 +24,13 @@ export default function GuideDetailPage() {
   }));
   const steps = isSectionVisible(content, "guide") ? mergeItems(sectionOf(content, "guide"), defaultSteps) : [];
 
-  const faqs = t("public.guide.faqs", { returnObjects: true }) || [];
+  const videosDefault = buildDefaultSection("guide_videos", t);
+  const videosText = mergeSectionText(sectionOf(content, "guide_videos"), videosDefault);
+  const videos = mergeItems(sectionOf(content, "guide_videos"), videosDefault.items);
+
+  const faqDefault = buildDefaultSection("faq", t);
+  const faqText = mergeSectionText(sectionOf(content, "faq"), faqDefault);
+  const faqs = mergeItems(sectionOf(content, "faq"), faqDefault.items);
 
   return (
     <section className="guide-page">
@@ -41,49 +58,59 @@ export default function GuideDetailPage() {
             </div>
           </section>
 
-          <section className="guide-video-section">
-            <h2 className="guide-section-title">{t("public.guide.videoTitle")}</h2>
-            <div className="video-grid">
-              <article className="video-card">
-                <div className="video-thumb">
-                  <span className="material-symbols-outlined play-icon">play_circle</span>
-                </div>
-                <h3>{t("public.guide.videos.v1.title")}</h3>
-                <p>{t("public.guide.videos.v1.desc")}</p>
-              </article>
-              <article className="video-card">
-                <div className="video-thumb">
-                  <span className="material-symbols-outlined play-icon">play_circle</span>
-                </div>
-                <h3>{t("public.guide.videos.v2.title")}</h3>
-                <p>{t("public.guide.videos.v2.desc")}</p>
-              </article>
-              <article className="video-card">
-                <div className="video-thumb">
-                  <span className="material-symbols-outlined play-icon">play_circle</span>
-                </div>
-                <h3>{t("public.guide.videos.v3.title")}</h3>
-                <p>{t("public.guide.videos.v3.desc")}</p>
-              </article>
-            </div>
-          </section>
+          {isSectionVisible(content, "guide_videos") && (
+            <section className="guide-video-section">
+              <h2 className="guide-section-title">{videosText.title}</h2>
+              <div className="video-grid">
+                {videos.map((video, index) => {
+                  const embed = buildVideoEmbed(video.link_url);
+                  return (
+                    <article key={itemKey(video, index)} className="video-card">
+                      <div className="video-thumb">
+                        {embed && embed.kind === "iframe" ? (
+                          <iframe
+                            src={embed.src}
+                            title={video.title || `video ${index + 1}`}
+                            loading="lazy"
+                            allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                            allowFullScreen
+                            referrerPolicy="strict-origin-when-cross-origin"
+                          />
+                        ) : embed && embed.kind === "video" ? (
+                          <video controls preload="metadata" src={embed.src} />
+                        ) : (
+                          <span className="material-symbols-outlined play-icon">play_circle</span>
+                        )}
+                      </div>
+                      <h3>{video.title}</h3>
+                      <p>{video.body}</p>
+                    </article>
+                  );
+                })}
+              </div>
+            </section>
+          )}
 
-          <section className="guide-faq">
-            <h2 className="guide-section-title">{t("public.guide.faqTitle")}</h2>
-            <div className="faq-list">
-              {faqs.map((item, idx) => (
-                <details key={idx} className="faq-item">
-                  <summary className="faq-question">
-                    <span>{item.q}</span>
-                    <span className="faq-icon">›</span>
-                  </summary>
-                  <div className="faq-answer">
-                    <p>{item.a}</p>
-                  </div>
-                </details>
-              ))}
-            </div>
-          </section>
+          {isSectionVisible(content, "faq") && (
+            <section className="guide-faq">
+              <h2 className="guide-section-title">{faqText.title}</h2>
+              <div className="faq-list">
+                {faqs.map((item, idx) => (
+                  <details key={itemKey(item, idx)} className="faq-item">
+                    <summary className="faq-question">
+                      <span>{item.title}</span>
+                      <span className="faq-icon">›</span>
+                    </summary>
+                    <div className="faq-answer">
+                      {paragraphsOf(item.body).map((line, i) => (
+                        <p key={i}>{line}</p>
+                      ))}
+                    </div>
+                  </details>
+                ))}
+              </div>
+            </section>
+          )}
 
           <section className="guide-support">
             <div className="support-card">

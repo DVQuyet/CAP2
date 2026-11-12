@@ -62,6 +62,16 @@ Còn mở từ đợt 4:
 - Validate chưa phủ route calendar/events.
 - "ba co toi" vẫn mơ hồ (cụ vs bà cô).
 
+Đợt 15 (12/11) — phần còn lại của trang chủ do admin quản lý (việc của đợt 11, không thuộc giai đoạn nào trong `KE_HOACH_TONG_THE.md`) (backend `89acfe8`, frontend đợt này):
+- **Đã xong:** khối demo ở `/tinh-nang`, trang `/loi-ich` (benefits, benefits_why), sidebar `/tin-tuc` (tin mới, danh mục, đăng ký), trang chi tiết bài `/tin-tuc/:id` (`NewsArticlePage.jsx`, `fetchPublicNewsItem`), video và FAQ ở `/huong-dan` (nhúng chỉ qua `buildVideoEmbed`, không dùng link admin nhập làm `src`), chân trang (`SiteFooter.jsx` + `.css`: thương hiệu, liên hệ, cột link, mạng xã hội). Mọi khối ẩn được; chưa có dữ liệu DB thì giao diện như cũ.
+- Trang admin `/dashboard/landing`: 5 tab theo nhóm trang, đủ 18 mục, ô "Nội dung chi tiết" cho bài tin, chọn biểu tượng liên hệ/mạng xã hội, kiểm link/ảnh/video trước khi lưu. Tách thành `landingAdminConfig.js`, `LandingFields.jsx`, `LandingEditors.jsx` (file gốc 439 → 300 dòng).
+- **Sửa lỗi i18n:** khối `admin.landing` nằm nhầm ở `eventsTasks.admin.landing` trong vi/en nên trang admin trang chủ hiện khóa thô; đã chuyển về đúng chỗ (không đổi chuỗi nào), thêm 60 key mới.
+- `buildDefaultSection("demo")` lấy đủ 3 điểm nổi bật (trước chỉ 2, "Lấy nội dung hiện tại" sẽ làm mất điểm thứ 3).
+- Test: `tests/landingContent12.test.js` (+16, Frontend 94 tổng); ESLint 0 lỗi / 138 cảnh báo (không tăng); `vite build` OK.
+- **Deploy cần:** sao lưu DB rồi `npm run migrate` (file `database/migrations/2026_10_30_site_content_more.sql`: cột `content_vi`/`content_en`).
+- **Cần QA trình duyệt (chưa chạy):** 4 trang công khai và chân trang khi chưa seed (phải giống cũ); seed rồi sửa từng mục mới; video YouTube/Vimeo/.mp4 và link sai bị chặn; bài tin có nội dung mở `/tin-tuc/:id`, id sai hiện "Không tìm thấy"; 390px; nút demo giờ là `<button>` gọi `navigate`/`window.open` (giữ CSS cũ).
+- Còn mở: khối "custom" chưa làm; phân trang ở `/tin-tuc` vẫn là nút giả; ô đăng ký nhận tin chưa gửi đi đâu; `App.css` có hai khối `.site-footer` chồng nhau.
+
 Đợt 14 (10/11) — Giai đoạn 2 (A2: tương tác mượt), **đang làm dở, làm tiếp từ đây**:
 - **Đã xong, đã push** (`0de1aa4`): A2.1 công cụ đo `Frontend/dev/tree-perf.mjs` + trang xem thử nhận `?n=500|2000`, `?expand=1`, `?profile=1`; A2.2 `hooks/useNodeDrag.js` thay 4 handler kéo (trong lúc kéo chỉ đổi transform, thả mới ghi state; đường nối mờ đi vì chưa đi theo); A2.3 thẻ đặt vị trí bằng `transform: translate()`.
 - **Số đo** (Vite dev, React bản dev, Chrome headless không GPU; chỉ để so trước/sau), kéo một thẻ 60 bước: 500 người 62 commit × 65 ms, 23 fps → 5 commit, 49 fps. 2.000 người trước khi sửa: 63 commit × 227 ms, 3,8 fps; DOM 26.484 phần tử.

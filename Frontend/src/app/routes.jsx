@@ -15,6 +15,7 @@ const NotFound = lazy(() => import("../features/public/pages/NotFound"));
 const FeatureDetailPage = lazy(() => import("../features/public/pages/FeatureDetailPage"));
 const BenefitsDetailPage = lazy(() => import("../features/public/pages/BenefitsDetailPage"));
 const NewsDetailPage = lazy(() => import("../features/public/pages/NewsDetailPage"));
+const NewsArticlePage = lazy(() => import("../features/public/pages/NewsArticlePage"));
 const GuideDetailPage = lazy(() => import("../features/public/pages/GuideDetailPage"));
 const LegalPage = lazy(() => import("../features/public/pages/LegalPage"));
 const ClanRegister = lazy(() => import("../features/clan/pages/ClanRegister"));
@@ -99,6 +100,7 @@ export default function AppRoutes() {
           <Route path="/tinh-nang" element={<FeatureDetailPage />} />
           <Route path="/loi-ich" element={<BenefitsDetailPage />} />
           <Route path="/tin-tuc" element={<NewsDetailPage />} />
+          <Route path="/tin-tuc/:id" element={<NewsArticlePage />} />
           <Route path="/huong-dan" element={<GuideDetailPage />} />
           <Route path="/privacy-policy" element={<LegalPage type="privacy" />} />
           <Route path="/terms" element={<LegalPage type="terms" />} />
