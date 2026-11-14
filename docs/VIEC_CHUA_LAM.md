@@ -62,6 +62,33 @@ Còn mở từ đợt 4:
 - Validate chưa phủ route calendar/events.
 - "ba co toi" vẫn mơ hồ (cụ vs bà cô).
 
+Đợt 19 (14–15/11) — viết lại lõi vẽ cây (N10: R1–R8) và phần đầu AI hiểu tiếng Việt có dấu (L1, L2, L3, L5, L9, một phần L11). Chưa commit.
+
+**Cây (Frontend):**
+- Lõi vẽ nằm ở `features/tree/model/` (hàm thuần, chạy được bằng `node --test`): `config.js`, `geometry.js`, `personOrder.js`, `unions.js`, `layout/` (`blocks`, `generationRows`, `autoLayout`), `scene/` (`cardMetrics`, `nodes`, `anchors`, `displayTree`, `routes`, `lines`, `bounds`); hook `hooks/useTreeScene.js`.
+- Xóa `treeLines.js` (623 dòng, không ai dùng), `treeLayout.js`, `treeDisplayNodes.js`, `treeConstants.js`, các nhánh `USE_LOCAL_DRAFT_LAYOUT`, state `displayNodePositions`, phần đọc/ghi bản nháp bố cục ở localStorage. `treeUnions.js` chuyển thành `model/unions.js`.
+- Tự sắp xếp chạy 1 lần cho mỗi bản dữ liệu (trước 2 lần); mô hình vợ chồng dựng 2 lần (trước 3). Người không có quyền sửa bố cục không còn dựng tay nắm chỉnh đường (`controls: false`).
+- Kết quả vẽ **không đổi**: test `treeScene.snapshot.test.js` so mã băm vị trí, thẻ, điểm nối, chuỗi đường nối của 7 cây mẫu (tới 2.000 người, màn hình ngang/dọc, đường đã chỉnh tay, xuất ảnh) với ảnh chuẩn chụp từ mã cũ; bộ ảnh `tree-shots.sh` mã mới so mã cũ lệch 0,000% ở cả 15 ảnh. Thêm `treeScene.invariants.test.js` (23 test: không chồng thẻ, mỗi người một thẻ chính, thứ tự anh chị em, giữ vị trí kéo tay).
+- Số dòng: lõi vẽ 1.575 dòng đang dùng + 623 dòng chết → 1.395 dòng; `FamilyTreeEditor.jsx` 3.774 → 3.653. Frontend 153 test, ESLint 0 lỗi / 110 cảnh báo (như trước), build OK.
+- **Khác kế hoạch N10:** không dùng cờ `?scene=new` (thay bằng so mã băm với mã cũ trước khi xóa); nhánh đường "trục ngang" và "trục dọc" chưa gộp làm một vì gộp sẽ đổi hình, chỉ tách thành hai hàm ngắn dùng chung bộ ghi đường; `scene/lines.js` 204 dòng; `buildUnionModel` trong `model/unions.js` vẫn là một hàm khoảng 120 dòng (chuyển nguyên văn).
+- **Còn mở:** R9 (đường nối bám theo thẻ khi kéo); ba câu ở N10 chưa có trả lời nên giữ nguyên kéo chỉnh đường nối, đổi cỡ thẻ, lưu vị trí theo người; chưa thử tay trên trình duyệt (kéo thẻ, kéo đường nối, xuất ảnh, thu gọn nhánh), mới có test và ảnh chụp tự động; ảnh mẫu `docs/anh/cay-A3/mau` lệch 0,08–0,99% so với ảnh chụp trên máy này từ trước khi sửa (do môi trường chụp), nên chụp lại bộ mẫu.
+
+**AI tiếng Việt (Backend):**
+- Bộ đo mới `node scripts/chatbot-e2e-check.js --suite accent` (96 câu, dòng họ mẫu `scripts/chatbot-e2e/datasetAccent.js`): số mốc trước khi sửa **62/90**, sau khi sửa **96/96** (thêm 6 câu quyền hạn). Bộ cũ giữ 199/199, hội thoại 7/7. CI có ngưỡng từng nhóm. Dòng họ Lê chuyển ra `scripts/chatbot-e2e/datasetLe.js` (file script 700 → 682 dòng).
+- Mới: `chatbot/text/vietnameseText.js` (toNFC gộp dấu rời và kiểu hoà/thuỷ, ba mức so khớp, tách từ), `text/lexicon/` (xưng hô viết một lần có dấu; bảng không dấu và bảng mơ hồ tự sinh: `ba` = cha/bà, `co` = cố/cô), `text/repair.js` (sửa sai thanh và sót dấu trong câu có dấu, không đụng tên người), `text/nameMatch.js` (Hòa thắng Hoa/Hóa khi gõ có dấu; câu không dấu thì hỏi lại), `intents/personFields.js`. `kinshipTermService.js` đọc từ lexicon (228 → 110 dòng). Test `tests/chatbot.text.test.js` (+8), Backend 299 test.
+- Sửa lỗi lộ ra từ bộ đo: "Cô tôi tên gì?" bị hiểu là tìm người tên "Toi Gi"; "Ba mẹ tôi là ai?" trả cha của mẹ; "Trần Văn Nam sinh năm nào?" cắt mất chữ Nam vì coi là "năm sinh"; "Hưng là ai?" (tên một chữ) báo ngoài phạm vi; "co toi la ai" trả lời thẳng là cô dù họ có cả cố.
+- Quyền hạn: không sửa khâu lấy dữ liệu và lọc quyền; nhóm "Quyền hạn" trong bộ đo kiểm thành viên thường hỏi bằng câu có dấu, sai thanh, không dấu, tên một chữ đều không nhận SĐT/email/địa chỉ.
+- **Khác kế hoạch L:** chưa viết `text/pattern.js` (L4) và chưa viết lại parser quan hệ (L6) hay tách 27 parser (L7–L8), nên `intentParserService.js`, `relationshipQueryParser.js`, `memberSearchService.js` vẫn bỏ dấu ở nhiều chỗ; phần sửa lần này là lớp chuẩn hóa chạy **trước** các parser cũ. Mức 2 (bỏ thanh) coi "bà" và "ba" giống nhau, khác câu ghi ở L2; lớp sửa dấu chỉ sửa khi có đúng một từ khớp nên không lẫn hai từ này. Không dùng cờ `CHATBOT_ACCENT_FIRST` vì chưa thay parser nào.
+- **Rủi ro cần theo dõi:** lớp sửa dấu có thể đổi nhầm một từ thường ngoài danh sách giữ nguyên (`text/lexicon/words.js`, `KEEP_WORDS`) thành từ gia phả, ví dụ đã gặp "cái nôi" → "nội" (đã thêm vào danh sách). Thêm từ vào danh sách khi gặp trong câu thật (`chatbot-unknown-report.js`).
+- Ba file cũ dài thêm vài dòng (trái quy ước "không làm file cũ dài thêm"): `memberSearchService.js` +7, `typingNormalizer.js` +2, `chatbotController.js` +2. `intentParserService.js` 782 → 778.
+- **Còn mở:** L4, L6–L8, L10 (lưu trạng thái hỏi lại vào DB, chip hỏi lại), phần còn lại của L11 (Telex, l/n, s/x), L12–L17.
+
+Đợt 18 (14/11) — chỉ lập kế hoạch, không đổi mã:
+- `KE_HOACH_TONG_THE.md` thêm mục J (lộ trình tiếp theo, hai luồng UI và AI), K (giao diện cổ điển pha hiện đại, K1–K10), L (AI hiểu tiếng Việt chi tiết, L1–L17), M (cách giao việc cho Opus/Sonnet).
+- Thêm mục N (vẽ và hiện cây, N1–N9), O (tương tác trên cây, O1–O5), P (bầu người phụ trách công việc, P1–P7; sáu câu cần quyết ở P8).
+- Thêm N10 (viết lại lõi vẽ cây, R1–R9) sau khi đọc mã: `treeLines.js` 623 dòng là mã chết; sắp xếp chạy 2 lần và `buildUnionModel` 3 lần mỗi lần dữ liệu đổi; `buildDisplayTree` 300 dòng, `buildDisplayTreeLines` 350 dòng. Ba câu cần quyết trước R6: giữ kéo chỉnh đường nối, giữ đổi cỡ thẻ, lưu vị trí theo người hay theo thẻ.
+- Người dùng đã bảo làm ngay phần vẽ cây và phần AI tiếng Việt (xem Đợt 19). **Còn chờ duyệt:** K (giao diện) và P (bầu người phụ trách), cùng các câu hỏi ở mục I, N10, P8. Ba câu hỏi mới ở mục I (phông chữ điều khiển, LLM khôi phục dấu, nhớ vùng miền theo tài khoản).
+
 Đợt 17 (12/11) — Giai đoạn 3 (A3, H1.1, H1.4, H1.5, H4.2, H4.4, E7.3):
 - **A3.1** nhãn "Đời N" tách khỏi dải đời thành lớp riêng, dính mép trái vùng nhìn (`--fte-view-left` do `useTreeViewport` ghi thẳng lên DOM), nằm dưới thẻ để không che tên.
 - **A3.2** cụm nút zoom thêm "Tìm tôi" và "Về thủy tổ"; tìm người/nhảy tới làm thẻ nháy sáng (`utils/tree-editor/treeFlash.js`, class `is-flash` trong `TreeCardExtras.css`). Phóng/di chuyển cây chạy ngay khi bật giảm chuyển động (`motionMs`).
