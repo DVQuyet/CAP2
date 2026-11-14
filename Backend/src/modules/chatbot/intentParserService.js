@@ -1,10 +1,15 @@
 const { cleanHumanName, normalizeText } = require('./memberSearchService');
 const { splitKinshipTerms, normalizeAccented } = require('./kinshipTermService');
+const { PERSON_FIELD_PATTERNS, PERSON_FIELD_WORDS, nameBeforeField } = require('./intents/personFields');
+const { hasVietnameseMarks } = require('./text/vietnameseText');
+const lexicon = require('./text/lexicon');
 
 const SELF_WORD_PATTERN = '(?:tôi|toi|mình|minh|tui|tớ)';
 const CLAN_SUBJECTS = new Set(['dong ho', 'ho', 'gia pha', 'ho toc', 'dong toc', 'ca ho', 'dong ho minh', 'ho minh', 'dong ho nay', 'ho nay', 'gia pha nay', 'dong ho toi', 'ho toi']);
 const TITLE_WORDS = /^(ông|bà|anh|chị|em|cô|chú|bác|cậu|dì|cháu|cụ|ong|ba|chi|co|chu|bac|cau|di|chau|cu)\s+/i;
 
+// Từ một chữ đứng trước "là ai" mà không phải tên người.
+const NOT_A_NAME = /^(đây|day|kia|đó|do|này|nay|ấy|ay|nó|no|hắn|han|mày|may|tao|bot|ai|gì|gi)$/;
 const CURRENT_USER_WORDS = /(tôi|toi|mình|minh|con|em|cháu|chau|tao|tui)/i;
 
 function stripQuestionNoise(value) {
@@ -44,6 +49,9 @@ function parsePersonExists(message) {
     const normalized = normalizeText(stripQuestionNoise(message));
     if (/\b(co bao nhieu|bao nhieu|may|so luong|tong so|thong ke|dem)\b/.test(normalized)) return null;
     if (!/\b(co|tim|kiem tra|tra|ton tai)\b/.test(normalized)) return null;
+    // Câu có dấu: phải có đúng chữ "có/tìm/tra" (không nhận "cô", "cố"). "... tôi tên gì" là hỏi tên một người thân.
+    if (hasVietnameseMarks(message) && !/(^|\s)(có|tìm|kiểm tra|tra|tồn tại)(\s|$)/.test(normalizeAccented(message))) return null;
+    if (/\b(toi|minh|tui) ten (la )?gi$/.test(normalized)) return null;
     // Câu hỏi về kỷ niệm/sự kiện/lịch không phải tra tên người.
     if (/\b(ky niem|ki niem|cau chuyen|su kien|lich|sinh nhat|gio)\b/.test(normalized)) return null;
     if (!/\b(gia pha|trong cay|cay|ten)\b/.test(normalized) && !/^co\s+.+\s+khong$/.test(normalized) && !/^tim\s+/.test(normalized)) return null;
@@ -357,7 +365,7 @@ function parseParents(message) {
             },
         };
     }
-    const match = text.match(/^(cha|bố|ba|ông già|mẹ|má|bà già|cha mẹ|bố mẹ)\s+(?:của\s+)?(.+?)\s+(là\s+ai|tên\s+gì)?$/i);
+    const match = text.match(/^(cha mẹ|bố mẹ|ba mẹ|ba má|cha|bố|ba|ông già|mẹ|má|bà già)\s+(?:của\s+)?(.+?)\s+(là\s+ai|tên\s+gì)?$/i);
     if (!match) return null;
 
     const normalizedType = normalizeText(match[1]);
@@ -365,10 +373,10 @@ function parseParents(message) {
         intent: 'find_parents',
         confidence: 0.86,
         entities: {
-            parentType: normalizedType.includes('me') || normalizedType.includes('ma')
-                ? 'mother'
-                : normalizedType.includes('cha me') || normalizedType.includes('bo me')
-                    ? 'both'
+            parentType: /^(cha|bo|ba) (me|ma)$/.test(normalizedType)
+                ? 'both'
+                : normalizedType.includes('me') || normalizedType.includes('ma')
+                    ? 'mother'
                     : 'father',
             targetName: makeNameAlternatives(match[2]),
         },
@@ -552,20 +560,6 @@ function parseMemoriesStories(message) {
     };
 }
 
-const PERSON_FIELD_PATTERNS = [
-    ['contact_info', /\b(so dien thoai|dien thoai|sdt|email|lien lac|zalo)\b/],
-    ['death_info', /\b(mat nam nao|mat nam|nam mat|ngay mat|mat ngay|mat khi nao|qua doi|tu tran|mat luc nao)\b/],
-    ['alive_info', /\b(con song khong|con song|con khong|da mat chua|mat chua|con tai the)\b/],
-    ['age_info', /\b(bao nhieu tuoi|may tuoi|tuoi|tho bao nhieu)\b/],
-    ['birth_info', /\b(sinh nam nao|sinh nam|nam sinh|ngay sinh|sinh ngay|sinh khi nao|sinh luc nao)\b/],
-    ['hometown_info', /\b(que quan|que o dau|que)\b/],
-    ['address_info', /\b(dia chi|song o dau|o dau)\b/],
-    ['bio_info', /\b(tieu su|cuoc doi|la nguoi the nao|lam nghe gi)\b/],
-];
-
-// Từ hỏi trường thông tin (có dấu và không dấu), để cắt khỏi câu khi tách tên.
-const PERSON_FIELD_WORDS = '(?:thọ bao nhiêu tuổi|tho bao nhieu tuoi|thọ bao nhiêu|tho bao nhieu|số điện thoại|so dien thoai|điện thoại|dien thoai|sđt|sdt|email|liên lạc|lien lac|zalo|sinh năm nào|sinh nam nao|sinh năm|sinh nam|năm sinh|nam sinh|ngày sinh|ngay sinh|sinh ngày|sinh ngay|mất năm nào|mat nam nao|mất năm|mat nam|năm mất|nam mat|ngày mất|ngay mat|mất khi nào|mat khi nao|qua đời|qua doi|còn sống không|con song khong|còn sống|con song|đã mất chưa|da mat chua|bao nhiêu tuổi|bao nhieu tuoi|mấy tuổi|may tuoi|quê quán|que quan|quê ở đâu|que o dau|quê|que|địa chỉ|dia chi|sống ở đâu|song o dau|tiểu sử|tieu su|cuộc đời|cuoc doi|ghi chú|ghi chu|thông tin|thong tin)';
-
 function parsePersonInfo(message) {
     const text = stripQuestionNoise(message);
     const normalized = normalizeText(text);
@@ -574,7 +568,7 @@ function parsePersonInfo(message) {
     const asksInfo = Boolean(field) || /\b(thong tin|ghi chu)\b/.test(normalized) || asksOverview;
     if (!asksInfo) return null;
 
-    let target = text
+    let target = (nameBeforeField(text) || text)
         .replace(/^(cho\s+tôi\s+biết|cho\s+toi\s+biet|xem|hỏi|hoi|giới thiệu|gioi thieu)\s+(về\s+|ve\s+)?/i, '')
         .replace(new RegExp(`^${PERSON_FIELD_WORDS}\\s+(?:của|cua|về|ve)?\\s*`, 'i'), '')
         .replace(new RegExp(`\\s+${PERSON_FIELD_WORDS}.*$`, 'i'), '')
@@ -598,7 +592,9 @@ function parsePersonInfo(message) {
         const { terms, rest } = splitKinshipTerms(target);
         if (terms.length && !rest.length) return null;
         const tokens = target.split(/\s+/);
-        if (tokens.length < 2 && !TITLE_WORDS.test(`${target} `)) return null;
+        const word = normalizeAccented(target);
+        const maybeName = word.length > 1 && !lexicon.isKnownWord(word) && !lexicon.isKeepWord(word) && !NOT_A_NAME.test(word);
+        if (tokens.length < 2 && !TITLE_WORDS.test(`${target} `) && !maybeName) return null;
     }
 
     return {

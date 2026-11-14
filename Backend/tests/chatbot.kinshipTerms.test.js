@@ -16,7 +16,7 @@ test('tách từ xưng hô có dấu, ưu tiên cụm dài', () => {
 
 test('câu không dấu: tra theo cụm, "ba" một mình thì mơ hồ', () => {
     assert.deepStrictEqual(keysOf('ba noi'), ['bà nội'], '"ba noi" là bà nội, không phải "cha nội"');
-    assert.deepStrictEqual(keysOf('co'), ['cô']);
+    assert.deepStrictEqual(keysOf('co'), ['cụ|cô'], '"co" không dấu là cố (cụ) hoặc cô: bảng mơ hồ tự sinh từ lexicon');
     assert.deepStrictEqual(keysOf('ba'), ['cha|bà']);
     assert.strictEqual(plainTermToKey('em trai'), 'em trai');
     assert.strictEqual(plainTermToKey('ong noi'), 'ông nội');

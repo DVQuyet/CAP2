@@ -17,15 +17,20 @@ Không dùng dịch vụ trả phí.
 - Không thêm Redis, hàng đợi, dịch vụ lưu trữ hay thành phần hạ tầng mới.
 
 ## Tiếng Việt trong chatbot
-- Không bỏ dấu trước khi phân tích câu. Dùng text/vietnameseText, text/lexicon, text/pattern
-  (chưa có; viết ở phần B của kế hoạch. Parser cũ còn bỏ dấu, không thêm chỗ bỏ dấu mới).
-- Từ mới thêm vào lexicon bằng chữ có dấu; không viết tay dạng không dấu.
+- Không bỏ dấu trước khi phân tích câu. Dùng chatbot/text/vietnameseText (toNFC, ba mức so khớp), text/lexicon,
+  text/repair (sửa sai thanh, sót dấu), text/nameMatch (chấm tên theo dấu). text/pattern chưa có (bước L4).
+  Parser cũ còn bỏ dấu, không thêm chỗ bỏ dấu mới.
+- Từ mới thêm vào text/lexicon bằng chữ có dấu; không viết tay dạng không dấu (bảng không dấu và bảng mơ hồ tự sinh).
 - Câu không dấu mà nhiều cách hiểu thì hỏi lại, không đoán.
 - LLM chỉ lập kế hoạch hoặc trả lời kiến thức phong tục; quan hệ họ hàng do graph trả lời.
+- Trợ lý chỉ trả lời bằng dữ liệu đọc từ database của đúng dòng họ, và không vượt quyền người hỏi: thành viên thường
+  không thấy quan hệ nhạy cảm, không nhận SĐT/email/địa chỉ của người khác. Parser mới phải đi qua các handler sẵn có.
 
 ## Cây gia phả
 - Không gọi setState trong pointermove; kéo bằng ref + requestAnimationFrame.
 - Thẻ đặt vị trí bằng transform; thẻ là React.memo, props phải ổn định.
+- Tính toán vẽ cây (sắp xếp, dựng thẻ, đường nối) là hàm thuần ở Frontend/src/features/tree/model/; import kèm đuôi .js.
+  Đổi cách vẽ thì chạy lại tests/fixtures/treeSceneUpdate.js và ghi lý do.
 - Kiểu thẻ chỉ sửa ở Frontend/src/features/tree/styles/TreeCard.css và TreeCardExtras.css; đường nối ở TreeLines.css.
   Đổi kiểu qua biến --tc-* / --tl-*; màu lấy từ biến chủ đề --t-* và tokens.css, không thêm mã hex.
 - Thẻ thường không mang nút: thao tác nằm trong TreeCardToolbar, chỉ render khi rê chuột, focus hoặc chọn.
@@ -49,6 +54,7 @@ Không dùng dịch vụ trả phí.
 
 ## Kiểm tra trước khi xong
 - Backend: cd Backend && npm test && node scripts/chatbot-e2e-check.js --min 199 --min-conversation 7
+  && node scripts/chatbot-e2e-check.js --suite accent --min 96
 - Frontend: cd Frontend && npm run lint && npm test && npm run build
 - Cả hai: npm test và npm run lint ở gốc repo.
 - Đổi giao diện cây: chụp ảnh 390x844 và 1280x800 trên dev/tree-preview.html bằng Frontend/dev/tree-shots.sh, so với docs/anh/.

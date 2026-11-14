@@ -18,6 +18,7 @@ const { toPositiveId, queryOptional } = require('./chatbotUtils');
 const { ARCHIVED_MEMBER_JOIN_SQL } = require('../manager/common.service');
 const { canSeeSensitiveRelations } = require('../genealogy/treeVisibility');
 const { normalizeTyping, normalizeTypingDetailed } = require('./typingNormalizer');
+const { runWithQuestion } = require('./text/nameMatch');
 const { runWithKinOrder, getKinOrderContext, filterByKinOrder, anchorsOfMatches, labelWithOrder } = require('./kinshipBirthOrder');
 const { withTreeFields, fallbackFlag } = require('./chatbotResponseMeta');
 const { saveFeedback, ensureChatbotHiddenSchema } = require('./chatbotFeedbackService');
@@ -889,7 +890,7 @@ async function handleFindByKinship({ clanId, currentMemberId, parsed }) {
             term = withPeople[0].option;
         } else if (withPeople.length > 1) {
             // "cụ" là cách gọi chung; ở đây nó là nghĩa "bà cố" của câu gõ không dấu nên ghi rõ để người dùng nhận ra.
-            const labelOf = (option) => (option === 'cụ' ? 'cụ (bà cố)' : option);
+            const labelOf = (option) => (option !== 'cụ' ? option : options.includes('bà cô') ? 'cụ (bà cố)' : 'cụ (cố)');
             const described = withPeople.map((item) => `"${labelOf(item.option)}" (${item.people.map((match) => match.name).join(', ')})`);
             return {
                 success: true,
@@ -2017,7 +2018,7 @@ const withViewer = (handler) => (req, res) => relationshipEngine.runWithViewer(
 // Giữ thứ bậc sinh trong câu ("chú út", "thím ba") suốt yêu cầu để lọc đúng người (kinshipBirthOrder).
 const withKinOrder = (handler) => (req, res) => runWithKinOrder(
     normalizeTypingDetailed(sanitizeMessage(req.body?.message || '')).kinOrder,
-    () => handler(req, res)
+    () => runWithQuestion(req.body?.message || '', () => handler(req, res))
 );
 
 // Thứ bậc bằng số ("chú năm") mơ hồ giữa cách đếm Nam Bộ (hai = thứ 1) và Bắc Bộ (hai = thứ 2):

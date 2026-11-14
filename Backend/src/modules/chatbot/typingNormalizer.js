@@ -4,6 +4,7 @@
 // Nguyên tắc: thà bỏ sót một từ đệm còn hơn làm hỏng tên người ("Nguyễn Thị Tui", "Đinh Ko", "Trần Văn Với").
 
 const { orderFromWord } = require('./kinshipBirthOrder');
+const { repairAccents } = require('./text/repair');
 
 const hasDiacritics = (value) => /[^\u0000-\u007f]/.test(String(value || ''));
 
@@ -236,7 +237,8 @@ function stripTrailingParticles(text) {
 }
 
 function normalizeCore(message, info) {
-    let text = String(message || '').replace(/\s+/g, ' ').trim();
+    // Gộp dấu rời, đưa "hoà/thuỷ" về một kiểu, sửa chữ sai thanh hoặc sót dấu trong câu có dấu.
+    let text = repairAccents(String(message || '')).text.replace(/\s+/g, ' ').trim();
     if (!text) return text;
     const plain = !hasDiacritics(text);
     // Từ Nam Bộ phải xét trên câu gốc, trước khi "tía/má" bị đổi thành "bố/mẹ".

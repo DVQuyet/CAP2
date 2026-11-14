@@ -1,7 +1,11 @@
 const db = require('../../config/db');
 const relationshipEngine = require('./relationshipEngine');
 
+const { applyAccentScore } = require('./text/nameMatch');
+
 const { personName } = relationshipEngine;
+
+const fullNameOf = (row) => [row.surname, row.middle_name, row.first_name].filter(Boolean).join(' ');
 
 const tableExistenceCache = new Map();
 
@@ -138,7 +142,7 @@ function findPersonByName(query, persons = []) {
             return {
                 ...person,
                 name: displayName,
-                score,
+                score: applyAccentScore(score, query, [displayName, fullNameOf(person)]),
             };
         })
         .filter((person) => person.score > 0)
@@ -146,6 +150,9 @@ function findPersonByName(query, persons = []) {
 
     const exact = rows.filter((row) => row.score >= 1);
     if (exact.length) return exact;
+    // Gõ có dấu và có người trùng đúng từng dấu: chỉ lấy những người đó (Hòa, không lấy Hoa và Hóa).
+    const accentExact = rows.filter((row) => row.score >= 0.98);
+    if (accentExact.length) return accentExact;
     const contains = rows.filter((row) => row.score >= 0.86);
     if (contains.length) return contains;
     return rows;
@@ -227,7 +234,7 @@ async function searchPeopleByName({ clanId, name, limit = 10 }) {
         .map((row) => ({
             ...row,
             name: personName(row),
-            score: scorePerson(row, cleanedName || name, row.aliases),
+            score: applyAccentScore(scorePerson(row, cleanedName || name, row.aliases), cleanedName || name, [personName(row), fullNameOf(row), ...row.aliases]),
             fuzzy_score: Number(row.fuzzy_score || 0),
         }))
         .map((row) => ({ ...row, score: Math.max(row.score, row.fuzzy_score) }))

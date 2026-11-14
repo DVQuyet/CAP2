@@ -24,6 +24,11 @@ jobs:
       - run: npm test
       # Trợ lý AI: chấm câu trả lời trên dòng họ mẫu (DB giả, không gọi Groq). Nâng --min sau mỗi đợt sửa.
       - run: node scripts/chatbot-e2e-check.js --min 199 --min-conversation 7
+      # Tiếng Việt có dấu: cặp chỉ khác dấu, tên trùng khi bỏ dấu, dấu rời, sai thanh, sót dấu, không dấu mơ hồ, quyền hạn.
+      - run: >-
+          node scripts/chatbot-e2e-check.js --suite accent --min 96
+          --min-group "Cặp chỉ khác dấu=20" --min-group "Tên trùng khi bỏ dấu=15"
+          --min-group "Dấu rời và kiểu đặt dấu=10" --min-group "Không dấu mơ hồ=15" --min-group "Quyền hạn=6"
 
   frontend:
     runs-on: ubuntu-latest
