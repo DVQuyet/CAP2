@@ -1340,3 +1340,109 @@ Route (đều cần đăng nhập, kiểm tra cùng dòng họ ở service):
 | 25 trở đi | N8, N9, O4, O5, P7 |
 
 Một người làm thì tổng thời gian mục J dài thêm khoảng 8–9 tuần. Nếu phải cắt: giữ N1–N5 và P1–P6; lùi N9, O3, O4.
+
+---
+
+## Q. Phân quyền: kết quả soát ngày 15/11/2026 và kế hoạch
+
+Soát bằng cách đọc mã Backend ở nhánh `dot-19-ve-cay-va-ai-co-dau`; chưa thử bằng yêu cầu thật, chưa soát Frontend. Ba vai trò: admin, manager, member.
+
+### Q0. Đã kiểm, chưa thấy lỗ hổng
+
+| Chỗ | Cách đang bảo vệ |
+|---|---|
+| Mọi route trong `src/modules/*` | Có `verifyToken` + `checkRole`. Route công khai là có chủ đích: đăng nhập, đăng ký, OAuth, quên mật khẩu, xác thực và nhận lời mời, ảnh qua token media, `/api/health`, webhook thanh toán (có khóa bí mật) |
+| Trợ lý: `/ask`, `/history`, `/suggestions`, `/relationship/:id`, `/path`, xóa lịch sử, 👍/👎 | Đều gọi `canAccessClan`: phải có dòng `account_clans` đang hoạt động của đúng dòng họ, hoặc là admin. Lịch sử lọc theo `account_id` |
+| Trợ lý: dữ liệu trả lời | Đọc đồ thị của đúng `clanId`; thành viên thường không thấy quan hệ nhạy cảm (`runWithViewer`); không trả SĐT/email cho bất kỳ ai. Nhóm "Quyền hạn" trong bộ đo `--suite accent` đạt 6/6 |
+| Sửa cây bằng tài khoản member | 11 hàm ghi trong `tree.controller.js` đều qua `treeEditPermissions` (cần khóa sửa tạm còn hạn, giới hạn theo người được phép) |
+| Dữ liệu cây trả cho member | `genealogy/contactPrivacy.js` ẩn SĐT, email, địa chỉ |
+| Socket | Phòng `clan_<id>` và `account_<id>` lấy từ token ở máy chủ, không nhận từ client |
+| Ghi âm | Chỉ chủ ghi âm, admin, hoặc manager cùng dòng họ |
+
+### Q1. Điểm cần sửa hoặc cần kiểm thêm
+
+| # | Vấn đề | Vị trí | Mức | Trạng thái |
+|---|---|---|---|---|
+| 1 | Trợ lý nhận `currentMemberId` do client gửi. Thành viên trong họ có thể gửi id của người khác để hỏi "với tư cách" người đó (bố tôi, lịch của tôi…). Dữ liệu vẫn trong cùng dòng họ, nhưng câu trả lời và gợi ý không còn đúng người | `chatbotController.js:182-206` (`canAccessClan` trả true ngay khi có `account_clans`, không so `currentMemberId`), các handler đọc `req.body.currentMemberId` | Vừa | Đã xác nhận trong mã |
+| 2 | Các route bí danh trong `server.js` (`/api/people`, `/api/people/link`, `/api/people/:id`, `/api/families`, `/api/families/:familyId/children`…) không có `schemas.*`, trong khi bản `/api/manager/...` có. Gọi qua bí danh là bỏ qua kiểm tra đầu vào | `server.js:403-476` so với `manager.routes.js:69-92` | Vừa | Đã xác nhận (0 schema trong khối này) |
+| 3 | Đồ thị của trợ lý nạp `p.*` (có SĐT, email, địa chỉ) vào bộ nhớ. Chưa kiểm rằng dữ liệu gửi cho LLM (lập kế hoạch, diễn đạt lại) và trường `people`/`candidates` trả về client không mang các cột này | `relationshipEngine.js` (câu SELECT), `chatbotAI.js`, `chatbotPrompts.js`, các payload trả về | Cao nếu có | Cần kiểm |
+| 4 | Thành viên có khóa sửa giới hạn: chưa kiểm việc nối quan hệ tới người **ngoài** danh sách được phép | `tree.controller.js:529` (`loadLinkTarget`), `treeEditPermissions.js` | Vừa | Cần kiểm |
+| 5 | `POST /api/voice/recording-recipients/process-due` mọi tài khoản đăng nhập đều gọi được | `voice/backend/backendRoutes.js:811` | Thấp | Cần kiểm tác dụng |
+| 6 | `POST /api/ai/genealogy/extract` mở cho member; không lộ dữ liệu nhưng tốn hạn mức LLM chung | `ai.routes.js` | Thấp | Xử lý cùng sổ hạn mức (G-3) |
+| 7 | Vai trò được so bằng cả chuỗi (`role_name`) lẫn số (`role_id === 1`, `2`, `3`) rải ở nhiều file; chưa có bảng quyền ở một chỗ | `treeEditPermissions.js:246-253`, `backendRoutes.js:181`, nhiều controller | Thấp (dễ sai khi thêm vai trò) | Đã xác nhận |
+| 8 | Test quyền ít: 5 test ở `chatbot.permissions.test.js`; 20 test cô lập dòng họ nằm ở `tests-integration` và không chạy trong CI | `Backend/tests`, `ci.yml` | Vừa | Đã xác nhận |
+| 9 | Frontend: chưa soát `ProtectedRoute`, menu theo vai trò, nút hiện cho người không có quyền | `Frontend/src` | Chưa biết | Chưa soát |
+
+### Q2. Các bước
+
+| Bước | Việc | File | Xong khi |
+|---|---|---|---|
+| Q-1 (1 ngày) | Kiểm mục 3: viết test duyệt mọi payload trả về của `/ask` trên bộ đo và mọi chuỗi gửi cho LLM (dùng client giả), cấm xuất hiện SĐT, email, địa chỉ của dữ liệu mẫu. Nếu lộ: đồ thị chỉ nạp cột cần cho quan hệ; thông tin liên hệ đọc riêng khi người hỏi có quyền | `tests/chatbot.contactLeak.test.js`, `relationshipEngine.js` | Test chạy trong `npm test`; 0 lần lộ |
+| Q-2 (1–2 ngày) | Sửa mục 1: `currentMemberId` hợp lệ khi bằng `req.user.person_id`, hoặc là "góc nhìn" tài khoản đã chọn và được lưu (`account_people`), hoặc người gọi là admin/manager. Sai thì dùng người của chính tài khoản | Hàm mới `resolveViewerPersonId` trong `chatbot/` dùng cho mọi endpoint; test mới | Member gửi id người khác: câu trả lời vẫn tính theo chính mình; 199/199 và 96/96 giữ nguyên |
+| Q-3 (1 ngày) | Sửa mục 2: chuyển các route bí danh ra khỏi `server.js` thành một router dùng **cùng** mảng middleware với `/api/manager/...` (làm cùng E7.6); commit di chuyển riêng, commit thêm schema riêng | `server.js`, `modules/genealogy/tree.routes.js` | Gửi dữ liệu sai qua `/api/people` nhận 400 như `/api/manager/people` |
+| Q-4 (1 ngày) | Kiểm mục 4 và 5 bằng test; sửa nếu sai | `tests/genealogy.editKeyScope.test.js`, `backendRoutes.js` | Khóa giới hạn không nối được tới người ngoài phạm vi; `process-due` chỉ admin hoặc khóa bí mật gọi được |
+| Q-5 (2 ngày) | Bảng quyền ở một chỗ: `config/permissions.js` liệt kê hành động → vai trò; hàm `can(user, action)`; thay dần các phép so `role_id`/`role_name` rải rác, mỗi module một commit | `src/config/permissions.js`, các controller | Không còn `role_id === <số>` ngoài `config/` |
+| Q-6 (2–3 ngày) | Bộ test ma trận quyền: với mỗi route ghi và mỗi route trả dữ liệu người, gọi bằng 4 loại người dùng (chưa đăng nhập, member họ A, manager họ A, manager họ B) trên DB giả; kỳ vọng lấy từ bảng quyền Q-5 | `tests/permissions.matrix.test.js` | Chạy trong CI; thêm route mà quên khai quyền thì test đỏ |
+| Q-7 (1 ngày) | Đưa 20 test cô lập dòng họ vào CI bằng MySQL trong container của GitHub Actions (miễn phí) | `ci.yml`, `tests-integration` | CI chạy `npm run test:integration` |
+| Q-8 (2 ngày) | Soát Frontend (mục 9): danh sách route và vai trò được vào; nút sửa/xóa ẩn theo quyền; thử gõ thẳng đường dẫn bằng tài khoản member | `app/routes.jsx`, `ProtectedRoute.jsx`, ba layout | Bảng route × vai trò ghi trong `docs/`; Backend vẫn là nơi chặn thật |
+| Q-9 (0,5 ngày) | Viết `docs/PHAN_QUYEN.md`: ba vai trò, bảng quyền, quy tắc thông tin liên hệ, quy tắc trợ lý (chỉ dữ liệu database của đúng dòng họ, không vượt quyền người hỏi) | `docs/PHAN_QUYEN.md`, `CLAUDE.md` trỏ tới | Người mới đọc một file là biết ai được làm gì |
+
+Thứ tự: Q-1 trước tiên (rủi ro cao nhất nếu có), rồi Q-2, Q-3, Q-4; Q-5 đến Q-9 làm sau. Tổng khoảng 2 tuần. Q-2 nên làm trước khi viết lại parser (L6–L8) vì parser mới cũng đọc `currentMemberId`.
+
+### Q3. Câu cần người dùng quyết
+
+| Câu hỏi | Giả định đang dùng |
+|---|---|
+| Manager và admin có được hỏi trợ lý "với tư cách" một người khác trong họ không? | Có (để hỗ trợ người lớn tuổi); member thì không |
+| Manager có được trợ lý trả SĐT/email của người trong họ không? | Không; trợ lý không trả thông tin liên hệ cho ai (như hiện nay) |
+| Member có được dùng "AI trích gia phả từ văn bản" không? | Có, nhưng tính vào hạn mức riêng |
+
+---
+
+## R. Trợ lý trả lời dựa trên dữ liệu truy xuất (tìm theo nghĩa / vector)
+
+Ý của người dùng (15/11): AI muốn trả lời thì phải dựa vào dữ liệu được cung cấp (vector data) để đúng với dữ liệu. Hiện trạng: chatbot chưa có tìm kiếm toàn văn hay embedding nào; câu hỏi về văn bản tự do (tiểu sử, lịch sử họ, kỷ niệm) chỉ khớp theo từ khóa cứng.
+
+### R0. Dùng tìm theo nghĩa ở đâu, không dùng ở đâu
+
+| Loại dữ liệu | Ví dụ câu hỏi | Cách trả lời đúng nhất | Vì sao |
+|---|---|---|---|
+| Có cấu trúc: quan hệ, năm sinh, ngày giỗ, đời, số con | "Em gái của ông nội tôi là ai?", "Hòa sinh năm nào?" | **Giữ như hiện nay: đồ thị gia phả + SQL** | Kết quả tính ra được và đúng tuyệt đối. Tìm theo nghĩa chỉ trả "đoạn gần giống", không tính được chuỗi quan hệ và dễ lẫn Hòa/Hoa/Hóa |
+| Văn bản tự do: tiểu sử, ghi chú, lịch sử dòng họ, kỷ niệm, bài đăng, mô tả sự kiện, kho phong tục (mục C) | "Ai trong họ từng đi bộ đội?", "Cụ tổ lập làng năm nào?", "Kể về ông Bình" | **Mới: truy xuất đoạn văn liên quan rồi trả lời từ đúng đoạn đó** | Đây là chỗ tìm theo nghĩa có ích; hiện phần lớn các câu này rơi vào "chưa hiểu" |
+| Câu diễn đạt lạ | "ông bà sinh ra bố em là những ai" | **Mới: so với câu mẫu đã biết ý định** để chọn ý định, rồi vẫn trả lời bằng đồ thị | Thay cho LLM lập kế hoạch khi hết lượt Groq |
+
+Nguyên tắc chung cho cả ba: câu trả lời chỉ được dựng từ bản ghi đã truy xuất, kèm nguồn (hồ sơ nào, bài nào); không có bản ghi đạt ngưỡng thì nói "chưa có dữ liệu", không đoán.
+
+### R1. Ràng buộc và lựa chọn kỹ thuật
+
+- Không thêm hạ tầng: không dùng dịch vụ vector riêng. Đoạn văn và vector (nếu có) lưu trong một bảng MySQL; xếp hạng làm ở Node cho từng dòng họ (một họ vài nghìn đoạn là nhỏ).
+- Quyền: mỗi đoạn mang `clan_id`, mức hiển thị và người liên quan; **lọc theo quyền trước khi xếp hạng**. Không đưa SĐT, email, địa chỉ vào kho đoạn văn.
+
+| Cách tạo "độ giống" | Chi phí | Rủi ro | Đề xuất |
+|---|---|---|---|
+| a. Từ khóa có trọng số (BM25) trên chữ có dấu, dùng `text/vietnameseText` (đúng dấu > khác thanh > không dấu) | 0, chạy ngay trong tiến trình | Không bắt được từ đồng nghĩa ("bộ đội" / "quân ngũ") | **Làm trước**; cũng là phương án dự phòng lâu dài |
+| b. Mô hình embedding đa ngữ chạy trong tiến trình Node (không gọi ra ngoài) | 0 tiền; tốn RAM và thời gian khởi động | Render free khoảng 512 MB RAM, có thể không vừa. **Cần đo** trước khi quyết | Thử ở bước R-5; chỉ bật nếu đo đạt |
+| c. API embedding miễn phí của bên ngoài | 0 tiền; hạn mức **cần kiểm** | Văn bản gia phả (tên, tiểu sử người thật) rời khỏi hệ thống; trái mục G5 | Chỉ dùng cho kho phong tục (không có dữ liệu cá nhân), và chỉ khi người dùng đồng ý |
+
+### R2. Các bước
+
+| Bước | Việc | File | Xong khi |
+|---|---|---|---|
+| R-1 (2 ngày) | Bộ đo "văn bản tự do": 40 câu trên dữ liệu mẫu có tiểu sử, lịch sử họ, kỷ niệm; mỗi câu ghi đoạn nguồn phải được dùng và điều không được bịa. Lấy số mốc | `scripts/chatbot-e2e/casesKnowledge.js`, dữ liệu mẫu | Có số mốc (dự đoán phần lớn đang sai) |
+| R-2 (3 ngày) | Bảng `ai_chunks` (clan_id, source_type, source_id, person_id, visibility, text, content_hash, embedding NULL, updated_at) và bộ lập chỉ mục: cắt đoạn theo câu, 300–500 ký tự; cập nhật khi hồ sơ, bài đăng, kỷ niệm, thông tin họ đổi; bỏ qua cột liên hệ | Migration mới; `modules/chatbot/retrieval/indexer.js`, `chunker.js` (hàm thuần) | Chạy trên MySQL local; sửa tiểu sử thì đoạn tương ứng được thay |
+| R-3 (3 ngày) | Bộ truy xuất từ khóa: lọc theo dòng họ và quyền, chấm BM25 theo ba mức dấu, ngưỡng tối thiểu, trả tối đa 5 đoạn kèm nguồn. Chỉ mục trong bộ nhớ theo phiên bản dữ liệu của họ | `retrieval/keywordRetriever.js`, `retrieval/index.js` (giao diện chung `search(clanId, viewer, query)`) | Test: member không lấy được đoạn chỉ dành cho quản lý hoặc của họ khác |
+| R-4 (3 ngày) | Ý định `knowledge_search`: chạy khi luật không ra ý định có cấu trúc. Trả lời bằng cách trích đoạn truy xuất kèm nguồn ("Theo tiểu sử của ông Đinh Văn Bình: …"), có nút mở hồ sơ; không đạt ngưỡng thì báo chưa có dữ liệu | `intents/knowledge.js`, handler mới, i18n chat | Bộ đo R-1 đạt ≥ 70%; 199/199 và 96/96 giữ nguyên |
+| R-5 (3–4 ngày) | Thử embedding trong tiến trình: đo RAM, thời gian nạp, thời gian mỗi câu trên máy có giới hạn 512 MB. Đạt thì thêm `vectorRetriever` và trộn điểm với từ khóa; không đạt thì ghi số đo và dừng ở từ khóa | `retrieval/vectorRetriever.js`, `scripts/retrieval-bench.js` | Có bảng số đo; quyết định bật/tắt ghi trong tài liệu |
+| R-6 (3 ngày) | Chọn ý định theo câu mẫu: lập chỉ mục các câu của bộ đo (đã biết ý định), câu mới không khớp luật thì lấy ý định của câu mẫu gần nhất nếu vượt ngưỡng; thực thể (tên, xưng hô) vẫn do parser tách | `retrieval/intentExamples.js` | Nhóm "Diễn đạt lạ" tăng mà không gọi LLM |
+| R-7 (2–3 ngày, sau cổng AI chung G-2) | Tùy chọn: LLM viết lại câu trả lời từ các đoạn đã truy xuất; tên riêng được che khi gửi; lớp chặn bịa có sẵn (`answerGroundingService`) loại câu có chi tiết ngoài đoạn nguồn; lỗi hoặc hết lượt thì dùng bản trích nguyên văn | `chatbotAI.js`, prompts | Bộ đo có LLM: 0 câu bịa |
+| R-8 (1 ngày) | CI: ngưỡng cho nhóm "văn bản tự do" và test quyền của bộ truy xuất | `ci.yml` | CI đỏ khi tụt |
+
+Phụ thuộc: làm sau Q-1 và Q-2 (không để bộ truy xuất thừa hưởng lỗi `currentMemberId`), và sau E7.4 nếu dùng bộ nhớ đệm chung. Tổng khoảng 3,5–4 tuần.
+
+### R3. Câu cần người dùng quyết
+
+| Câu hỏi | Đề xuất |
+|---|---|
+| Quan hệ họ hàng và số liệu vẫn trả lời bằng đồ thị/SQL, chỉ văn bản tự do mới dùng truy xuất? | Có |
+| Có cho gửi văn bản ra API embedding bên ngoài không? | Không cho dữ liệu gia phả; chỉ xét cho kho phong tục |
+| Nếu mô hình embedding không vừa RAM của Render free thì dừng ở tìm theo từ khóa có dấu? | Có, không nâng gói trả phí |

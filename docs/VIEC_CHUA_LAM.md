@@ -62,6 +62,12 @@ Còn mở từ đợt 4:
 - Validate chưa phủ route calendar/events.
 - "ba co toi" vẫn mơ hồ (cụ vs bà cô).
 
+Đợt 20 (15/11) — soát phân quyền Backend, chỉ lập kế hoạch (mục Q của `KE_HOACH_TONG_THE.md`), không đổi mã:
+- Chưa thấy lỗ hổng ở: xác thực route, cô lập dòng họ của trợ lý, quyền sửa cây của member, ẩn thông tin liên hệ, phòng socket.
+- Đã xác nhận cần sửa: trợ lý nhận `currentMemberId` từ client (hỏi "với tư cách" người khác trong cùng họ); route bí danh trong `server.js` không có schema kiểm tra đầu vào; vai trò so bằng số rải rác; test quyền ít và test cô lập không chạy trong CI.
+- Cần kiểm thêm (chưa biết có lỗi không): dữ liệu gửi LLM và payload của trợ lý có mang SĐT/email/địa chỉ không; khóa sửa giới hạn có nối được tới người ngoài phạm vi không; `process-due` của voice; toàn bộ Frontend.
+- Chờ người dùng duyệt các bước Q-1..Q-9 và ba câu ở Q3.
+
 Đợt 19 (14–15/11) — viết lại lõi vẽ cây (N10: R1–R8) và phần đầu AI hiểu tiếng Việt có dấu (L1, L2, L3, L5, L9, một phần L11). Chưa commit.
 
 **Cây (Frontend):**
