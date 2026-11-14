@@ -1,6 +1,7 @@
 import { DEFAULT_TREE_EXPORT_OPTIONS, TREE_EXPORT_FORMAT, TREE_EXPORT_MODE } from "./treeExportConfig";
 import { asArray } from "./treePersonUtils";
-import { buildDisplayTree, buildDisplayTreeLines } from "./treeDisplayNodes";
+import { buildDisplayTree } from "../../model/scene/displayTree.js";
+import { buildDisplayTreeLines } from "../../model/scene/lines.js";
 import { TREE_CARD_ORIENTATION, TREE_THEME, TREE_THEMES } from "./treeDisplayConfig";
 import { EXPORT_FRAME_PADDING, EXPORT_PADDING, EXPORT_TITLE_HEIGHT, computeContentBounds, decideRasterScale, exportFileName, normalizeExportScale } from "./treeExportMath";
 import { buildTreeSvg } from "./treeExportSvg";
@@ -59,7 +60,7 @@ function normalizeExportOptions(options = {}) {
 }
 
 // Lấy đúng các thẻ và đường nối đang hiển thị trên màn hình (nhánh đang thu gọn sẽ không có trong danh sách).
-export function prepareTreeExportPayload({ people = [], families = [], childRows = [], nodePositions = {}, options = {}, t } = {}) {
+export function prepareTreeExportPayload({ people = [], families = [], childRows = [], options = {}, t } = {}) {
   const exportOptions = normalizeExportOptions(options);
   const providedNodes = asArray(options.displayNodes);
   const providedLines = asArray(options.displayLines);
@@ -74,11 +75,10 @@ export function prepareTreeExportPayload({ people = [], families = [], childRows
       exportMode: true,
       exportModeName: exportOptions.mode,
       cardOrientation: exportOptions.treeStyle.cardOrientation,
-      nodePositions,
       packRows: true,
     });
     nodes = displayTree.nodes;
-    lines = buildDisplayTreeLines(displayTree, families, childRows, options.lineRoutes || {});
+    lines = buildDisplayTreeLines(displayTree, families, childRows, options.lineRoutes || {}, { controls: false });
   }
   return { nodes, lines, directLineagePersonIds, exportOptions, title: t ? t("tree.title") : "Gia phả" };
 }

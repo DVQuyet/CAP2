@@ -57,7 +57,7 @@ export function computePathHighlight(rawPath, families = [], childRows = []) {
   return { pathIds, nodeIds, edgeKeys, spouseFamilyIds, parentEdges };
 }
 
-// Đường vẽ (từ treeLines) có nằm trên đường quan hệ không.
+// Đường vẽ (từ model/scene/lines.js) có nằm trên đường quan hệ không.
 // - đường vợ chồng: theo familyId của cặp trên đường đi;
 // - đường cha/mẹ-con: cùng familyId và có mặt người con của cạnh đó (đường thân chung chứa mọi người con nên cũng sáng).
 export function isLineOnPath(line, highlight) {

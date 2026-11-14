@@ -1,4 +1,4 @@
-import { CANVAS_PADDING, CARD_WIDTH, X_GAP, Y_GAP } from "./treeConstants";
+import { CANVAS_PADDING, CARD_WIDTH, LEVEL_HEIGHT, SIBLING_GAP } from "../../model/config.js";
 import { asArray, personSort, toInt } from "./treePersonUtils";
 
 export function findParentFamilyForChild(personId, families, childRows) {
@@ -401,17 +401,17 @@ export function blankCreateForm(relation, selectedPerson, spouse) {
         : selectedGeneration;
   const x =
     relation === "spouse"
-      ? selectedX + CARD_WIDTH + X_GAP
+      ? selectedX + CARD_WIDTH + SIBLING_GAP
       : relation === "child"
         ? selectedX
         : relation === "father" || relation === "mother"
-          ? selectedX + (relation === "mother" ? CARD_WIDTH + X_GAP : 0)
+          ? selectedX + (relation === "mother" ? CARD_WIDTH + SIBLING_GAP : 0)
           : CANVAS_PADDING;
   const y =
     relation === "child"
-      ? selectedY + Y_GAP
+      ? selectedY + LEVEL_HEIGHT
       : relation === "father" || relation === "mother"
-        ? Math.max(80, selectedY - Y_GAP)
+        ? Math.max(80, selectedY - LEVEL_HEIGHT)
         : relation === "spouse"
           ? selectedY
           : CANVAS_PADDING;

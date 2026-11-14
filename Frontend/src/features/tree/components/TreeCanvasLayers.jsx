@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { asArray } from "../utils/tree-editor/treePersonUtils";
-import { DISPLAY_NODE_TYPE } from "../utils/tree-editor/treeDisplayNodes";
+import { DISPLAY_NODE_TYPE } from "../model/scene/cardMetrics.js";
 import { isLineOnPath } from "../utils/treePathHighlight";
 import CoupleCard from "./CoupleCard";
 import ReferenceCard from "./ReferenceCard";

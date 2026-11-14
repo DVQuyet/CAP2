@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { useLanguage } from "../../../i18n/LanguageContext";
 import { fullName } from "../utils/tree-editor/treePersonUtils";
-import { WEB_CARD_HEIGHT, WEB_CARD_WIDTH } from "../utils/tree-editor/treeDisplayNodes";
+import { WEB_CARD_HEIGHT, WEB_CARD_WIDTH } from "../utils/tree-editor/treeDisplayConfig";
 import { useCardActive } from "../hooks/useCardActive";
 import { nodeTransform } from "../hooks/useNodeDrag";
 import { cardExtraInfo, cardMeta, genderKey } from "../utils/tree-editor/treeCardInfo";

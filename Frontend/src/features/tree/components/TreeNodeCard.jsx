@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { useLanguage } from "../../../i18n/LanguageContext";
 import { getPersonHighlightState, highlightClassNames } from "../utils/treeHighlight";
-import { CARD_HEIGHT, CARD_WIDTH, NAME_FONT_SIZE } from "../utils/tree-editor/treeConstants";
+import { CARD_HEIGHT, CARD_WIDTH, NAME_FONT_SIZE } from "../model/config.js";
 import { TREE_DISPLAY_MODE, getTreeDisplayConfig } from "../utils/tree-editor/treeDisplayConfig";
 import { useCardActive } from "../hooks/useCardActive";
 import { nodeTransform } from "../hooks/useNodeDrag";

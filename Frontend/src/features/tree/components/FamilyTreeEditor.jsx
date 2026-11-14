@@ -23,11 +23,12 @@ import { useTreeRealtime } from "../hooks/useTreeRealtime";
 import { buildFamilyIndexes, getAncestorIds, getDescendantIds, getHiddenDescendantIds } from "../utils/treeFilter";
 import VoiceRecorder from "../../voice/components/VoiceRecorder";
 import { validateTreeData } from "../utils/treeValidation";
-import { CANVAS_PADDING, CARD_HEIGHT, CARD_WIDTH } from "../utils/tree-editor/treeConstants";
+import { CANVAS_PADDING, CARD_HEIGHT, CARD_WIDTH } from "../model/config.js";
 import { asArray, extractCreatedPersonId, fullName, normalizePerson, readCurrentAccount, snap, snapLine, clamp, toInt } from "../utils/tree-editor/treePersonUtils";
-import { clearCardSizes, clearLineRoutes, getCardSize, loadCardSizes, loadLineRoutes, normalizeCardSize, normalizeLayoutObject, normalizeLayoutSettings, saveCardSizes, saveLineRoutes } from "../utils/tree-editor/treeStorage";
+import { clearCardSizes, clearLineRoutes, getCardSize, normalizeCardSize, normalizeLayoutObject, normalizeLayoutSettings } from "../utils/tree-editor/treeStorage";
 import { dedupePeopleByAccount, remapChildrenByPeople, remapFamiliesByPeople } from "../utils/tree-editor/treeNormalize";
-import { autoLayoutPeople, computeReferencePlacements, findFounderIds, generationY, mergeManualAndAutoLayout } from "../utils/tree-editor/treeLayout";
+import { layoutTree, mergeManualLayout } from "../model/layout/autoLayout.js";
+import { findFounderIds, generationY } from "../model/layout/generationRows.js";
 import { buildCollapseStorageKey, resolveSelfPersonId } from "../utils/tree-editor/treeCollapse";
 import { parseTreeFocusParams, TREE_FOCUS_EVENT } from "../utils/treeFocusParams";
 import { computePathHighlight, normalizePathIds } from "../utils/treePathHighlight";
@@ -36,7 +37,8 @@ import { blankCreateForm, buildCreateRelationFields, buildLinkPayload, defaultRe
 import { downloadBlob, exportFileName, exportPreparedTree, prepareTreeExportPayload } from "../utils/tree-editor/treeExport";
 import TreeExportDialog from "./FamilyTreeEditorParts/TreeExportDialog";
 import { TREE_CARD_ORIENTATION, TREE_DISPLAY_MODE, TREE_THEME, TREE_THEMES, TREE_THEME_BACKGROUNDS } from "../utils/tree-editor/treeDisplayConfig";
-import { DISPLAY_NODE_TYPE, buildDisplayTree, buildDisplayTreeLines } from "../utils/tree-editor/treeDisplayNodes";
+import { DISPLAY_NODE_TYPE } from "../model/scene/cardMetrics.js";
+import { useTreeScene } from "../hooks/useTreeScene";
 import { FORM_ONLY_FIELDS, historicalPayloadFromForm } from "../utils/tree-editor/historicalDates";
 import { CenterNoticeDialog, CreatePersonDialog, PersonInspector, QuickCreateRelationDialog, RelationSelectDialog, ArchivedMembersDialog } from "./FamilyTreeEditorParts/index.js";
 import { useConfirm } from "../../../shared/components/confirmContext.js";
@@ -59,10 +61,6 @@ const AI_RELATION_TYPE_OPTIONS = [
   { value: "spouse", labelKey: "tree.genealogyAi.relationshipOptions.spouse" },
 ];
 
-const TREE_TITLE_STORAGE_PREFIX = "family-tree-title-label:";
-const DISPLAY_NODE_POSITION_STORAGE_PREFIX = "family-tree-display-node-positions:";
-const TREE_STYLE_STORAGE_PREFIX = "family-tree-style:";
-const USE_LOCAL_DRAFT_LAYOUT = false;
 const DEFAULT_TREE_TITLE_LABEL = {
   x: 60,
   y: 42,
@@ -93,10 +91,6 @@ const TREE_TITLE_SAFE_BOUNDS = {
   maxX: 1600,
   maxY: 520,
 };
-
-const getTreeTitleStorageKey = (clanId) => `${TREE_TITLE_STORAGE_PREFIX}${clanId || "default"}`;
-const getDisplayNodePositionStorageKey = (clanId) => `${DISPLAY_NODE_POSITION_STORAGE_PREFIX}${clanId || "default"}`;
-const getTreeStyleStorageKey = (clanId) => `${TREE_STYLE_STORAGE_PREFIX}${clanId || "default"}`;
 
 const normalizeHexColor = (value, fallback) => (
   /^#[0-9a-f]{6}$/i.test(String(value || "")) ? String(value) : fallback
@@ -134,62 +128,6 @@ const normalizeTreeTitleLabel = (value) => {
     color,
     fontSize: Number.isFinite(fontSize) ? clamp(fontSize, 18, 96) : DEFAULT_TREE_TITLE_LABEL.fontSize,
   };
-};
-
-const loadTreeTitleLabel = (clanId) => {
-  if (!USE_LOCAL_DRAFT_LAYOUT) return normalizeTreeTitleLabel(null);
-  if (typeof window === "undefined") return normalizeTreeTitleLabel(null);
-  try {
-    const raw = window.localStorage.getItem(getTreeTitleStorageKey(clanId));
-    return normalizeTreeTitleLabel(raw ? JSON.parse(raw) : null);
-  } catch (error) {
-    console.warn("Cannot read saved tree title label", error);
-    return normalizeTreeTitleLabel(null);
-  }
-};
-
-const saveTreeTitleLabel = (clanId, value) => {
-  if (!USE_LOCAL_DRAFT_LAYOUT) return;
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(getTreeTitleStorageKey(clanId), JSON.stringify(normalizeTreeTitleLabel(value)));
-  } catch (error) {
-    console.warn("Cannot save tree title label", error);
-  }
-};
-
-const loadDisplayNodePositions = (clanId) => {
-  if (!USE_LOCAL_DRAFT_LAYOUT) return {};
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = window.localStorage.getItem(getDisplayNodePositionStorageKey(clanId));
-    const parsed = raw ? JSON.parse(raw) : {};
-    return parsed && typeof parsed === "object" ? parsed : {};
-  } catch {
-    return {};
-  }
-};
-
-const loadTreeStyle = (clanId) => {
-  if (!USE_LOCAL_DRAFT_LAYOUT) return normalizeTreeStyle(null);
-  if (typeof window === "undefined") return normalizeTreeStyle(null);
-  try {
-    const raw = window.localStorage.getItem(getTreeStyleStorageKey(clanId));
-    return normalizeTreeStyle(raw ? JSON.parse(raw) : null);
-  } catch (error) {
-    console.warn("Cannot read saved tree style", error);
-    return normalizeTreeStyle(null);
-  }
-};
-
-const saveTreeStyle = (clanId, value) => {
-  if (!USE_LOCAL_DRAFT_LAYOUT) return;
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(getTreeStyleStorageKey(clanId), JSON.stringify(normalizeTreeStyle(value)));
-  } catch (error) {
-    console.warn("Cannot save tree style", error);
-  }
 };
 
 const aiRelationshipTypeLabel = (type, t) => {
@@ -462,7 +400,6 @@ export default function FamilyTreeEditor({
   const lineDragRef = useRef(null);
   const titleDragRef = useRef(null);
   const [treeTitleLabel, setTreeTitleLabel] = useState(() => normalizeTreeTitleLabel(null));
-  const [displayNodePositions, setDisplayNodePositions] = useState(() => (USE_LOCAL_DRAFT_LAYOUT ? loadDisplayNodePositions(clan?.id) : {}));
   const [draggingTitleLabel, setDraggingTitleLabel] = useState(false);
   const [people, setPeople] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
@@ -482,11 +419,9 @@ export default function FamilyTreeEditor({
   const [draggingId, setDraggingId] = useState(null);
   const [draggingLineId, setDraggingLineId] = useState(null);
   const [lineRoutes, setLineRoutes] = useState(() => ({
-    ...(USE_LOCAL_DRAFT_LAYOUT ? loadLineRoutes(clan?.id) : {}),
     ...normalizeLayoutSettings(layoutSettings).line_routes,
   }));
   const [cardSizes, setCardSizes] = useState(() => ({
-    ...(USE_LOCAL_DRAFT_LAYOUT ? loadCardSizes(clan?.id) : {}),
     ...normalizeLayoutSettings(layoutSettings).card_sizes,
   }));
   const [status, setStatus] = useState("");
@@ -690,7 +625,6 @@ export default function FamilyTreeEditor({
             next[familyId] = { ...(next[familyId] || {}), ...routes };
           });
         }
-        if (USE_LOCAL_DRAFT_LAYOUT) saveLineRoutes(clan?.id, next);
         return next;
       });
     }
@@ -702,7 +636,6 @@ export default function FamilyTreeEditor({
         Object.entries(nextCardSizesPatch).forEach(([personId, size]) => {
           next[personId] = normalizeCardSize(size);
         });
-        if (USE_LOCAL_DRAFT_LAYOUT) saveCardSizes(clan?.id, next);
         return next;
       });
     }
@@ -713,33 +646,22 @@ export default function FamilyTreeEditor({
       setTreeStyle(normalized);
       setTreeTitleLabel(normalizeTreeTitleLabel(normalized.titleLabel));
     }
-  }, [clan?.id]);
+  }, []);
 
   useEffect(() => {
     const normalizedSettings = normalizeLayoutSettings(layoutSettings);
     setLineRoutes({
-      ...(USE_LOCAL_DRAFT_LAYOUT ? loadLineRoutes(clan?.id) : {}),
       ...normalizedSettings.line_routes,
     });
     setCardSizes({
-      ...(USE_LOCAL_DRAFT_LAYOUT ? loadCardSizes(clan?.id) : {}),
       ...normalizedSettings.card_sizes,
     });
   }, [clan?.id, layoutSettings]);
 
   useEffect(() => {
-    setTreeTitleLabel(USE_LOCAL_DRAFT_LAYOUT ? loadTreeTitleLabel(clan?.id) : normalizeTreeTitleLabel(databaseTreeStyle.titleLabel || databaseTreeStyle.title_label));
-    setDisplayNodePositions(USE_LOCAL_DRAFT_LAYOUT ? loadDisplayNodePositions(clan?.id) : {});
-    setTreeStyle(USE_LOCAL_DRAFT_LAYOUT ? loadTreeStyle(clan?.id) : databaseTreeStyle);
-  }, [clan?.id, databaseTreeStyle]);
-
-  useEffect(() => {
-    saveTreeTitleLabel(clan?.id, treeTitleLabel);
-  }, [clan?.id, treeTitleLabel]);
-
-  useEffect(() => {
-    saveTreeStyle(clan?.id, treeStyle);
-  }, [clan?.id, treeStyle]);
+    setTreeTitleLabel(normalizeTreeTitleLabel(databaseTreeStyle.titleLabel || databaseTreeStyle.title_label));
+    setTreeStyle(databaseTreeStyle);
+  }, [databaseTreeStyle]);
 
   useEffect(() => {
     if (!enableRealtime) return undefined;
@@ -812,12 +734,18 @@ export default function FamilyTreeEditor({
     };
   }, [initialPeople, families, childRows]);
 
+  // Tự sắp xếp chạy một lần cho mỗi bản dữ liệu: cho vị trí từng người và vị trí thẻ tham chiếu.
+  const autoLayout = useMemo(
+    () => layoutTree(canonicalTree.people, canonicalTree.families, canonicalTree.childRows),
+    [canonicalTree],
+  );
+
   useEffect(() => {
-    const nextPeople = mergeManualAndAutoLayout(canonicalTree.people, canonicalTree.families, canonicalTree.childRows);
+    const nextPeople = mergeManualLayout(canonicalTree.people, autoLayout.people);
     setPeople(nextPeople);
     setSelectedId((current) => (current && nextPeople.some((person) => person.id === current) ? current : null));
     setSelectedCoupleId(null);
-  }, [canonicalTree]);
+  }, [autoLayout, canonicalTree]);
 
   const selectedPerson = useMemo(
     () => {
@@ -895,39 +823,15 @@ const coupleActionPerson = useMemo(
   const visiblePeople = treeViewMode.visibleData.people;
   const visibleFamilies = treeViewMode.visibleData.families;
   const visibleChildRows = treeViewMode.visibleData.childRows;
-  const renderOffset = useMemo(() => {
-    if (!visiblePeople.length) return { x: 0, y: 0 };
-    const minX = Math.min(...visiblePeople.map((person) => toInt(person.tree_x, 0)));
-    const minY = Math.min(...visiblePeople.map((person) => toInt(person.tree_y, 0)));
-    return {
-      x: Math.max(0, CANVAS_PADDING - minX),
-      y: Math.max(0, CANVAS_PADDING - minY),
-    };
-  }, [visiblePeople]);
-  const renderPeople = useMemo(
-    () => visiblePeople.map((person) => ({
-      ...person,
-      tree_x: toInt(person.tree_x, 0) + renderOffset.x,
-      tree_y: toInt(person.tree_y, 0) + renderOffset.y,
-    })),
-    [renderOffset.x, renderOffset.y, visiblePeople],
-  );
-  const renderPersonById = useMemo(
-    () => new Map(renderPeople.map((person) => [Number(person.id), person])),
-    [renderPeople],
-  );
-  const referencePlacements = useMemo(
-    () => computeReferencePlacements(canonicalTree.people, canonicalTree.families, canonicalTree.childRows),
-    [canonicalTree],
-  );
-  const displayTree = useMemo(
-    () => buildDisplayTree(renderPeople, visibleFamilies, visibleChildRows, {
-      nodePositions: USE_LOCAL_DRAFT_LAYOUT ? displayNodePositions : {},
-      cardOrientation: treeStyle.cardOrientation,
-      referencePlacements,
-    }),
-    [displayNodePositions, referencePlacements, renderPeople, treeStyle.cardOrientation, visibleFamilies, visibleChildRows],
-  );
+  const { renderPeople, renderPersonById, displayTree, lines, canvasSize } = useTreeScene({
+    people: visiblePeople,
+    families: visibleFamilies,
+    childRows: visibleChildRows,
+    cardOrientation: treeStyle.cardOrientation,
+    referencePlacements: autoLayout.references,
+    lineRoutes,
+    withControls: canEditAll,
+  });
   const displayNodes = displayTree.nodes;
   const displayNodeByPersonId = displayTree.nodeByPersonId;
   const displayNodeByPersonIdRef = useRef(displayNodeByPersonId);
@@ -1011,11 +915,6 @@ const coupleActionPerson = useMemo(
     });
     return map;
   }, [canonicalTree.childRows, canonicalTree.families, people]);
-  const lines = useMemo(
-    () => buildDisplayTreeLines(displayTree, visibleFamilies, visibleChildRows, lineRoutes),
-    [displayTree, visibleFamilies, visibleChildRows, lineRoutes],
-  );
-
   const persistFullLayout = useCallback(async (nextPeople = people, nextLineRoutes = lineRoutes, nextCardSizes = cardSizes) => {
     if (!canEditAll) return false;
     try {
@@ -1025,10 +924,6 @@ const coupleActionPerson = useMemo(
         treeStyle: normalizeTreeStyle({ ...treeStyle, titleLabel: treeTitleLabel }),
         clientLayoutId: layoutClientIdRef.current,
       });
-      if (USE_LOCAL_DRAFT_LAYOUT) {
-        saveLineRoutes(clan?.id, nextLineRoutes);
-        saveCardSizes(clan?.id, nextCardSizes);
-      }
       return true;
     } catch (error) {
       setStatus(friendlyErrorMessage(error, t));
@@ -1042,27 +937,17 @@ const coupleActionPerson = useMemo(
     if (!ok) return;
     setSaving(true);
     setStatus("");
-    const nextPeople = autoLayoutPeople(canonicalTree.people, canonicalTree.families, canonicalTree.childRows);
+    const nextPeople = autoLayout.people;
     try {
       setPeople(nextPeople);
       setLineRoutes({});
-      if (USE_LOCAL_DRAFT_LAYOUT) saveLineRoutes(clan?.id, {});
       const saved = await persistFullLayout(nextPeople, {}, cardSizes);
       setStatus(saved ? t("tree.messages.autoLayoutSuccess") : t("tree.messages.autoLayoutError"));
       await onReload?.();
     } finally {
       setSaving(false);
     }
-  }, [canEditAll, canonicalTree, persistFullLayout, cardSizes, clan?.id, onReload, t]);
-
-  const canvasSize = useMemo(() => {
-    const lineNumbers = lines.flatMap((line) => String(line.d || "").match(/-?\d+(?:\.\d+)?/g)?.map(Number) || []);
-    const lineXs = lineNumbers.filter((_, index) => index % 2 === 0);
-    const lineYs = lineNumbers.filter((_, index) => index % 2 === 1);
-    const maxX = Math.max(2400, ...displayNodes.map((node) => toInt(node.x, 0) + node.width + CANVAS_PADDING), ...lineXs.map((x) => x + CANVAS_PADDING));
-    const maxY = Math.max(1400, ...displayNodes.map((node) => toInt(node.y, 0) + node.height + CANVAS_PADDING), ...lineYs.map((y) => y + CANVAS_PADDING));
-    return { width: maxX, height: maxY };
-  }, [displayNodes, lines]);
+  }, [autoLayout.people, canEditAll, persistFullLayout, cardSizes, onReload, t]);
 
   const generationLanes = useMemo(() => {
     const byGeneration = new Map();
@@ -2017,7 +1902,6 @@ const coupleActionPerson = useMemo(
             ...current,
             [familyId]: { ...(current?.[familyId] || {}), [routeKeyX]: finalX, [routeKeyY]: finalY },
           };
-          if (USE_LOCAL_DRAFT_LAYOUT) saveLineRoutes(clan?.id, next);
           enqueueLayoutChanges({
             lineRoutes: [
               { family_id: familyId, route_key: routeKeyX, value: finalX },
@@ -2063,7 +1947,6 @@ const coupleActionPerson = useMemo(
             ...current,
             [familyId]: { ...(current?.[familyId] || {}), [routeKey]: finalRoute?.value ?? originValue },
           };
-        if (USE_LOCAL_DRAFT_LAYOUT) saveLineRoutes(clan?.id, next);
         enqueueLayoutChanges({
           lineRoutes: [{
             family_id: familyId,
@@ -2077,7 +1960,7 @@ const coupleActionPerson = useMemo(
 
     window.addEventListener("pointermove", handleMove, { passive: false });
     window.addEventListener("pointerup", handleUp);
-  }, [canEditAll, clan?.id, enqueueLayoutChanges, lineRoutes]);
+  }, [canEditAll, enqueueLayoutChanges, lineRoutes]);
 
   const resetLineRoutes = useCallback(async () => {
     if (!canEditAll) {
@@ -2093,7 +1976,7 @@ const coupleActionPerson = useMemo(
     clearLineRoutes(clan?.id);
     clearCardSizes(clan?.id);
     try {
-      const nextPeople = autoLayoutPeople(canonicalTree.people, canonicalTree.families, canonicalTree.childRows);
+      const nextPeople = autoLayout.people;
       setPeople(nextPeople);
       const saved = await persistFullLayout(nextPeople, {}, {});
       if (saved) await onReload?.();
@@ -2101,12 +1984,11 @@ const coupleActionPerson = useMemo(
     } finally {
       setSaving(false);
     }
-  }, [canEditAll, canonicalTree.childRows, canonicalTree.families, canonicalTree.people, clan?.id, onReload, persistFullLayout, t]);
+  }, [autoLayout.people, canEditAll, clan?.id, onReload, persistFullLayout, t]);
 
   const resetLocalLayout = useCallback(() => {
     const removedKeys = clearFamilyTreeLocalStorage();
     const normalizedSettings = normalizeLayoutSettings(layoutSettings);
-    setDisplayNodePositions({});
     setLineRoutes(normalizedSettings.line_routes);
     setCardSizes(normalizedSettings.card_sizes);
     setTreeStyle(databaseTreeStyle);
@@ -2125,7 +2007,6 @@ const coupleActionPerson = useMemo(
       window.clearTimeout(layoutFlushTimerRef.current);
       layoutFlushTimerRef.current = null;
     }
-    setDisplayNodePositions({});
     setTreeStyle(databaseTreeStyle);
     setTreeTitleLabel(normalizeTreeTitleLabel(databaseTreeStyle.titleLabel));
     setStatus(t("tree.layoutStatus.reloading"));
@@ -2166,7 +2047,6 @@ const coupleActionPerson = useMemo(
       people: renderPeople,
       families: visibleFamilies,
       childRows: visibleChildRows,
-      nodePositions: displayNodePositions,
       options: {
         ...exportChoice,
         lineRoutes,
@@ -2673,7 +2553,6 @@ const submitCreateDialog = async () => {
       window.removeEventListener("pointerup", handleUp);
       setCardSizes((current) => {
         const next = { ...current, [personId]: latest };
-        if (USE_LOCAL_DRAFT_LAYOUT) saveCardSizes(clan?.id, next);
         enqueueLayoutChanges({
           cardSizes: [{ person_id: personId, ...latest }],
         });
@@ -2683,7 +2562,7 @@ const submitCreateDialog = async () => {
 
     window.addEventListener("pointermove", handleMove, { passive: false });
     window.addEventListener("pointerup", handleUp);
-  }, [canEditPerson, cardSizes, clan?.id, enqueueLayoutChanges]);
+  }, [canEditPerson, cardSizes, enqueueLayoutChanges]);
 
   // A2.4: hàm ổn định cho thẻ React.memo. A2.5: chỉ vẽ thẻ/đường nối giao với cửa sổ vẽ (vùng nhìn + 1 màn hình).
   const stableBeginLineDrag = useStableCallback(beginLineDrag);

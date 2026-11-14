@@ -3,7 +3,7 @@
 // - Mỗi người chỉ có MỘT vị trí chính trên cây (dưới gia đình dòng chính của người "neo" trong cụm).
 // - Các liên kết cha mẹ - con còn lại (con nuôi/thừa tự với cha mẹ đẻ, con gái lấy chồng nhánh khác...)
 //   được vẽ bằng thẻ tham chiếu dưới gia đình đó.
-import { asArray, toInt } from "./treePersonUtils";
+import { asArray, toInt } from "./geometry.js";
 
 const MALE = 1;
 const FEMALE = 2;
