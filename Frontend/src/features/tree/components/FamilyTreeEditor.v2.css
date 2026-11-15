@@ -89,6 +89,8 @@
 }
 
 .fte-shell.fte2.is-fullscreen {
+    /* Phải ghi lại position: quy tắc .fte-shell.fte2 ở trên (relative) cùng độ ưu tiên với .fte-shell.is-fullscreen (fixed). */
+    position: fixed;
     height: 100dvh;
     padding: 12px;
     background: var(--t-canvas);

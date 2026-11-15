@@ -34,7 +34,6 @@ export default function GenealogyManagement() {
     const { requestClose, backdropProps } = useDismissable();
     // Ảnh chụp form lúc mở modal để biết người dùng đã sửa chưa.
     const [initialForm, setInitialForm] = useState("");
-    const isFormDirty = JSON.stringify(clanForm) !== initialForm;
     const [clans, setClans] = useState([]);
     const [selectedClanId, setSelectedClanId] = useState(null);
     const [treeData, setTreeData] = useState({ people: [], families: [], children: [] });
@@ -44,6 +43,7 @@ export default function GenealogyManagement() {
     const [searchTerm, setSearchTerm] = useState("");
     const [modalMode, setModalMode] = useState(null);
     const [clanForm, setClanForm] = useState(emptyClanForm);
+    const isFormDirty = JSON.stringify(clanForm) !== initialForm;
     const [formError, setFormError] = useState("");
     const [saving, setSaving] = useState(false);
     const treeReloadTimerRef = useRef(null);
