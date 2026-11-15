@@ -6,6 +6,22 @@ Các file đó giữ làm nhật ký; việc mới thêm vào đây.
 
 Ký hiệu công sức: **S** < 2 giờ · **M** nửa ngày–1 ngày · **L** nhiều ngày. Cột "Ai làm" gợi ý chia việc khi chạy nhiều agent.
 
+## Soát schema DB 15/11/2026 (DB TiDB đang cấu hình trong `Backend/.env`)
+
+DB được dựng từ `init.sql` cũ nên thiếu phần gói cước và quỹ. Đã thêm và áp `database/migrations/2026_11_15_billing_fund_missing_schema.sql`
+(bảng `plans`, `subscriptions`, `payments`, `fund_campaigns`, `password_reset_tokens`; 9 cột `event_costs`, 5 cột `event_contributions`). Còn mở:
+
+- Đã tạo 4 gói qua API quản trị (FREE 200 hồ sơ, BASIC 49k/tháng, STANDARD 99k/tháng, PREMIUM 199k/tháng). Giá và giới hạn là số đề xuất,
+  sửa ở trang quản trị gói. Repo vẫn chưa có dữ liệu mẫu cho `plans`: DB mới phải tạo lại gói `FREE`, nếu không thêm người báo 500.
+- `GROQ_MODEL=llama-3.3-70b-versatile` trong `.env` (và trên Render nếu đặt giống) đã bị Groq gỡ: mỗi lần khởi động tốn một lần gọi 404 rồi mới
+  chuyển model dự phòng. Nên xóa biến này hoặc đặt `openai/gpt-oss-120b` (qwen chỉ được 1000 token ra/phút ở gói miễn phí). **S**
+- Nhãn "Đời N" trên cây nay mặc định ẩn (bật ở tuỳ chỉnh giao diện cây, lưu theo `tree_style.showGenerations`): ảnh mẫu `docs/anh/` còn nhãn đời,
+  cần chụp lại bằng `Frontend/dev/tree-shots.sh`. Hai thanh menu admin/manager đổi sang nền đỏ son: chưa soát ở 390x844. **S**
+- Trang admin "Quản lý gia phả": nút xóa dòng họ đang dùng nhầm chuỗi "Không thể xóa dòng họ" làm nhãn (title). **S**
+- `plans`, `subscriptions`, `payments`, `fund_campaigns` không có `CREATE TABLE` ở đâu ngoài file migration trên, và `npm run migrate` không chạy file `.sql`:
+  DB mới phải áp tay file này (gộp vào việc sinh lại `init.sql`, E7.9).
+- Bảng có trong schema cũ nhưng mã không còn dùng, không tạo lại: `payment_events`, `system_settings`, `photo_restorations`.
+
 ## Đã xong, gỡ khỏi các danh sách cũ
 
 | Mục trong docs cũ | Bằng chứng trong mã |
@@ -61,6 +77,30 @@ Còn mở từ đợt 4:
 - Ảnh đại diện khi xuất cây vẫn là chữ cái đầu, chưa nhúng ảnh thật.
 - Validate chưa phủ route calendar/events.
 - "ba co toi" vẫn mơ hồ (cụ vs bà cô).
+
+Đợt 21 (15/11) — AI tiếng Việt: L4 (`text/pattern.js`) và L6 (parser quan hệ đọc chữ có dấu, sau cờ).
+
+- **L4** `chatbot/text/pattern.js`: mẫu câu viết một lần bằng chữ có dấu (`'^{kin} của {self} {ask:who}'`), khớp ba mức, trả `groups` cắt từ câu gốc. Nhóm từ ở `text/lexicon/groups.js` (dạng không dấu tự sinh). Mức 2 chỉ bỏ qua loại thanh: "lả" khớp "là", còn "ba" không khớp "bà", "cô" không khớp "cố". Test `tests/chatbot.text.pattern.test.js` (6).
+- **L6** `chatbot/text/relationshipParser.js` + `text/lexicon/kinshipEdges.js`: "bà" là bà, "ba" trong câu có dấu là cha, "cố" là cụ; câu không dấu trả mọi cách đọc (`readings`). `relationshipParsing.js` chọn parser theo cờ `CHATBOT_ACCENT_FIRST` (mặc định **tắt**) và có `pickRelationshipReading`: các cách đọc ra cùng người thì trả lời, khác người thì hỏi lại. Nối vào `chatbotController.js` (ba chỗ), `queryPlannerService.js`, `kinshipReferenceService.js`. Test `tests/chatbot.text.relationshipParser.test.js` (8, chạy cho cả hai parser).
+- **Số đo:** Backend 299 → 313 test. Bộ có dấu thêm nhóm "Chuỗi quan hệ" 13 câu (96 → 109 câu).
+
+  | | Bộ chính | Hội thoại | Bộ có dấu | Nhóm "Chuỗi quan hệ" |
+  |---|---|---|---|---|
+  | Cờ tắt (đang chạy thật) | 199/199 | 7/7 | 99/109 | 3/13 |
+  | Cờ bật | 199/199 | 7/7 | 109/109 | 13/13 |
+
+- **Lỗi đang có trên bản chạy thật (cờ tắt), lộ ra từ nhóm mới:** parser cũ bỏ dấu cả câu nên "Bà của Trần Văn Khôi" trả cha của Khôi, "Cố của …" trả cô, "Con của bà tôi" trả con của cha, "Chồng của bà tôi" trả vợ của cha; câu không dấu "ba cua …", "co cua …" tự chọn cha/cô thay vì hỏi lại. Bật cờ thì cả 10 câu đúng.
+- **Danh sách khác biệt** (`node scripts/chatbot-parser-diff.js`): 11/315 câu đổi câu trả lời. 10 câu là nhóm "Chuỗi quan hệ" (sai → đúng). Câu còn lại chỉ đổi chữ: "con của cô ruột tôi thì là gì của tôi" → "chưa tìm thấy con của cô của bạn" (mất chữ "ruột" trong nhãn, vẫn đúng người). **Chờ người dùng xem danh sách này rồi mới bật cờ mặc định (L14).**
+- CI thêm một bước chạy hai bộ đo với cờ bật, `continue-on-error` (chỉ in số, chưa chặn).
+- `chatbotController.js` 2.693 → 2.690 dòng. Dài thêm: `kinshipTermService.js` +2, `queryPlannerService.js` +1, `kinshipReferenceService.js` +6, `text/nameMatch.js` +17 (`restoreAccents`).
+- **Khác kế hoạch L6:** không sửa `relationshipExpressionResolver.js` (việc chọn cách đọc nằm ở `relationshipParsing.js` vì phải gọi `resolveKinshipChain`); cờ áp cho cả `queryPlannerService` và `kinshipReferenceService`, không chỉ hai chỗ trong controller, vì câu "Con của bà tôi" đi qua hai file đó; script so sánh so câu trả lời cuối của bộ đo thay vì so kết quả parser. `text/pattern.js` đổi câu sang dạng tương ứng rồi khớp (mỗi ký tự thành đúng một ký tự) thay cho sinh lớp ký tự.
+- **Còn mở:**
+  - Câu hỏi lại ở luồng tìm người vẫn in cụm không dấu ("Có 2 người khớp với "ba toi"") vì parser ý định cũ cắt tên trên câu đã bỏ dấu; `restoreAccents` chỉ là cầu tạm, bỏ khi xong L8.
+  - "vo cua ba toi la ai" (không dấu) hỏi lại giữa cha và hai bà, dù chỉ cha có vợ trong dữ liệu: luồng tìm người chọn người trước rồi mới tìm vợ.
+  - `coreferenceResolver.js` còn gọi parser cũ (L13). "ma", "vợ chồng" có trong parser cũ, không có trong bảng từ không dấu.
+  - Từ không ghi cạnh ở `kinshipEdges.js` (dượng, ông chú, bà cô, ông trẻ…) chỉ trả lời được khi gia phả có nhãn tương ứng.
+  - L7–L8, L10, phần còn lại của L11, L12–L17.
+- **Database:** tên máy chủ Aiven trong `.env` không còn phân giải DNS (kiểm 15/11 trên ba máy chủ DNS). Aiven bỏ gói MySQL miễn phí: không tạo mới từ 6/11/2026, **21/12/2026** tắt và xóa dữ liệu lẫn bản sao lưu. Việc của người dùng: vào console.aiven.io xem dịch vụ còn không, bật lại và `mysqldump` ngay (`docs/SAO_LUU.md`), rồi chọn nơi mới (mục E/H của kế hoạch chưa tính việc này).
 
 Đợt 20 (15/11) — soát phân quyền Backend, chỉ lập kế hoạch (mục Q của `KE_HOACH_TONG_THE.md`), không đổi mã:
 - Chưa thấy lỗ hổng ở: xác thực route, cô lập dòng họ của trợ lý, quyền sửa cây của member, ẩn thông tin liên hệ, phòng socket.
