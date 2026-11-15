@@ -1,7 +1,7 @@
 import { useLanguage } from "../../../../i18n/LanguageContext";
 import { TREE_CARD_ORIENTATION, TREE_THEMES } from "../../utils/tree-editor/treeDisplayConfig";
 
-// Tuỳ chỉnh giao diện cây: chủ đề màu, hướng thẻ, màu nền, cỡ chữ.
+// Tuỳ chỉnh giao diện cây: chủ đề màu, hướng thẻ, nhãn đời, màu nền, cỡ chữ.
 export default function TreeStyleControls({ treeStyle, onChange }) {
   const { t } = useLanguage();
   return (
@@ -43,6 +43,21 @@ export default function TreeStyleControls({ treeStyle, onChange }) {
           >
             <span className="material-symbols-outlined" aria-hidden="true">view_column</span>
             {t("tree.toolbar.cardVertical")}
+          </button>
+        </div>
+      </div>
+
+      {/* Dải và nhãn "Đời N" phụ thuộc cách xếp thẻ của từng họ nên mặc định ẩn. */}
+      <div className="fte2-field">
+        <span className="fte2-fieldLabel">{t("tree.toolbar.generationLabels")}</span>
+        <div className="fte2-segmented" role="group">
+          <button type="button" className={treeStyle.showGenerations ? "" : "is-active"} onClick={() => onChange({ showGenerations: false })}>
+            <span className="material-symbols-outlined" aria-hidden="true">visibility_off</span>
+            {t("tree.toolbar.generationLabelsHide")}
+          </button>
+          <button type="button" className={treeStyle.showGenerations ? "is-active" : ""} onClick={() => onChange({ showGenerations: true })}>
+            <span className="material-symbols-outlined" aria-hidden="true">format_list_numbered</span>
+            {t("tree.toolbar.generationLabelsShow")}
           </button>
         </div>
       </div>

@@ -110,6 +110,7 @@ const normalizeTreeStyle = (value) => {
     })(),
     fontSize: Number.isFinite(fontSize) ? clamp(fontSize, 12, 28) : DEFAULT_TREE_STYLE.fontSize,
     titleLabel: normalizeTreeTitleLabel(source.titleLabel || source.title_label),
+    showGenerations: (source.showGenerations ?? source.show_generations) === true, // dải và nhãn "Đời N": mặc định ẩn
   };
 };
 
@@ -961,7 +962,7 @@ const coupleActionPerson = useMemo(
         ? { top: Math.min(current.top, top), bottom: Math.max(current.bottom, bottom) }
         : { top, bottom });
     });
-    if (byGeneration.size < 2) return [];
+    if (!treeStyle.showGenerations || byGeneration.size < 2) return [];
     const left = Math.min(...displayNodes.map((node) => toInt(node.x, 0))) - GENERATION_LANE_GUTTER;
     const right = Math.max(...displayNodes.map((node) => toInt(node.x, 0) + node.width)) + 40;
     return [...byGeneration.entries()]
@@ -974,7 +975,7 @@ const coupleActionPerson = useMemo(
         height: range.bottom - range.top + 36,
         striped: index % 2 === 1,
       }));
-  }, [displayNodes]);
+  }, [displayNodes, treeStyle.showGenerations]);
 
   const canvasPointFromEvent = useCallback((event) => {
     const rect = treeRef.current?.getBoundingClientRect();

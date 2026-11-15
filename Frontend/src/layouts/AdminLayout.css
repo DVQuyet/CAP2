@@ -37,8 +37,8 @@
   height: 36px;
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: var(--radius-pill);
-  background: var(--color-red-900); /* Admin Crimson */
-  color: var(--color-amber-100);
+  background: var(--color-gold-metal);
+  color: var(--color-red-900);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -48,7 +48,7 @@
 }
 
 .sidebar-toggle:hover {
-  background: var(--color-gold-metal); /* Admin Gold */
+  background: var(--color-gold-bright);
   color: var(--color-red-900);
 }
 
@@ -110,7 +110,7 @@
 
 .admin-badge-chip {
   font-size: 0.7rem;
-  background: rgba(127, 29, 29, 0.3);
+  background: rgba(0, 0, 0, 0.22);
   color: var(--color-amber-100);
   padding: 2px 6px;
   border-radius: var(--radius-xs);
@@ -142,10 +142,10 @@
 }
 
 .nav-item.active {
-  background: var(--color-red-900);
-  color: var(--color-white);
+  background: var(--color-gold-metal);
+  color: var(--color-ink-brown-1);
   font-weight: 700;
-  box-shadow: 0 8px 16px rgba(127, 29, 29, 0.3);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.22);
 }
 
 .sidebar-collapsed .user-details,
@@ -162,7 +162,7 @@
   padding: 1rem;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  color: #ff6b6b;
+  color: var(--color-amber-100);
   border-radius: var(--radius-2xl);
   cursor: pointer;
   font-weight: 700;
@@ -233,8 +233,8 @@
 }
 
 .glass-effect {
-  background: rgba(17, 20, 32, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(165deg, color-mix(in srgb, var(--color-brick-3) 95%, transparent), color-mix(in srgb, var(--color-red-900) 95%, transparent));
+  border: 1px solid color-mix(in srgb, var(--color-gold-light) 55%, transparent);
   backdrop-filter: blur(20px);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }

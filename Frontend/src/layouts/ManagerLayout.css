@@ -165,8 +165,8 @@
 
 .role-chip {
   font-size: var(--fs-2xs);
-  background: rgba(201, 154, 44, 0.2);
-  color: var(--color-gold);
+  background: rgba(0, 0, 0, 0.22);
+  color: var(--color-gold-bright);
   padding: 3px 8px;
   border-radius: var(--radius-sm);
   font-weight: 600;
@@ -236,7 +236,7 @@
   padding: 1.2rem;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  color: #ff5252;
+  color: var(--color-amber-100);
   border-radius: var(--radius-2xl);
   cursor: pointer;
   font-weight: 600;
@@ -333,8 +333,8 @@
 }
 
 .glass-effect {
-  background: rgba(17, 20, 32, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(165deg, color-mix(in srgb, var(--color-brick-3) 95%, transparent), color-mix(in srgb, var(--color-red-900) 95%, transparent));
+  border: 1px solid color-mix(in srgb, var(--color-gold-light) 55%, transparent);
   backdrop-filter: blur(18px);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
 }
