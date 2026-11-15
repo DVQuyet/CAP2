@@ -161,6 +161,7 @@ function buildEventFormPrompt() {
 Chỉ xử lý dữ liệu do input hiện tại cung cấp.
 Không tự lấy, suy đoán hoặc nhắc tới dữ liệu ngoài input.
 Không giải thích. Không markdown. Không dùng code fence.
+Số công việc đúng bằng requested_task_count; mô tả mỗi công việc một câu, tối đa 25 từ.
 
 Trả về JSON đúng schema:
 {
@@ -342,7 +343,8 @@ exports.generateEventFormAI = async (req, res) => {
         }
 
         const aiPayload = buildEventAiPayload(body, normalizedPrompt);
-        const raw = await callGroq(buildEventFormPrompt(), JSON.stringify(aiPayload, null, 2), 1800);
+        // 20 việc dài hơn 1800 token ở vài model: câu trả lời bị cắt thì JSON hỏng, nên yêu cầu trọn câu trả lời.
+        const raw = await callGroq(buildEventFormPrompt(), JSON.stringify(aiPayload, null, 2), 2400, undefined, { requireComplete: true });
         const parsed = raw ? parseJsonObject(raw) : null;
         if (!parsed) {
             // Không trả form giả khi AI lỗi để người dùng biết cần thử lại.

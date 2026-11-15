@@ -13,7 +13,11 @@ class FakeGroq {
     constructor() {
         this.chat = {
             completions: {
-                create: async (params) => {
+                create: async (params, requestOptions) => {
+                    if (FakeGroq.override) {
+                        calls.push(params);
+                        return FakeGroq.override(params, requestOptions);
+                    }
                     calls.push(params);
                     if (failEverything) {
                         const error = new Error('500 server error');
@@ -62,6 +66,36 @@ test('gpt-oss được gọi với reasoning_effort=low (tránh token suy luận
     assert.deepStrictEqual(calls.map((call) => call.model), ['model-da-bi-go', 'qwen/qwen3.8-27b-het', 'openai/gpt-oss-120b']);
     assert.strictEqual(calls[2].reasoning_effort, 'low');
     assert.strictEqual(calls[0].reasoning_effort, undefined);
+    delete process.env.GROQ_FALLBACK_MODELS;
+});
+
+test('model bị giới hạn tốc độ (429) hoặc trả lời bị cắt thì thử model kế tiếp, không nhớ làm model chính', async () => {
+    const clientPath = require.resolve('../src/modules/chatbot/groqClient');
+    delete require.cache[clientPath];
+    process.env.GROQ_MODEL = 'model-bi-429';
+    process.env.GROQ_FALLBACK_MODELS = 'model-bi-cat,openai/gpt-oss-20b';
+    const fresh = require('../src/modules/chatbot/groqClient');
+    const options = [];
+    FakeGroq.override = async (params, requestOptions) => {
+        options.push(requestOptions);
+        if (params.model === 'model-bi-429') {
+            const error = new Error('429 rate limit');
+            error.status = 429;
+            throw error;
+        }
+        if (params.model === 'model-bi-cat') return { choices: [{ finish_reason: 'length', message: { content: '{"cut":' } }] };
+        return { choices: [{ finish_reason: 'stop', message: { content: `ok:${params.model}` } }] };
+    };
+    calls.length = 0;
+    assert.strictEqual(await fresh.callGroq('sys', 'user', 100, undefined, { requireComplete: true }), 'ok:openai/gpt-oss-20b');
+    assert.deepStrictEqual(calls.map((call) => call.model), ['model-bi-429', 'model-bi-cat', 'openai/gpt-oss-20b']);
+    assert.strictEqual(options[0].maxRetries, 0, 'còn model dự phòng thì không để SDK tự thử lại');
+    // Không yêu cầu trọn câu trả lời: nhận phần bị cắt như trước; và model 429 vẫn được thử lại ở lần gọi sau.
+    calls.length = 0;
+    assert.strictEqual(await fresh.callGroq('sys', 'user', 100), '{"cut":');
+    assert.deepStrictEqual(calls.map((call) => call.model), ['model-bi-429', 'model-bi-cat']);
+    FakeGroq.override = null;
+    process.env.GROQ_MODEL = 'model-da-bi-go';
     delete process.env.GROQ_FALLBACK_MODELS;
 });
 
