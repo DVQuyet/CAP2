@@ -302,16 +302,16 @@ Còn mở từ đợt này:
 
 ## P0 — Chặn hoặc rủi ro trên môi trường thật (làm trước khi demo/nộp)
 
-Không làm được từ máy local vì `Backend/.env` trỏ vào DB thật; cần người có quyền Render/Aiven.
+Không làm được từ máy local vì `Backend/.env` trỏ vào DB thật; cần người có quyền Render/TiDB Cloud. Thứ tự làm tiếp của cả dự án (S1–S7) nằm ở đầu `KE_HOACH_TONG_THE.md`.
 
 | # | Việc | Ghi chú | Công sức |
 |---|---|---|---|
-| 0.1 | **Sao lưu DB Aiven** trước mọi lần deploy | Các hàm `ensure*Schema` tự `ALTER` ở request đầu | S |
-| 0.2 | Đặt key Groq trên Render (AI trả 503) | Thiếu key thì chatbot chỉ trả theo luật | S |
+| 0.1 | **Sao lưu DB (TiDB Cloud, trước đây là Aiven)** trước mọi lần deploy; secret `BACKUP_*` của `backup.yml` phải trỏ sang TiDB, chưa kiểm | Các hàm `ensure*Schema` tự `ALTER` ở request đầu | S |
+| 0.2 | Đặt key Groq và `GROQ_MODEL=openai/gpt-oss-120b` trên Render (AI trả 503) | Thiếu key thì chatbot chỉ trả theo luật; model cũ trong `.env` đã bị gỡ | S |
 | 0.3 | Chạy `npm run migrate` một lần, xem bước nào báo `✖`, rồi bật `DISABLE_RUNTIME_DDL=true` | Sau khi có bản sao lưu | S |
 | 0.4 ✅ | Thử trên MySQL thật: giao dịch mua gói (`FOR UPDATE`, `DATE_ADD`), phân trang row-value `(created_at, id) < (...)`, tài khoản bị khóa chuyển về `/account-disabled` | Test hiện chỉ chạy trên DB giả | S |
 | 0.5 | Đo p95 thật của `/api/chatbot/ask` trên Render | Free plan có cold start 30–60 giây; ghi số vào `TIEP_TUC_AI_TRA_LOI.md` | S |
-| 0.6 | Dọn dữ liệu mẫu: tên hiển thị là email, tài khoản chưa liên kết với người trên cây, hồ sơ chỉ biết năm nhưng `*_date_precision = 'exact'` | Viết script chỉ đọc để liệt kê trước, sửa sau | M |
+| 0.6 | (Kiểm lại: DB TiDB ngày 15/11 chỉ có 1 dòng họ, 119 người, 2 tài khoản, có thể không còn dữ liệu cần dọn.) Dọn dữ liệu mẫu: tên hiển thị là email, tài khoản chưa liên kết với người trên cây, hồ sơ chỉ biết năm nhưng `*_date_precision = 'exact'` | Viết script chỉ đọc để liệt kê trước, sửa sau | M |
 
 ## P1 — Chờ nhóm quyết định (không code trước khi có câu trả lời)
 
@@ -370,7 +370,7 @@ Không làm được từ máy local vì `Backend/.env` trỏ vào DB thật; c�
 
 ## Thứ tự đề xuất
 
-1. P0.1 → P0.2 → P0.4 (người có quyền Render/Aiven làm, khoảng 1 giờ).
+1. P0.1 → P0.2 → P0.4 (người có quyền Render/TiDB Cloud làm, khoảng 1 giờ).
 2. Chạy `KICH_BAN_TEST_FULL.md` để có danh sách lỗi UI thật, đưa vào 2.6.
 3. Làm song song 2.1 + 2.3 (frontend), 2.4 + 2.5 + 3.1 (backend), 2.6 + 2.7 (design), 2.2 (cây).
 4. Sau đó P3, P4 theo thời gian còn lại. P5 chỉ làm khi có số đo.

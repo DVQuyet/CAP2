@@ -10,11 +10,11 @@ GitHub → repo → Settings → Secrets and variables → Actions → New repos
 
 | Secret | Giá trị |
 |---|---|
-| `BACKUP_DB_HOST`, `BACKUP_DB_PORT`, `BACKUP_DB_NAME` | Lấy từ trang quản trị Aiven |
+| `BACKUP_DB_HOST`, `BACKUP_DB_PORT`, `BACKUP_DB_NAME` | Lấy từ trang quản trị TiDB Cloud (trước 11/2026 là Aiven); TiDB bắt buộc kết nối TLS, cần chạy thử `backup.yml` sau khi đổi |
 | `BACKUP_DB_USER`, `BACKUP_DB_PASSWORD` | Nên tạo tài khoản MySQL riêng chỉ có quyền đọc (`SELECT, SHOW VIEW, TRIGGER, LOCK TABLES, EVENT`) thay vì dùng tài khoản của ứng dụng |
 | `BACKUP_PASSPHRASE` | Chuỗi ngẫu nhiên dài. Ghi lại ở nơi an toàn ngoài GitHub: mất chuỗi này là không mở được bản sao lưu |
 
-Nếu Aiven giới hạn IP được kết nối thì phải cho phép IP của GitHub Actions (hoặc tắt giới hạn), nếu không bước dump sẽ lỗi kết nối.
+Nếu nhà cung cấp DB giới hạn IP được kết nối thì phải cho phép IP của GitHub Actions (hoặc tắt giới hạn), nếu không bước dump sẽ lỗi kết nối.
 
 ## Khôi phục vào MySQL local (thử mỗi tháng một lần)
 

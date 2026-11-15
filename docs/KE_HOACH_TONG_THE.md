@@ -4,11 +4,27 @@ Lập ngày 10/11/2026, dựa trên mã ở commit `3b550aa`. File này gom mọ
 
 **Cập nhật 14/11/2026 (commit `ad0c2a1`):** Giai đoạn 0–3 đã xong phần mã (xem `VIEC_CHUA_LAM.md`, Đợt 12–17). Việc làm tiếp đi theo thứ tự mới ở **mục J**; chi tiết từng bước ở **mục K** (giao diện cổ điển pha hiện đại) và **mục L** (AI hiểu tiếng Việt); cách giao việc cho Opus/Sonnet ở **mục M**. Luồng thứ ba thêm cùng ngày: **mục N** (vẽ và hiện cây), **mục O** (tương tác giữa mọi người trên cây), **mục P** (bầu người phụ trách công việc). Chỗ nào J–P khác các mục viết trước thì J–P đúng.
 
+**Cập nhật 15/11/2026 (sau khi soát lại kế hoạch):** người dùng chốt **không có hạn nộp**, nên không cắt mục nào, chỉ xếp lại thứ tự. Bảng dưới đây là **thứ tự làm tiếp duy nhất**; chỗ nào các bảng ở mục 0, H7, J, P9 khác bảng này thì bảng này đúng.
+
+| Thứ tự | Việc | Vì sao đứng ở đây | Mục | Công |
+|---|---|---|---|---|
+| S1 | Đổi `GROQ_MODEL` thành `openai/gpt-oss-120b` trong `Backend/.env` và trên Render | Model cũ đã bị gỡ; việc của người dùng, không cần sửa mã | G0, G-1 | 10 phút |
+| S2 | DB local chạy được: MySQL bằng Docker + `Backend/.env.local`; ghi cách dùng vào `README.md` | Ngày 15/11 mọi lần chạy thử đều phải dùng DB thật vì chưa có DB local, trái quy ước "không chạy script với DB thật" | H2.5 | 1 ngày |
+| S3 | Schema dựng lại được từ repo: `init.sql` đủ bảng, `npm run migrate` chạy cả file `.sql`, dữ liệu mẫu có gói `FREE` | DB dựng từ `init.sql` thiếu 5 bảng và không có gói nào (soát 15/11) | E7.9 (bản tối thiểu) | 1–2 ngày |
+| S4 | Bộ thử trình duyệt cho 5–6 luồng chính (đăng nhập ba vai trò, mở cây, toàn màn hình, trang quản lý gia phả của admin, AI sự kiện với LLM giả), chạy trong CI | Ba lỗi chặn người dùng ngày 15/11 không test nào bắt được | H4.1 (rút gọn) | 2–3 ngày |
+| S5 | Q-1 (kiểm lộ SĐT/email qua trợ lý), rồi Q-2 (`currentMemberId` chỉ là người của chính tài khoản) | Q-1 là rủi ro cao nhất nếu có; Q-2 phải xong trước L7–L8 | Q | 2–3 ngày |
+| S6 | Quy tắc mật khẩu tối thiểu ở mọi đường tạo/đổi mật khẩu; đổi mật khẩu hai tài khoản tạo ngày 15/11 | Tài khoản admin trên DB thật đang có mật khẩu một ký tự | H3.8 | 1 ngày |
+| S7 | Sao lưu trỏ sang TiDB: cập nhật secret `BACKUP_*`, chạy thử `backup.yml` một lần | DB đã chuyển từ Aiven sang TiDB Cloud; chưa kiểm sao lưu còn chạy | H2.1 | 0,5 ngày |
+| Tiếp | Bảng mục J từ đợt 21 (K5–K9, L7–L15); Q-3 đến Q-9 xen vào đợt 22–23 | Giữ như cũ | J, Q | theo J |
+| Sau L14 và Q | N4–N9, rồi O, rồi P | O và P là tính năng mới ngoài ba tính năng lõi nên đứng sau phần nền | N, O, P | theo P9 |
+| Sau đó | R-1 đến R-4 (tìm theo từ khóa có dấu), R-6, R-8; R-5 (embedding trong tiến trình) và R-7 là tùy chọn | R-5 nhiều khả năng không vừa 512 MB RAM của Render free | R | 2,5–3 tuần |
+| Cuối | Bảng mục 0 từ giai đoạn 7 (cổng AI chung, C, A4, D, …); chế độ tối (K10) làm sau cùng | Giữ như cũ | 0 | theo mục 0 |
+
 Những gì chưa được kiểm chứng đều ghi rõ "cần đo" hoặc "cần xem trên trình duyệt". Chưa có load test, chưa chạy `EXPLAIN` trên DB thật, chưa ai chụp màn hình cây ở 390px và 1280px.
 
 ## 0. Ràng buộc và thứ tự ưu tiên
 
-- **Không dùng gói trả phí.** Giữ Render free, Vercel Hobby, Aiven free, Groq free.
+- **Không dùng gói trả phí.** Giữ Render free, Vercel Hobby, TiDB Cloud Serverless (gói miễn phí; thay Aiven từ 11/2026 vì Aiven bỏ gói MySQL miễn phí), Groq free.
 - **Giao diện trước, tính năng sau.** Trong từng phần cũng theo thứ tự đó.
 - **Làm dần được.** Sau mỗi bước hệ thống vẫn chạy, CI vẫn xanh. Không viết lại từ đầu.
 - **Ba tính năng lõi:** cây gia phả, xuất ảnh, AI hỏi quan hệ. Quỹ, time capsule, bài đăng, thanh toán, voice chỉ sửa lỗi.
@@ -293,7 +309,7 @@ Nguyên tắc: một máy chủ, một tiến trình, một cơ sở dữ liệu
 flowchart LR
   U[Trình duyệt] -->|tải trang| V[Vercel Hobby: React build + CDN]
   U -->|REST + WebSocket| API[Render free: 1 tiến trình Express + Socket.IO]
-  API --> DB[(Aiven MySQL free)]
+  API --> DB[(TiDB Cloud Serverless, tương thích MySQL)]
   API -->|khi luật không hiểu câu| G[Groq free]
   P[Dịch vụ ping miễn phí] -->|/api/health, nhắc lịch| API
   W[Voice worker Python trên máy cá nhân] <-->|hàng đợi là bảng MySQL| DB
@@ -304,7 +320,7 @@ flowchart LR
 |---|---|---|
 | Frontend | Vercel Hobby | File tĩnh, có CDN sẵn |
 | Backend | Render free, một instance | Một tiến trình nên cache trong bộ nhớ và Socket.IO chạy đúng, không cần Redis |
-| Cơ sở dữ liệu | Aiven MySQL free | Dữ liệu gia phả nhỏ; ảnh mới là thứ chiếm chỗ (xem E2) |
+| Cơ sở dữ liệu | TiDB Cloud Serverless (miễn phí, tương thích MySQL 8.0) | Dữ liệu gia phả nhỏ; ảnh mới là thứ chiếm chỗ (xem E2) |
 | Cache | `Map` trong tiến trình, qua một module chung | Một instance thì không cần đồng bộ |
 | Hàng đợi | Bảng MySQL (voice đang làm vậy) | Lưu lượng thấp |
 | Tác vụ định kỳ | Dịch vụ ping gọi endpoint có khóa bí mật | Thay cho `setInterval` không chạy khi máy chủ ngủ |
@@ -320,7 +336,7 @@ Hạn mức của từng nhà cung cấp thay đổi theo thời gian; cần m�
 | RAM Render nhỏ (khoảng 512 MB) | Tải video 50 MB vào bộ nhớ (`server.js:124-135`, `350-360`) có thể làm sập tiến trình | Hạ giới hạn tải lên: ảnh 2 MB, video và ghi âm 15 MB; nén ảnh ở trình duyệt trước khi gửi (`ImageUpload.jsx`) |
 | Máy chủ ngủ khi không có truy cập | Lần mở đầu chậm, nhắc lịch không chạy, bộ nhớ hội thoại chatbot mất | Ping trong giờ dùng; trạng thái cần giữ thì lưu DB |
 | Dung lượng DB nhỏ | Ảnh LONGBLOB làm đầy DB | Thumbnail 96px cho avatar; ảnh bài đăng nén còn tối đa 1600px; thêm trang admin xem dung lượng theo bảng |
-| Số kết nối DB ít | Pool 10, mỗi request nhiều query tuần tự | Gộp query, cache cây theo phiên bản; kiểm tra giới hạn kết nối của Aiven trước khi tăng pool |
+| Số kết nối DB ít | Pool 10, mỗi request nhiều query tuần tự | Gộp query, cache cây theo phiên bản; kiểm tra giới hạn kết nối của TiDB Cloud trước khi tăng pool |
 | Groq giới hạn lượt gọi mỗi phút | Nhiều người hỏi cùng lúc bị từ chối | Hàng đợi tối đa 2 lượt gọi đồng thời; quá tải thì trả lời bằng luật |
 | Ổ đĩa Render không bền | File ghi âm ở `Backend/storage` mất khi deploy lại (`voice/backend/backendRoutes.js:47`) | Lưu ghi âm vào DB với giới hạn 15 MB, hoặc tắt tính năng trên bản deploy |
 
@@ -546,6 +562,8 @@ Số liệu hạn mức tra ngày 10/11/2026. Hạn mức miễn phí đổi th�
 
 Trang ngừng hỗ trợ của Groq ghi `llama-3.3-70b-versatile` và `llama-3.1-8b-instant` ngừng ngày 16/08/2026 với tài khoản miễn phí và developer. Mã đang lấy `llama-3.3-70b-versatile` làm mặc định (`chatbot/groqClient.js:12`). Nếu biến `GROQ_MODEL` trên Render chưa đổi thì mọi lời gọi AI đang lỗi và hệ thống lặng lẽ rơi về câu trả lời dựng bằng luật (lỗi chỉ ghi log một lần mỗi phút, `groqClient.js:37-47`). Chưa kiểm tra được trên Render.
 
+**Trạng thái 15/11:** `Backend/.env` vẫn đặt `llama-3.3-70b-versatile`; mã đã tự chuyển sang model dự phòng (404 thì nhớ bỏ model, 429 hoặc câu trả lời bị cắt thì thử model kế cho riêng lần gọi đó, commit `49eb420`), nên AI vẫn chạy nhưng mỗi lần khởi động tốn một lần gọi lỗi. Chưa kiểm biến trên Render.
+
 Cách xử lý không cần sửa mã: đặt `GROQ_MODEL=openai/gpt-oss-120b` trên Render, rồi thử một tính năng sinh văn bản (ví dụ viết tiểu sử).
 
 ### G1. Các tính năng AI hiện có
@@ -568,7 +586,7 @@ Giới hạn hiện có: chatbot 30 câu/phút/tài khoản, `/api/ai/*` 10 lầ
 
 | Nhà cung cấp | Hạn mức miễn phí tìm được | Nguồn | Đánh giá |
 |---|---|---|---|
-| **Groq** (đang dùng) | `openai/gpt-oss-120b`, `gpt-oss-20b`, `qwen/qwen3.8-27b`: 30 lượt/phút, 1.000 lượt/ngày, 8.000 token/phút, 200.000 token/ngày. `whisper-large-v3`: 20 lượt/phút, 2.000 lượt/ngày | Trang chính thức, nhưng chưa rõ bảng đọc được là gói Free hay Developer | **Giữ làm chính.** Nhanh, API kiểu OpenAI, có cả Whisper |
+| **Groq** (đang dùng) | `openai/gpt-oss-120b`, `gpt-oss-20b`, `qwen/qwen3.8-27b`: 30 lượt/phút, 1.000 lượt/ngày, 8.000 token/phút, 200.000 token/ngày. `whisper-large-v3`: 20 lượt/phút, 2.000 lượt/ngày | Trang chính thức, nhưng chưa rõ bảng đọc được là gói Free hay Developer | **Giữ làm chính.** Nhanh, API kiểu OpenAI, có cả Whisper. **Đo 15/11 bằng key đang dùng:** `qwen/qwen3.8-27b` chỉ được 1.000 token trả lời/phút (429 "Limit 1000" ở yêu cầu thứ hai), không phải 8.000; `gpt-oss-120b` và `gpt-oss-20b` không gặp giới hạn trong cùng phép thử |
 | **Google Gemini** (AI Studio) | Không công bố trong tài liệu; xem trong AI Studio. Bài viết bên thứ ba: Flash-Lite khoảng 15 lượt/phút, 500 lượt/ngày; Flash mới nhất khoảng 20 lượt/ngày. Hạn mức tính theo project, tạo thêm key không tăng | Tài liệu chính thức (phần quy tắc), con số từ bên thứ ba | **Dự phòng** cho câu không chứa dữ liệu cá nhân. Gói miễn phí có thể dùng dữ liệu để cải thiện sản phẩm |
 | OpenRouter | Model `:free`: 20 lượt/phút, 50 lượt/ngày khi chưa nạp tiền | Bài của OpenRouter | Dự phòng cuối, hạn mức thấp |
 | Cloudflare Workers AI | Khoảng 10.000 "neuron" mỗi ngày | Bên thứ ba, chưa xác nhận | Cân nhắc sau |
@@ -599,9 +617,9 @@ Key chỉ đặt trong biến môi trường trên Render, không đưa vào rep
 
 | # | Việc | File | Lợi ích |
 |---|---|---|---|
-| 1 | Một cổng AI chung gọi theo chuẩn OpenAI, danh sách nhà cung cấp theo thứ tự trong biến môi trường; lỗi 429 hoặc model không tồn tại thì chuyển sang nhà cung cấp kế | Mới: `platform/ai.js`; thay `groqClient.js` | Không phụ thuộc một nhà cung cấp; lần ngừng model sau không làm chết tính năng |
+| 1 | Một cổng AI chung gọi theo chuẩn OpenAI, danh sách nhà cung cấp theo thứ tự trong biến môi trường; lỗi 429 hoặc model không tồn tại thì chuyển sang nhà cung cấp kế | Mới: `platform/ai.js`; thay `groqClient.js` | Không phụ thuộc một nhà cung cấp; lần ngừng model sau không làm chết tính năng. Phần "429 thì chuyển model kế" trong cùng Groq đã làm ở `groqClient.js` (15/11); còn lại: nhiều nhà cung cấp |
 | 2 | Kiểm tra model khi khởi động và mỗi giờ; model không còn thì ghi cảnh báo rõ và hiện trên trang admin | `platform/ai.js`, trang admin | Không còn hỏng âm thầm như G0 |
-| 3 | Chọn model theo việc: model nhỏ (`gpt-oss-20b`) cho phân loại câu hỏi và đặt tiêu đề; model lớn (`gpt-oss-120b`) cho trích gia phả, tiểu sử, bài đăng | Biến `AI_MODEL_PLAN`, `AI_MODEL_WRITE` | Nhanh hơn, để dành hạn mức cho việc cần chất lượng |
+| 3 | Chọn model theo việc: model nhỏ (`gpt-oss-20b`) cho phân loại câu hỏi và đặt tiêu đề; model lớn (`gpt-oss-120b`) cho trích gia phả, tiểu sử, bài đăng | Biến `AI_MODEL_PLAN`, `AI_MODEL_WRITE` | Nhanh hơn, để dành hạn mức cho việc cần chất lượng. Không dùng qwen cho việc trả lời dài (form sự kiện 20 việc bị cắt ở 1.800 token); thứ tự dự phòng mặc định nên là `gpt-oss-120b` trước qwen |
 | 4 | Hàng đợi: tối đa 2 lời gọi đồng thời, đọc `retry-after` khi bị 429, ngắt mạch 60 giây khi lỗi liên tiếp | `platform/ai.js` | Không dội thêm yêu cầu khi đã hết lượt |
 | 5 | Sổ hạn mức theo ngày lưu trong DB: tổng token, theo tính năng, theo dòng họ. Chia sẵn: chatbot 50%, trích gia phả 25%, còn lại 25% | Bảng `ai_usage`, migration mới | Một người không dùng hết phần của cả hệ thống; số liệu không mất khi máy chủ ngủ |
 | 6 | Bớt token đầu vào: bỏ in JSON có thụt lề (`ai.controller.js:345`, `558`); lịch sử hội thoại chỉ lấy 4 lượt cuối; rút gọn lời nhắc lập kế hoạch | `ai.controller.js`, `chatbotAI.js`, `chatbotPrompts.js` | Giảm khoảng 20–30% token (cần đo) |
@@ -738,6 +756,7 @@ Số giai đoạn ở đây theo bảng "Lộ trình gộp" ở mục 0. Các m�
 | Câu hỏi | Giả định đang dùng |
 |---|---|
 | Một hay hai người làm? | Một người, theo đúng thứ tự lộ trình |
+| Có hạn nộp hay demo không? | **Đã chốt 15/11:** không có hạn; làm việc nào trước cũng được, nên theo bảng thứ tự ở đầu file |
 | Cây lớn nhất dự kiến? | 2.000 người, thiết kế chịu 5.000 |
 | Thẻ ưu tiên kiểu truyền thống (nâu, vàng) hay hiện đại (sáng, phẳng)? | **Đã chốt 14/11:** cổ điển pha hiện đại. Nền, chữ tiêu đề, khung giữ nét truyền thống; nút bấm và phần tương tác với thông tin theo kiểu hiện đại (mục K) |
 | Người dùng chính trên điện thoại hay máy tính? | Cả hai; điện thoại chủ yếu xem, máy tính sửa |
@@ -1156,7 +1175,7 @@ Mỗi bước đổi hình ảnh cây đều chụp 390×844 và 1280×800 bằn
 
 ### N10. Viết lại lõi vẽ cây (thay N2, N3, nửa đầu N5)
 
-**Trạng thái 15/11:** R1–R8 đã làm (chưa commit), kết quả vẽ trùng mã cũ; còn R9 và ba câu hỏi cuối mục. Chi tiết và chỗ khác kế hoạch: `VIEC_CHUA_LAM.md`, Đợt 19.
+**Trạng thái 15/11:** R1–R8 đã làm (commit `3c347a6`), kết quả vẽ trùng mã cũ; còn R9 và ba câu hỏi cuối mục. Chi tiết và chỗ khác kế hoạch: `VIEC_CHUA_LAM.md`, Đợt 19.
 
 #### Vì sao mã đang rườm rà (đọc ở commit `ad0c2a1`)
 
@@ -1378,7 +1397,7 @@ Soát bằng cách đọc mã Backend ở nhánh `dot-19-ve-cay-va-ai-co-dau`; c
 | Bước | Việc | File | Xong khi |
 |---|---|---|---|
 | Q-1 (1 ngày) | Kiểm mục 3: viết test duyệt mọi payload trả về của `/ask` trên bộ đo và mọi chuỗi gửi cho LLM (dùng client giả), cấm xuất hiện SĐT, email, địa chỉ của dữ liệu mẫu. Nếu lộ: đồ thị chỉ nạp cột cần cho quan hệ; thông tin liên hệ đọc riêng khi người hỏi có quyền | `tests/chatbot.contactLeak.test.js`, `relationshipEngine.js` | Test chạy trong `npm test`; 0 lần lộ |
-| Q-2 (1–2 ngày) | Sửa mục 1: `currentMemberId` hợp lệ khi bằng `req.user.person_id`, hoặc là "góc nhìn" tài khoản đã chọn và được lưu (`account_people`), hoặc người gọi là admin/manager. Sai thì dùng người của chính tài khoản | Hàm mới `resolveViewerPersonId` trong `chatbot/` dùng cho mọi endpoint; test mới | Member gửi id người khác: câu trả lời vẫn tính theo chính mình; 199/199 và 96/96 giữ nguyên |
+| Q-2 (1–2 ngày) | Sửa mục 1: `currentMemberId` chỉ hợp lệ khi bằng `req.user.person_id` hoặc là "góc nhìn" chính tài khoản đó đã chọn và được lưu (`account_people`). Admin và manager cũng không được hỏi thay người khác (chốt 15/11). Sai thì dùng người của chính tài khoản | Hàm mới `resolveViewerPersonId` trong `chatbot/` dùng cho mọi endpoint; test mới | Member, manager hay admin gửi id người khác: câu trả lời vẫn tính theo chính mình; 199/199 và 109/109 giữ nguyên |
 | Q-3 (1 ngày) | Sửa mục 2: chuyển các route bí danh ra khỏi `server.js` thành một router dùng **cùng** mảng middleware với `/api/manager/...` (làm cùng E7.6); commit di chuyển riêng, commit thêm schema riêng | `server.js`, `modules/genealogy/tree.routes.js` | Gửi dữ liệu sai qua `/api/people` nhận 400 như `/api/manager/people` |
 | Q-4 (1 ngày) | Kiểm mục 4 và 5 bằng test; sửa nếu sai | `tests/genealogy.editKeyScope.test.js`, `backendRoutes.js` | Khóa giới hạn không nối được tới người ngoài phạm vi; `process-due` chỉ admin hoặc khóa bí mật gọi được |
 | Q-5 (2 ngày) | Bảng quyền ở một chỗ: `config/permissions.js` liệt kê hành động → vai trò; hàm `can(user, action)`; thay dần các phép so `role_id`/`role_name` rải rác, mỗi module một commit | `src/config/permissions.js`, các controller | Không còn `role_id === <số>` ngoài `config/` |
@@ -1393,7 +1412,7 @@ Thứ tự: Q-1 trước tiên (rủi ro cao nhất nếu có), rồi Q-2, Q-3, 
 
 | Câu hỏi | Giả định đang dùng |
 |---|---|
-| Manager và admin có được hỏi trợ lý "với tư cách" một người khác trong họ không? | Có (để hỗ trợ người lớn tuổi); member thì không |
+| Manager và admin có được hỏi trợ lý "với tư cách" một người khác trong họ không? | **Đã chốt 15/11: Không.** Mọi vai trò chỉ hỏi với tư cách chính mình |
 | Manager có được trợ lý trả SĐT/email của người trong họ không? | Không; trợ lý không trả thông tin liên hệ cho ai (như hiện nay) |
 | Member có được dùng "AI trích gia phả từ văn bản" không? | Có, nhưng tính vào hạn mức riêng |
 
