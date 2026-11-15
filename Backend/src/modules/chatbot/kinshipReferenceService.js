@@ -1,5 +1,6 @@
 const relationshipEngine = require('./relationshipEngine');
-const { parseRelationshipExpression } = require('./relationshipQueryParser');
+const { parseRelationshipExpression, pickRelationshipReading, accentFirst } = require('./relationshipParsing');
+const { restoreAccents } = require('./text/nameMatch');
 const { resolveRelationshipExpression } = require('./relationshipExpressionResolver');
 const { plainTermToKey, splitKinshipTerms } = require('./kinshipTermService');
 const { getKinOrderContext } = require('./kinshipBirthOrder');
@@ -19,7 +20,12 @@ async function resolveKinshipReference({ clanId, currentMemberId, names = [] }) 
         .sort((a, b) => b.length - a.length);
 
     for (const name of candidates) {
-        let expression = parseRelationshipExpression(name);
+        let expression = parseRelationshipExpression(accentFirst() ? restoreAccents(name) : name);
+        // Cụm không dấu nhiều cách đọc ("ba toi" = cha / bà): các cách đọc ra người khác nhau thì trả mọi người để hỏi lại.
+        if (expression.readings) {
+            expression = await pickRelationshipReading(expression, { clanId, currentMemberId: sourcePersonId });
+            if (expression.clarification) return { status: 'ambiguous', candidates: expression.candidates, label: expression.label, expression };
+        }
         // Xưng hô ngoài bảng quan hệ cơ bản ("cụ bà tôi", "dượng tôi", "thím tôi"): tách bằng bảng từ xưng hô.
         let spoken = null;
         if (expression.needsClarification) {

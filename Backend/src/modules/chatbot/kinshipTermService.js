@@ -58,6 +58,8 @@ function splitKinshipTerms(fragment) {
 
 // Từ xưng hô không dấu (kết quả relationshipQueryParser: "em trai", "ong noi", "cha") -> key có dấu, hoặc null.
 function plainTermToKey(term) {
+    // Parser mới (text/relationshipParser.js) đã trả sẵn key có dấu.
+    if (lexicon.getKinshipTerm(term)) return term;
     const keys = PLAIN_INDEX.index.get(String(term || '').trim());
     return keys && keys.length === 1 ? keys[0] : null;
 }

@@ -836,7 +836,7 @@ Mỗi trang một commit; trước và sau đều chụp 390×844 và 1280×800,
 
 ## L. AI hiểu tiếng Việt: kế hoạch chi tiết
 
-**Trạng thái 15/11:** đã làm L1, L2, L3, L5, L9 và phần sai thanh/sót dấu của L11 (chưa commit); bộ đo có dấu 62/90 → 96/96, bộ cũ 199/199. Chưa làm L4, L6–L8, L10, L12–L17. Chi tiết: `VIEC_CHUA_LAM.md`, Đợt 19.
+**Trạng thái 15/11:** đã làm L1, L2, L3, L5, L9 và phần sai thanh/sót dấu của L11; bộ đo có dấu 62/90 → 96/96, bộ cũ 199/199 (Đợt 19). Đợt 21 làm thêm L4 và L6: parser quan hệ mới nằm sau cờ `CHATBOT_ACCENT_FIRST`, mặc định tắt; cờ bật thì bộ có dấu 109/109, cờ tắt 99/109. Chưa làm L7–L8, L10, L12–L17; L14 chờ người dùng duyệt danh sách khác biệt. Chi tiết: `VIEC_CHUA_LAM.md`, Đợt 19 và Đợt 21.
 
 Thay cho bảng bước ở mục B (B1–B7 ứng với L1–L9, L14). Phần "Ba mức so khớp", "Luồng xử lý", "Tìm tên người", "Rủi ro" ở mục B vẫn đúng.
 

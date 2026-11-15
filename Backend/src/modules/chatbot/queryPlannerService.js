@@ -1,7 +1,7 @@
 const intentParser = require('./intentParserService');
 const { planChatbotQuery } = require('./chatbotAI');
 const { validatePlannerOutput } = require('./plannerValidatorService');
-const { parseRelationshipExpression } = require('./relationshipQueryParser');
+const { parseRelationshipExpression } = require('./relationshipParsing');
 const db = require('../../config/db');
 
 const DETERMINISTIC_RULE_INTENTS = new Set([
@@ -97,6 +97,7 @@ async function planQuery({
                     ast: { base: 'me', steps: expression.chain },
                     expression: expression.chain,
                     terms: expression.terms,
+                    readings: expression.readings,
                 },
                 planner: plannerMetadata('rule_expression', true),
             };

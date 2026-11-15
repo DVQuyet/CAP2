@@ -18,8 +18,9 @@ Không dùng dịch vụ trả phí.
 
 ## Tiếng Việt trong chatbot
 - Không bỏ dấu trước khi phân tích câu. Dùng chatbot/text/vietnameseText (toNFC, ba mức so khớp), text/lexicon,
-  text/repair (sửa sai thanh, sót dấu), text/nameMatch (chấm tên theo dấu). text/pattern chưa có (bước L4).
-  Parser cũ còn bỏ dấu, không thêm chỗ bỏ dấu mới.
+  text/repair (sửa sai thanh, sót dấu), text/nameMatch (chấm tên theo dấu), text/pattern (mẫu câu viết có dấu).
+  Parser cũ còn bỏ dấu, không thêm chỗ bỏ dấu mới. Parser quan hệ gọi qua relationshipParsing.js
+  (cờ CHATBOT_ACCENT_FIRST chọn text/relationshipParser; mặc định tắt tới bước L14).
 - Từ mới thêm vào text/lexicon bằng chữ có dấu; không viết tay dạng không dấu (bảng không dấu và bảng mơ hồ tự sinh).
 - Câu không dấu mà nhiều cách hiểu thì hỏi lại, không đoán.
 - LLM chỉ lập kế hoạch hoặc trả lời kiến thức phong tục; quan hệ họ hàng do graph trả lời.

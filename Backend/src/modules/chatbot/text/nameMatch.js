@@ -2,12 +2,29 @@
 // thì ba tên đó ngang nhau và nơi gọi phải hỏi lại.
 const { AsyncLocalStorage } = require('async_hooks');
 const { hasVietnameseMarks, tokenize, stripTone } = require('./vietnameseText');
+const { repairAccents } = require('./repair');
 
 // Câu đang được trả lời có dấu hay không. Đặt một lần cho cả lượt hỏi (runWithQuestion).
 const questionContext = new AsyncLocalStorage();
 
 function runWithQuestion(message, fn) {
-    return questionContext.run({ accented: hasVietnameseMarks(message) }, fn);
+    return questionContext.run({ accented: hasVietnameseMarks(message), message: String(message || '') }, fn);
+}
+
+// Các parser ý định cũ cắt cụm từ trên câu đã bỏ dấu ("ba toi" từ câu "Chồng của bà tôi là ai?").
+// Tìm lại đúng cụm đó trong câu người dùng gõ để trả về chữ có dấu ("bà tôi"). Không tìm thấy, hoặc cụm xuất hiện
+// nhiều lần với dấu khác nhau, thì giữ nguyên.
+function restoreAccents(fragment) {
+    const store = questionContext.getStore();
+    const wanted = tokenize(fragment);
+    if (!store?.accented || !wanted.length || wanted.some((token) => token.hasMark)) return fragment;
+    const typed = tokenize(repairAccents(store.message).text);
+    const found = new Set();
+    for (let start = 0; start + wanted.length <= typed.length; start += 1) {
+        const run = typed.slice(start, start + wanted.length);
+        if (run.every((token, index) => token.plain === wanted[index].plain)) found.add(run.map((token) => token.lower).join(' '));
+    }
+    return found.size === 1 ? [...found][0] : fragment;
 }
 
 // Tên trong câu có được coi là "gõ có dấu" không. Ngoài một lượt hỏi (test, công cụ) thì xét theo chính tên đó.
@@ -48,4 +65,4 @@ function applyAccentScore(baseScore, queryName, candidateNames) {
     return baseScore * LEVEL_FACTOR[match.level];
 }
 
-module.exports = { runWithQuestion, typedWithAccents, accentLevel, applyAccentScore };
+module.exports = { runWithQuestion, typedWithAccents, restoreAccents, accentLevel, applyAccentScore };

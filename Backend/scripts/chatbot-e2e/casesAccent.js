@@ -13,6 +13,7 @@ const TONES = 'Sai thanh';
 const PARTIAL = 'Thiếu dấu vài chữ';
 const PLAIN = 'Không dấu mơ hồ';
 const ACCESS = 'Quyền hạn';
+const CHAINS = 'Chuỗi quan hệ';
 const CONTACT = /0900000008|nam@example.test|Số 8 đường Mẫu/;
 
 const rows = [
@@ -117,6 +118,22 @@ const rows = [
     [PLAIN, 'cau toi la ai', /Phạm Văn Cường/, '', ASK_AGAIN],
     [PLAIN, 'cu toi la ai', /Trần Văn Cả[\s\S]*Lê Thị Lễ/, '', ASK_AGAIN],
     [PLAIN, 'tran van nam sinh nam nao', /Trần Văn Nam sinh ngày 09\/09\/1963/, 'họ tên đầy đủ chỉ khớp một người', /Trần Thị Năm|Trần Văn Cả|khớp/],
+
+    // ---- Chuỗi quan hệ ("<xưng hô> của <người>"): parser cũ bỏ dấu cả câu nên bà -> ba -> cha, cố -> cô.
+    // Nhóm này chỉ đạt khi bật CHATBOT_ACCENT_FIRST=1 (text/relationshipParser.js); cờ tắt thì sai là đúng dự kiến.
+    [CHAINS, 'Bà của Trần Văn Khôi là ai?', /Nguyễn Thị Hoa/, 'bà, không phải ba (cha)', /Trần Văn Nam/],
+    [CHAINS, 'Ba của Trần Văn Khôi là ai?', /Trần Văn Nam/, 'ba trong câu có dấu = cha', /Nguyễn Thị Hoa/],
+    [CHAINS, 'Cố của Trần Văn Khôi là ai?', /Trần Văn Cả[\s\S]*Lê Thị Lễ/, 'cố = cụ', /Trần Thị Út/],
+    [CHAINS, 'Cô của Trần Văn Khôi là ai?', /Trần Thị Út/, '', /Trần Văn Cả|Lê Thị Lễ/],
+    [CHAINS, 'Con của bà tôi gồm những ai?', /Trần Văn Nam[\s\S]*Phạm Văn Cường/, 'con của bà nội và bà ngoại', /Trần Thị Quý/],
+    [CHAINS, 'Con của ba tôi gồm những ai?', /Trần Thị Quý/, '', /Trần Văn Nam|Phạm Văn Cường/],
+    [CHAINS, 'Cháu của bà tôi gồm những ai?', /Trần Văn Khôi[\s\S]*Trần Thị Quý/, '', /cháu của cha/],
+    [CHAINS, 'Chồng của bà tôi là ai?', /Nguyễn Thị Hoa[\s\S]*Vũ Thị Sáu/, 'hai bà: hỏi lại bà nào', /Trần Văn Hùng/],
+    [CHAINS, 'Con của cố tôi là ai?', /Trần Văn Cả[\s\S]*Lê Thị Lễ/, 'hai cụ: hỏi lại cụ nào', /Trần Thị Út/],
+    [CHAINS, 'Chắt của Trần Văn Cả là ai?', /Trần Văn Minh[\s\S]*Trần Văn Khôi/, 'từ mới có trong bảng từ', /ngoài phạm vi/],
+    [CHAINS, 'ba cua tran van khoi la ai', /Bạn muốn hỏi[\s\S]*Trần Văn Nam[\s\S]*Nguyễn Thị Hoa/, 'không dấu: cha hay bà', /Theo dữ liệu gia phả hiện tại/],
+    [CHAINS, 'co cua tran van khoi la ai', /Bạn muốn hỏi[\s\S]*Trần Văn Cả[\s\S]*Trần Thị Út/, 'không dấu: cố hay cô', /Theo dữ liệu gia phả hiện tại/],
+    [CHAINS, 'con cua ba toi la ai', /Trần Văn Hùng[\s\S]*Nguyễn Thị Hoa[\s\S]*Vũ Thị Sáu/, 'không dấu: hỏi lại, không tự chọn cha', /con của Trần Văn Hùng gồm/],
 
     // ---- Người hỏi là thành viên thường: cách hỏi nào cũng không lộ số điện thoại, email, địa chỉ của người khác.
     [ACCESS, 'Số điện thoại của chú Nam là gì?', /không cung cấp số điện thoại hay email/, '', CONTACT],

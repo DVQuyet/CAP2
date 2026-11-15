@@ -29,6 +29,15 @@ jobs:
           node scripts/chatbot-e2e-check.js --suite accent --min 96
           --min-group "Cặp chỉ khác dấu=20" --min-group "Tên trùng khi bỏ dấu=15"
           --min-group "Dấu rời và kiểu đặt dấu=10" --min-group "Không dấu mơ hồ=15" --min-group "Quyền hạn=6"
+      # L6: cùng hai bộ đo với parser quan hệ đọc chữ có dấu (CHATBOT_ACCENT_FIRST=1). Chỉ in số, chưa chặn,
+      # cho tới khi danh sách khác biệt (scripts/chatbot-parser-diff.js) được duyệt và cờ bật mặc định (L14).
+      - name: Bộ đo với CHATBOT_ACCENT_FIRST=1 (chưa chặn)
+        continue-on-error: true
+        env:
+          CHATBOT_ACCENT_FIRST: '1'
+        run: |
+          node scripts/chatbot-e2e-check.js --min 199 --min-conversation 7
+          node scripts/chatbot-e2e-check.js --suite accent --min 109 --min-group "Chuỗi quan hệ=13"
 
   frontend:
     runs-on: ubuntu-latest

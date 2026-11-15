@@ -9,7 +9,7 @@ const relationshipExplanationAI = require('./relationshipExplanationAI');
 const relationshipSuggestionService = require('./relationshipSuggestionService');
 const chatbotAI = require('./chatbotAI');
 const { sanitizeMessage, looksLikePromptInjection } = require('./chatbotSecurity');
-const { parseRelationshipExpression, parseNamedRelationshipExpression } = require('./relationshipQueryParser');
+const { parseRelationshipExpression, parseNamedRelationshipExpression, pickRelationshipReading } = require('./relationshipParsing');
 const { resolveKinshipReference } = require('./kinshipReferenceService');
 const { parseEventCommand } = require('./eventCommandService');
 const { parseEventEditCommand } = require('./eventEditCommandService');
@@ -1586,17 +1586,19 @@ async function buildEventCommandPayload(message, ctx) {
 // "<quan hệ> của <tên người>": tìm người theo tên rồi đi theo chuỗi quan hệ từ người đó.
 // Trả null để luồng cũ xử lý khi câu không có dạng này hoặc không tìm thấy tên.
 async function handleNamedRelationshipExpression({ clanId, message, forced = null }) {
-    const ast = parseNamedRelationshipExpression(message);
-    if (!ast) return null;
+    const named = parseNamedRelationshipExpression(message);
+    if (!named) return null;
     let search;
-    if (forced?.personId && (!forced.subject || normalizeName(forced.subject) === normalizeName(ast.personName))) {
+    if (forced?.personId && (!forced.subject || normalizeName(forced.subject) === normalizeName(named.personName))) {
         const chosen = await relationshipEngine.getPerson(forced.personId, { clanId });
-        search = chosen ? { status: 'resolved', person: chosen, candidates: [chosen] } : await memberSearch.resolvePerson({ clanId, names: [ast.personName] });
+        search = chosen ? { status: 'resolved', person: chosen, candidates: [chosen] } : await memberSearch.resolvePerson({ clanId, names: [named.personName] });
     } else {
-        search = await memberSearch.resolvePerson({ clanId, names: [ast.personName] });
+        search = await memberSearch.resolvePerson({ clanId, names: [named.personName] });
     }
     if (search.status === 'not_found') return null;
-    // Câu gõ không dấu ("bo cua …"): hiện từ xưng hô có dấu ("cha của …").
+    // Câu không dấu: nhiều cách đọc ("ba cua …" = cha / bà) thì tra gia phả rồi mới chọn; nhãn hiện có dấu ("cha của …").
+    const ast = search.person ? await pickRelationshipReading(named, { clanId, currentMemberId: search.person.id, owner: relationshipEngine.personName(search.person) }) : named;
+    if (ast.clarification) return ast.clarification;
     const accentedKeys = chainKeysFromTerms(ast.terms);
     const label = (accentedKeys && !hasVietnameseDiacritics(ast.originalTerms)
         ? accentedKeys.slice().reverse().join(' của ')
@@ -1617,10 +1619,7 @@ async function handleNamedRelationshipExpression({ clanId, message, forced = nul
     }
     const base = search.person;
     const graph = await relationshipEngine.loadClanGraph(clanId);
-    const structuralKeys = chainKeysFromTerms(ast.terms);
-    const structural = structuralKeys
-        ? await relationshipEngine.resolveKinshipChain(base.id, structuralKeys, { clanId })
-        : null;
+    const structural = accentedKeys ? await relationshipEngine.resolveKinshipChain(base.id, accentedKeys, { clanId }) : null;
     const resolved = structural?.ok
         ? { ok: true, candidatePersonIds: structural.ids }
         : resolveRelationshipExpression({ ...ast, base: 'me' }, { sourcePersonId: base.id, graph });
@@ -1650,8 +1649,8 @@ async function handleNamedRelationshipExpression({ clanId, message, forced = nul
 }
 
 async function handleRelationshipExpression({ clanId, currentMemberId, message }) {
-    const ast = parseRelationshipExpression(message);
-    if (ast.needsClarification) return null;
+    const ast = await pickRelationshipReading(parseRelationshipExpression(message), { clanId, currentMemberId });
+    if (ast.clarification || ast.needsClarification) return ast.clarification || null;
     const structuralKeys = currentMemberId ? chainKeysFromTerms(ast.terms) : null;
     if (structuralKeys) {
         const structural = await answerViewerKinshipChain({ clanId, currentMemberId, keys: structuralKeys, intent: 'relationship_expression' });
@@ -1659,11 +1658,7 @@ async function handleRelationshipExpression({ clanId, currentMemberId, message }
     }
 
     const graph = await relationshipEngine.loadClanGraph(clanId);
-    const resolved = resolveRelationshipExpression(ast, {
-        sourcePersonId: currentMemberId,
-        graph,
-        peopleById: graph.people,
-    });
+    const resolved = resolveRelationshipExpression(ast, { sourcePersonId: currentMemberId, graph, peopleById: graph.people });
 
     if (!resolved.ok) {
         return {
@@ -1726,7 +1721,9 @@ async function handlePlannedRelationshipExpression({ clanId, currentMemberId, me
     const graph = await relationshipEngine.loadClanGraph(clanId);
     const responseIntent = parsed.intent || 'relationship_query';
     const base = parsed?.ast?.base || 'me';
-    const structuralKeys = base === 'me' && currentMemberId ? chainKeysFromTerms(parsed.terms) : null;
+    const picked = base === 'me' ? await pickRelationshipReading(parsed, { clanId, currentMemberId }) : parsed;
+    if (picked.clarification) return { ...picked.clarification, intent: responseIntent, planner };
+    const structuralKeys = base === 'me' && currentMemberId ? chainKeysFromTerms(picked.terms) : null;
     if (structuralKeys) {
         const structural = await answerViewerKinshipChain({ clanId, currentMemberId, keys: structuralKeys, intent: responseIntent, planner });
         if (structural) return structural;
