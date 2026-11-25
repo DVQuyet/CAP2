@@ -2356,6 +2356,7 @@
       "background": "Màu nền",
       "textSize": "Cỡ chữ",
       "theme": "Giao diện",
+      "layoutMenu": "Bố cục",
       "rootPerson": "Xem từ một người",
       "groupView": "Hiển thị",
       "groupBranches": "Nhánh",
@@ -2447,10 +2448,15 @@
       }
     },
     "viewMode": {
-      "full": "Toàn bộ cây",
-      "setRoot": "Làm gốc",
-      "rootPlaceholder": "Nhập tên để chọn",
-      "rootLabel": "Gốc: {{name}}"
+      "title": "Xem cây",
+      "wholeClan": "Cả dòng họ",
+      "wholeClanHint": "Hiện mọi người trên cây",
+      "byPerson": "Theo một người",
+      "byPersonHint": "Tổ tiên, con cháu và vợ chồng của người đó",
+      "byPersonChip": "Theo: {{name}}",
+      "backToWhole": "Về cả dòng họ",
+      "noMatch": "Không có ai khớp. Thử gõ ít chữ hơn.",
+      "rootPlaceholder": "Gõ tên hoặc đời để lọc"
     },
     "card": {
       "toolbar": "Thao tác với thẻ",

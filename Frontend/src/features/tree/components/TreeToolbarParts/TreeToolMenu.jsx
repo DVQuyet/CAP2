@@ -30,7 +30,8 @@ export function TreeToolList({ groups, onPicked }) {
   );
 }
 
-export default function TreeToolMenu({ groups, styleControls }) {
+// label: nút có chữ (vd "Bố cục"); không có label thì là nút ⋯ chỉ có icon.
+export default function TreeToolMenu({ groups, styleControls, label, icon = "more_horiz", align = "right" }) {
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -41,17 +42,16 @@ export default function TreeToolMenu({ groups, styleControls }) {
     <div className="fte2-menuWrap" ref={ref}>
       <button
         type="button"
-        className={`fte2-iconBtn ${open ? "is-active" : ""}`}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        title={t("tree.toolbar.more")}
-        aria-label={t("tree.toolbar.more")}
+        className={`${label ? "fte2-chipBtn" : "fte2-iconBtn"} ${open ? "is-active" : ""}`}
+        aria-haspopup="menu" aria-expanded={open} title={label || t("tree.toolbar.more")} aria-label={label || t("tree.toolbar.more")}
         onClick={() => setOpen((value) => !value)}
       >
-        <span className="material-symbols-outlined" aria-hidden="true">more_horiz</span>
+        <span className="material-symbols-outlined" aria-hidden="true">{icon}</span>
+        {label ? <span className="fte2-chipText">{label}</span> : null}
+        {label ? <span className="material-symbols-outlined tvp-caret" aria-hidden="true">expand_more</span> : null}
       </button>
       {open ? (
-        <div className="fte2-menu" role="menu">
+        <div className={`fte2-menu ${align === "left" ? "fte2-menu--left" : ""}`} role="menu">
           <TreeToolList groups={groups} onPicked={close} />
           {styleControls ? (
             <section className="fte2-toolGroup fte2-toolGroup--style">

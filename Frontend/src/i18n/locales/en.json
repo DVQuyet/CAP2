@@ -2356,6 +2356,7 @@
       "background": "Background",
       "textSize": "Text size",
       "theme": "Theme",
+      "layoutMenu": "Layout",
       "rootPerson": "View from a person",
       "groupView": "Display",
       "groupBranches": "Branches",
@@ -2447,10 +2448,15 @@
       }
     },
     "viewMode": {
-      "full": "Full Tree",
-      "setRoot": "Set as Root",
-      "rootPlaceholder": "Enter name to select",
-      "rootLabel": "Root: {{name}}"
+      "title": "Tree view",
+      "wholeClan": "Whole family",
+      "wholeClanHint": "Show everyone on the tree",
+      "byPerson": "Around one person",
+      "byPersonHint": "Their ancestors, descendants and spouses",
+      "byPersonChip": "Around: {{name}}",
+      "backToWhole": "Back to whole family",
+      "noMatch": "No one matches. Try fewer letters.",
+      "rootPlaceholder": "Type a name or generation to filter"
     },
     "card": {
       "toolbar": "Card actions",
