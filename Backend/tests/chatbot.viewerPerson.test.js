@@ -3,28 +3,14 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret';
 // Q-2: trợ lý chỉ hỏi với tư cách người của chính tài khoản, kể cả manager và admin.
 const test = require('node:test');
 const assert = require('assert');
-const { createMockDb, mockRes } = require('./helpers.mockDb');
+const { mockRes } = require('./helpers.mockDb');
+const { CLAN, OTHER_CLAN, mockAccount } = require('./helpers.viewerPersonDb');
 const { resolveViewerPersonId } = require('../src/modules/chatbot/viewerPerson');
 const relationshipEngine = require('../src/modules/chatbot/relationshipEngine');
 const suggestionService = require('../src/modules/chatbot/chatbotSuggestionService');
 const chatbot = require('../src/modules/chatbot/chatbotController');
 
-const CLAN = 13;
-const OTHER_PERSON = 77; // người khác trong cùng dòng họ
-
-// linked: các person_id tài khoản đã gắn trong account_people của dòng họ CLAN.
-const mockAccount = ({ linked = [], missingTable = false } = {}) => createMockDb(async (sql, params) => {
-    if (/FROM account_people/.test(sql)) {
-        if (missingTable) {
-            const error = new Error('no table');
-            error.code = 'ER_NO_SUCH_TABLE';
-            throw error;
-        }
-        return [params[1] === CLAN ? linked.map((id) => ({ person_id: id })) : []];
-    }
-    if (/FROM account_clans/.test(sql)) return [[{ 1: 1 }]];
-    return [[]];
-});
+const OTHER_PERSON = 76;
 
 const userOf = (role, personId) => ({
     id: { member: 9, manager: 8, admin: 1 }[role],
@@ -33,34 +19,44 @@ const userOf = (role, personId) => ({
     person_id: personId,
 });
 
-test('nhận currentMemberId khi đúng hồ sơ của tài khoản', async () => {
+test('chỉ dùng hồ sơ chính trong đúng dòng họ cho cả id yêu cầu và dự phòng', async () => {
     mockAccount();
-    assert.strictEqual(await resolveViewerPersonId({ user: userOf('member', 21) }, CLAN, 21), 21);
-    assert.strictEqual(await resolveViewerPersonId({ user: userOf('member', 21) }, CLAN, '21'), 21);
+    assert.strictEqual(await resolveViewerPersonId(9, 21, CLAN, '21'), 21);
+    assert.strictEqual(await resolveViewerPersonId(9, 21, CLAN, OTHER_PERSON), 21);
+    assert.strictEqual(await resolveViewerPersonId(9, 31, CLAN, 31), 18);
+    assert.strictEqual(await resolveViewerPersonId(9, 31, CLAN, null), 18);
 });
 
-test('nhận người tài khoản đã chọn làm góc nhìn (account_people) trong cùng dòng họ', async () => {
-    mockAccount({ linked: [18] });
-    assert.strictEqual(await resolveViewerPersonId({ user: userOf('member', null) }, CLAN, 18), 18);
-    assert.strictEqual(await resolveViewerPersonId({ user: userOf('member', 21) }, CLAN, 18), 18);
+test('chỉ nhận account_people self của đúng tài khoản, đúng dòng họ', async () => {
+    mockAccount();
+    assert.strictEqual(await resolveViewerPersonId(9, 21, CLAN, 18), 18);
+    assert.strictEqual(await resolveViewerPersonId(8, null, CLAN, 18), 77);
+    assert.strictEqual(await resolveViewerPersonId(9, null, OTHER_CLAN, 18), 31);
+    for (const requestedId of [77, 31, 32, 40, 41, 42, null]) {
+        assert.strictEqual(await resolveViewerPersonId(9, null, CLAN, requestedId), 18);
+    }
 });
 
-test('id người khác bị bỏ qua, dùng người của chính tài khoản', async () => {
-    mockAccount({ linked: [18] });
-    assert.strictEqual(await resolveViewerPersonId({ user: userOf('member', 21) }, CLAN, OTHER_PERSON), 21);
-    assert.strictEqual(await resolveViewerPersonId({ user: userOf('member', null) }, CLAN, OTHER_PERSON), 18);
-    assert.strictEqual(await resolveViewerPersonId({ user: userOf('member', null) }, CLAN, null), 18);
-});
-
-test('góc nhìn ở dòng họ khác không được dùng cho dòng họ này', async () => {
-    mockAccount({ linked: [18] });
-    assert.strictEqual(await resolveViewerPersonId({ user: userOf('member', null) }, 99, 18), null);
-});
-
-test('chưa có bảng account_people thì chỉ nhận hồ sơ chính của tài khoản', async () => {
+test('thiếu account_people vẫn có thể dùng hồ sơ chính hoặc thành viên đang hoạt động', async () => {
     mockAccount({ missingTable: true });
-    assert.strictEqual(await resolveViewerPersonId({ user: userOf('member', 21) }, CLAN, OTHER_PERSON), 21);
-    assert.strictEqual(await resolveViewerPersonId({ user: userOf('member', null) }, CLAN, OTHER_PERSON), null);
+    assert.strictEqual(await resolveViewerPersonId(9, 21, CLAN, OTHER_PERSON), 21);
+    assert.strictEqual(await resolveViewerPersonId(9, null, CLAN, OTHER_PERSON), 22);
+    assert.strictEqual(await resolveViewerPersonId(8, null, CLAN, 22), null);
+    assert.strictEqual(await resolveViewerPersonId(9, null, OTHER_CLAN, 22), null);
+    assert.strictEqual(await resolveViewerPersonId(8, null, OTHER_CLAN, 22), 25);
+});
+
+test('/relationship/:id dùng liên kết thành viên khi tài khoản chỉ có account_clans trong dòng họ', async (t) => {
+    mockAccount();
+    const findRelationship = t.mock.method(relationshipEngine, 'findRelationship', async () => ({ found: false }));
+    const res = mockRes();
+    await chatbot.getRelationshipById({
+        user: userOf('manager', null),
+        params: { id: '31' },
+        query: { clanId: String(OTHER_CLAN), currentMemberId: '31' },
+    }, res);
+    assert.deepStrictEqual(findRelationship.mock.calls.map(({ arguments: args }) => args), [[25, 31, { clanId: OTHER_CLAN }]]);
+    assert.strictEqual(res.statusCode, 404);
 });
 
 for (const role of ['member', 'manager', 'admin']) {

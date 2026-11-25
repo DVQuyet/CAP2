@@ -2101,8 +2101,8 @@ exports.ask = withViewer(withKinOrder(async (req, res) => {
         // Đã bỏ lời xã giao và mở rộng viết tắt (ck/vk, a/c/e, bn...); rawMessage giữ nguyên để lưu lịch sử.
         let message = normalizeTyping(rawMessage) || rawMessage;
         const clanId = toPositiveId(body.clanId || body.clan_id || req.user?.clan_id);
-        const currentMemberId = await resolveViewerPersonId(req, clanId, body.currentMemberId || body.current_member_id);
         const accountId = toPositiveId(req.user?.id || req.user?.account_id);
+        const currentMemberId = await resolveViewerPersonId(accountId, req.user?.person_id, clanId, body.currentMemberId || body.current_member_id);
 
         if (!message) {
             return res.status(400).json({ success: false, message: 'message là bắt buộc' });
@@ -2473,7 +2473,7 @@ exports.feedback = async (req, res) => {
             accountId,
             body: req.body,
             // Kiểm tra quyền hiện tại với dòng họ (cùng logic với ask/history).
-            canAccessClan: async (clanId) => canAccessClan(req, clanId, await resolveViewerPersonId(req, clanId, req.query?.currentMemberId || req.query?.current_member_id)),
+            canAccessClan: async (clanId) => canAccessClan(req, clanId, await resolveViewerPersonId(accountId, req.user?.person_id, clanId, req.query?.currentMemberId || req.query?.current_member_id)),
         });
         return res.status(result.status).json(result.body);
     } catch (error) {
@@ -2488,8 +2488,8 @@ exports.history = async (req, res) => {
             return res.json({ success: true, messages: [], pagination: { limit: 50, offset: 0 } });
         }
         const clanId = toPositiveId(req.query.clanId || req.query.clan_id || req.user?.clan_id);
-        const currentMemberId = await resolveViewerPersonId(req, clanId, req.query.currentMemberId || req.query.current_member_id);
         const accountId = toPositiveId(req.user?.id || req.user?.account_id);
+        const currentMemberId = await resolveViewerPersonId(accountId, req.user?.person_id, clanId, req.query.currentMemberId || req.query.current_member_id);
         const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 100);
         const offset = Math.max(Number(req.query.offset || 0), 0);
         if (!clanId || !currentMemberId) return res.status(400).json({ success: false, message: 'clanId và currentMemberId là bắt buộc' });
@@ -2566,8 +2566,8 @@ exports.history = async (req, res) => {
 exports.clearHistory = async (req, res) => {
     try {
         const clanId = toPositiveId(req.query.clanId || req.query.clan_id || req.user?.clan_id);
-        const currentMemberId = await resolveViewerPersonId(req, clanId, req.query.currentMemberId || req.query.current_member_id);
         const accountId = toPositiveId(req.user?.id || req.user?.account_id);
+        const currentMemberId = await resolveViewerPersonId(accountId, req.user?.person_id, clanId, req.query.currentMemberId || req.query.current_member_id);
         if (!accountId) return res.status(401).json({ success: false, message: 'Chưa đăng nhập' });
         if (!clanId) return res.status(400).json({ success: false, message: 'clanId là bắt buộc' });
         if (!(await canAccessClan(req, clanId, currentMemberId))) {
@@ -2607,7 +2607,7 @@ exports.clearHistory = async (req, res) => {
 exports.suggestions = async (req, res) => {
     try {
         const clanId = toPositiveId(req.query.clanId || req.query.clan_id || req.user?.clan_id);
-        const currentMemberId = await resolveViewerPersonId(req, clanId, req.query.currentMemberId || req.query.current_member_id);
+        const currentMemberId = await resolveViewerPersonId(req.user?.id || req.user?.account_id, req.user?.person_id, clanId, req.query.currentMemberId || req.query.current_member_id);
         // Chỉ dùng tên người thật khi người hỏi có quyền với dòng họ; ngược lại trả các câu chung.
         const allowed = clanId && await canAccessClan(req, clanId, currentMemberId);
         const suggestions = await suggestionService.getSuggestions({
@@ -2624,7 +2624,7 @@ exports.suggestions = async (req, res) => {
 exports.getRelationshipById = withViewer(async (req, res) => {
     try {
         const clanId = toPositiveId(req.query.clanId || req.query.clan_id || req.user?.clan_id);
-        const currentMemberId = await resolveViewerPersonId(req, clanId, req.query.currentMemberId || req.query.current_member_id);
+        const currentMemberId = await resolveViewerPersonId(req.user?.id || req.user?.account_id, req.user?.person_id, clanId, req.query.currentMemberId || req.query.current_member_id);
         const targetId = toPositiveId(req.params.id);
         if (!clanId || !currentMemberId || !targetId) {
             return res.status(400).json({ success: false, message: 'clanId, currentMemberId và id là bắt buộc' });

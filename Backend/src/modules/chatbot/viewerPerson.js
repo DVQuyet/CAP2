@@ -1,34 +1,34 @@
-// Q-2: trợ lý chỉ trả lời "với tư cách" người của chính tài khoản đang đăng nhập.
-// currentMemberId do client gửi chỉ được nhận khi là:
-//   - req.user.person_id (hồ sơ đã gắn chính thức với tài khoản), hoặc
-//   - một người tài khoản này đã chọn làm "góc nhìn" và được lưu ở account_people (cùng dòng họ).
-// Mọi vai trò (member, manager, admin) đều theo quy tắc này (chốt 15/11/2026).
-// Id không hợp lệ thì bỏ qua và dùng người của chính tài khoản; không báo lỗi để client cũ vẫn chạy.
 const { toPositiveId, queryOptional } = require('./chatbotUtils');
 
-async function loadLinkedPersonIds(accountId, clanId) {
-    if (!accountId || !clanId) return [];
-    const rows = await queryOptional(
-        `
-        SELECT person_id
-        FROM account_people
-        WHERE account_id = ? AND clan_id = ?
-        ORDER BY is_default DESC, id DESC
-        `,
-        [accountId, clanId]
-    );
-    return rows.map((row) => toPositiveId(row.person_id)).filter(Boolean);
-}
+// Q-2: mọi vai trò chỉ hỏi từ hồ sơ của chính mình trong dòng họ đang xem.
+async function resolveViewerPersonId(accountId, personId, clanId, requestedId) {
+    accountId = toPositiveId(accountId);
+    clanId = toPositiveId(clanId);
+    if (!accountId || !clanId) return null;
 
-async function resolveViewerPersonId(req, clanId, requestedId) {
-    const accountId = toPositiveId(req.user?.id || req.user?.account_id);
-    const ownPersonId = toPositiveId(req.user?.person_id);
+    const primaryId = toPositiveId(personId);
     const requested = toPositiveId(requestedId);
-    if (requested && requested === ownPersonId) return requested;
+    const [primary] = primaryId ? await queryOptional(
+        'SELECT id FROM people WHERE id = ? AND clan_id = ? LIMIT 1', [primaryId, clanId]
+    ) : [];
+    if (primary && (!requested || requested === primaryId)) return primaryId;
 
-    const linked = await loadLinkedPersonIds(accountId, toPositiveId(clanId));
+    const selfLinks = await queryOptional(`
+        SELECT ap.person_id FROM account_people ap
+        JOIN people p ON p.id = ap.person_id AND p.clan_id = ap.clan_id
+        WHERE ap.account_id = ? AND ap.clan_id = ? AND ap.role = 'self'
+        ORDER BY ap.is_default DESC, ap.id DESC
+    `, [accountId, clanId]);
+    const linked = selfLinks.map((row) => toPositiveId(row.person_id)).filter(Boolean);
     if (requested && linked.includes(requested)) return requested;
-    return ownPersonId || linked[0] || null;
+    if (primary || linked.length) return primary ? primaryId : linked[0];
+
+    const [membership] = await queryOptional(`
+        SELECT ac.person_id FROM account_clans ac
+        JOIN people p ON p.id = ac.person_id AND p.clan_id = ac.clan_id
+        WHERE ac.account_id = ? AND ac.clan_id = ? AND ac.status = 'active' LIMIT 1
+    `, [accountId, clanId]);
+    return toPositiveId(membership?.person_id);
 }
 
 module.exports = { resolveViewerPersonId };
