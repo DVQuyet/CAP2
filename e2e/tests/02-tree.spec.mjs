@@ -26,6 +26,30 @@ test("nút toàn màn hình không bị khung chat AI che", async ({ page }) => 
   await page.getByRole("button", { name: "Toàn màn hình", exact: true }).click({ timeout: 5_000 });
 });
 
+// Điện thoại 390x844 có khung chat: nút (+) và cụm zoom gọn từng cùng ở bottom 84px, (+) z-index 40 che nút Toàn màn hình.
+test.describe("điện thoại 390x844", () => {
+  test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+
+  test("nút toàn màn hình không bị nút (+) hay khung chat che", async ({ page }) => {
+    const errors = trackPageErrors(page);
+    await loginAs(page, "member");
+    await page.goto("/user/family-tree");
+    await expect(page.locator(".fte-cardName").first()).toBeAttached();
+    const fullscreen = page.getByRole("button", { name: "Toàn màn hình", exact: true });
+    await expect(fullscreen).toBeVisible();
+    const fab = page.locator(".fte2-speedDial");
+    if (await fab.count()) {
+      const [zoomBox, fabBox] = await Promise.all([page.locator(".fte2-zoom").boundingBox(), fab.boundingBox()]);
+      const overlaps = zoomBox && fabBox && zoomBox.y < fabBox.y + fabBox.height && fabBox.y < zoomBox.y + zoomBox.height
+        && zoomBox.x < fabBox.x + fabBox.width && fabBox.x < zoomBox.x + zoomBox.width;
+      expect(overlaps, `zoom ${JSON.stringify(zoomBox)} đè nút (+) ${JSON.stringify(fabBox)}`).toBeFalsy();
+    }
+    await fullscreen.click({ timeout: 5_000 });
+    await expect(page.locator(".fte-shell.is-fullscreen")).toBeVisible();
+    await expectPageHealthy(page, errors);
+  });
+});
+
 test("toàn màn hình phủ kín cửa sổ, thoát được, trang không bị khoá", async ({ page }) => {
   const errors = trackPageErrors(page);
   await loginAs(page, "member");

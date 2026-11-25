@@ -15,4 +15,4 @@ async function queryPeopleWithHistory(buildSql, params, prefix = '') {
     }
 }
 
-module.exports = { queryPeopleWithHistory };
+module.exports = { queryPeopleWithHistory, HISTORY_COLUMNS };

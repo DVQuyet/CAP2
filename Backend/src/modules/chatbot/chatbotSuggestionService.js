@@ -1,7 +1,8 @@
 // Gợi ý câu hỏi cho trợ lý. Ưu tiên tên người thật trong dòng họ của người dùng để bấm là hỏi được ngay;
 // không có dữ liệu thì chỉ trả các câu chung, không bao giờ trả chuỗi giữ chỗ kiểu "[Tên người]".
-const db = require('../../config/db');
-const { ARCHIVED_MEMBER_JOIN_SQL } = require('../manager/common.service');
+// Tên lấy từ đồ thị của relationshipEngine (đã bỏ hồ sơ lưu trữ và ẩn quan hệ nhạy cảm theo vai trò trong runWithViewer),
+// nên thành viên thường không thấy tên người chỉ quản lý được xem.
+const relationshipEngine = require('./relationshipEngine');
 
 const toPositiveId = (value) => {
     const number = Number(value);
@@ -16,54 +17,27 @@ const GENERIC_SUGGESTIONS = [
     { text: 'Nhắc tôi họp họ ngày mai lúc 8h', intent_hint: 'create_event_draft' },
 ];
 
-// Người đầu tiên (đời nhỏ nhất) thỏa điều kiện, bỏ qua hồ sơ đã lưu trữ và tên trống.
-async function pickPerson(clanId, joinSql, whereSql) {
-    const [rows] = await db.query(
-        `
-        SELECT p.id, p.display_name
-        FROM people p
-        LEFT JOIN accounts a ON a.person_id = p.id
-        ${ARCHIVED_MEMBER_JOIN_SQL}
-        ${joinSql}
-        WHERE p.clan_id = ?
-          AND am.id IS NULL
-          AND TRIM(COALESCE(p.display_name, '')) <> ''
-          ${whereSql}
-        ORDER BY (p.generation IS NULL), p.generation ASC, p.id ASC
-        LIMIT 1
-        `,
-        [clanId]
-    );
-    return rows[0] || null;
-}
+// Người trong đồ thị người xem được thấy, tên không trống, đời nhỏ nhất trước (đời trống xếp cuối), rồi theo id.
+const visiblePeople = (graph) => [...graph.people.values()]
+    .filter((person) => String(person.display_name || '').trim())
+    .sort((a, b) => (a.generation == null) - (b.generation == null) || (a.generation || 0) - (b.generation || 0) || a.id - b.id);
 
-async function loadPersonalizedSuggestions(clanId, currentMemberId) {
+function loadPersonalizedSuggestions(graph, currentMemberId) {
     const suggestions = [];
+    const people = visiblePeople(graph);
+    const edgesOf = (id) => graph.adjacency.get(Number(id)) || [];
+    // Cạnh 'father'/'mother' đi từ con tới cha/mẹ: ai có cạnh 'father' là có cha, ai là đích của cạnh đó là có con.
+    const parentIds = new Set();
+    people.forEach((person) => edgesOf(person.id)
+        .filter((edge) => edge.type === 'father' || edge.type === 'mother')
+        .forEach((edge) => parentIds.add(Number(edge.to))));
 
-    const withFather = await pickPerson(
-        clanId,
-        'JOIN children c ON c.person_id = p.id JOIN families f ON f.id = c.family_id AND f.father_id IS NOT NULL',
-        ''
-    );
-    if (withFather) {
-        suggestions.push({ text: `Ai là cha của ${withFather.display_name}?`, intent_hint: 'find_parents' });
-    }
-
-    const withChildren = await pickPerson(
-        clanId,
-        'JOIN families f ON (f.father_id = p.id OR f.mother_id = p.id) JOIN children c ON c.family_id = f.id',
-        ''
-    );
-    if (withChildren) {
-        suggestions.push({ text: `Con của ${withChildren.display_name} là ai?`, intent_hint: 'list_children' });
-    }
-
+    const withFather = people.find((person) => edgesOf(person.id).some((edge) => edge.type === 'father' && graph.people.has(edge.to)));
+    if (withFather) suggestions.push({ text: `Ai là cha của ${withFather.display_name}?`, intent_hint: 'find_parents' });
+    const withChildren = people.find((person) => parentIds.has(Number(person.id)));
+    if (withChildren) suggestions.push({ text: `Con của ${withChildren.display_name} là ai?`, intent_hint: 'list_children' });
     // "tôi" chỉ có nghĩa khi tài khoản đã gắn với một người trong cây.
-    if (currentMemberId) {
-        const [rows] = await db.query('SELECT 1 FROM people WHERE id = ? AND clan_id = ? LIMIT 1', [currentMemberId, clanId]);
-        if (rows.length) suggestions.push({ text: 'Ông nội tôi là ai?', intent_hint: 'find_relationship' });
-    }
-
+    if (currentMemberId && graph.people.has(currentMemberId)) suggestions.push({ text: 'Ông nội tôi là ai?', intent_hint: 'find_relationship' });
     return suggestions;
 }
 
@@ -73,13 +47,14 @@ const isoOf = (date) => `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pa
 
 // Gợi ý chủ động: giỗ/sinh nhật gần nhất trong 14 ngày tới. Dùng lại buildYearlyPersonEvents của lịch (không tự tính âm lịch).
 // Câu gợi ý là một lệnh nhắc lịch; khi gửi đi sẽ đi qua eventCommandService, chỉ tạo bản nháp, không tự lưu.
-async function loadUpcomingEventSuggestion(clanId, now = new Date()) {
+async function loadUpcomingEventSuggestion(clanId, graph, now = new Date()) {
     const { buildYearlyPersonEvents } = require('../calendar/calendar.controller');
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const end = new Date(today.getFullYear(), today.getMonth(), today.getDate() + PROACTIVE_WINDOW_DAYS);
     const items = await buildYearlyPersonEvents({ clanId, from: isoOf(today), to: isoOf(end) });
     const next = (items || [])
         .filter((item) => item && (item.type === 'death_anniversary' || item.type === 'birthday') && item.date)
+        .filter((item) => graph.people.has(Number(item.person_id)))
         .sort((a, b) => String(a.date).localeCompare(String(b.date)))[0];
     if (!next) return null;
 
@@ -97,21 +72,26 @@ async function loadUpcomingEventSuggestion(clanId, now = new Date()) {
 }
 
 // clanId đã được kiểm tra quyền ở controller; không có clanId thì chỉ trả các câu chung.
-async function getSuggestions({ clanId, currentMemberId, now } = {}) {
+// tier ('all' | 'public') mặc định theo runWithViewer của yêu cầu (controller bọc withViewer).
+async function getSuggestions({ clanId, currentMemberId, now, tier } = {}) {
     const normalizedClanId = toPositiveId(clanId);
     let personalized = [];
+    let graph = null;
     if (normalizedClanId) {
         try {
-            const upcoming = await loadUpcomingEventSuggestion(normalizedClanId, now);
+            graph = await relationshipEngine.loadClanGraph(normalizedClanId, tier ? { tier } : {});
+        } catch (error) {
+            console.error('chatbot suggestions graph error:', error.message);
+        }
+    }
+    if (graph) {
+        try {
+            const upcoming = await loadUpcomingEventSuggestion(normalizedClanId, graph, now);
             if (upcoming) personalized.push(upcoming);
         } catch (error) {
             console.error('chatbot upcoming suggestion error:', error.message);
         }
-        try {
-            personalized = personalized.concat(await loadPersonalizedSuggestions(normalizedClanId, toPositiveId(currentMemberId)));
-        } catch (error) {
-            console.error('chatbot personalized suggestions error:', error.message);
-        }
+        personalized = personalized.concat(loadPersonalizedSuggestions(graph, toPositiveId(currentMemberId)));
     }
 
     return [...personalized, ...GENERIC_SUGGESTIONS].map((item, index) => ({
