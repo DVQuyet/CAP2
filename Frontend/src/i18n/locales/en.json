@@ -691,7 +691,7 @@
   "shared": {
     "passwordPolicy": {
       "too_short": "Password must be at least {{min}} characters.",
-      "too_long": "Password must be at most {{max}} characters.",
+      "too_long": "Password is too long (max {{max}} bytes; accented letters count as 2–3).",
       "needs_letter_and_digit": "Password must contain both letters and numbers.",
       "same_as_identity": "Password must not match your email or username."
     },

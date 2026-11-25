@@ -3,7 +3,7 @@
 // Chỉ dùng khi tạo/đổi/đặt lại mật khẩu, không dùng ở form đăng nhập.
 
 export const PASSWORD_MIN_LENGTH = 8;
-export const PASSWORD_MAX_LENGTH = 128;
+export const PASSWORD_MAX_BYTES = 72; // bcrypt chỉ dùng 72 byte đầu
 const LETTER_RE = /\p{L}/u;
 const DIGIT_RE = /\p{Nd}/u;
 const REASONS = new Set(["too_short", "too_long", "needs_letter_and_digit", "same_as_identity"]);
@@ -28,7 +28,7 @@ export function passwordPolicyIssue(password, identity = {}) {
   const text = typeof password === "string" ? password : String(password ?? "");
   const length = [...text].length;
   if (length < PASSWORD_MIN_LENGTH) return "too_short";
-  if (length > PASSWORD_MAX_LENGTH) return "too_long";
+  if (new TextEncoder().encode(text).length > PASSWORD_MAX_BYTES) return "too_long";
   if (!LETTER_RE.test(text) || !DIGIT_RE.test(text)) return "needs_letter_and_digit";
   if (identityValues(identity).has(fold(text))) return "same_as_identity";
   return null;
@@ -38,7 +38,7 @@ export function passwordPolicyIssue(password, identity = {}) {
 export function passwordPolicyMessage(t, password, identity) {
   const issue = passwordPolicyIssue(password, identity);
   if (!issue) return null;
-  return t(`shared.passwordPolicy.${issue}`, { min: PASSWORD_MIN_LENGTH, max: PASSWORD_MAX_LENGTH });
+  return t(`shared.passwordPolicy.${issue}`, { min: PASSWORD_MIN_LENGTH, max: PASSWORD_MAX_BYTES });
 }
 
 // Lỗi API WEAK_PASSWORD (backend gửi code + reason) -> câu đã dịch; lỗi khác -> null.
@@ -47,11 +47,6 @@ export function weakPasswordErrorMessage(t, error) {
   const code = error?.code || error?.data?.code;
   const reason = error?.reason || error?.data?.reason;
   if (code !== "WEAK_PASSWORD" || !REASONS.has(reason)) return null;
-  return t(`shared.passwordPolicy.${reason}`, { min: PASSWORD_MIN_LENGTH, max: PASSWORD_MAX_LENGTH });
+  return t(`shared.passwordPolicy.${reason}`, { min: PASSWORD_MIN_LENGTH, max: PASSWORD_MAX_BYTES });
 }
 
-// Cho form xử lý lỗi bằng try/catch: ném Error mang câu đã dịch nếu mật khẩu không đạt.
-export function assertPasswordPolicy(t, password, identity) {
-  const message = passwordPolicyMessage(t, password, identity);
-  if (message) throw new Error(message);
-}

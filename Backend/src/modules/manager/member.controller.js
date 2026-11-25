@@ -728,6 +728,8 @@ const updateMemberByManager = async(req, res) => {
 
         const body = req.body;
         const has = (k) => Object.prototype.hasOwnProperty.call(body, k);
+        const newPassword = has('new_password') && String(body.new_password || '').trim() !== '' ? String(body.new_password) : null; // không trim
+        if (newPassword !== null && rejectWeakPassword(res, newPassword, { email: has('email') ? body.email : full.email })) return; // trước mọi lệnh ghi
 
         if (has('email')) {
             const em = String(body.email || '').trim().toLowerCase();
@@ -784,10 +786,8 @@ const updateMemberByManager = async(req, res) => {
             }
         }
 
-        if (has('new_password') && String(body.new_password || '').trim() !== '') {
-            const np = String(body.new_password); // Không trim: đăng nhập so nguyên văn.
-            if (rejectWeakPassword(res, np, { email: has('email') ? body.email : full.email })) return;
-            const hashed = await bcrypt.hash(np, 10);
+        if (newPassword !== null) {
+            const hashed = await bcrypt.hash(newPassword, 10);
             // Đặt mật khẩu hộ: thu hồi token cũ của người đó và ngắt realtime, như khi họ tự đổi.
             await updatePasswordHash(db, targetAccountId, hashed);
             invalidateAccountCache(targetAccountId);

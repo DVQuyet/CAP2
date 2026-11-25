@@ -2,8 +2,6 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret';
 
 const test = require('node:test');
 const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
 const express = require('express');
 const {
     PASSWORD_MIN_LENGTH,
@@ -11,6 +9,7 @@ const {
     weakPasswordBody,
     rejectWeakPassword,
     assertStrongPassword,
+    errorResponseBody,
 } = require('../src/shared/validation/passwordPolicy');
 const schemas = require('../src/shared/validation/schemas');
 const authRoutes = require('../src/modules/auth/auth.routes');
@@ -26,13 +25,29 @@ test('quy tắc: tối thiểu 8 ký tự, có chữ và số', () => {
     assert.strictEqual(passwordPolicyIssue('12345678'), 'needs_letter_and_digit');
     assert.strictEqual(passwordPolicyIssue('!!!!!!!!'), 'needs_letter_and_digit');
     assert.strictEqual(passwordPolicyIssue('abcd1234'), null);
-    assert.strictEqual(passwordPolicyIssue('x'.repeat(128) + '1'), 'too_long');
+    assert.strictEqual(passwordPolicyIssue('x'.repeat(71) + '1'), null);
+    assert.strictEqual(passwordPolicyIssue('x'.repeat(72) + '1'), 'too_long');
     assert.strictEqual(passwordPolicyIssue(undefined), 'too_short');
 });
 
 test('quy tắc: chữ có dấu tính là chữ, đếm theo ký tự chứ không theo byte', () => {
     assert.strictEqual(passwordPolicyIssue('mậtkhẩu1'), null);
     assert.strictEqual(passwordPolicyIssue('mậtkh1'), 'too_short');
+});
+
+test('quy tắc: tối đa 72 byte UTF-8 vì bcrypt bỏ phần sau; chữ có dấu tính 2–3 byte', () => {
+    assert.strictEqual(passwordPolicyIssue('ậ'.repeat(23) + 'a1'), null); // 69 + 2 = 71 byte
+    assert.strictEqual(passwordPolicyIssue('ậ'.repeat(24) + '1'), 'too_long'); // 73 byte, chỉ 25 ký tự
+});
+
+test('errorResponseBody: giữ code/reason của lỗi có status, lỗi nội bộ trả câu cố định', () => {
+    let thrown;
+    try { assertStrongPassword('abcdefgh'); } catch (e) { thrown = e; }
+    assert.deepStrictEqual(errorResponseBody(thrown, 'Lỗi'), {
+        success: false, message: thrown.message, code: 'WEAK_PASSWORD', reason: 'needs_letter_and_digit',
+    });
+    const dbError = Object.assign(new Error("Table 'x' doesn't exist"), { code: 'ER_NO_SUCH_TABLE' });
+    assert.deepStrictEqual(errorResponseBody(dbError, 'Lỗi tạo tài khoản'), { success: false, message: 'Lỗi tạo tài khoản' });
 });
 
 test('quy tắc: không trùng email, phần trước @ hay tên đăng nhập (không phân biệt hoa thường)', () => {
@@ -115,6 +130,13 @@ test('Đăng nhập không áp quy tắc: mật khẩu cũ một ký tự vẫn 
     assert.strictEqual(response.status, 200);
 });
 
+test('Schema đếm mật khẩu theo ký tự (code point) như quy tắc; mật khẩu cũ dài tới 128 vẫn đăng nhập được', async () => {
+    const emoji = '😀'.repeat(100); // 100 ký tự nhưng 200 đơn vị UTF-16: trước đây bị chặn 400
+    assert.strictEqual((await post('/login-schema', { email: 'a@example.com', password: emoji })).status, 200);
+    assert.strictEqual((await post('/login-schema', { email: 'a@example.com', password: 'x'.repeat(128) })).status, 200);
+    assert.strictEqual((await post('/login-schema', { email: 'a@example.com', password: 'x'.repeat(129) })).status, 400);
+});
+
 test('PUT /member/password: mật khẩu mới yếu bị 400 trước DB', async () => {
     const res = fakeRes();
     await memberController.changePassword({ user: { id: 1 }, body: { current_password: 'cu', new_password: 'abcdefgh' } }, res);
@@ -122,29 +144,7 @@ test('PUT /member/password: mật khẩu mới yếu bị 400 trước DB', asyn
     assert.strictEqual(res.body.code, 'WEAK_PASSWORD');
 });
 
-// ---- Chốt chặn: mọi chỗ ghi mật khẩu người dùng nhập phải gọi quy tắc ----
-test('mọi controller tạo tài khoản hoặc đổi mật khẩu đều dùng passwordPolicy, không còn kiểm "< 6"', () => {
-    const modules = path.join(__dirname, '..', 'src', 'modules');
-    const files = [];
-    const walk = (dir) => {
-        for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-            const full = path.join(dir, entry.name);
-            if (entry.isDirectory()) walk(full);
-            else if (entry.name.endsWith('.js')) files.push(full);
-        }
-    };
-    walk(modules);
-    // socialAuth.service băm mật khẩu ngẫu nhiên 64 ký tự do máy sinh, không phải mật khẩu người dùng nhập.
-    const exempt = new Set(['socialAuth.service.js']);
-    const writers = files.filter((f) => !exempt.has(path.basename(f)))
-        .filter((f) => /INSERT INTO accounts|updatePasswordHash\(/.test(fs.readFileSync(f, 'utf8')));
-    assert.ok(writers.length >= 7, `chỉ thấy ${writers.length} file`);
-    for (const file of writers) {
-        const text = fs.readFileSync(file, 'utf8');
-        assert.match(text, /shared\/validation\/passwordPolicy/, path.basename(file));
-        assert.doesNotMatch(text, /(password|pwd|np|next)\.length\s*<\s*6/i, path.basename(file));
-    }
-});
+// Mỗi đường ghi mật khẩu được kiểm bằng handler thật ở tests/passwordWritePaths.test.js.
 
 // ---- Không trim mật khẩu mới: đăng nhập so nguyên văn (bcrypt.compare(String(password), hash)) ----
 test('tự đổi mật khẩu: dấu cách đầu/cuối được giữ, đăng nhập đúng nguyên văn', async () => {
@@ -169,10 +169,4 @@ test('tự đổi mật khẩu: dấu cách đầu/cuối được giữ, đăng
     } finally {
         db.query = original;
     }
-});
-
-test('manager đặt hộ và tự đổi không còn trim() giá trị mật khẩu mới', () => {
-    const read = (p) => fs.readFileSync(path.join(__dirname, '..', 'src', 'modules', p), 'utf8');
-    assert.doesNotMatch(read('manager/member.controller.js'), /const np = String\(body\.new_password\)\.trim\(\)/);
-    assert.doesNotMatch(read('member/member.controller.js'), /String\(new_password \?\? ""\)\.trim\(\)/);
 });

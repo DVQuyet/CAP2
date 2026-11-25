@@ -397,7 +397,7 @@ exports.resetPasswordWithCode = async (req, res) => {
     try {
         await ensurePasswordResetTokensTable();
         const [tokRows] = await db.query(
-            `SELECT prt.account_id, prt.code_hash, prt.expires_at, prt.failed_attempts
+            `SELECT prt.account_id, prt.code_hash, prt.expires_at, prt.failed_attempts, a.email AS account_email
              FROM password_reset_tokens prt
              JOIN accounts a ON prt.account_id = a.id
              WHERE LOWER(TRIM(a.email)) = ? LIMIT 1`,
@@ -426,6 +426,7 @@ exports.resetPasswordWithCode = async (req, res) => {
             });
         }
 
+        if (rejectWeakPassword(res, newPassword, { email: token.account_email })) return; // email của tài khoản gắn mã
         const hashed = await bcrypt.hash(newPassword, 10);
         await updatePasswordHash(db, token.account_id, hashed);
         invalidateAccountCache(token.account_id);

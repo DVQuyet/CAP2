@@ -3,7 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import "./login.css";
 import { requestPasswordResetAPI, resetPasswordWithCodeAPI } from "../../../api/authService";
-import { PASSWORD_MIN_LENGTH, passwordPolicyMessage, weakPasswordErrorMessage } from "../../../shared/utils/passwordPolicy";
+import { PASSWORD_MIN_LENGTH, passwordPolicyMessage } from "../../../shared/utils/passwordPolicy";
+import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 
 const ForgotPassword = () => {
   const { t } = useTranslation();
@@ -29,7 +30,7 @@ const ForgotPassword = () => {
         setStep(2);
       }
     } catch (err) {
-      setError(err.message || t("auth.forgotPassword.sendFailed"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setLoading(false);
     }
@@ -54,7 +55,7 @@ const ForgotPassword = () => {
         setTimeout(() => navigate("/login", { replace: true }), 1200);
       }
     } catch (err) {
-      setError(weakPasswordErrorMessage(t, err) || err.message || t("auth.forgotPassword.resetFailed"));
+      setError(friendlyErrorMessage(err, t)); // gồm cả lỗi WEAK_PASSWORD qua i18n
     } finally {
       setLoading(false);
     }

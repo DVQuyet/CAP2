@@ -691,7 +691,7 @@
   "shared": {
     "passwordPolicy": {
       "too_short": "Mật khẩu cần tối thiểu {{min}} ký tự.",
-      "too_long": "Mật khẩu tối đa {{max}} ký tự.",
+      "too_long": "Mật khẩu quá dài (tối đa {{max}} byte; chữ có dấu tính 2–3 byte).",
       "needs_letter_and_digit": "Mật khẩu cần có cả chữ và số.",
       "same_as_identity": "Mật khẩu không được trùng với email hoặc tên đăng nhập."
     },

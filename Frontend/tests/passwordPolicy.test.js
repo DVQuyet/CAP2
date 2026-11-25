@@ -6,7 +6,6 @@ import {
   PASSWORD_MIN_LENGTH,
   passwordPolicyIssue,
   passwordPolicyMessage,
-  assertPasswordPolicy,
 } from "../src/shared/utils/passwordPolicy.js";
 
 const require = createRequire(import.meta.url);
@@ -24,10 +23,26 @@ const CASES = [
   ["abcd1234", {}],
   ["mậtkhẩu1", {}],
   ["x".repeat(130) + "1", {}],
+  ["x".repeat(71) + "1", {}],
+  ["x".repeat(72) + "1", {}],
+  ["ậ".repeat(23) + "a1", {}],
+  ["ậ".repeat(24) + "1", {}],
   ["NguyenVan1990", { email: "nguyenvan1990@example.com" }],
   ["nguyenvan1990@example.com", { email: "NguyenVan1990@Example.com" }],
   ["nguyenvan1990x", { email: "nguyenvan1990@example.com" }],
 ];
+
+test("quy tắc giao diện: tối đa 72 byte UTF-8 (giới hạn của bcrypt)", () => {
+  assert.equal(passwordPolicyIssue("x".repeat(71) + "1"), null);
+  assert.equal(passwordPolicyIssue("x".repeat(72) + "1"), "too_long");
+  assert.equal(passwordPolicyIssue("ậ".repeat(24) + "1"), "too_long"); // 25 ký tự nhưng 73 byte
+});
+
+test("compactPayload trim chuỗi thường nhưng giữ nguyên văn mật khẩu", async () => {
+  const { compactPayload } = await import("../src/features/manager/utils/managerData.js");
+  const out = compactPayload({ email: " a@b.vn ", password: " ab12cd34 ", new_password: "  moi12345 ", count: 3 });
+  assert.deepEqual(out, { email: "a@b.vn", password: " ab12cd34 ", new_password: "  moi12345 ", count: 3 });
+});
 
 test("quy tắc giao diện: 8 ký tự, có chữ và số, không trùng email", () => {
   assert.equal(PASSWORD_MIN_LENGTH, 8);
@@ -47,8 +62,7 @@ test("giao diện và backend cho cùng kết quả trên cùng dữ liệu", ()
 test("câu lỗi lấy từ i18n; vi.json và en.json có đủ khóa cho mọi lý do", () => {
   assert.equal(passwordPolicyMessage(t, "abcd1234"), null);
   assert.equal(passwordPolicyMessage(t, "abc"), "shared.passwordPolicy.too_short|8");
-  assert.throws(() => assertPasswordPolicy(t, "abcdefgh"), /shared\.passwordPolicy\.needs_letter_and_digit/);
-  assert.doesNotThrow(() => assertPasswordPolicy(t, "abcd1234"));
+  assert.equal(passwordPolicyMessage(t, "abcdefgh"), "shared.passwordPolicy.needs_letter_and_digit|8");
   for (const reason of ["too_short", "too_long", "needs_letter_and_digit", "same_as_identity"]) {
     assert.ok(vi.shared.passwordPolicy[reason], `vi ${reason}`);
     assert.ok(en.shared.passwordPolicy[reason], `en ${reason}`);

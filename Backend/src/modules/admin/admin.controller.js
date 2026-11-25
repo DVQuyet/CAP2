@@ -1,6 +1,6 @@
 const { invalidateAccountCache } = require('../../middleware/authMiddleware');
 const { updatePasswordHash } = require('../../shared/utils/passwordChange');
-const { rejectWeakPassword, assertStrongPassword } = require('../../shared/validation/passwordPolicy');
+const { rejectWeakPassword, assertStrongPassword, errorResponseBody } = require('../../shared/validation/passwordPolicy');
 const { disconnectAccountSockets } = require('../../shared/utils/realtime');
 const db = require("../../config/db");
 const bcrypt = require("bcryptjs");
@@ -414,7 +414,7 @@ exports.createClan = async (req, res) => {
     if (e.code === "ER_DUP_ENTRY") {
       return res.status(400).json({ success: false, message: "Email Manager đã tồn tại trong hệ thống" });
     }
-    return res.status(e.status || 500).json({ success: false, message: e.message || "Lỗi tạo dòng họ" });
+    return res.status(e.status || 500).json(errorResponseBody(e, "Lỗi tạo dòng họ"));
   } finally {
     connection.release();
   }
@@ -1127,7 +1127,7 @@ exports.createAccount = async (req, res) => {
     try { await connection.rollback(); } catch (_) {}
     console.error("createAccount:", e);
     if (e.code === "ER_DUP_ENTRY") return res.status(400).json({ success: false, message: "Email đã tồn tại" });
-    return res.status(e.status || 500).json({ success: false, message: e.message || "Lỗi tạo tài khoản" });
+    return res.status(e.status || 500).json(errorResponseBody(e, "Lỗi tạo tài khoản"));
   } finally {
     connection.release();
   }
@@ -1214,7 +1214,7 @@ exports.updateAccountAccess = async (req, res) => {
     try { await connection.rollback(); } catch (_) {}
     console.error("updateAccountAccess:", e);
     if (e.code === "ER_DUP_ENTRY") return res.status(400).json({ success: false, message: "Email đã tồn tại" });
-    return res.status(e.status || 500).json({ success: false, message: e.message || "Lỗi cập nhật tài khoản" });
+    return res.status(e.status || 500).json(errorResponseBody(e, "Lỗi cập nhật tài khoản"));
   } finally {
     connection.release();
   }
