@@ -2,6 +2,7 @@
 // Chạy `npx vite --port 5199` rồi mở /dev/layout-preview.html
 // Tham số: ?role=admin|manager|member, ?path=<đường dẫn đang chọn>, ?menu=1 mở menu (trên màn hẹp), ?lang=en.
 // Không được import từ app chính nên không nằm trong bản build.
+/* eslint-disable react-refresh/only-export-components -- trang dev là điểm vào, không export gì nên fast refresh không áp dụng */
 import React, { useEffect } from "react";
 import ReactDOM from "react-dom/client";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
