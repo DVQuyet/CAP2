@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import "./login.css";
 import { requestPasswordResetAPI, resetPasswordWithCodeAPI } from "../../../api/authService";
+import { PASSWORD_MIN_LENGTH, passwordPolicyMessage } from "../../../shared/utils/passwordPolicy";
+import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
 
 const ForgotPassword = () => {
   const { t } = useTranslation();
@@ -28,7 +30,7 @@ const ForgotPassword = () => {
         setStep(2);
       }
     } catch (err) {
-      setError(err.message || t("auth.forgotPassword.sendFailed"));
+      setError(friendlyErrorMessage(err, t));
     } finally {
       setLoading(false);
     }
@@ -38,14 +40,9 @@ const ForgotPassword = () => {
     e.preventDefault();
     setError("");
     setInfo("");
-    if (newPassword !== confirmPassword) {
-      setError(t("auth.forgotPassword.passwordMismatch"));
-      return;
-    }
-    if (newPassword.length < 6) {
-      setError(t("auth.forgotPassword.passwordMin"));
-      return;
-    }
+    if (newPassword !== confirmPassword) { setError(t("auth.forgotPassword.passwordMismatch")); return; }
+    const weakPassword = passwordPolicyMessage(t, newPassword, { email });
+    if (weakPassword) { setError(weakPassword); return; }
     setLoading(true);
     try {
       const res = await resetPasswordWithCodeAPI({
@@ -58,7 +55,7 @@ const ForgotPassword = () => {
         setTimeout(() => navigate("/login", { replace: true }), 1200);
       }
     } catch (err) {
-      setError(err.message || t("auth.forgotPassword.resetFailed"));
+      setError(friendlyErrorMessage(err, t)); // gồm cả lỗi WEAK_PASSWORD qua i18n
     } finally {
       setLoading(false);
     }
@@ -144,7 +141,7 @@ const ForgotPassword = () => {
                 placeholder={t("auth.forgotPassword.newPassword")}
                 value={newPassword}
                 required
-                minLength={6}
+                minLength={PASSWORD_MIN_LENGTH}
                 autoComplete="new-password"
                 onChange={(e) => setNewPassword(e.target.value)}
               />
@@ -155,7 +152,7 @@ const ForgotPassword = () => {
                 placeholder={t("auth.forgotPassword.confirmPassword")}
                 value={confirmPassword}
                 required
-                minLength={6}
+                minLength={PASSWORD_MIN_LENGTH}
                 autoComplete="new-password"
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />

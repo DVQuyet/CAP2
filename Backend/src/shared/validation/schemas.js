@@ -6,8 +6,8 @@ const EMAIL_MAX = 254;
 const PASSWORD_MAX = 128;
 const AMOUNT_MAX = 1000000000000; // 1 nghìn tỷ, đủ rộng cho quỹ dòng họ
 
-// Mật khẩu so sánh nguyên văn nên không trim.
-const password = (o) => v.string({ trim: false, max: PASSWORD_MAX, label: 'mật khẩu', ...o });
+// Mật khẩu so sánh nguyên văn nên không trim; đếm code point như passwordPolicy (chỉ nới so với UTF-16, mật khẩu cũ vẫn qua).
+const password = (o) => v.string({ trim: false, codePoints: true, max: PASSWORD_MAX, label: 'mật khẩu', ...o });
 const name = (label, max = 100) => v.string({ max, label });
 // Id tuỳ chọn: chấp nhận null/''/0 (nghĩa là "không có") để không phá client cũ.
 const nullableId = (label) => v.int({ min: 0, label });

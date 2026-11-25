@@ -6,6 +6,21 @@ Các file đó giữ làm nhật ký; việc mới thêm vào đây.
 
 Ký hiệu công sức: **S** < 2 giờ · **M** nửa ngày–1 ngày · **L** nhiều ngày. Cột "Ai làm" gợi ý chia việc khi chạy nhiều agent.
 
+## S6 quy tắc mật khẩu (25/11/2026, nhánh `s6-quy-tac-mat-khau`)
+
+Đã làm: quy tắc chung ở `Backend/src/shared/validation/passwordPolicy.js`: tối thiểu 8 ký tự, có chữ và số, không trùng email
+(cả phần trước @) hay tên đăng nhập. Lỗi trả `code: 'WEAK_PASSWORD'` kèm `reason`. Áp ở đăng ký, đăng ký dòng họ kèm Manager,
+admin tạo dòng họ kèm Manager, admin tạo Manager, admin tạo tài khoản, admin đặt mật khẩu hộ, manager tạo thành viên kèm tài khoản,
+manager đặt mật khẩu hộ, tạo tài khoản khi thêm/sửa người trên cây, nhận lời mời, đặt lại mật khẩu bằng mã, tự đổi mật khẩu.
+Đăng nhập không áp quy tắc, nên tài khoản cũ có mật khẩu yếu vẫn vào được. Giao diện có bản sao quy tắc ở `Frontend/src/shared/utils/passwordPolicy.js`
+(lỗi đi qua `shared.passwordPolicy.*`), có test so khớp hai bản. Mọi form đặt mật khẩu đều kiểm phía giao diện, kể cả form tài khoản
+của admin và manager, form trên cây. Lỗi `WEAK_PASSWORD` từ API hiện qua i18n: `friendlyErrorMessage` đọc `reason` ở `error.data`,
+`api/authService` và `api/adminService` nay gắn thân phản hồi vào lỗi. Tự đổi mật khẩu và manager đặt hộ không còn `trim()` mật khẩu mới.
+Còn mở:
+
+- **Việc của anh Quyết:** tự đổi mật khẩu hai tài khoản tạo ngày 15/11 trên DB thật. **S**
+- Chưa thử trên trình duyệt.
+
 ## Đợt 25/11/2026 – Giao diện thanh công cụ cây và chọn cây đang xem
 
 - Thanh công cụ máy tính chia ba cụm: tìm người | xem cây nào + Tổng quan/Chi tiết | Thêm người, Xuất ảnh, Bố cục ▾, ⋯.

@@ -12,6 +12,7 @@ import FamilyTreeEditor from "../../tree/components/FamilyTreeEditor.jsx";
 import { onSocketEvent } from "../../../services/socket";
 import "./GenealogyManagement.css";
 import { notify } from "../../../shared/utils/toast";
+import { passwordPolicyMessage } from "../../../shared/utils/passwordPolicy";
 import { useConfirm } from "../../../shared/components/confirmContext.js";
 import useDismissable from "../../../shared/hooks/useDismissable";
 import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
@@ -192,10 +193,8 @@ export default function GenealogyManagement() {
                 setFormError(t("admin.genealogy.messages.managerAccountRequired"));
                 return;
             }
-            if (clanForm.manager_password.trim().length < 6) {
-                setFormError(t("admin.genealogy.messages.passwordMinLength"));
-                return;
-            }
+            const weakPassword = passwordPolicyMessage(t, clanForm.manager_password, { email: clanForm.manager_email });
+            if (weakPassword) { setFormError(weakPassword); return; }
             if (!clanForm.manager_surname.trim() && !clanForm.manager_first_name.trim()) {
                 setFormError(t("admin.genealogy.messages.managerNameRequired"));
                 return;

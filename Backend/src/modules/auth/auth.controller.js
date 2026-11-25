@@ -8,6 +8,7 @@ const { getRoleName } = require('../../config/roles');
 const { consumeOAuthCode } = require('./oauthCodeStore');
 const { invalidateAccountCache } = require('../../middleware/authMiddleware');
 const { updatePasswordHash } = require('../../shared/utils/passwordChange');
+const { rejectWeakPassword } = require('../../shared/validation/passwordPolicy');
 const { disconnectAccountSockets } = require('../../shared/utils/realtime');
 const { ensureProfileCompletedColumn } = require('../../shared/utils/profileCompletion');
 const {
@@ -121,9 +122,8 @@ exports.register = async (req, res) => {
         return res.status(400).json({ success: false, message: "Vui lòng nhập ID dòng họ hợp lệ" });
     }
 
-    if (!emailTrim || !password) {
-        return res.status(400).json({ success: false, message: "Vui lòng nhập email và mật khẩu" });
-    }
+    if (!emailTrim || !password) return res.status(400).json({ success: false, message: "Vui lòng nhập email và mật khẩu" });
+    if (rejectWeakPassword(res, password, { email: emailTrim })) return;
 
     const connection = await db.getConnection();
     try {
@@ -391,13 +391,13 @@ exports.resetPasswordWithCode = async (req, res) => {
     const newPassword = String(req.body?.new_password ?? '');
 
     if (!email || !code || !newPassword.trim()) return res.status(400).json({ success: false, message: 'Vui lòng nhập đủ thông tin.' });
-    if (newPassword.length < 6) return res.status(400).json({ success: false, message: 'Mật khẩu mới tối thiểu 6 ký tự.' });
+    if (rejectWeakPassword(res, newPassword, { email })) return;
     if (!/^\d{6}$/.test(code)) return res.status(400).json({ success: false, message: 'Mã gồm 6 chữ số.' });
 
     try {
         await ensurePasswordResetTokensTable();
         const [tokRows] = await db.query(
-            `SELECT prt.account_id, prt.code_hash, prt.expires_at, prt.failed_attempts
+            `SELECT prt.account_id, prt.code_hash, prt.expires_at, prt.failed_attempts, a.email AS account_email
              FROM password_reset_tokens prt
              JOIN accounts a ON prt.account_id = a.id
              WHERE LOWER(TRIM(a.email)) = ? LIMIT 1`,
@@ -426,6 +426,7 @@ exports.resetPasswordWithCode = async (req, res) => {
             });
         }
 
+        if (rejectWeakPassword(res, newPassword, { email: token.account_email })) return; // email của tài khoản gắn mã
         const hashed = await bcrypt.hash(newPassword, 10);
         await updatePasswordHash(db, token.account_id, hashed);
         invalidateAccountCache(token.account_id);

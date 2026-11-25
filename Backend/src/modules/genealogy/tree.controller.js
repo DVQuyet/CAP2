@@ -40,6 +40,7 @@ const {
 } = require('../manager/managerClan.service');
 
 const { getMediaUrlById } = require('../../shared/utils/media');
+const { rejectWeakPassword } = require('../../shared/validation/passwordPolicy');
 const { ensureClanTreeStyleColumn, ensureTreeLayoutSettingsTable } = require('../../shared/utils/treeLayoutSettings');
 const { emitTreeUpdated } = require('../../socket/treeRealtime');
 const { normalizePrecision, normalizeChildType } = require('./core');
@@ -240,12 +241,7 @@ const createPerson = async (req, res) => {
                 });
             }
 
-            if (!accountPassword || accountPassword.length < 6) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Mật khẩu tài khoản tối thiểu 6 ký tự',
-                });
-            }
+            if (rejectWeakPassword(res, accountPassword, { email: accountEmail })) return;
 
             const [emailRows] = await db.query(
                 'SELECT id FROM accounts WHERE email = ? LIMIT 1',
@@ -741,9 +737,7 @@ const updateTreePerson = async (req, res) => {
                 return res.status(400).json({ success: false, message: 'Can nhap email de tao tai khoan thanh vien.' });
             }
 
-            if (!accountPassword || accountPassword.length < 6) {
-                return res.status(400).json({ success: false, message: 'Mat khau tai khoan toi thieu 6 ky tu.' });
-            }
+            if (rejectWeakPassword(res, accountPassword, { email: accountEmail })) return;
 
             const [emailRows] = await db.query('SELECT id FROM accounts WHERE email = ? LIMIT 1', [accountEmail]);
             if (emailRows.length) {

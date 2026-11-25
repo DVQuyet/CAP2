@@ -1,4 +1,4 @@
-import { formatDateTimeVN, formatDateVN } from "../../../shared/utils/dateFormat";
+import { formatDateTimeVN, formatDateVN } from "../../../shared/utils/dateFormat.js"; // đuôi .js để test node import được
 export const asArray = (value) => (Array.isArray(value) ? value : []);
 
 export const fullName = (item, fallback = "N/A") =>
@@ -23,7 +23,7 @@ export const formatDateTime = (value) => {
 
 export const compactPayload = (form) =>
   Object.fromEntries(
-    Object.entries(form).map(([key, value]) => [key, typeof value === "string" ? value.trim() : value])
+    Object.entries(form).map(([key, value]) => [key, typeof value === "string" && !/password/i.test(key) ? value.trim() : value]) // mật khẩu giữ nguyên văn
   );
 
 export const yearOf = (value) => {

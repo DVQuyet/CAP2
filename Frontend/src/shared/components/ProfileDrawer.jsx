@@ -6,6 +6,7 @@ import { ensureMediaToken } from "../../services/mediaToken";
 import "./ProfileDrawer.css";
 import { notify } from "../utils/toast";
 import { friendlyErrorMessage } from "../utils/friendlyError";
+import { passwordPolicyMessage } from "../utils/passwordPolicy";
 
 const buildName = (profile) =>
   profile?.display_name ||
@@ -547,15 +548,10 @@ export default function ProfileDrawer({
   const savePassword = async () => {
     setMessage("");
 
-    if (!passwordForm.current_password || !passwordForm.new_password) {
-      setMessage(t("shared.profile.passwordRequired"));
-      return;
-    }
-
-    if (passwordForm.new_password !== passwordForm.confirm_password) {
-      setMessage(t("auth.forgotPassword.passwordMismatch"));
-      return;
-    }
+    if (!passwordForm.current_password || !passwordForm.new_password) { setMessage(t("shared.profile.passwordRequired")); return; }
+    if (passwordForm.new_password !== passwordForm.confirm_password) { setMessage(t("auth.forgotPassword.passwordMismatch")); return; }
+    const weakPassword = passwordPolicyMessage(t, passwordForm.new_password, { email: profile?.email || currentUser?.email });
+    if (weakPassword) { setMessage(weakPassword); return; }
 
     setSavingPassword(true);
 

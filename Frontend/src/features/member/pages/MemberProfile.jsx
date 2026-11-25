@@ -11,6 +11,7 @@ import { getStoredUser } from "../../../shared/utils/auth";
 import { resolveImageUrl } from "../../../shared/utils/media";
 import "./MemberDashboard.css";
 import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
+import { passwordPolicyMessage } from "../../../shared/utils/passwordPolicy";
 import BiographyDraftDialog from "../../../shared/components/BiographyDraftDialog";
 
 function personName(person, t) {
@@ -200,13 +201,14 @@ export default function MemberProfile() {
 
   const savePassword = async (event) => {
     event.preventDefault();
+    setError(""); setNotice("");
+    const localError = !passwordForm.current
+      ? t("member.profile.messages.passwordCurrentRequired")
+      : passwordPolicyMessage(t, passwordForm.next, { email: getStoredUser()?.email })
+        || (passwordForm.next !== passwordForm.confirm ? t("member.profile.messages.passwordMismatch") : null);
+    if (localError) { setError(localError); return; } // hiện thẳng: friendlyErrorMessage coi lỗi không status là lỗi mạng
     setSavingPassword(true);
-    setError("");
-    setNotice("");
     try {
-      if (!passwordForm.current) throw new Error(t("member.profile.messages.passwordCurrentRequired"));
-      if (passwordForm.next.length < 6) throw new Error(t("member.profile.messages.passwordLength"));
-      if (passwordForm.next !== passwordForm.confirm) throw new Error(t("member.profile.messages.passwordMismatch"));
 
       await changeMemberPassword({
         current_password: passwordForm.current,

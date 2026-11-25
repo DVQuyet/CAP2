@@ -40,8 +40,9 @@ const checkOne = (r, raw, label) => {
                 if (r.required) return { error: `Vui lòng nhập ${label}.` };
                 return { value: text };
             }
-            if (r.min && text.length < r.min) return { error: `${label} tối thiểu ${r.min} ký tự.` };
-            if (r.max && text.length > r.max) return { error: `${label} tối đa ${r.max} ký tự.` };
+            const length = r.codePoints ? [...text].length : text.length; // codePoints: đếm như passwordPolicy
+            if (r.min && length < r.min) return { error: `${label} tối thiểu ${r.min} ký tự.` };
+            if (r.max && length > r.max) return { error: `${label} tối đa ${r.max} ký tự.` };
             if (r.email && !EMAIL_RE.test(text)) return { error: `${label} không hợp lệ.` };
             if (r.pattern && !r.pattern.test(text)) return { error: `${label} không hợp lệ.` };
             return { value: text };

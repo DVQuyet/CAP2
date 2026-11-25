@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 const { getJwtSecret } = require("../../config/jwt");
 const { invalidateAccountCache } = require("../../middleware/authMiddleware");
 const { updatePasswordHash } = require("../../shared/utils/passwordChange");
+const { rejectWeakPassword } = require("../../shared/validation/passwordPolicy");
 const { disconnectAccountSockets } = require("../../shared/utils/realtime");
 const { getRoleName } = require("../../config/roles");
 const {
@@ -1136,19 +1137,14 @@ exports.changePassword = async (req, res) => {
     const accountId = req.user.id;
     const { current_password, new_password } = req.body;
     const cur = String(current_password ?? "");
-    const next = String(new_password ?? "").trim();
+    const next = String(new_password ?? ""); // Không trim: đăng nhập so nguyên văn.
 
-    if (!next || next.length < 6) {
-      return res.status(400).json({
-        success: false,
-        message: "Mật khẩu mới phải có ít nhất 6 ký tự",
-      });
-    }
+    if (rejectWeakPassword(res, next)) return;
     if (cur === "") {
       return res.status(400).json({ success: false, message: "Vui lòng nhập mật khẩu hiện tại" });
     }
 
-    const [rows] = await db.query("SELECT password FROM accounts WHERE id = ? LIMIT 1", [accountId]);
+    const [rows] = await db.query("SELECT password, email FROM accounts WHERE id = ? LIMIT 1", [accountId]);
     if (!rows.length) {
       return res.status(404).json({ success: false, message: "Không tìm thấy tài khoản" });
     }
@@ -1169,6 +1165,7 @@ exports.changePassword = async (req, res) => {
       return res.status(400).json({ success: false, message: "Mật khẩu hiện tại không đúng" });
     }
 
+    if (rejectWeakPassword(res, next, { email: rows[0].email })) return;
     const hashed = await bcrypt.hash(next, 10);
     await updatePasswordHash(db, accountId, hashed);
     invalidateAccountCache(accountId);

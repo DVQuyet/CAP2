@@ -1,5 +1,6 @@
 const { invalidateAccountCache } = require('../../middleware/authMiddleware');
 const { updatePasswordHash } = require('../../shared/utils/passwordChange');
+const { rejectWeakPassword, assertStrongPassword, errorResponseBody } = require('../../shared/validation/passwordPolicy');
 const { disconnectAccountSockets } = require('../../shared/utils/realtime');
 const db = require("../../config/db");
 const bcrypt = require("bcryptjs");
@@ -339,11 +340,7 @@ async function createManagerForClan(connection, clanId, body = {}) {
     err.status = 400;
     throw err;
   }
-  if (password.length < 6) {
-    const err = new Error("Mật khẩu Manager tối thiểu 6 ký tự");
-    err.status = 400;
-    throw err;
-  }
+  assertStrongPassword(password, { email });
   if (!surname && !firstName && !displayName) {
     const err = new Error("Vui lòng nhập họ tên Manager phụ trách dòng họ");
     err.status = 400;
@@ -417,7 +414,7 @@ exports.createClan = async (req, res) => {
     if (e.code === "ER_DUP_ENTRY") {
       return res.status(400).json({ success: false, message: "Email Manager đã tồn tại trong hệ thống" });
     }
-    return res.status(e.status || 500).json({ success: false, message: e.message || "Lỗi tạo dòng họ" });
+    return res.status(e.status || 500).json(errorResponseBody(e, "Lỗi tạo dòng họ"));
   } finally {
     connection.release();
   }
@@ -557,9 +554,7 @@ exports.createManagerAccount = async (req, res) => {
     if (!emailTrim || !pwd) {
       return res.status(400).json({ success: false, message: "Vui lòng nhập email và mật khẩu" });
     }
-    if (pwd.length < 6) {
-      return res.status(400).json({ success: false, message: "Mật khẩu tối thiểu 6 ký tự" });
-    }
+    if (rejectWeakPassword(res, pwd, { email: emailTrim })) return;
     const sn = surname != null ? String(surname).trim() : "";
     const mid = middle_name != null ? String(middle_name).trim() : "";
     const fn = first_name != null ? String(first_name).trim() : "";
@@ -1092,7 +1087,7 @@ exports.createAccount = async (req, res) => {
     const status = normalizeText(req.body.status) || "active";
 
     if (!email || !password) return res.status(400).json({ success: false, message: "Vui lòng nhập email và mật khẩu" });
-    if (password.length < 6) return res.status(400).json({ success: false, message: "Mật khẩu tối thiểu 6 ký tự" });
+    if (rejectWeakPassword(res, password, { email })) return;
     if (![2, 3].includes(roleId)) return res.status(400).json({ success: false, message: "Chỉ được tạo Manager hoặc Member" });
     if (!["pending", "active", "rejected"].includes(status)) return res.status(400).json({ success: false, message: "Trạng thái không hợp lệ" });
 
@@ -1132,7 +1127,7 @@ exports.createAccount = async (req, res) => {
     try { await connection.rollback(); } catch (_) {}
     console.error("createAccount:", e);
     if (e.code === "ER_DUP_ENTRY") return res.status(400).json({ success: false, message: "Email đã tồn tại" });
-    return res.status(e.status || 500).json({ success: false, message: e.message || "Lỗi tạo tài khoản" });
+    return res.status(e.status || 500).json(errorResponseBody(e, "Lỗi tạo tài khoản"));
   } finally {
     connection.release();
   }
@@ -1145,7 +1140,7 @@ exports.updateAccountAccess = async (req, res) => {
   try {
     if (!Number.isFinite(targetId)) return res.status(400).json({ success: false, message: "account_id không hợp lệ" });
     await connection.beginTransaction();
-    const [rows] = await connection.query("SELECT id, person_id, role_id FROM accounts WHERE id = ? LIMIT 1", [targetId]);
+    const [rows] = await connection.query("SELECT id, person_id, role_id, email FROM accounts WHERE id = ? LIMIT 1", [targetId]);
     if (!rows.length) {
       await connection.rollback();
       return res.status(404).json({ success: false, message: "Không tìm thấy tài khoản" });
@@ -1159,7 +1154,7 @@ exports.updateAccountAccess = async (req, res) => {
 
     if (body.password != null && String(body.password).trim() !== "") {
       const pwd = String(body.password);
-      if (pwd.length < 6) throw Object.assign(new Error("Mật khẩu tối thiểu 6 ký tự"), { status: 400 });
+      assertStrongPassword(pwd, { email: email || acc.email });
       const hashed = await bcrypt.hash(pwd, 10);
       // Đặt mật khẩu hộ: thu hồi token cũ của người đó (hiệu lực sau commit, xem bên dưới).
       await updatePasswordHash(connection, targetId, hashed);
@@ -1219,7 +1214,7 @@ exports.updateAccountAccess = async (req, res) => {
     try { await connection.rollback(); } catch (_) {}
     console.error("updateAccountAccess:", e);
     if (e.code === "ER_DUP_ENTRY") return res.status(400).json({ success: false, message: "Email đã tồn tại" });
-    return res.status(e.status || 500).json({ success: false, message: e.message || "Lỗi cập nhật tài khoản" });
+    return res.status(e.status || 500).json(errorResponseBody(e, "Lỗi cập nhật tài khoản"));
   } finally {
     connection.release();
   }

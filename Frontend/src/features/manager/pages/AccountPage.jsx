@@ -16,6 +16,7 @@ import { Trans } from "react-i18next";
 import { useLanguage } from "../../../i18n/LanguageContext";
 import "./manager.css";
 import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
+import { passwordPolicyMessage } from "../../../shared/utils/passwordPolicy";
 
 const shouldSuppressInlineRelationError = (error) => Boolean(error?.__centeredNoticeShown);
 
@@ -384,10 +385,9 @@ export default function AccountPage() {
 
   const submitCreate = async (event) => {
     event.preventDefault();
-
-    setSaving(true);
-    setMessage("");
-    setError("");
+    const weakPassword = createForm.password ? passwordPolicyMessage(t, createForm.password, { email: createForm.email }) : null;
+    if (weakPassword) { setError(weakPassword); return; }
+    setSaving(true); setMessage(""); setError("");
 
     try {
       const payload = compactPayload({
@@ -484,10 +484,9 @@ export default function AccountPage() {
 
   const saveEdit = async () => {
     if (!editAccountId) return;
-
-    setSaving(true);
-    setMessage("");
-    setError("");
+    const weakPassword = String(editForm.new_password || "").trim() ? passwordPolicyMessage(t, editForm.new_password, { email: editForm.email }) : null;
+    if (weakPassword) { setError(weakPassword); return; }
+    setSaving(true); setMessage(""); setError("");
 
     try {
       await updateMemberByManager(
