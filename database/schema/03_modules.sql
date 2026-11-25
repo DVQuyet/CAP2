@@ -169,7 +169,7 @@ CREATE TABLE IF NOT EXISTS `recordings` (
   KEY `idx_recordings_account` (`account_id`),
   KEY `idx_recordings_clan` (`clan_id`),
   KEY `idx_recordings_status_created` (`status`,`created_at`),
-  FULLTEXT INDEX `ft_recordings_transcript`(`transcript`) WITH PARSER STANDARD
+  FULLTEXT INDEX `ft_recordings_transcript`(`transcript`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `relationship_cache` (

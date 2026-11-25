@@ -1,7 +1,8 @@
 -- Nâng cấp bảng quỹ cho DB dựng từ init.sql CŨ (trước 25/11/2026). Ở DB đó, CREATE TABLE IF NOT EXISTS trong
 -- database/schema/ giữ nguyên event_costs / event_contributions thiếu cột, còn migration 15/11 nằm trước mốc nên bị
 -- bỏ qua -> ensureEventCostRecipientColumns lỗi ở "AFTER campaign_id".
--- 1) Thêm các cột quỹ còn thiếu (cùng định nghĩa và thứ tự như migration 15/11).
+-- 1) Thêm các cột quỹ còn thiếu (cùng định nghĩa và thứ tự như migration 15/11). clan_id thêm dạng NULL, điền từ
+--    events.clan_id theo event_id, rồi mới đổi NOT NULL (bước 3); thêm thẳng NOT NULL thì bản ghi cũ nhận clan_id = 0.
 -- 2) Cho event_id (thu, chi) và person_id (thu) nhận NULL: góp/chi theo đợt quỹ không gắn sự kiện, nhập Excel không
 --    gắn sự kiện lẫn người góp (fund.controller importExcel).
 -- Mỗi bước tự kiểm information_schema rồi mới đổi, nên chạy lại hoặc chạy tiếp sau khi lỗi giữa file đều an toàn.
@@ -9,7 +10,7 @@
 
 -- 1. event_costs: cột còn thiếu
 SET @has := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'event_costs' AND COLUMN_NAME = 'clan_id');
-SET @ddl := IF(@has = 0, 'ALTER TABLE event_costs ADD COLUMN clan_id INT NOT NULL AFTER id', 'SELECT 1');
+SET @ddl := IF(@has = 0, 'ALTER TABLE event_costs ADD COLUMN clan_id INT NULL AFTER id', 'SELECT 1');
 PREPARE stmt FROM @ddl;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
@@ -76,7 +77,7 @@ DEALLOCATE PREPARE stmt;
 
 -- 1. event_contributions: cột còn thiếu
 SET @has := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'event_contributions' AND COLUMN_NAME = 'clan_id');
-SET @ddl := IF(@has = 0, 'ALTER TABLE event_contributions ADD COLUMN clan_id INT NOT NULL AFTER id', 'SELECT 1');
+SET @ddl := IF(@has = 0, 'ALTER TABLE event_contributions ADD COLUMN clan_id INT NULL AFTER id', 'SELECT 1');
 PREPARE stmt FROM @ddl;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
@@ -132,6 +133,27 @@ DEALLOCATE PREPARE stmt;
 
 SET @notnull := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'event_contributions' AND COLUMN_NAME = 'person_id' AND IS_NULLABLE = 'NO');
 SET @ddl := IF(@notnull = 1, 'ALTER TABLE event_contributions MODIFY person_id INT NULL', 'SELECT 1');
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- 3. clan_id: điền cho bản ghi cũ từ sự kiện của nó, rồi mới NOT NULL. Còn dòng không xác định được dòng họ
+--    (không có sự kiện) thì giữ cho NULL để migrate không dừng; ứng dụng luôn ghi clan_id cho bản ghi mới.
+UPDATE event_costs x JOIN events e ON e.id = x.event_id SET x.clan_id = e.clan_id WHERE x.clan_id IS NULL OR x.clan_id = 0;
+UPDATE event_contributions x JOIN events e ON e.id = x.event_id SET x.clan_id = e.clan_id WHERE x.clan_id IS NULL OR x.clan_id = 0;
+
+SET @nullable := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'event_costs' AND COLUMN_NAME = 'clan_id' AND IS_NULLABLE = 'YES');
+SET @missing := (SELECT COUNT(*) FROM event_costs WHERE clan_id IS NULL);
+SET @tighten := IF(@nullable = 1 AND @missing = 0, 1, 0);
+SET @ddl := IF(@tighten = 1, 'ALTER TABLE event_costs MODIFY clan_id INT NOT NULL', 'SELECT 1');
+PREPARE stmt FROM @ddl;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @nullable := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'event_contributions' AND COLUMN_NAME = 'clan_id' AND IS_NULLABLE = 'YES');
+SET @missing := (SELECT COUNT(*) FROM event_contributions WHERE clan_id IS NULL);
+SET @tighten := IF(@nullable = 1 AND @missing = 0, 1, 0);
+SET @ddl := IF(@tighten = 1, 'ALTER TABLE event_contributions MODIFY clan_id INT NOT NULL', 'SELECT 1');
 PREPARE stmt FROM @ddl;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
