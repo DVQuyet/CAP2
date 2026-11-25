@@ -30,7 +30,7 @@ AI không tự ghi database. Các tính năng AI chỉ sinh dữ liệu nháp, p
 ## Yêu Cầu Môi Trường
 
 - Node.js phù hợp với Vite/Express hiện tại.
-- MySQL đang chạy và có database/schema của dự án.
+- MySQL 8 hoặc TiDB có database của dự án (dựng bằng `npm run migrate`, xem mục Database thử).
 - `GROQ_API_KEY` trong `Backend/.env` nếu muốn dùng AI thật.
 - Python 64-bit riêng cho `.venv-whisper` nếu dùng local speech-to-text.
 - FFmpeg trong `PATH` nếu dùng voice worker.
@@ -53,6 +53,26 @@ http://localhost:3000
 ```
 
 Các biến quan trọng trong `Backend/.env`: `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `JWT_SECRET`, `FRONTEND_URL`, `GROQ_API_KEY`, `GROQ_MODEL`.
+
+#### Database thử (không chạy thử trên DB thật)
+
+`Backend/.env.local` (gitignore, nạp trước `.env` nên thắng) trỏ backend vào một DB riêng. Chép từ `Backend/.env.local.example` rồi chọn một trong hai:
+
+- **TiDB Cloud, database `cap2_test`** (máy không có Docker): tạo database `cap2_test` trên cùng cụm TiDB, điền host/user/mật khẩu của cụm,
+  `DB_NAME=cap2_test`, `DB_PORT=4000`, `DB_SSL=true`. Không bao giờ đặt `DB_NAME=defaultdb` (DB thật) trong `.env.local`.
+- **MySQL trong Docker**: `docker compose -f docker/docker-compose.yml up -d`, giữ nguyên giá trị Docker trong file mẫu (cổng 3307, `cap2_dev`).
+
+Dựng schema (chạy lại nhiều lần không lỗi):
+
+```powershell
+cd Backend
+npm run migrate
+```
+
+`npm run migrate` chạy `database/schema/init.sql`, `02_modules.sql`, `03_modules.sql`, `04_seed.sql` (đủ 48 bảng, ba vai trò, gói `FREE`),
+rồi các file `database/migrations/*.sql` mới hơn mốc 15/11/2026 (mỗi file một lần, ghi ở bảng `schema_migrations`), rồi các hàm `ensure*()`.
+File `.sql` mới phải chạy được trên cả TiDB và MySQL 8: không trigger/procedure, không `ALTER ... MODIFY` để thêm `AUTO_INCREMENT`,
+không thêm cột generated `STORED` bằng `ALTER`, tách `ALTER` khi mệnh đề sau dùng cột vừa thêm.
 
 ### 2. Frontend
 

@@ -6,6 +6,21 @@ Các file đó giữ làm nhật ký; việc mới thêm vào đây.
 
 Ký hiệu công sức: **S** < 2 giờ · **M** nửa ngày–1 ngày · **L** nhiều ngày. Cột "Ai làm" gợi ý chia việc khi chạy nhiều agent.
 
+## Đợt 25/11/2026 – S2, S3: DB thử và schema dựng lại được từ repo (nhánh `s2s3-db-thu-va-schema`)
+
+Đã làm: `database/schema/` nay đủ 48 bảng như DB thật (`init.sql` 23 bảng lõi gồm gói cước, quỹ, `password_reset_tokens`; `02_modules.sql`,
+`03_modules.sql`; `04_seed.sql` có ba vai trò và gói `FREE`). DDL lấy từ cấu trúc DB đang chạy (chỉ cấu trúc, không dữ liệu), viết lại hợp TiDB:
+khóa chính và `AUTO_INCREMENT` nằm trong `CREATE TABLE` (bỏ `ALTER ... ADD PRIMARY KEY` / `MODIFY ... AUTO_INCREMENT`), cột `spouse_a_id`/`spouse_b_id`
+là generated `VIRTUAL` trong `CREATE TABLE families`, mọi bảng `IF NOT EXISTS`. `npm run migrate` chạy `database/schema/*.sql`, rồi file
+`database/migrations/*.sql` mới hơn mốc 15/11 (ghi ở bảng mới `schema_migrations`), rồi `ensure*()`. Đã dựng `cap2_test` từ trống hai lần:
+31/31 ensure, 49 bảng (48 + `schema_migrations`), cột/kiểu/index khớp DB thật. README có mục "Database thử". Test: `tests/schema.sqlFiles.test.js`. Còn mở:
+
+- Các file migration cũ (đến 15/11) không chạy nữa, chỉ giữ làm lịch sử; file trigger `2026_05_28_02_chatbot_graph_version_triggers.sql` không áp được
+  trên TiDB nên `family_graph_versions` không tự tăng khi sửa cây (cần kiểm bộ nhớ đệm đồ thị trợ lý có dựa vào nó không). **S**
+- Gói `FREE` mẫu đặt `account_limit = 20` (số giả định; DB thật có gói FREE do admin tạo, chưa đối chiếu giới hạn tài khoản). **S**
+- Chưa thử Docker MySQL (máy không có Docker): `init.sql` có khóa ngoại tới bảng ở `02_`/`03_`, dựa vào `FOREIGN_KEY_CHECKS = 0`. **S**
+- `ensure*()` vẫn còn trong `src/modules` (E7.9 bản đầy đủ chưa làm). Khi DB thật đổi cấu trúc, sinh lại `database/schema/` cho khớp. **M**
+
 ## Soát schema DB 15/11/2026 (DB TiDB đang cấu hình trong `Backend/.env`)
 
 DB được dựng từ `init.sql` cũ nên thiếu phần gói cước và quỹ. Đã thêm và áp `database/migrations/2026_11_15_billing_fund_missing_schema.sql`
