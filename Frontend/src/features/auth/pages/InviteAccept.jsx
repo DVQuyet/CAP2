@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { acceptInvitation, verifyInvitation } from "../../../api/invitationService";
 import { ensureMediaToken } from "../../../services/mediaToken";
 import { persistAuthSession } from "../../../shared/utils/auth";
+import { PASSWORD_MIN_LENGTH, passwordPolicyMessage } from "../../../shared/utils/passwordPolicy";
 import "./invite.css";
 
 const initialForm = {
@@ -59,10 +60,8 @@ export default function InviteAccept() {
     event.preventDefault();
     setState((current) => ({ ...current, error: "" }));
 
-    if (form.password.length < 6) {
-      setState((current) => ({ ...current, error: t("auth.invite.passwordTooShort") }));
-      return;
-    }
+    const weakPassword = passwordPolicyMessage(t, form.password, { email: state.invitation?.email });
+    if (weakPassword) { setState((current) => ({ ...current, error: weakPassword })); return; }
     if (form.password !== form.confirm_password) {
       setState((current) => ({ ...current, error: t("auth.invite.passwordMismatch") }));
       return;
@@ -123,7 +122,7 @@ export default function InviteAccept() {
                 type="password"
                 value={form.password}
                 onChange={updateField}
-                minLength={6}
+                minLength={PASSWORD_MIN_LENGTH}
                 autoComplete="new-password"
                 required
               />
@@ -136,7 +135,7 @@ export default function InviteAccept() {
                 type="password"
                 value={form.confirm_password}
                 onChange={updateField}
-                minLength={6}
+                minLength={PASSWORD_MIN_LENGTH}
                 autoComplete="new-password"
                 required
               />

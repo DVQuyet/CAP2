@@ -599,7 +599,7 @@
       "female": "Female",
       "unknown": "Unknown",
       "emailPlaceholder": "Login email",
-      "passwordPlaceholder": "Password",
+      "passwordPlaceholder": "Password (8+ characters, letters and numbers)",
       "hometownPlaceholder": "Hometown",
       "clanId": "Clan ID",
       "clanIdPlaceholder": "Enter clan ID",
@@ -615,7 +615,6 @@
       "errors": {
         "nameRequired": "Enter last name, first name, and display name.",
         "emailRequired": "Enter your login email.",
-        "passwordLength": "Password must be at least 6 characters.",
         "birthDateRequired": "Enter birth date in dd/mm/yyyy format.",
         "hometownRequired": "Enter hometown.",
         "clanIdInvalid": "Enter a valid clan ID.",
@@ -631,7 +630,7 @@
       "sendCode": "Send code by email",
       "sending": "Sending...",
       "code": "6-digit code",
-      "newPassword": "New password",
+      "newPassword": "New password (8+ characters, letters and numbers)",
       "confirmPassword": "Re-enter new password",
       "reset": "Reset password",
       "resetting": "Processing...",
@@ -640,7 +639,6 @@
       "processed": "Request processed.",
       "sendFailed": "Unable to send code.",
       "passwordMismatch": "Password confirmation does not match.",
-      "passwordMin": "Password must be at least 6 characters.",
       "resetSuccess": "Password reset successful.",
       "resetFailed": "Password reset failed."
     },
@@ -678,7 +676,6 @@
     "invite": {
       "missingToken": "The invitation link is missing its token.",
       "invalid": "The invitation is invalid or has expired.",
-      "passwordTooShort": "Password must be at least 6 characters.",
       "passwordMismatch": "The confirmation password does not match.",
       "acceptFailed": "Could not accept the invitation.",
       "title": "Accept invitation",
@@ -692,6 +689,12 @@
     }
   },
   "shared": {
+    "passwordPolicy": {
+      "too_short": "Password must be at least {{min}} characters.",
+      "too_long": "Password must be at most {{max}} characters.",
+      "needs_letter_and_digit": "Password must contain both letters and numbers.",
+      "same_as_identity": "Password must not match your email or username."
+    },
     "notification": {
       "title": "Notifications",
       "new": "New notification",
@@ -1656,7 +1659,7 @@
       },
       "password": {
         "title": "Change Password",
-        "subtitle": "New password needs at least 6 characters.",
+        "subtitle": "New password needs at least 8 characters, with letters and numbers.",
         "fields": {
           "current": "Current Password",
           "next": "New Password",
@@ -1675,7 +1678,6 @@
         "relationsSuccess": "Family relations saved.",
         "relationsError": "Could not save family relations.",
         "passwordCurrentRequired": "Please enter your current password.",
-        "passwordLength": "New password needs at least 6 characters.",
         "passwordMismatch": "Password confirmation does not match.",
         "passwordSuccess": "Password changed.",
         "passwordError": "Could not change password."
@@ -1950,7 +1952,7 @@
             "subtitle": "This manager will be assigned to the new clan and have rights to add members.",
             "email": "Manager Email",
             "password": "Manager Password",
-            "passwordHint": "Min 6 characters",
+            "passwordHint": "Min 8 characters, letters and numbers",
             "surname": "Manager Surname",
             "surnamePlaceholder": "e.g., Doe",
             "middleName": "Middle Name",
@@ -1969,7 +1971,6 @@
         "loadClansError": "Could not load clan list",
         "clanNameRequired": "Please enter clan name.",
         "managerAccountRequired": "Please enter manager email and password.",
-        "passwordMinLength": "Manager password must be at least 6 characters.",
         "managerNameRequired": "Please enter at least manager surname or first name.",
         "operationFailed": "Operation failed.",
         "deleteConfirm": "Delete clan \"{{name}}\"? All genealogy data, members, posts, events and related data will be deleted.",
@@ -2441,7 +2442,7 @@
         "noMembersToSave": "There are no valid members to save.",
         "invalidRelationship": "A relationship is missing people or links a person to themselves. Edit it before saving.",
         "selectExistingDuplicate": "The tree has multiple people named \"{{name}}\". Select the correct existing person in that row or make the draft name clearer before saving.",
-        "incompleteAccount": "To create an account for \"{{name}}\", enter an email and a password of at least 6 characters.",
+        "incompleteAccount": "To create an account for \"{{name}}\", enter an email and a password of at least 8 characters with letters and numbers.",
         "createdIdMissing": "The created person ID was not returned.",
         "saveFailed": "Unable to save AI data to the tree."
       }
@@ -2597,7 +2598,7 @@
         "accountEmail": "Login Email",
         "accountPassword": "Login Password",
         "passwordHint": "Leave blank for no account",
-        "incompleteAccountHint": "To create an account, enter an email and a password of at least 6 characters"
+        "incompleteAccountHint": "To create an account, enter an email and a password of at least 8 characters with letters and numbers"
       },
       "actions": {
         "create": "Create",

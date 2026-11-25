@@ -599,7 +599,7 @@
       "female": "Nữ",
       "unknown": "Không rõ",
       "emailPlaceholder": "Email đăng nhập",
-      "passwordPlaceholder": "Mật khẩu",
+      "passwordPlaceholder": "Mật khẩu (tối thiểu 8 ký tự, có chữ và số)",
       "hometownPlaceholder": "Quê quán",
       "clanId": "ID dòng họ",
       "clanIdPlaceholder": "Nhập ID dòng họ",
@@ -615,7 +615,6 @@
       "errors": {
         "nameRequired": "Vui lòng nhập đầy đủ họ, tên và tên hiển thị.",
         "emailRequired": "Vui lòng nhập email đăng nhập.",
-        "passwordLength": "Mật khẩu phải có ít nhất 6 ký tự.",
         "birthDateRequired": "Vui lòng nhập ngày sinh theo định dạng dd/mm/yyyy.",
         "hometownRequired": "Vui lòng nhập quê quán.",
         "clanIdInvalid": "Vui lòng nhập ID dòng họ hợp lệ.",
@@ -631,7 +630,7 @@
       "sendCode": "Gửi mã qua email",
       "sending": "Đang gửi...",
       "code": "Mã 6 số",
-      "newPassword": "Mật khẩu mới",
+      "newPassword": "Mật khẩu mới (tối thiểu 8 ký tự, có chữ và số)",
       "confirmPassword": "Nhập lại mật khẩu mới",
       "reset": "Đặt lại mật khẩu",
       "resetting": "Đang xử lý...",
@@ -640,7 +639,6 @@
       "processed": "Đã xử lý yêu cầu.",
       "sendFailed": "Không gửi được mã.",
       "passwordMismatch": "Mật khẩu xác nhận không khớp.",
-      "passwordMin": "Mật khẩu tối thiểu 6 ký tự.",
       "resetSuccess": "Đặt lại thành công.",
       "resetFailed": "Đặt lại thất bại."
     },
@@ -678,7 +676,6 @@
     "invite": {
       "missingToken": "Liên kết lời mời thiếu token.",
       "invalid": "Lời mời không hợp lệ hoặc đã hết hạn.",
-      "passwordTooShort": "Mật khẩu tối thiểu 6 ký tự.",
       "passwordMismatch": "Mật khẩu xác nhận không khớp.",
       "acceptFailed": "Không thể chấp nhận lời mời.",
       "title": "Chấp nhận lời mời",
@@ -692,6 +689,12 @@
     }
   },
   "shared": {
+    "passwordPolicy": {
+      "too_short": "Mật khẩu cần tối thiểu {{min}} ký tự.",
+      "too_long": "Mật khẩu tối đa {{max}} ký tự.",
+      "needs_letter_and_digit": "Mật khẩu cần có cả chữ và số.",
+      "same_as_identity": "Mật khẩu không được trùng với email hoặc tên đăng nhập."
+    },
     "notification": {
       "title": "Thông báo",
       "new": "Thông báo mới",
@@ -1656,7 +1659,7 @@
       },
       "password": {
         "title": "Đổi mật khẩu",
-        "subtitle": "Mật khẩu mới cần tối thiểu 6 ký tự.",
+        "subtitle": "Mật khẩu mới cần tối thiểu 8 ký tự, có cả chữ và số.",
         "fields": {
           "current": "Mật khẩu hiện tại",
           "next": "Mật khẩu mới",
@@ -1675,7 +1678,6 @@
         "relationsSuccess": "Đã lưu quan hệ gia đình.",
         "relationsError": "Không thể lưu quan hệ gia đình.",
         "passwordCurrentRequired": "Vui lòng nhập mật khẩu hiện tại.",
-        "passwordLength": "Mật khẩu mới cần ít nhất 6 ký tự.",
         "passwordMismatch": "Mật khẩu xác nhận không khớp.",
         "passwordSuccess": "Đã đổi mật khẩu.",
         "passwordError": "Không thể đổi mật khẩu."
@@ -1950,7 +1952,7 @@
             "subtitle": "Manager này sẽ được gán quyền quản lý dòng họ vừa tạo và có quyền thêm người vào cây gia phả.",
             "email": "Email Manager",
             "password": "Mật khẩu Manager",
-            "passwordHint": "Tối thiểu 6 ký tự",
+            "passwordHint": "Tối thiểu 8 ký tự, có chữ và số",
             "surname": "Họ Manager",
             "surnamePlaceholder": "Ví dụ: Nguyễn",
             "middleName": "Tên đệm",
@@ -1969,7 +1971,6 @@
         "loadClansError": "Không tải được danh sách dòng họ",
         "clanNameRequired": "Vui lòng nhập tên dòng họ.",
         "managerAccountRequired": "Vui lòng nhập email và mật khẩu tài khoản Manager phụ trách dòng họ.",
-        "passwordMinLength": "Mật khẩu Manager tối thiểu 6 ký tự.",
         "managerNameRequired": "Vui lòng nhập ít nhất họ hoặc tên của Manager phụ trách.",
         "operationFailed": "Thao tác thất bại.",
         "deleteConfirm": "Xóa dòng họ \"{{name}}\"? Toàn bộ phả hệ, thành viên, bài viết, sự kiện và dữ liệu liên quan của dòng họ này sẽ bị xóa.",
@@ -2441,7 +2442,7 @@
         "noMembersToSave": "Chưa có thành viên hợp lệ để lưu.",
         "invalidRelationship": "Có quan hệ thiếu người hoặc tự liên kết chính mình. Vui lòng chỉnh sửa trước khi lưu.",
         "selectExistingDuplicate": "Trong cây đang có nhiều người cùng tên \"{{name}}\". Vui lòng chọn đúng người đã tồn tại trong dòng đó hoặc đổi tên nháp rõ hơn trước khi lưu.",
-        "incompleteAccount": "Nếu tạo tài khoản cho \"{{name}}\", vui lòng nhập email và mật khẩu tối thiểu 6 ký tự.",
+        "incompleteAccount": "Nếu tạo tài khoản cho \"{{name}}\", vui lòng nhập email và mật khẩu tối thiểu 8 ký tự, có cả chữ và số.",
         "createdIdMissing": "Không nhận được ID người vừa tạo.",
         "saveFailed": "Không thể lưu dữ liệu AI vào cây."
       }
@@ -2597,7 +2598,7 @@
         "accountEmail": "Email đăng nhập",
         "accountPassword": "Mật khẩu đăng nhập",
         "passwordHint": "Bỏ trống nếu không tạo tài khoản",
-        "incompleteAccountHint": "Nếu tạo tài khoản, vui lòng nhập email và mật khẩu tối thiểu 6 ký tự"
+        "incompleteAccountHint": "Nếu tạo tài khoản, vui lòng nhập email và mật khẩu tối thiểu 8 ký tự, có cả chữ và số"
       },
       "actions": {
         "create": "Tạo",

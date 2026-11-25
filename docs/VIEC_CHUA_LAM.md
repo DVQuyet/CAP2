@@ -6,6 +6,21 @@ Các file đó giữ làm nhật ký; việc mới thêm vào đây.
 
 Ký hiệu công sức: **S** < 2 giờ · **M** nửa ngày–1 ngày · **L** nhiều ngày. Cột "Ai làm" gợi ý chia việc khi chạy nhiều agent.
 
+## S6 quy tắc mật khẩu (25/11/2026, nhánh `s6-quy-tac-mat-khau`)
+
+Đã làm: quy tắc chung ở `Backend/src/shared/validation/passwordPolicy.js`: tối thiểu 8 ký tự, có chữ và số, không trùng email
+(cả phần trước @) hay tên đăng nhập. Lỗi trả `code: 'WEAK_PASSWORD'` kèm `reason`. Áp ở đăng ký, đăng ký dòng họ kèm Manager,
+admin tạo dòng họ kèm Manager, admin tạo Manager, admin tạo tài khoản, admin đặt mật khẩu hộ, manager tạo thành viên kèm tài khoản,
+manager đặt mật khẩu hộ, tạo tài khoản khi thêm/sửa người trên cây, nhận lời mời, đặt lại mật khẩu bằng mã, tự đổi mật khẩu.
+Đăng nhập không áp quy tắc, nên tài khoản cũ có mật khẩu yếu vẫn vào được. Giao diện có bản sao quy tắc ở `Frontend/src/shared/utils/passwordPolicy.js`
+(lỗi đi qua `shared.passwordPolicy.*`), có test so khớp hai bản. Còn mở:
+
+- **Việc của anh Quyết:** tự đổi mật khẩu hai tài khoản tạo ngày 15/11 trên DB thật (admin đang dùng mật khẩu một ký tự). **S**
+- Form admin "Tài khoản" (`MembersPage.jsx`), manager "Tài khoản" (`AccountPage.jsx`) và ô mật khẩu ở `PersonInspector.jsx` chưa kiểm phía giao diện:
+  chúng hiện câu lỗi tiếng Việt của backend, kể cả khi đang ở giao diện tiếng Anh, vì lớp `api/*` không chuyển `reason` ra. **S**
+- Tự đổi mật khẩu và manager đặt hộ vẫn `trim()` mật khẩu mới trước khi lưu, trong khi đăng nhập so nguyên văn (lỗi có từ trước, chưa sửa). **S**
+- Chưa thử trên trình duyệt.
+
 ## Soát schema DB 15/11/2026 (DB TiDB đang cấu hình trong `Backend/.env`)
 
 DB được dựng từ `init.sql` cũ nên thiếu phần gói cước và quỹ. Đã thêm và áp `database/migrations/2026_11_15_billing_fund_missing_schema.sql`

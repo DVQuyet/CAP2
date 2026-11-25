@@ -245,7 +245,7 @@ export default function PersonInspector({
                   onChange={(event) => setField("account_password", event.target.value)}
                   placeholder={t("tree.createModal.fields.passwordHint")}
                   autoComplete="new-password"
-                  minLength={6}
+                  minLength={8}
                   disabled={!canEdit}
                 />
               </label>

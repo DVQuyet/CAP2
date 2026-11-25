@@ -48,6 +48,7 @@ import "../styles/TreeCard.css";
 import "../styles/TreeCardExtras.css";
 import "../styles/TreeLines.css";
 import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
+import { PASSWORD_MIN_LENGTH, passwordPolicyIssue } from "../../../shared/utils/passwordPolicy";
 
 const shouldSuppressInlineRelationError = (error) => Boolean(error?.__centeredNoticeShown);
 
@@ -1431,7 +1432,7 @@ const coupleActionPerson = useMemo(
       const selectedExistingId = Number(member.existing_person_id);
       if (Number.isFinite(selectedExistingId) && selectedExistingId > 0) return false;
       if (!member.account_password) return false;
-      return !member.account_email || member.account_password.length < 6;
+      return !member.account_email || Boolean(passwordPolicyIssue(member.account_password, { email: member.account_email }));
     });
 
     if (incompleteAccount) {
@@ -2101,7 +2102,7 @@ const coupleActionPerson = useMemo(
         return;
       }
 
-      if (wantsCreateAccount && (!accountEmail || accountPassword.length < 6)) {
+      if (wantsCreateAccount && (!accountEmail || passwordPolicyIssue(accountPassword, { email: accountEmail }))) {
         setConstraintNotice(t("tree.createModal.fields.incompleteAccountHint"));
         return;
       }
@@ -2319,10 +2320,7 @@ const submitCreateDialog = async () => {
     const email = String(form.account_email || "").trim();
     const password = String(form.account_password || "");
 
-    if (password && (!email || password.length < 6)) {
-      setStatus(t("tree.createModal.fields.incompleteAccountHint"));
-      return;
-    }
+    if (password && (!email || passwordPolicyIssue(password, { email }))) { setStatus(t("tree.createModal.fields.incompleteAccountHint")); return; }
   }
 
   if (isBirthDateInFuture(form.birth_date)) {
@@ -3412,7 +3410,7 @@ const submitCreateDialog = async () => {
                                     value={member.account_password || ""}
                                     onChange={(event) => updateGenealogyAiDraftMember(member.temporary_id, { account_password: event.target.value })}
                                     disabled={genealogyAiSaving}
-                                    minLength={6}
+                                    minLength={PASSWORD_MIN_LENGTH}
                                   />
                                 </label>
                                 <small>{t("tree.genealogyAi.accountCreateHint")}</small>

@@ -1,5 +1,6 @@
 const db = require("../../config/db");
 const bcrypt = require("bcryptjs");
+const { rejectWeakPassword } = require("../../shared/validation/passwordPolicy");
 const { ensureFreeSubscriptionForClan } = require("../billing/billing.service");
 
 // Đăng ký dòng họ mới + chỉ định trưởng họ
@@ -110,9 +111,8 @@ exports.registerClanWithManager = async(req, res) => {
         return res.status(400).json({ success: false, message: "Thiếu email" });
     }
 
-    if (!password || String(password).trim() === "") {
-        return res.status(400).json({ success: false, message: "Thiếu mật khẩu" });
-    }
+    if (!password || String(password).trim() === "") return res.status(400).json({ success: false, message: "Thiếu mật khẩu" });
+    if (rejectWeakPassword(res, String(password), { email })) return;
 
     if (!display_name || String(display_name).trim() === "") {
         return res.status(400).json({ success: false, message: "Thiếu tên hiển thị" });

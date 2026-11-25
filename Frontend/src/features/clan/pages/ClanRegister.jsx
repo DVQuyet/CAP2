@@ -9,6 +9,7 @@ import termsText from "./terms.txt?raw";
 import privacyText from "./privacy.txt?raw";
 import { notify } from "../../../shared/utils/toast";
 import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
+import { passwordPolicyMessage } from "../../../shared/utils/passwordPolicy";
 
 const ClanRegister = () => {
   const { t } = useTranslation();
@@ -105,10 +106,9 @@ const ClanRegister = () => {
       return;
     }
 
-    if (managerForm.password !== managerForm.confirm_password) {
-      setError(t("clan.register.passwordMismatch"));
-      return;
-    }
+    if (managerForm.password !== managerForm.confirm_password) { setError(t("clan.register.passwordMismatch")); return; }
+    const weakPassword = passwordPolicyMessage(t, managerForm.password, { email: managerForm.email });
+    if (weakPassword) { setError(weakPassword); return; }
 
     setLoading(true);
 

@@ -5,6 +5,7 @@ import "./register.css";
 import { fetchSocialRegistrationProfileAPI, registerAPI } from "../../../api/authService";
 import DateInput from "../../../shared/components/DateInput";
 import { vietnamDateToIso } from "../../../shared/utils/dateFormat";
+import { passwordPolicyMessage } from "../../../shared/utils/passwordPolicy";
 import termsText from "./terms.txt?raw";
 import privacyText from "./privacy.txt?raw";
 
@@ -148,10 +149,8 @@ export default function Register({ isOpen, onClose, onLoginClick }) {
       setError(t("auth.register.errors.emailRequired"));
       return;
     }
-    if (form.password.length < 6) {
-      setError(t("auth.register.errors.passwordLength"));
-      return;
-    }
+    const weakPassword = passwordPolicyMessage(t, form.password, { email: form.email });
+    if (weakPassword) { setError(weakPassword); return; }
     if (!form.birth_date) {
       setError(t("auth.register.errors.birthDateRequired"));
       return;

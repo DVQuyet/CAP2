@@ -11,6 +11,7 @@ import { getStoredUser } from "../../../shared/utils/auth";
 import { resolveImageUrl } from "../../../shared/utils/media";
 import "./MemberDashboard.css";
 import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
+import { assertPasswordPolicy } from "../../../shared/utils/passwordPolicy";
 import BiographyDraftDialog from "../../../shared/components/BiographyDraftDialog";
 
 function personName(person, t) {
@@ -201,11 +202,10 @@ export default function MemberProfile() {
   const savePassword = async (event) => {
     event.preventDefault();
     setSavingPassword(true);
-    setError("");
-    setNotice("");
+    setError(""); setNotice("");
     try {
       if (!passwordForm.current) throw new Error(t("member.profile.messages.passwordCurrentRequired"));
-      if (passwordForm.next.length < 6) throw new Error(t("member.profile.messages.passwordLength"));
+      assertPasswordPolicy(t, passwordForm.next, { email: getStoredUser()?.email });
       if (passwordForm.next !== passwordForm.confirm) throw new Error(t("member.profile.messages.passwordMismatch"));
 
       await changeMemberPassword({

@@ -1,5 +1,6 @@
 const { invalidateAccountCache } = require('../../middleware/authMiddleware');
 const { updatePasswordHash } = require('../../shared/utils/passwordChange');
+const { rejectWeakPassword } = require('../../shared/validation/passwordPolicy');
 const { disconnectAccountSockets } = require('../../shared/utils/realtime');
 const {
     ensureArchivedMembersTable,
@@ -590,9 +591,7 @@ const createMember = async(req, res) => {
         if (shouldCreateAccount && (!emailTrim || !pwd)) {
             return res.status(400).json({ success: false, message: 'Vui lòng nhập email và mật khẩu' });
         }
-        if (shouldCreateAccount && pwd.length < 6) {
-            return res.status(400).json({ success: false, message: 'Mật khẩu tối thiểu 6 ký tự' });
-        }
+        if (shouldCreateAccount && rejectWeakPassword(res, pwd, { email: emailTrim })) return;
         const sn = surname != null ? String(surname).trim() : '';
         const mid = middle_name != null ? String(middle_name).trim() : '';
         const fn = first_name != null ? String(first_name).trim() : '';
@@ -787,9 +786,7 @@ const updateMemberByManager = async(req, res) => {
 
         if (has('new_password') && String(body.new_password || '').trim() !== '') {
             const np = String(body.new_password).trim();
-            if (np.length < 6) {
-                return res.status(400).json({ success: false, message: 'Mật khẩu mới tối thiểu 6 ký tự' });
-            }
+            if (rejectWeakPassword(res, np, { email: has('email') ? body.email : full.email })) return;
             const hashed = await bcrypt.hash(np, 10);
             // Đặt mật khẩu hộ: thu hồi token cũ của người đó và ngắt realtime, như khi họ tự đổi.
             await updatePasswordHash(db, targetAccountId, hashed);

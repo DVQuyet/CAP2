@@ -1,4 +1,5 @@
 const bcrypt = require("bcryptjs");
+const { rejectWeakPassword, weakPasswordBody } = require("../../shared/validation/passwordPolicy");
 const jwt = require("jsonwebtoken");
 const { getJwtSecret } = require("../../config/jwt");
 const db = require("../../config/db");
@@ -301,12 +302,8 @@ exports.acceptInvitation = async (req, res) => {
     const confirmPassword = String(req.body?.confirm_password || "");
 
     if (!token) return res.status(400).json({ success: false, message: "Thieu token loi moi." });
-    if (!password || password.length < 6) {
-      return res.status(400).json({ success: false, message: "Mat khau toi thieu 6 ky tu." });
-    }
-    if (password !== confirmPassword) {
-      return res.status(400).json({ success: false, message: "Mat khau xac nhan khong khop." });
-    }
+    if (rejectWeakPassword(res, password)) return;
+    if (password !== confirmPassword) return res.status(400).json({ success: false, message: "Mat khau xac nhan khong khop." });
 
     await connection.beginTransaction();
 
@@ -339,6 +336,8 @@ exports.acceptInvitation = async (req, res) => {
     }
 
     const email = normalizeEmail(invitation.email);
+    const weakPassword = weakPasswordBody(password, { email });
+    if (weakPassword) { await connection.rollback(); return res.status(400).json(weakPassword); }
     const roleId = roleToId(invitation.role);
     const hashedPassword = await bcrypt.hash(password, 10);
 
