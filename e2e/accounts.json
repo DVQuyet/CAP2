@@ -1,0 +1,8 @@
+{
+  "_note": "Tài khoản giả cho bộ thử trình duyệt, chỉ tồn tại trên DB thử (cap2_test / MySQL của CI). Không phải mật khẩu thật.",
+  "password": "E2e#Thu2026",
+  "clanName": "E2E Họ Thử",
+  "admin": { "email": "e2e_admin@example.test", "name": "E2E Quản Trị" },
+  "manager": { "email": "e2e_manager@example.test", "name": "Trần Văn Quản" },
+  "member": { "email": "e2e_member@example.test", "name": "Trần Thị Mai" }
+}

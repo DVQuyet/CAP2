@@ -120,6 +120,22 @@ node --check server.js
 npm run test:chatbot
 ```
 
+Bộ thử trình duyệt (Playwright, thư mục `e2e/`): đăng nhập ba vai trò, mở cây, bật/tắt toàn màn hình, trang quản lý gia phả của admin,
+AI điền form sự kiện với LLM giả (không gọi Groq). Cần `Backend/.env.local` trỏ vào DB thử đã `npm run migrate` (mục Database thử).
+Lần đầu cài một lần, sau đó chạy bằng một lệnh ở gốc repo:
+
+```powershell
+cd e2e; npm install; npx playwright install chromium; cd ..
+```
+
+```powershell
+npm run test:e2e
+```
+
+Lệnh này tự tạo lại dữ liệu thử (`Backend/scripts/e2e-seed.js`: tài khoản `e2e_*@example.test`, dòng họ "E2E Họ Thử"; dừng nếu `DB_NAME`
+là `defaultdb`), bật LLM giả :4010, Backend :3100, Frontend :5180, rồi chạy trình duyệt. Báo cáo lỗi: `e2e/test-results/`.
+CI chạy cùng bộ này trên MySQL trong container (job `e2e` trong `.github/workflows/ci.yml`).
+
 Python voice worker:
 
 ```powershell

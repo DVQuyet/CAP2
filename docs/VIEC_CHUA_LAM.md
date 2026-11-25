@@ -6,6 +6,21 @@ Các file đó giữ làm nhật ký; việc mới thêm vào đây.
 
 Ký hiệu công sức: **S** < 2 giờ · **M** nửa ngày–1 ngày · **L** nhiều ngày. Cột "Ai làm" gợi ý chia việc khi chạy nhiều agent.
 
+## Đợt 25/11/2026 – S4: bộ thử trình duyệt (nhánh `s4-thu-trinh-duyet`)
+
+Đã làm: thư mục `e2e/` (Playwright, Chromium), chạy bằng `npm run test:e2e` ở gốc repo; job `e2e` trong CI dùng MySQL 8 trong container,
+`npm run migrate` dựng schema. Dữ liệu: `Backend/scripts/e2e-seed.js` (3 tài khoản `e2e_*@example.test`, dòng họ "E2E Họ Thử" 5 người;
+dừng nếu `DB_NAME` trống hoặc `defaultdb`, hoặc DB đang nối khác `DB_NAME`). LLM giả `e2e/fake-llm.mjs` giả API Groq qua `GROQ_BASE_URL`,
+không sửa mã backend. Luồng phủ: đăng nhập admin/manager/member (+ sai mật khẩu), mở cây, toàn màn hình (vị trí fixed, phủ cửa sổ, thoát bằng nút
+và Esc), trang quản lý gia phả của admin, AI điền form sự kiện rồi lưu. Đã thử đưa lại hai lỗi 15/11 (toàn màn hình, trang admin sập): test bắt được cả hai.
+Chạy trên `cap2_test`: 9/9 (gồm một test "lỗi đã biết" dưới đây). Còn mở:
+
+- **Lỗi giao diện mới thấy:** ở 1280x800 nút tròn của khung chat AI (`.ai-chat-widget`) đè lên nút "Toàn màn hình" của cây (góc dưới phải),
+  bấm chuột không tới. Test `02-tree.spec.mjs` đánh dấu `test.fail()`; sửa xong thì gỡ dòng đó. Phần sửa nằm ở thanh công cụ cây / layout. **S**
+- Job `e2e` chưa chạy trên GitHub (chưa push): schema chưa thử trên MySQL 8 thật (chỉ TiDB), lần chạy CI đầu là lần kiểm đầu tiên. **S**
+- LLM giả chỉ trả lời "AI lập kế hoạch sự kiện"; chưa giả lỗi 429 / câu trả lời bị cắt (lỗi 15/11 thứ ba vẫn chỉ có unit test `chatbot.groqFallback`). **S**
+- Chưa phủ: điện thoại 390x844, trợ lý chat, xuất ảnh cây, sửa cây. **M**
+
 ## Đợt 25/11/2026 – S2, S3: DB thử và schema dựng lại được từ repo (nhánh `s2s3-db-thu-va-schema`)
 
 Đã làm: `database/schema/` nay đủ 48 bảng như DB thật (`init.sql` 23 bảng lõi gồm gói cước, quỹ, `password_reset_tokens`; `02_modules.sql`,
