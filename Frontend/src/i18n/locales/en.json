@@ -2450,7 +2450,7 @@
     "viewMode": {
       "title": "Tree view",
       "wholeClan": "Whole family",
-      "wholeClanHint": "Show everyone on the tree",
+      "wholeClanHint": "Clears the person filter; collapsed branches stay collapsed",
       "byPerson": "Around one person",
       "byPersonHint": "Their ancestors, descendants and spouses",
       "byPersonChip": "Around: {{name}}",

@@ -6,6 +6,19 @@ const LAYOUT_ACTION_KEYS = ["auto", "save"];
 const DANGER_KEYS = new Set(["clearLocal"]);
 
 const visible = (item) => item && !item.hidden;
+const markDanger = (item) => (DANGER_KEYS.has(item.key) ? { ...item, danger: true } : item);
+
+// Nhóm menu cho bảng công cụ trên điện thoại: cùng cách đánh dấu mục nguy hiểm như menu "Bố cục".
+export function markToolGroups(toolGroups = []) {
+  return toolGroups.map((group) => ({ ...group, items: (group.items || []).map(markDanger) }));
+}
+
+// Khoá lọc của một người trong bộ chọn cây: tên không dấu + "doi N" + "generation N"
+// (gõ "đời 3", "doi 3" hay "generation 3" đều khớp, vì chữ gõ cũng được bỏ dấu cùng cách).
+export function personFilterKey(normalizedName, generation) {
+  const gen = Number(generation) || 1;
+  return `${normalizedName} doi ${gen} generation ${gen}`;
+}
 
 export function splitToolbarActions(primaryActions = [], toolGroups = []) {
   const actions = primaryActions.filter(visible);
@@ -15,7 +28,7 @@ export function splitToolbarActions(primaryActions = [], toolGroups = []) {
     ...(layoutGroup ? layoutGroup.items : []),
   ]
     .filter(visible)
-    .map((item) => (DANGER_KEYS.has(item.key) ? { ...item, danger: true } : item));
+    .map(markDanger);
 
   return {
     buttons: actions.filter((action) => !LAYOUT_ACTION_KEYS.includes(action.key)),
@@ -24,10 +37,11 @@ export function splitToolbarActions(primaryActions = [], toolGroups = []) {
   };
 }
 
-// Chữ trên nút chọn cây: "Cả dòng họ" hoặc "Theo: <tên>".
+// Chữ trên nút chọn cây: "Cả dòng họ" hoặc "Theo: <tên>" (chưa có tên thì dùng #id để không báo sai là cả dòng họ).
 export function viewChipLabel(t, rootSelector) {
-  if (rootSelector?.mode === "root" && rootSelector.rootName) {
-    return t("tree.viewMode.byPersonChip", { name: rootSelector.rootName });
+  if (rootSelector?.mode === "root") {
+    const name = rootSelector.rootName || (rootSelector.rootPersonId ? `#${rootSelector.rootPersonId}` : "");
+    if (name) return t("tree.viewMode.byPersonChip", { name });
   }
   return t("tree.viewMode.wholeClan");
 }

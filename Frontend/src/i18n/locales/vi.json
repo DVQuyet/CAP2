@@ -2450,7 +2450,7 @@
     "viewMode": {
       "title": "Xem cây",
       "wholeClan": "Cả dòng họ",
-      "wholeClanHint": "Hiện mọi người trên cây",
+      "wholeClanHint": "Bỏ lọc theo người; nhánh đang thu gọn vẫn giữ nguyên",
       "byPerson": "Theo một người",
       "byPersonHint": "Tổ tiên, con cháu và vợ chồng của người đó",
       "byPersonChip": "Theo: {{name}}",

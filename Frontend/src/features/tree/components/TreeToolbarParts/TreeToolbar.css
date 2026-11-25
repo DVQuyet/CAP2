@@ -257,3 +257,10 @@
         transition: none;
     }
 }
+
+/* Nút chat AI (56px, cố định ở góc dưới phải, z-index 7000) che cụm zoom / Toàn màn hình và nút (+).
+   Có khung chat trên trang thì nâng hai cụm này lên trên nút đó. */
+body:has(.ai-chat-widget) .fte2 .fte2-zoom,
+body:has(.ai-chat-widget) .fte2 .fte2-speedDial {
+    bottom: 84px;
+}
