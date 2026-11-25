@@ -5,7 +5,7 @@ import "./register.css";
 import { fetchSocialRegistrationProfileAPI, registerAPI } from "../../../api/authService";
 import DateInput from "../../../shared/components/DateInput";
 import { vietnamDateToIso } from "../../../shared/utils/dateFormat";
-import { passwordPolicyMessage } from "../../../shared/utils/passwordPolicy";
+import { passwordPolicyMessage, weakPasswordErrorMessage } from "../../../shared/utils/passwordPolicy";
 import termsText from "./terms.txt?raw";
 import privacyText from "./privacy.txt?raw";
 
@@ -192,7 +192,7 @@ export default function Register({ isOpen, onClose, onLoginClick }) {
         navigate("/waiting");
       }, 650);
     } catch (err) {
-      setError(err?.message || t("auth.register.failed"));
+      setError(weakPasswordErrorMessage(t, err) || err?.message || t("auth.register.failed"));
     } finally {
       setLoading(false);
     }

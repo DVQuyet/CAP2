@@ -48,7 +48,7 @@ import "../styles/TreeCard.css";
 import "../styles/TreeCardExtras.css";
 import "../styles/TreeLines.css";
 import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
-import { PASSWORD_MIN_LENGTH, passwordPolicyIssue } from "../../../shared/utils/passwordPolicy";
+import { PASSWORD_MIN_LENGTH, passwordPolicyIssue, passwordPolicyMessage } from "../../../shared/utils/passwordPolicy";
 
 const shouldSuppressInlineRelationError = (error) => Boolean(error?.__centeredNoticeShown);
 
@@ -1472,7 +1472,7 @@ const coupleActionPerson = useMemo(
         }
 
         const isLiving = member.is_living === "1";
-        const shouldCreateAccount = isLiving && Boolean(member.account_email && member.account_password.length >= 6);
+        const shouldCreateAccount = isLiving && Boolean(member.account_email && !passwordPolicyIssue(member.account_password, { email: member.account_email }));
         const memberGeneration = generationByTemporaryId.get(member.temporary_id) || 1;
         const memberX = baseX + (index % 4) * (CARD_WIDTH + 70);
         const memberY = generationY(memberGeneration);
@@ -2103,7 +2103,7 @@ const coupleActionPerson = useMemo(
       }
 
       if (wantsCreateAccount && (!accountEmail || passwordPolicyIssue(accountPassword, { email: accountEmail }))) {
-        setConstraintNotice(t("tree.createModal.fields.incompleteAccountHint"));
+        setConstraintNotice(accountEmail ? passwordPolicyMessage(t, accountPassword, { email: accountEmail }) : t("tree.createModal.fields.incompleteAccountHint"));
         return;
       }
 
@@ -2320,7 +2320,7 @@ const submitCreateDialog = async () => {
     const email = String(form.account_email || "").trim();
     const password = String(form.account_password || "");
 
-    if (password && (!email || passwordPolicyIssue(password, { email }))) { setStatus(t("tree.createModal.fields.incompleteAccountHint")); return; }
+    if (password && (!email || passwordPolicyIssue(password, { email }))) { setStatus(email ? passwordPolicyMessage(t, password, { email }) : t("tree.createModal.fields.incompleteAccountHint")); return; }
   }
 
   if (isBirthDateInFuture(form.birth_date)) {
@@ -2344,7 +2344,7 @@ const submitCreateDialog = async () => {
     }
     const accountEmail = String(form.account_email || "").trim();
     const accountPassword = String(form.account_password || "");
-    const shouldCreateAccount = form.is_living === "1" && Boolean(accountEmail && accountPassword.length >= 6);
+    const shouldCreateAccount = form.is_living === "1" && Boolean(accountEmail && !passwordPolicyIssue(accountPassword, { email: accountEmail }));
     const createBody = {
       ...form,
       ...historical.payload,

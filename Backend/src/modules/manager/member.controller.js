@@ -785,7 +785,7 @@ const updateMemberByManager = async(req, res) => {
         }
 
         if (has('new_password') && String(body.new_password || '').trim() !== '') {
-            const np = String(body.new_password).trim();
+            const np = String(body.new_password); // Không trim: đăng nhập so nguyên văn.
             if (rejectWeakPassword(res, np, { email: has('email') ? body.email : full.email })) return;
             const hashed = await bcrypt.hash(np, 10);
             // Đặt mật khẩu hộ: thu hồi token cũ của người đó và ngắt realtime, như khi họ tự đổi.

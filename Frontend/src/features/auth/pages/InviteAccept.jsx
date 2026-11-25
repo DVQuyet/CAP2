@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { acceptInvitation, verifyInvitation } from "../../../api/invitationService";
 import { ensureMediaToken } from "../../../services/mediaToken";
 import { persistAuthSession } from "../../../shared/utils/auth";
-import { PASSWORD_MIN_LENGTH, passwordPolicyMessage } from "../../../shared/utils/passwordPolicy";
+import { PASSWORD_MIN_LENGTH, passwordPolicyMessage, weakPasswordErrorMessage } from "../../../shared/utils/passwordPolicy";
 import "./invite.css";
 
 const initialForm = {
@@ -80,7 +80,7 @@ export default function InviteAccept() {
     } catch (error) {
       setState((current) => ({
         ...current,
-        error: error?.message || t("auth.invite.acceptFailed"),
+        error: weakPasswordErrorMessage(t, error) || error?.message || t("auth.invite.acceptFailed"),
       }));
     } finally {
       setSubmitting(false);

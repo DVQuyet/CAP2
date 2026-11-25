@@ -4,6 +4,7 @@ import { fullName, personToForm } from "../../utils/tree-editor/treePersonUtils"
 import ImageUpload from "../../../../shared/components/ImageUpload";
 import HistoricalPersonFields from "./HistoricalPersonFields";
 import BiographyDraftDialog from "../../../../shared/components/BiographyDraftDialog";
+import { PASSWORD_MIN_LENGTH } from "../../../../shared/utils/passwordPolicy";
 
 export default function PersonInspector({
   person,
@@ -244,8 +245,7 @@ export default function PersonInspector({
                   value={form.account_password || ""}
                   onChange={(event) => setField("account_password", event.target.value)}
                   placeholder={t("tree.createModal.fields.passwordHint")}
-                  autoComplete="new-password"
-                  minLength={8}
+                  autoComplete="new-password" minLength={PASSWORD_MIN_LENGTH}
                   disabled={!canEdit}
                 />
               </label>

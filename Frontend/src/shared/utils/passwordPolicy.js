@@ -6,6 +6,7 @@ export const PASSWORD_MIN_LENGTH = 8;
 export const PASSWORD_MAX_LENGTH = 128;
 const LETTER_RE = /\p{L}/u;
 const DIGIT_RE = /\p{Nd}/u;
+const REASONS = new Set(["too_short", "too_long", "needs_letter_and_digit", "same_as_identity"]);
 
 const fold = (text) => String(text ?? "").normalize("NFC").trim().toLowerCase();
 
@@ -38,6 +39,15 @@ export function passwordPolicyMessage(t, password, identity) {
   const issue = passwordPolicyIssue(password, identity);
   if (!issue) return null;
   return t(`shared.passwordPolicy.${issue}`, { min: PASSWORD_MIN_LENGTH, max: PASSWORD_MAX_LENGTH });
+}
+
+// Lỗi API WEAK_PASSWORD (backend gửi code + reason) -> câu đã dịch; lỗi khác -> null.
+// Đọc ở error.code/error.reason hoặc error.data (lớp api/* gắn nguyên thân phản hồi vào error.data).
+export function weakPasswordErrorMessage(t, error) {
+  const code = error?.code || error?.data?.code;
+  const reason = error?.reason || error?.data?.reason;
+  if (code !== "WEAK_PASSWORD" || !REASONS.has(reason)) return null;
+  return t(`shared.passwordPolicy.${reason}`, { min: PASSWORD_MIN_LENGTH, max: PASSWORD_MAX_LENGTH });
 }
 
 // Cho form xử lý lỗi bằng try/catch: ném Error mang câu đã dịch nếu mật khẩu không đạt.

@@ -31,7 +31,7 @@ async function postAuth(path, body, fallbackError) {
         console.error("Phản hồi không phải JSON:", text);
     }
     if (!res.ok) {
-        throw new Error(result.message || fallbackError);
+        throw Object.assign(new Error(result.message || fallbackError), { status: res.status, data: result });
     }
     return result;
 }

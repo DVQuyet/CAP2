@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import "./login.css";
 import { requestPasswordResetAPI, resetPasswordWithCodeAPI } from "../../../api/authService";
-import { PASSWORD_MIN_LENGTH, passwordPolicyMessage } from "../../../shared/utils/passwordPolicy";
+import { PASSWORD_MIN_LENGTH, passwordPolicyMessage, weakPasswordErrorMessage } from "../../../shared/utils/passwordPolicy";
 
 const ForgotPassword = () => {
   const { t } = useTranslation();
@@ -54,7 +54,7 @@ const ForgotPassword = () => {
         setTimeout(() => navigate("/login", { replace: true }), 1200);
       }
     } catch (err) {
-      setError(err.message || t("auth.forgotPassword.resetFailed"));
+      setError(weakPasswordErrorMessage(t, err) || err.message || t("auth.forgotPassword.resetFailed"));
     } finally {
       setLoading(false);
     }

@@ -13,6 +13,7 @@ import { formatDate } from "../../../shared/utils/dateFormat";
 import { Link } from "react-router-dom";
 import "./MembersPage.css";
 import { friendlyErrorMessage } from "../../../shared/utils/friendlyError";
+import { passwordPolicyMessage } from "../../../shared/utils/passwordPolicy";
 import ErrorState from "../../../shared/components/ErrorState";
 
 const emptyForm = {
@@ -283,13 +284,11 @@ export default function MembersPage() {
 
   const handleSave = async (e) => {
     e.preventDefault();
+    const weakPassword = form.password ? passwordPolicyMessage(t, form.password, { email: form.email }) : null;
+    if (weakPassword) { setToast({ show: true, message: weakPassword, type: "error" }); return; }
     setSaving(true);
     try {
-      const payload = {
-        ...form,
-        role_id: Number(form.role_id),
-        clan_id: Number(form.role_id) === 1 ? null : (form.clan_id || null),
-      };
+      const payload = { ...form, role_id: Number(form.role_id), clan_id: Number(form.role_id) === 1 ? null : (form.clan_id || null) };
       if (!payload.password) delete payload.password;
       if (form.account_id) {
         await updateAdminAccountAccess(form.account_id, payload);

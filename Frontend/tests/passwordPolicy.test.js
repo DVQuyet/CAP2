@@ -54,3 +54,39 @@ test("câu lỗi lấy từ i18n; vi.json và en.json có đủ khóa cho mọi 
     assert.ok(en.shared.passwordPolicy[reason], `en ${reason}`);
   }
 });
+
+test("lỗi API WEAK_PASSWORD hiện câu i18n, không hiện câu tiếng Việt thô của server", async () => {
+  const { weakPasswordErrorMessage } = await import("../src/shared/utils/passwordPolicy.js");
+  const { friendlyErrorMessage } = await import("../src/shared/utils/friendlyError.js");
+  const serverBody = { success: false, message: "Mật khẩu cần có cả chữ và số.", code: "WEAK_PASSWORD", reason: "needs_letter_and_digit" };
+  // Kiểu lỗi của services/api.js, api/memberService.js, api/adminService.js: thân phản hồi nằm ở error.data.
+  const apiError = Object.assign(new Error(serverBody.message), { status: 400, data: serverBody });
+  assert.equal(weakPasswordErrorMessage(t, apiError), "shared.passwordPolicy.needs_letter_and_digit|8");
+  assert.equal(weakPasswordErrorMessage(t, { code: "WEAK_PASSWORD", reason: "too_short" }), "shared.passwordPolicy.too_short|8");
+  assert.equal(weakPasswordErrorMessage(t, { code: "WEAK_PASSWORD", reason: "la" }), null);
+  assert.equal(weakPasswordErrorMessage(t, Object.assign(new Error("x"), { status: 400, data: { message: "x" } })), null);
+
+  const origError = console.error;
+  console.error = () => {};
+  try {
+    assert.equal(friendlyErrorMessage(apiError, t), "shared.passwordPolicy.needs_letter_and_digit|8");
+    const other = Object.assign(new Error("Email đã tồn tại"), { status: 400, data: { message: "Email đã tồn tại" } });
+    assert.equal(friendlyErrorMessage(other, t), "Email đã tồn tại");
+  } finally {
+    console.error = origError;
+  }
+});
+
+test("không còn minLength viết thẳng hay kiểm độ dài 6 ở form mật khẩu", () => {
+  const files = [
+    "features/tree/components/FamilyTreeEditorParts/PersonInspector.jsx",
+    "features/tree/components/FamilyTreeEditor.jsx",
+    "features/admin/pages/MembersPage.jsx",
+    "features/manager/pages/AccountPage.jsx",
+  ];
+  for (const file of files) {
+    const text = readFileSync(new URL(`../src/${file}`, import.meta.url), "utf8");
+    assert.doesNotMatch(text, /minLength=\{\d+\}/, file);
+    assert.doesNotMatch(text, /password\.length\s*[<>]=?\s*\d/i, file);
+  }
+});

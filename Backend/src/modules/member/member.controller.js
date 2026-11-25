@@ -1137,7 +1137,7 @@ exports.changePassword = async (req, res) => {
     const accountId = req.user.id;
     const { current_password, new_password } = req.body;
     const cur = String(current_password ?? "");
-    const next = String(new_password ?? "").trim();
+    const next = String(new_password ?? ""); // Không trim: đăng nhập so nguyên văn.
 
     if (rejectWeakPassword(res, next)) return;
     if (cur === "") {

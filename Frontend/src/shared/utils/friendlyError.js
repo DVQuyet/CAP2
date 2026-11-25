@@ -1,5 +1,6 @@
 // Đổi lỗi kỹ thuật thành khóa i18n thân thiện (common.states.error.*), không bao giờ lộ "Network Error"/"Request failed...".
 // Chi tiết kỹ thuật chỉ ghi ra console.
+import { weakPasswordErrorMessage } from "./passwordPolicy.js";
 
 const TECHNICAL_MESSAGE = /network ?error|failed to fetch|load failed|request failed|status code|networkerror|timeout|aborted|unexpected token|<!doctype/i;
 
@@ -18,8 +19,8 @@ export function friendlyErrorMessage(error, t) {
   if (typeof console !== "undefined" && error) console.error("[api error]", error);
   const status = Number(error?.status) || 0;
   const message = typeof error?.message === "string" ? error.message.trim() : "";
-  if (status >= 400 && status < 500 && message && !TECHNICAL_MESSAGE.test(message)) {
-    return message;
-  }
+  const weakPassword = weakPasswordErrorMessage(t, error); // lỗi WEAK_PASSWORD: câu qua i18n thay cho câu tiếng Việt của server
+  if (weakPassword) return weakPassword;
+  if (status >= 400 && status < 500 && message && !TECHNICAL_MESSAGE.test(message)) return message;
   return t(friendlyErrorKey(error));
 }

@@ -145,3 +145,34 @@ test('mọi controller tạo tài khoản hoặc đổi mật khẩu đều dùn
         assert.doesNotMatch(text, /(password|pwd|np|next)\.length\s*<\s*6/i, path.basename(file));
     }
 });
+
+// ---- Không trim mật khẩu mới: đăng nhập so nguyên văn (bcrypt.compare(String(password), hash)) ----
+test('tự đổi mật khẩu: dấu cách đầu/cuối được giữ, đăng nhập đúng nguyên văn', async () => {
+    const bcrypt = require('bcryptjs');
+    const db = require('../src/config/db');
+    const currentHash = await bcrypt.hash('cu12345678', 4);
+    const original = db.query;
+    let savedHash = null;
+    db.query = async (sql, params) => {
+        if (/^SELECT password, email FROM accounts/.test(sql)) return [[{ password: currentHash, email: 'a@example.com' }]];
+        if (/^UPDATE accounts SET password/.test(sql)) { savedHash = params[0]; return [{ affectedRows: 1 }]; }
+        throw new Error(`truy vấn không mong đợi: ${sql}`);
+    };
+    try {
+        const res = fakeRes();
+        const req = { user: { id: 7, role_id: 3 }, body: { current_password: 'cu12345678', new_password: '  moi12345  ' } };
+        await memberController.changePassword(req, res);
+        assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body));
+        assert.ok(savedHash, 'phải ghi mật khẩu mới');
+        assert.strictEqual(await bcrypt.compare('  moi12345  ', savedHash), true);
+        assert.strictEqual(await bcrypt.compare('moi12345', savedHash), false);
+    } finally {
+        db.query = original;
+    }
+});
+
+test('manager đặt hộ và tự đổi không còn trim() giá trị mật khẩu mới', () => {
+    const read = (p) => fs.readFileSync(path.join(__dirname, '..', 'src', 'modules', p), 'utf8');
+    assert.doesNotMatch(read('manager/member.controller.js'), /const np = String\(body\.new_password\)\.trim\(\)/);
+    assert.doesNotMatch(read('member/member.controller.js'), /String\(new_password \?\? ""\)\.trim\(\)/);
+});
