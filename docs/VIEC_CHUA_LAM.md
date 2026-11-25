@@ -6,6 +6,17 @@ Các file đó giữ làm nhật ký; việc mới thêm vào đây.
 
 Ký hiệu công sức: **S** < 2 giờ · **M** nửa ngày–1 ngày · **L** nhiều ngày. Cột "Ai làm" gợi ý chia việc khi chạy nhiều agent.
 
+## Đợt 25/11/2026 – Q-2: trợ lý chỉ hỏi với tư cách chính tài khoản (nhánh `s5-q2-current-member`)
+
+Đã làm: hàm mới `resolveViewerPersonId` (`Backend/src/modules/chatbot/viewerPerson.js`) thay chỗ đọc `currentMemberId` ở `/ask`, `/history`,
+xóa lịch sử, `/suggestions`, `/relationship/:id`, 👍/👎. Chỉ nhận id bằng `req.user.person_id` hoặc người tài khoản đã gắn trong `account_people`
+cùng dòng họ; sai thì dùng người của chính tài khoản (member, manager, admin như nhau). Test: `tests/chatbot.viewerPerson.test.js` (11 test). Còn mở:
+
+- `/api/chatbot/path` vẫn nhận `sourceId` tùy ý (đường quan hệ giữa hai người bất kỳ, Frontend chưa gọi). Cần chốt: coi là "góc nhìn" (ép về chính mình)
+  hay là câu hỏi A–B như "quan hệ giữa A và B" trong `/ask`. **S**
+- Id sai đang bị bỏ qua lặng lẽ, không báo client; Frontend có thể hiện tên "góc nhìn" khác với người trợ lý thật sự dùng. Chưa soát Frontend. **S**
+- Chưa có test cho `/ask` với id người khác qua đường đầy đủ (mới test `/relationship/:id` và `/suggestions`); bộ e2e chỉ gửi đúng id của mình. **S**
+
 ## Soát schema DB 15/11/2026 (DB TiDB đang cấu hình trong `Backend/.env`)
 
 DB được dựng từ `init.sql` cũ nên thiếu phần gói cước và quỹ. Đã thêm và áp `database/migrations/2026_11_15_billing_fund_missing_schema.sql`
