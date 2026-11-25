@@ -15,6 +15,7 @@ const { matchKinshipLabel } = require('./kinshipTermService');
 const { getKinOrderContext, filterByKinOrder } = require('./kinshipBirthOrder');
 const { AsyncLocalStorage } = require('async_hooks');
 const { applyFamilyVisibility } = require('../genealogy/treeVisibility');
+const { queryPeopleWithHistory } = require('./peopleHistoryQuery');
 
 // Người hỏi có được thấy quan hệ nhạy cảm (families.visibility = 'managers') không. Đặt một lần cho cả yêu cầu
 // (runWithViewer) để mọi chỗ dùng đồ thị trong lượt hỏi đó đều thấy đúng phần được phép, giống cây gia phả.
@@ -259,18 +260,14 @@ async function loadClanGraph(clanId, options = {}) {
 
     // Thành viên đã bị xóa khỏi cây (chuyển vào kho lưu trữ) không tham gia suy luận quan hệ.
     await ensureArchivedMembersTable();
-    const historicalFields = ', p.birth_date_precision, p.death_date_precision, p.death_anniversary_lunar';
-    const peopleSql = `
+    const peopleSql = (historicalFields) => `
         SELECT p.id, p.clan_id, p.display_name, p.surname, p.middle_name, p.first_name,
                p.gender, p.generation, p.branch, p.birth_date, p.death_date, p.is_living, p.display_order${historicalFields}
         FROM people p LEFT JOIN accounts a ON a.person_id = p.id
         ${ARCHIVED_MEMBER_JOIN_SQL}
         WHERE p.clan_id = ? AND am.id IS NULL
         GROUP BY p.id`;
-    let [peopleRows] = await db.query(peopleSql, [normalizedClanId]).catch((error) => {
-        if (error.code !== 'ER_BAD_FIELD_ERROR') throw error;
-        return db.query(peopleSql.replace(historicalFields, ''), [normalizedClanId]);
-    });
+    let [peopleRows] = await queryPeopleWithHistory(peopleSql, [normalizedClanId], 'p.');
     let [familyRows] = await db.query('SELECT * FROM families WHERE clan_id = ?', [normalizedClanId]);
     const familyIds = familyRows.map((family) => Number(family.id)).filter((id) => Number.isFinite(id));
     let childRows = [];

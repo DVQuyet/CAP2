@@ -30,6 +30,7 @@ global.Date = class extends RealDate {
 };
 
 const db = require('../src/config/db');
+const { projectPeople } = require('./chatbot-e2e/projectPeople');
 const CLAN_ID = 13;
 const ACCOUNT_ID = 9;
 const ME = 101;
@@ -197,10 +198,6 @@ const likeMatch = (row, pattern) => {
     const fields = [row.display_name, [row.surname, row.middle_name, row.first_name].join(' '), row.first_name, row.surname];
     return fields.some((field) => strip(field).includes(needle));
 };
-function projectPeople(sql, rows) {
-    const columns = sql.slice(7, sql.indexOf(' FROM ')).split(',').map((column) => column.trim().replace(/^p\./, ''));
-    return columns.includes('*') ? rows : rows.map((row) => Object.fromEntries(columns.map((column) => [column, row[column]])));
-}
 async function fakeQuery(rawSql, params = []) {
     const sql = String(rawSql).replace(/\s+/g, ' ').trim();
     const has = (pattern) => pattern.test(sql);

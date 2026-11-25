@@ -5,6 +5,7 @@ const memberSearch = require('./memberSearchService');
 const chatbotAI = require('./chatbotAI');
 const { resolveKinshipReference } = require('./kinshipReferenceService');
 const { toPositiveId, queryOptional } = require('./chatbotUtils');
+const { queryPeopleWithHistory } = require('./peopleHistoryQuery');
 const { formatDateWithPrecision, ageOf, relativesOf, describePersonBrief, formatDateVN } = require('./chatbotFormat');
 
 function firstEntity(plan) {
@@ -212,10 +213,9 @@ async function handlePersonInfoIntent({ clanId, currentMemberId, message, parsed
     const ids = rows.map((row) => toPositiveId(row.id)).filter(Boolean).slice(0, 3);
     const fields = 'id, display_name, first_name, middle_name, surname, gender, generation, branch, birth_date, death_date, is_living, hometown, bio, note';
     const from = `FROM people WHERE clan_id = ? AND id IN (${ids.map(() => '?').join(',')})`;
-    const profiles = ids.length
-        ? await queryOptional(`SELECT ${fields}, birth_date_precision, death_date_precision, death_anniversary_lunar ${from}`, [clanId, ...ids])
-            .then((rows) => rows.length ? rows : queryOptional(`SELECT ${fields} ${from}`, [clanId, ...ids]))
-        : [];
+    const [profiles] = ids.length
+        ? await queryPeopleWithHistory((extra) => `SELECT ${fields}${extra} ${from}`, [clanId, ...ids])
+        : [[]];
     const subtype = parsed.subtype || null;
     const resolvedData = { type: 'person_profile', data: profiles, entity: entity || null, subtype };
     const ai = await explainResolvedIntent({

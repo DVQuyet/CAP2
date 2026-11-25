@@ -21,6 +21,7 @@ const { normalizeTyping, normalizeTypingDetailed } = require('./typingNormalizer
 const { runWithQuestion } = require('./text/nameMatch');
 const { runWithKinOrder, getKinOrderContext, filterByKinOrder, anchorsOfMatches, labelWithOrder } = require('./kinshipBirthOrder');
 const { withTreeFields, fallbackFlag } = require('./chatbotResponseMeta');
+const { createChatbotMetadataFilter } = require('./chatbotHistoryMetadata');
 const { saveFeedback, ensureChatbotHiddenSchema } = require('./chatbotFeedbackService');
 const { describePersonBrief, capitalizeFirst, formatDateVN, dateParts, birthYearOf } = require('./chatbotFormat');
 const { plainTermToKey, hasVietnameseDiacritics } = require('./kinshipTermService');
@@ -42,7 +43,7 @@ async function storeTurnAnswer(res, body) {
         intent: body.intent || null,
         confidence: body.confidence ?? null,
         metadata: { ...body, turn: { question: turn.message, rawQuestion: turn.rawMessage || turn.message, pending: turn.pending || null } },
-    }).catch(() => null);
+    }, turn.user).catch(() => null);
 }
 
 // Gợi ý câu hỏi tiếp theo về người vừa được hỏi tới.
@@ -72,11 +73,9 @@ async function restoreMemoryFromHistory(conversationId, memorySessionId) {
         `SELECT metadata FROM chatbot_messages WHERE conversation_id = ?${columns.has('hidden_at') ? ' AND hidden_at IS NULL' : ''} ORDER BY id DESC LIMIT 4`,
         [conversationId]
     );
+    const filterMetadata = createChatbotMetadataFilter();
     for (const row of rows) {
-        let meta = row.metadata;
-        if (typeof meta === 'string') {
-            try { meta = JSON.parse(meta); } catch (_) { meta = null; }
-        }
+        const meta = await filterMetadata(row.metadata);
         if (!meta?.turn) continue;
         return updateConversationMemory(memorySessionId, {
             lastQuestion: meta.turn.question || null,
@@ -205,7 +204,7 @@ async function canAccessClan(req, clanId, currentMemberId) {
     return personRows.length > 0 && toPositiveId(req.user?.person_id) === currentMemberId;
 }
 
-async function storeChatbotMessage(payload) {
+async function storeChatbotMessage(payload, user) {
     if (!(await memberSearch.tableExists('chatbot_messages'))) return null;
     const columns = await getTableColumns('chatbot_messages');
     const insertColumns = [];
@@ -231,7 +230,8 @@ async function storeChatbotMessage(payload) {
     add('message', payload.message);
     add('intent', payload.intent || null);
     add('confidence', payload.confidence ?? null);
-    add('metadata', payload.metadata ? JSON.stringify(payload.metadata) : null);
+    const filterMetadata = createChatbotMetadataFilter(user);
+    add('metadata', payload.metadata ? JSON.stringify(await filterMetadata(payload.metadata)) : null);
 
     if (!insertColumns.includes('message')) return null;
     if (columns.has('conversation_id') && !conversationId) return null;
@@ -2134,7 +2134,7 @@ exports.ask = withViewer(withKinOrder(async (req, res) => {
             message,
         });
         if (!res.locals) res.locals = {};
-        res.locals.chatbotTurn = { memorySessionId, conversationId, clanId, accountId, currentMemberId, message, rawMessage, forced: null, pending: null };
+        res.locals.chatbotTurn = { memorySessionId, conversationId, clanId, accountId, currentMemberId, message, rawMessage, user: req.user, forced: null, pending: null };
         let memory = conversationMemory || await restoreMemoryFromHistory(conversationId, memorySessionId).catch(() => null);
 
         // Đang hỏi lại vì trùng tên: nhận lựa chọn (nút bấm hoặc "1", "người thứ hai", "sinh 1965").
@@ -2202,7 +2202,7 @@ exports.ask = withViewer(withKinOrder(async (req, res) => {
                 intent: responsePayload.intent,
                 confidence: responsePayload.confidence,
                 metadata: { planner: responsePayload.planner },
-            });
+            }, req.user);
             responsePayload = withTreeFields(responsePayload, { currentMemberId });
             responsePayload.messageId = await storeChatbotMessage({
                 conversationId,
@@ -2214,7 +2214,7 @@ exports.ask = withViewer(withKinOrder(async (req, res) => {
                 intent: responsePayload.intent,
                 confidence: responsePayload.confidence,
                 metadata: responsePayload,
-            });
+            }, req.user);
             if (conversationId) {
                 maybeGenerateConversationTitle(conversationId).catch(() => {});
             }
@@ -2283,7 +2283,7 @@ exports.ask = withViewer(withKinOrder(async (req, res) => {
             intent: parsed.intent,
             confidence: parsed.confidence,
             metadata: { entities: parsed.entities, planner, ast: parsed.ast || null },
-        });
+        }, req.user);
 
         if (namedRelationshipPayload) {
             responsePayload = { ...namedRelationshipPayload, planner };
@@ -2436,7 +2436,7 @@ exports.ask = withViewer(withKinOrder(async (req, res) => {
             intent: responsePayload.intent,
             confidence: responsePayload.confidence,
             metadata: { ...responsePayload, turn: turnInfo, ...(fallback ? { fallback } : {}) },
-        });
+        }, req.user);
 
         if (conversationId) {
             // Đặt tiêu đề chạy nền để không làm chậm câu trả lời.
@@ -2544,15 +2544,16 @@ exports.history = async (req, res) => {
             queryParams
         );
 
+        const filterMetadata = createChatbotMetadataFilter(req.user);
         return res.json({
             success: true,
-            messages: rows.reverse().map(({ feedback_rating: feedbackRating, ...row }) => ({
+            messages: await Promise.all(rows.reverse().map(async ({ feedback_rating: feedbackRating, ...row }) => ({
                 ...row,
-                metadata: typeof row.metadata === 'string' ? JSON.parse(row.metadata || '{}') : row.metadata,
+                metadata: await filterMetadata(row.metadata),
                 feedbackRating: row.role === 'assistant' && (Number(feedbackRating) === 1 || Number(feedbackRating) === -1)
                     ? Number(feedbackRating)
                     : null,
-            })),
+            }))),
             pagination: { limit, offset },
         });
     } catch (error) {
