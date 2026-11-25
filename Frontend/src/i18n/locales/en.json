@@ -148,7 +148,6 @@
     "systemAdmin": "System administrator",
     "clanManager": "Clan manager",
     "familyMember": "Family member",
-    "leaveSystem": "Leave system",
     "collapse": "Collapse",
     "expand": "Expand",
     "collapseMenu": "Collapse menu",
@@ -194,20 +193,32 @@
       "billing": "Subscription",
       "calendar": "Vietnam calendar"
     },
-    "portalMenu": {
+    "nav": {
+      "label": "Main menu",
+      "menuButton": "Menu",
       "overview": "Overview",
-      "genealogy": "Family genealogy",
+      "genealogy": "Genealogy",
       "familyTree": "Family tree",
-      "events": "Family events",
-      "posts": "Family news",
-      "memories": "Family memories",
-      "members": "Family members",
+      "events": "Events",
+      "calendar": "Calendar",
+      "accounts": "Accounts",
       "invitations": "Invitations",
-      "pending": "Pending approvals",
+      "pending": "Approvals",
+      "billing": "Plan",
+      "posts": "Posts",
+      "news": "News",
+      "memories": "Memories",
       "fund": "Family fund",
-      "calendar": "Vietnam calendar",
-      "billing": "Subscription",
-      "profile": "Profile"
+      "landing": "Landing page",
+      "groups": {
+        "clans": "Clans",
+        "users": "Users",
+        "website": "Website",
+        "family": "Family",
+        "people": "People",
+        "community": "Community",
+        "money": "Fund and plan"
+      }
     },
     "memberTitle": "Member Portal"
   },

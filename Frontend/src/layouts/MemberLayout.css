@@ -15,11 +15,11 @@
 }
 
 .member-sidebar {
-  width: 300px;
+  width: 264px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  padding: 2.1rem 1.55rem;
+  padding: 1.25rem 1rem;
   margin: 1rem;
   border-radius: 28px;
   position: sticky;
@@ -164,7 +164,7 @@
 }
 
 .user-text {
-  text-align: center;
+  text-align: left;
   min-width: 0;
 }
 
@@ -180,65 +180,8 @@
 }
 
 .sidebar-collapsed .user-text,
-.sidebar-collapsed .member-nav-item span:last-child,
 .sidebar-collapsed .member-logout-link span:last-child {
   display: none;
-}
-
-.member-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-  flex-grow: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding-right: 0.2rem;
-}
-
-.member-nav::-webkit-scrollbar {
-  width: 0;
-}
-
-.member-nav-item {
-  display: flex;
-  align-items: center;
-  gap: 1.2rem;
-  padding: 1.1rem 1.4rem;
-  text-decoration: none;
-  color: rgba(255, 255, 255, 0.7);
-  border-radius: var(--radius-2xl);
-  transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-  min-width: 0;
-  white-space: nowrap;
-}
-
-.member-nav-item .material-symbols-outlined {
-  flex: 0 0 auto;
-}
-
-.member-nav-item span:last-child {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.sidebar-collapsed .member-nav-item {
-  justify-content: center;
-  gap: 0;
-  padding: 1rem 0;
-  border-radius: var(--radius-3xl);
-}
-
-.member-nav-item:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--color-white);
-  transform: scale(1.02);
-}
-
-.member-nav-item.active {
-  background: var(--color-gold);
-  color: #000;
-  font-weight: 700;
-  box-shadow: 0 10px 20px rgba(201, 154, 44, 0.3);
 }
 
 .member-sidebar-footer {
@@ -250,8 +193,8 @@
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 1.2rem;
-  padding: 1.2rem;
+  gap: 0.9rem;
+  padding: 0.7rem 1rem;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.05);
   color: #ff5252;
@@ -364,7 +307,7 @@
   flex-grow: 1;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1100px) {
   .member-portal-container {
     display: block;
   }
@@ -405,19 +348,9 @@
   }
 
   .member-sidebar .sidebar-user-profile,
-  .member-sidebar .member-nav-item,
   .member-sidebar .member-logout-link {
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 224, 151, 0.12);
-  }
-
-  .member-sidebar .member-nav-item {
-    color: rgba(255, 246, 220, 0.84);
-  }
-
-  .member-sidebar .member-nav-item.active {
-    background: linear-gradient(135deg, #d6a536, var(--color-brick-1));
-    color: var(--color-cream-2);
   }
 
   .member-sidebar .user-text h4,
@@ -514,15 +447,6 @@ button.sidebar-user-profile:hover {
   border-radius: var(--radius-4xl);
 }
 
-button.member-nav-item {
-  width: 100%;
-  border: 0;
-  font: inherit;
-  cursor: pointer;
-  background: transparent;
-  text-align: left;
-}
-
 button.top-icon-btn {
   border: 0;
   cursor: pointer;
@@ -535,8 +459,8 @@ button.top-icon-btn {
   justify-content: flex-start;
   gap: 1rem;
   width: 100%;
-  padding: 1rem;
-  margin-bottom: 2rem;
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 0.75rem;
   border: 1px solid rgba(214, 165, 54, 0.22);
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.055);
@@ -551,8 +475,8 @@ button.top-icon-btn {
 
 .member-sidebar .profile-img-container {
   flex: 0 0 auto;
-  width: 58px;
-  height: 58px;
+  width: 44px;
+  height: 44px;
   padding: 3px;
   border-radius: var(--radius-round);
   background: linear-gradient(135deg, #f6d36d 0%, var(--color-gold) 42%, #7f1d12 100%);
@@ -617,17 +541,17 @@ button.top-icon-btn {
 /* Unified Gia Phả Việt logo: full when expanded, G mark when collapsed */
 .member-sidebar .sidebar-header .sidebar-brand {
   width: 100%;
-  min-height: 86px;
-  margin: 0 auto 2rem;
+  min-height: 56px;
+  margin: 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: visible;
 }
 .member-sidebar .sidebar-header .sidebar-brand img {
-  width: min(210px, 100%);
-  max-width: 210px;
-  max-height: 86px;
+  width: min(176px, 100%);
+  max-width: 176px;
+  max-height: 56px;
   object-fit: contain;
   object-position: center;
   display: block;
