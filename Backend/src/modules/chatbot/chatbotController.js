@@ -66,14 +66,12 @@ function followUpSuggestions(subject, graph, askedMessage) {
 }
 
 // Trí nhớ hội thoại nằm trong RAM; khi server khởi động lại thì dựng lại từ lượt trả lời gần nhất trong DB.
-async function restoreMemoryFromHistory(conversationId, memorySessionId) {
+async function restoreMemoryFromHistory(conversationId, memorySessionId, scope = {}) {
     if (!conversationId || !(await memberSearch.tableExists('chatbot_messages'))) return null;
     const columns = await getTableColumns('chatbot_messages');
     if (!columns.has('metadata')) return null;
-    const rows = await queryOptional(
-        `SELECT metadata FROM chatbot_messages WHERE conversation_id = ?${columns.has('hidden_at') ? ' AND hidden_at IS NULL' : ''} ORDER BY id DESC LIMIT 4`,
-        [conversationId]
-    );
+    const { where, params } = chatbotHistoryScope(columns, { ...scope, conversationId });
+    const rows = await queryOptional(`SELECT metadata FROM chatbot_messages WHERE ${where} ORDER BY id DESC LIMIT 4`, params);
     const filterMetadata = createChatbotMetadataFilter();
     for (const row of rows) {
         const meta = await filterMetadata(row.metadata);
@@ -153,6 +151,8 @@ const {
 } = require('./conversationMemoryService');
 const { resolveCoreference } = require('./coreferenceResolver');
 const { buildClarificationResponse } = require('./clarificationService');
+const { chatbotHistoryScope } = require('./chatbotHistoryScope');
+const { redactForStorage } = require('./contactText');
 const {
     canAccessRelationship,
     filterEvidenceByPermission,
@@ -199,7 +199,7 @@ async function canAccessClan(req, clanId, currentMemberId) {
     if (rows.length) return true;
 
     // Hồ sơ chính của tài khoản nằm trong họ là đủ quyền vào họ; góc nhìn (currentMemberId) đã do resolveViewerPersonId kiểm.
-    const [personRows] = await db.query('SELECT id FROM people WHERE id = ? AND clan_id = ? LIMIT 1', [toPositiveId(req.user?.person_id), clanId]);
+    const [personRows] = await db.query('SELECT p.id FROM accounts a JOIN people p ON p.id = a.person_id WHERE a.id = ? AND p.clan_id = ? LIMIT 1', [accountId, clanId]);
     return personRows.length > 0 && Boolean(currentMemberId);
 }
 
@@ -226,7 +226,7 @@ async function storeChatbotMessage(payload, user) {
     add('current_member_id', payload.currentMemberId || null);
     if (columns.has('role')) add('role', payload.role);
     if (columns.has('sender')) add('sender', payload.role === 'assistant' ? 'bot' : payload.role);
-    add('message', payload.message);
+    add('message', await redactForStorage(payload.message, { user, clanId: payload.clanId, viewerPersonId: payload.currentMemberId }));
     add('intent', payload.intent || null);
     add('confidence', payload.confidence ?? null);
     const filterMetadata = createChatbotMetadataFilter(user);
@@ -318,13 +318,12 @@ async function loadChatbotContext({ clanId, currentMemberId, conversationId, mes
             : columns.has('sender')
                 ? 'sender'
                 : "'user' AS sender";
+        const { where, params } = chatbotHistoryScope(columns, {
+            conversationId, clanId, currentMemberId, accountId: toPositiveId(user?.id || user?.account_id),
+        });
         history = await filterHistoryRows(user, clanId, (await queryOptional(
-            `SELECT ${senderSelect}, message, intent
-             FROM chatbot_messages
-             WHERE conversation_id = ?${columns.has('hidden_at') ? ' AND hidden_at IS NULL' : ''}
-             ORDER BY created_at DESC, id DESC
-             LIMIT 10`,
-            [conversationId]
+            `SELECT ${senderSelect}, message, intent FROM chatbot_messages WHERE ${where} ORDER BY created_at DESC, id DESC LIMIT 10`,
+            params
         )).reverse());
     }
 
@@ -388,14 +387,15 @@ function buildGreetingReply(userProfile = {}, clanInfo = {}) {
     return `${hello} Tôi có thể giúp bạn tra quan hệ, tìm thông tin thành viên, xem lịch sử, kỷ niệm và thống kê gia phả${scope}.`;
 }
 
-async function maybeGenerateConversationTitle(conversationId) {
+async function maybeGenerateConversationTitle(conversationId, scope = {}) {
     if (!conversationId || !(await memberSearch.tableExists('chatbot_messages'))) return;
     const [conversationRows] = await queryOptional('SELECT title FROM conversations WHERE id = ? LIMIT 1', [conversationId]);
     const currentTitle = String(conversationRows?.title || '').trim();
     if (currentTitle && currentTitle !== 'AI Family Assistant') return;
 
     const columns = await getTableColumns('chatbot_messages');
-    const [countRow] = await queryOptional('SELECT COUNT(*) AS total FROM chatbot_messages WHERE conversation_id = ?', [conversationId]);
+    const { where, params } = chatbotHistoryScope(columns, { ...scope, conversationId });
+    const [countRow] = await queryOptional(`SELECT COUNT(*) AS total FROM chatbot_messages WHERE ${where}`, params);
     const total = Number(countRow?.total || 0);
     if (total < 2 || total > 4) return;
 
@@ -404,14 +404,7 @@ async function maybeGenerateConversationTitle(conversationId) {
         : columns.has('sender')
             ? 'sender'
             : "'user' AS sender";
-    const rows = await queryOptional(
-        `SELECT ${senderSelect}, message
-         FROM chatbot_messages
-         WHERE conversation_id = ?
-         ORDER BY created_at ASC, id ASC
-         LIMIT 2`,
-        [conversationId]
-    );
+    const rows = await queryOptional(`SELECT ${senderSelect}, message FROM chatbot_messages WHERE ${where} ORDER BY created_at ASC, id ASC LIMIT 2`, params);
     const messages = rows.map((row) => row.message).filter(Boolean);
     if (messages.length < 2) return;
     const result = await chatbotAI.generateConversationTitle({ messages });
@@ -2133,7 +2126,7 @@ exports.ask = withViewer(withKinOrder(async (req, res) => {
         });
         if (!res.locals) res.locals = {};
         res.locals.chatbotTurn = { memorySessionId, conversationId, clanId, accountId, currentMemberId, message, rawMessage, user: req.user, forced: null, pending: null };
-        let memory = conversationMemory || await restoreMemoryFromHistory(conversationId, memorySessionId).catch(() => null);
+        let memory = conversationMemory || await restoreMemoryFromHistory(conversationId, memorySessionId, { clanId, accountId, currentMemberId }).catch(() => null);
 
         // Đang hỏi lại vì trùng tên: nhận lựa chọn (nút bấm hoặc "1", "người thứ hai", "sinh 1965").
         const pending = memory?.pendingClarification || null;
@@ -2214,7 +2207,7 @@ exports.ask = withViewer(withKinOrder(async (req, res) => {
                 metadata: responsePayload,
             }, req.user);
             if (conversationId) {
-                maybeGenerateConversationTitle(conversationId).catch(() => {});
+                maybeGenerateConversationTitle(conversationId, { clanId, accountId, currentMemberId }).catch(() => {});
             }
             if (req.app?.locals?.emitToAccount && accountId) {
                 req.app.locals.emitToAccount(accountId, 'chatbot_answered', {
@@ -2438,7 +2431,7 @@ exports.ask = withViewer(withKinOrder(async (req, res) => {
 
         if (conversationId) {
             // Đặt tiêu đề chạy nền để không làm chậm câu trả lời.
-            maybeGenerateConversationTitle(conversationId).catch(() => {});
+            maybeGenerateConversationTitle(conversationId, { clanId, accountId, currentMemberId }).catch(() => {});
         }
 
         if (req.app?.locals?.emitToAccount && accountId) {
@@ -2456,7 +2449,6 @@ exports.ask = withViewer(withKinOrder(async (req, res) => {
         return res.status(500).json({
             success: false,
             message: 'Không thể xử lý câu hỏi chatbot',
-            error: process.env.NODE_ENV === 'development' ? error.message : undefined,
         });
     }
 }));

@@ -50,4 +50,5 @@ const server = http.createServer((req, res) => {
   });
 });
 
-server.listen(PORT, "127.0.0.1", () => console.log(`[fake-llm] http://127.0.0.1:${PORT}`));
+server.listen(PORT, "127.0.0.1", () => process.stdout.write(`[fake-llm] http://127.0.0.1:${PORT}
+`));

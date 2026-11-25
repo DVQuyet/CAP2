@@ -1,6 +1,7 @@
 const db = require('../../config/db');
 const { CONTACT_FIELDS, canSeeAllContacts, redactContactFields } = require('../genealogy/contactPrivacy');
 const { toPositiveId } = require('./chatbotUtils');
+const { loadClanContactPattern, redactContactText } = require('./contactText');
 
 async function filterMetadataValue(value, getViewerPersonId) {
     if (Array.isArray(value)) return Promise.all(value.map((item) => filterMetadataValue(item, getViewerPersonId)));
@@ -46,18 +47,6 @@ function viewerLookup(user, clanId) {
     };
 }
 
-async function loadContactPattern(clanId, viewerPersonId) {
-    const [people] = await db.query('SELECT id, phone, email, address FROM people WHERE clan_id = ?', [clanId]);
-    const values = new Set(people
-        .filter((person) => Number(person.id) !== Number(viewerPersonId))
-        .flatMap((person) => CONTACT_FIELDS.map((field) => String(person[field] ?? '').trim()))
-        .filter((value) => value.length >= 4)); // giá trị quá ngắn dễ khớp nhầm chữ thường
-    if (!values.size) return null;
-    const alternatives = [...values].sort((a, b) => b.length - a.length)
-        .map((value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
-    return new RegExp(`(?<![\\p{L}\\p{N}])(?:${alternatives})(?![\\p{L}\\p{N}])`, 'gu');
-}
-
 function redactMetadataText(value, redact) {
     if (typeof value === 'string') return redact(value);
     if (Array.isArray(value)) return value.map((item) => redactMetadataText(item, redact));
@@ -76,11 +65,9 @@ function createChatbotHistoryFilter(user, clanId) {
         if (Object.hasOwn(row, 'metadata')) next.metadata = await filterMetadata(row.metadata);
         if (canSeeAllContacts(user)) return next;
 
-        contactPattern ??= getViewerPersonId().then((viewerPersonId) => loadContactPattern(clanId, viewerPersonId));
+        contactPattern ??= getViewerPersonId().then((viewerPersonId) => loadClanContactPattern(clanId, viewerPersonId));
         const pattern = await contactPattern;
-        const redact = (text) => typeof text === 'string' && pattern
-            ? text.replace(pattern, '[đã ẩn thông tin liên hệ]')
-            : text;
+        const redact = (text) => redactContactText(text, pattern);
         if (Object.hasOwn(next, 'message')) next.message = redact(next.message);
         if (Object.hasOwn(next, 'metadata')) next.metadata = redactMetadataText(next.metadata, redact);
         return next;

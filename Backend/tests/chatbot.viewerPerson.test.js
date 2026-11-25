@@ -4,8 +4,14 @@ process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret';
 const test = require('node:test');
 const assert = require('assert');
 const { mockRes } = require('./helpers.mockDb');
-const { CLAN, OTHER_CLAN, mockAccount } = require('./helpers.viewerPersonDb');
-const { resolveViewerPersonId } = require('../src/modules/chatbot/viewerPerson');
+const { CLAN, OTHER_CLAN, mockAccount, setPrimary } = require('./helpers.viewerPersonDb');
+const viewerPerson = require('../src/modules/chatbot/viewerPerson');
+
+// Tham số thứ hai là accounts.person_id hiện tại của tài khoản (không phải person_id trong token).
+const resolveViewerPersonId = (accountId, primaryId, clanId, requestedId) => {
+    setPrimary(accountId, primaryId);
+    return viewerPerson.resolveViewerPersonId(accountId, primaryId, clanId, requestedId);
+};
 const relationshipEngine = require('../src/modules/chatbot/relationshipEngine');
 const suggestionService = require('../src/modules/chatbot/chatbotSuggestionService');
 const chatbot = require('../src/modules/chatbot/chatbotController');
@@ -14,7 +20,11 @@ const OTHER_PERSON = 77; // hồ sơ có thật cùng họ, là self của tài 
 // Hồ sơ có thật cùng họ nhưng thuộc tài khoản khác với người gửi (manager là tài khoản 8 nên dùng 18 của tài khoản 9).
 const otherPersonFor = (role) => (role === 'manager' ? 18 : OTHER_PERSON);
 
-const userOf = (role, personId) => ({
+const userOf = (role, personId) => {
+    setPrimary({ member: 9, manager: 8, admin: 1 }[role], personId);
+    return userFor(role, personId);
+};
+const userFor = (role, personId) => ({
     id: { member: 9, manager: 8, admin: 1 }[role],
     role_name: role,
     role_id: { admin: 1, manager: 2, member: 3 }[role],
@@ -95,3 +105,18 @@ for (const role of ['member', 'manager', 'admin']) {
         assert.strictEqual(res.body.success, true);
     });
 }
+
+test('token cũ còn person_id nhưng tài khoản đã bị gỡ hồ sơ: không dùng hồ sơ đó', async () => {
+    mockAccount();
+    setPrimary(8, null);
+    assert.strictEqual(await viewerPerson.resolveViewerPersonId(8, 21, CLAN, 21), 77);
+    setPrimary(5, null);
+    assert.strictEqual(await viewerPerson.resolveViewerPersonId(5, 21, CLAN, 21), null);
+    const res = mockRes();
+    await chatbot.getRelationshipById({
+        user: { ...userFor('member', 21), id: 5 },
+        params: { id: '40' },
+        query: { clanId: String(CLAN) },
+    }, res);
+    assert.ok([400, 403].includes(res.statusCode), String(res.statusCode)); // không còn hồ sơ: bị từ chối
+});

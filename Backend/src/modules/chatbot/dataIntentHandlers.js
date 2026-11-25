@@ -6,6 +6,7 @@ const chatbotAI = require('./chatbotAI');
 const { resolveKinshipReference } = require('./kinshipReferenceService');
 const { toPositiveId, queryOptional } = require('./chatbotUtils');
 const { queryPeopleWithHistory } = require('./peopleHistoryQuery');
+const { loadClanContactPattern, redactContactText } = require('./contactText');
 const { formatDateWithPrecision, ageOf, relativesOf, describePersonBrief, formatDateVN } = require('./chatbotFormat');
 
 function firstEntity(plan) {
@@ -190,6 +191,17 @@ function personFieldAnswer(person, subtype, graph) {
     }
 }
 
+// Thành viên thường: ghi chú, tiểu sử có thể chứa SĐT/email/địa chỉ; che trước khi trả client, gửi LLM và lưu lịch sử.
+async function hideContactsInProfileText(profiles, clanId, viewerPersonId) {
+    if (!profiles.length || relationshipEngine.currentTier() !== 'public') return profiles;
+    const pattern = await loadClanContactPattern(clanId, viewerPersonId).catch(() => null);
+    return profiles.map((person) => ({
+        ...person,
+        bio: redactContactText(person.bio, pattern),
+        note: redactContactText(person.note, pattern),
+    }));
+}
+
 async function handlePersonInfoIntent({ clanId, currentMemberId, message, parsed, context, planner }) {
     const entity = firstEntity(parsed);
     const nameAlternatives = Array.isArray(parsed.entities) ? parsed.entities.filter(Boolean) : (entity ? [].concat(entity) : []);
@@ -213,9 +225,10 @@ async function handlePersonInfoIntent({ clanId, currentMemberId, message, parsed
     const ids = rows.map((row) => toPositiveId(row.id)).filter(Boolean).slice(0, 3);
     const fields = 'id, display_name, first_name, middle_name, surname, gender, generation, branch, birth_date, death_date, is_living, hometown, bio, note';
     const from = `FROM people WHERE clan_id = ? AND id IN (${ids.map(() => '?').join(',')})`;
-    const [profiles] = ids.length
+    const [rawProfiles] = ids.length
         ? await queryPeopleWithHistory((extra) => `SELECT ${fields}${extra} ${from}`, [clanId, ...ids])
         : [[]];
+    const profiles = await hideContactsInProfileText(rawProfiles, clanId, currentMemberId);
     const subtype = parsed.subtype || null;
     const resolvedData = { type: 'person_profile', data: profiles, entity: entity || null, subtype };
     const ai = await explainResolvedIntent({

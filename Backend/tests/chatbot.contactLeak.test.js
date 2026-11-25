@@ -47,6 +47,8 @@ function seedContacts(datasets) {
                 email: `q1-${dataset}-${person.id}@example.test`,
                 address: `Số ${person.id} đường Mẫu Q1 ${dataset}`,
             });
+            // Liên hệ còn nằm lẫn trong ghi chú (lỗi Astra 25/11: /ask trả nguyên note).
+            person.note = `Liên hệ: ${person.email}, ĐT ${person.phone}, nhà ${person.address}`;
             for (const field of ['phone', 'email', 'address']) contacts.push([field, person[field]]);
         }
     }

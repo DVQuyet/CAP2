@@ -235,6 +235,8 @@ async function fakeQuery(rawSql, params = []) {
     if (has(/FROM people p LEFT JOIN accounts a .* WHERE p\.clan_id = \? AND am\.id IS NULL/)) return [projectPeople(sql, people)];
     if (has(/^SELECT \* FROM families WHERE clan_id = \?/)) return [families];
     if (has(/^SELECT \* FROM children WHERE family_id IN/)) return [children.filter((row) => params.map(Number).includes(row.family_id))];
+    if (has(/^SELECT id, phone, email, address FROM people WHERE clan_id = \?/)) return [people.map(({ id, phone, email, address }) => ({ id, phone, email, address }))];
+    if (has(/FROM accounts a JOIN people p ON p\.id = a\.person_id WHERE a\.id = \? AND p\.clan_id = \?/)) return [[byId(currentDataset.me)].filter(Boolean).map(({ id }) => ({ id }))];
     if (has(/FROM people WHERE id = \? (AND clan_id = \? )?LIMIT 1/)) return [projectPeople(sql, [byId(params[0])].filter(Boolean))];
     if (has(/FROM people WHERE clan_id = \? AND id IN/)) return [projectPeople(sql, people.filter((row) => params.slice(1).map(Number).includes(row.id)))];
     if (has(/p\.generation = \? AND p\.id <> \?/)) return [projectPeople(sql, people.filter((row) => row.generation === Number(params[1]) && row.id !== Number(params[2])))];

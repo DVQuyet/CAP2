@@ -1,6 +1,6 @@
 // Dữ liệu cho bộ thử trình duyệt (e2e/): ba tài khoản admin/manager/member và một dòng họ nhỏ 5 người.
 // Chạy lại được: xoá dữ liệu e2e cũ (email e2e_*@example.test, dòng họ "E2E Họ Thử") rồi tạo lại.
-// CHỈ chạy trên DB thử: dừng nếu DB_NAME trống, là defaultdb, hoặc DB đang nối không trùng DB_NAME.
+// CHỈ chạy trên DB thử: dừng nếu DB_NAME trống, là defaultdb, không nằm trong danh sách DB thử, hoặc DB đang nối không trùng DB_NAME.
 //   node scripts/e2e-seed.js        (Playwright tự gọi trong e2e/global-setup.js)
 require('../src/config/loadEnv');
 const path = require('path');
@@ -8,12 +8,16 @@ const bcrypt = require('bcryptjs');
 
 const accounts = require(path.join(__dirname, '..', '..', 'e2e', 'accounts.json'));
 const FORBIDDEN_DATABASES = new Set(['defaultdb']);
+// Chỉ nhận DB thử được nêu rõ (cap2_test trên TiDB, cap2_ci trong CI); thêm DB khác qua E2E_ALLOWED_DATABASES.
+const ALLOWED_DATABASES = new Set(['cap2_test', 'cap2_ci',
+    ...String(process.env.E2E_ALLOWED_DATABASES || '').split(',').map((name) => name.trim().toLowerCase()).filter(Boolean)]);
 const ROLE_IDS = { admin: 1, manager: 2, member: 3 };
 
 function assertTestDatabaseName(name) {
     const value = String(name || '').trim();
     if (!value) throw new Error('DB_NAME trống: không biết đang trỏ DB nào, dừng.');
     if (FORBIDDEN_DATABASES.has(value.toLowerCase())) throw new Error(`DB_NAME=${value} là DB thật, dừng. Dùng cap2_test hoặc MySQL thử.`);
+    if (!ALLOWED_DATABASES.has(value.toLowerCase())) throw new Error(`DB_NAME=${value} không nằm trong danh sách DB thử (${[...ALLOWED_DATABASES].join(', ')}), dừng.`);
     if (process.env.NODE_ENV === 'production') throw new Error('NODE_ENV=production, dừng.');
     return value;
 }
@@ -87,14 +91,15 @@ async function main() {
     const connection = await db.getConnection();
     try {
         const [[{ name }]] = await connection.query('SELECT DATABASE() AS name');
-        if (name !== expected || FORBIDDEN_DATABASES.has(String(name).toLowerCase())) {
+        if (name !== expected || !ALLOWED_DATABASES.has(String(name).toLowerCase())) {
             throw new Error(`Đang nối DB "${name}", không phải DB thử "${expected}", dừng.`);
         }
         await connection.beginTransaction();
         await resetE2eData(connection);
         const result = await seed(connection);
         await connection.commit();
-        console.log(`[e2e-seed] ${name}: dòng họ #${result.clanId}, ${result.people} người, 3 tài khoản.`);
+        process.stdout.write(`[e2e-seed] ${name}: dòng họ #${result.clanId}, ${result.people} người, 3 tài khoản.
+`);
     } catch (error) {
         await connection.rollback().catch(() => {});
         throw error;

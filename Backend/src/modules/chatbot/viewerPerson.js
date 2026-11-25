@@ -6,11 +6,13 @@ async function resolveViewerPersonId(accountId, personId, clanId, requestedId) {
     clanId = toPositiveId(clanId);
     if (!accountId || !clanId) return null;
 
-    const primaryId = toPositiveId(personId);
+    // Hồ sơ chính đọc lại từ accounts, không tin person_id trong token: token cũ còn hạn vẫn mang hồ sơ đã bị gỡ.
     const requested = toPositiveId(requestedId);
-    const [primary] = primaryId ? await queryOptional(
-        'SELECT id FROM people WHERE id = ? AND clan_id = ? LIMIT 1', [primaryId, clanId]
-    ) : [];
+    const [primary] = await queryOptional(
+        'SELECT p.id FROM accounts a JOIN people p ON p.id = a.person_id WHERE a.id = ? AND p.clan_id = ? LIMIT 1',
+        [accountId, clanId]
+    );
+    const primaryId = toPositiveId(primary?.id);
     if (primary && (!requested || requested === primaryId)) return primaryId;
 
     const selfLinks = await queryOptional(`

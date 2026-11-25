@@ -11,11 +11,16 @@ const links = [[9, CLAN, 18, 'self'], [8, CLAN, 77, 'self'], [9, OTHER_CLAN, 31,
 const memberships = [[9, CLAN, 22, 'active'], [8, CLAN, 23, 'pending'],
     [9, OTHER_CLAN, 24, 'rejected'], [8, OTHER_CLAN, 25, 'active']];
 
+// accounts.person_id hiện tại (hồ sơ chính); test đặt trước khi gọi, token không còn được tin.
+const primaryOf = new Map();
+const setPrimary = (accountId, personId) => primaryOf.set(accountId, personId);
+
 const mockAccount = ({ missingTable = false } = {}) => createMockDb(async (sql, [first, clanId]) => {
     const inClan = (personId) => people.get(personId) === clanId;
-    if (/FROM people/.test(sql)) {
-        assert.match(sql, /WHERE id = \? AND clan_id = \?/);
-        return [inClan(first) ? [{ id: first }] : []];
+    if (/FROM accounts a JOIN people p/.test(sql)) {
+        assert.match(sql, /WHERE a.id = \? AND p.clan_id = \?/);
+        const primary = primaryOf.get(first);
+        return [inClan(primary) ? [{ id: primary }] : []];
     }
     const matching = (rows, type) => rows.filter(([accountId, clan, , state]) =>
         accountId === first && clan === clanId && state === type);
@@ -39,4 +44,4 @@ const mockAccount = ({ missingTable = false } = {}) => createMockDb(async (sql, 
     return [[]];
 });
 
-module.exports = { CLAN, OTHER_CLAN, mockAccount };
+module.exports = { CLAN, OTHER_CLAN, mockAccount, setPrimary };

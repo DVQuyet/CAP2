@@ -17,7 +17,8 @@ const mockHistoryDb = (historyRows = []) => createMockDb(async (sql, params) => 
     if (/INFORMATION_SCHEMA\.TABLES/.test(sql)) return [[{ 1: 1 }]];
     if (/INFORMATION_SCHEMA\.COLUMNS/.test(sql)) return [COLUMNS.map((name) => ({ COLUMN_NAME: name }))];
     if (/FROM account_clans/.test(sql)) return [[{ 1: 1 }]];
-    if (/FROM people WHERE id = \? AND clan_id = \?/.test(sql) && params[0] === 5 && params[1] === 13) return [[{ id: 5 }]];
+    // Hồ sơ chính của tài khoản 9 là người 5 (đọc từ accounts, không từ token).
+    if (/FROM accounts a JOIN people p/.test(sql) && params[0] === 9 && params[1] === 13) return [[{ id: 5 }]];
     if (/^UPDATE chatbot_messages SET hidden_at/.test(sql)) return [{ affectedRows: 3 }];
     if (/FROM chatbot_messages m/.test(sql)) return [historyRows];
     return [[]];
