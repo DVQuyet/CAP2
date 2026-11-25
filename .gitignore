@@ -4,6 +4,8 @@
 !.env.local.example
 docker/.env
 node_modules/
+e2e/test-results/
+e2e/playwright-report/
 .codex-logs/
 Backend/storage/
 .venv/

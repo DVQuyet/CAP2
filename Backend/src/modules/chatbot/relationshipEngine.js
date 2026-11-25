@@ -16,6 +16,7 @@ const { getKinOrderContext, filterByKinOrder } = require('./kinshipBirthOrder');
 const { AsyncLocalStorage } = require('async_hooks');
 const { applyFamilyVisibility } = require('../genealogy/treeVisibility');
 const { queryPeopleWithHistory } = require('./peopleHistoryQuery');
+const graphVersion = require('./graphVersion');
 
 // Người hỏi có được thấy quan hệ nhạy cảm (families.visibility = 'managers') không. Đặt một lần cho cả yêu cầu
 // (runWithViewer) để mọi chỗ dùng đồ thị trong lượt hỏi đó đều thấy đúng phần được phép, giống cây gia phả.
@@ -213,14 +214,8 @@ async function tableExists(tableName) {
     return exists;
 }
 
-async function getGraphVersion(clanId) {
-    if (!(await tableExists('family_graph_versions'))) return 1;
-    const [rows] = await db.query(
-        'SELECT graph_version FROM family_graph_versions WHERE clan_id = ? LIMIT 1',
-        [clanId]
-    );
-    return Number(rows[0]?.graph_version || 1);
-}
+// Phiên bản tính từ dữ liệu cây (graphVersion.js), không phụ thuộc trigger: TiDB không có trigger.
+const getGraphVersion = (clanId) => graphVersion.getGraphVersion(clanId);
 
 async function bumpGraphVersion(clanId) {
     if (!(await tableExists('family_graph_versions'))) return;
@@ -828,6 +823,7 @@ function clearClanCache(clanId) {
     if (!normalizedClanId) return;
     graphCache.delete(`${normalizedClanId}:all`);
     graphCache.delete(`${normalizedClanId}:public`);
+    graphVersion.forgetGraphVersion(normalizedClanId);
     for (const key of [...pathCache.keys()]) {
         if (key.startsWith(`${normalizedClanId}:`)) pathCache.delete(key);
     }

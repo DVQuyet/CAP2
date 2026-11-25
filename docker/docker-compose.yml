@@ -1,7 +1,7 @@
 # MySQL cho máy cá nhân, để không ai phải trỏ Backend/.env vào DB thật.
 # Chạy:  docker compose -f docker/docker-compose.yml up -d
 # Sau đó sao chép Backend/.env.local.example thành Backend/.env.local (đã trỏ sẵn vào MySQL này)
-# rồi chạy:  cd Backend && npm run migrate   (bổ sung bảng/cột mà init.sql chưa có)
+# rồi chạy:  cd Backend && npm run migrate   (dựng đủ bảng từ database/schema/*.sql, vai trò, gói FREE)
 # Xóa sạch dữ liệu local:  docker compose -f docker/docker-compose.yml down -v
 services:
   mysql:

@@ -6,6 +6,47 @@ Các file đó giữ làm nhật ký; việc mới thêm vào đây.
 
 Ký hiệu công sức: **S** < 2 giờ · **M** nửa ngày–1 ngày · **L** nhiều ngày. Cột "Ai làm" gợi ý chia việc khi chạy nhiều agent.
 
+## Đợt 25/11/2026 – Sửa 8 điểm Astra ở S2–S3 (nhánh `s4-thu-trinh-duyet`)
+
+Đã làm: phiên bản đồ thị trợ lý tính từ dữ liệu cây (`chatbot/graphVersion.js`, TiDB không có trigger); migration
+`2026_11_25_fund_tables_upgrade.sql` đưa DB dựng từ init.sql cũ lên (cột quỹ, `event_id`/`person_id` cho NULL); `npm run migrate`
+giữ `GET_LOCK`, chạy lại được sau lỗi giữa file, ghi qua `process.stdout.write`; `.env.local.example`/README: kiểm chứng chỉ TiDB,
+tài khoản DB riêng cho `cap2_test`. Còn mở:
+
+- Chưa tạo tài khoản `<prefix>.cap2_test` trên cụm (người quản trị cụm chạy 2 câu SQL trong README), `.env.local` vẫn dùng tài khoản cũ. **S**
+- Dấu vân tay đồ thị không gồm `person_aliases` / chính sách hiển thị của dòng họ: sửa những thứ đó thì trợ lý vẫn chờ hết TTL (2–5 phút). **S**
+- `relationship_cache` chỉ được ghi, không ai đọc: bỏ bảng hoặc dùng lại. **S**
+
+## Đợt 25/11/2026 – S4: bộ thử trình duyệt (nhánh `s4-thu-trinh-duyet`)
+
+Đã làm: thư mục `e2e/` (Playwright, Chromium), chạy bằng `npm run test:e2e` ở gốc repo; job `e2e` trong CI dùng MySQL 8 trong container,
+`npm run migrate` dựng schema. Dữ liệu: `Backend/scripts/e2e-seed.js` (3 tài khoản `e2e_*@example.test`, dòng họ "E2E Họ Thử" 5 người;
+dừng nếu `DB_NAME` trống hoặc `defaultdb`, hoặc DB đang nối khác `DB_NAME`). LLM giả `e2e/fake-llm.mjs` giả API Groq qua `GROQ_BASE_URL`,
+không sửa mã backend. Luồng phủ: đăng nhập admin/manager/member (+ sai mật khẩu), mở cây, toàn màn hình (vị trí fixed, phủ cửa sổ, thoát bằng nút
+và Esc), trang quản lý gia phả của admin, AI điền form sự kiện rồi lưu. Đã thử đưa lại hai lỗi 15/11 (toàn màn hình, trang admin sập): test bắt được cả hai.
+Chạy trên `cap2_test`: 9/9 (gồm một test "lỗi đã biết" dưới đây). Còn mở:
+
+- **Lỗi giao diện mới thấy:** ở 1280x800 nút tròn của khung chat AI (`.ai-chat-widget`) đè lên nút "Toàn màn hình" của cây (góc dưới phải),
+  bấm chuột không tới. Test `02-tree.spec.mjs` đánh dấu `test.fail()`; sửa xong thì gỡ dòng đó. Phần sửa nằm ở thanh công cụ cây / layout. **S**
+- Job `e2e` chưa chạy trên GitHub (chưa push): schema chưa thử trên MySQL 8 thật (chỉ TiDB), lần chạy CI đầu là lần kiểm đầu tiên. **S**
+- LLM giả chỉ trả lời "AI lập kế hoạch sự kiện"; chưa giả lỗi 429 / câu trả lời bị cắt (lỗi 15/11 thứ ba vẫn chỉ có unit test `chatbot.groqFallback`). **S**
+- Chưa phủ: điện thoại 390x844, trợ lý chat, xuất ảnh cây, sửa cây. **M**
+
+## Đợt 25/11/2026 – S2, S3: DB thử và schema dựng lại được từ repo (nhánh `s2s3-db-thu-va-schema`)
+
+Đã làm: `database/schema/` nay đủ 48 bảng như DB thật (`init.sql` 23 bảng lõi gồm gói cước, quỹ, `password_reset_tokens`; `02_modules.sql`,
+`03_modules.sql`; `04_seed.sql` có ba vai trò và gói `FREE`). DDL lấy từ cấu trúc DB đang chạy (chỉ cấu trúc, không dữ liệu), viết lại hợp TiDB:
+khóa chính và `AUTO_INCREMENT` nằm trong `CREATE TABLE` (bỏ `ALTER ... ADD PRIMARY KEY` / `MODIFY ... AUTO_INCREMENT`), cột `spouse_a_id`/`spouse_b_id`
+là generated `VIRTUAL` trong `CREATE TABLE families`, mọi bảng `IF NOT EXISTS`. `npm run migrate` chạy `database/schema/*.sql`, rồi file
+`database/migrations/*.sql` mới hơn mốc 15/11 (ghi ở bảng mới `schema_migrations`), rồi `ensure*()`. Đã dựng `cap2_test` từ trống hai lần:
+31/31 ensure, 49 bảng (48 + `schema_migrations`), cột/kiểu/index khớp DB thật. README có mục "Database thử". Test: `tests/schema.sqlFiles.test.js`. Còn mở:
+
+- Các file migration cũ (đến 15/11) không chạy nữa, chỉ giữ làm lịch sử; file trigger `2026_05_28_02_chatbot_graph_version_triggers.sql` không áp được
+  trên TiDB nên `family_graph_versions` không tự tăng khi sửa cây (cần kiểm bộ nhớ đệm đồ thị trợ lý có dựa vào nó không). **S**
+- Gói `FREE` mẫu đặt `account_limit = 20` (số giả định; DB thật có gói FREE do admin tạo, chưa đối chiếu giới hạn tài khoản). **S**
+- Chưa thử Docker MySQL (máy không có Docker): `init.sql` có khóa ngoại tới bảng ở `02_`/`03_`, dựa vào `FOREIGN_KEY_CHECKS = 0`. **S**
+- `ensure*()` vẫn còn trong `src/modules` (E7.9 bản đầy đủ chưa làm). Khi DB thật đổi cấu trúc, sinh lại `database/schema/` cho khớp. **M**
+
 ## S6 quy tắc mật khẩu (25/11/2026, nhánh `s6-quy-tac-mat-khau`)
 
 Đã làm: quy tắc chung ở `Backend/src/shared/validation/passwordPolicy.js`: tối thiểu 8 ký tự, có chữ và số, không trùng email

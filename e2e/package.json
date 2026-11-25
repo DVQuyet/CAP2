@@ -1,0 +1,13 @@
+{
+  "name": "cap2-e2e",
+  "private": true,
+  "type": "module",
+  "description": "Bộ thử trình duyệt CAP2 (Playwright). Xem README.md mục Kiểm Tra.",
+  "scripts": {
+    "test": "playwright test --config playwright.config.mjs",
+    "install-browser": "playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.1"
+  }
+}

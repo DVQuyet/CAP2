@@ -266,7 +266,7 @@ async function fakeQuery(rawSql, params = []) {
         return [calendarEvents.filter((row) => row.event_date >= from && row.event_date <= to
             && (row.visibility === 'global' || row.creator_account_id === Number(accountId)))];
     }
-    if (has(/FROM person_aliases/)) return [[]];
+    if (has(/FROM person_aliases|AS graph_version$/)) return [[]]; // graph_version rỗng -> 1 như trước (graphVersion.js)
     const key = sql.slice(0, 160);
     unhandledSql.set(key, (unhandledSql.get(key) || 0) + 1);
     return [[]];
