@@ -272,3 +272,14 @@ body:has(.ai-chat-widget) .fte2 .fte2-speedDial {
         bottom: calc(84px + 58px + 14px);
     }
 }
+
+/* Khung speed dial cao bằng cả các nút con (đang ẩn) nên khi đóng vẫn nuốt cú chạm vào cụm zoom phía trên.
+   Chỉ nút (+) và các nút con khi mở nhận cú chạm. */
+.fte2 .fte2-speedDial {
+    pointer-events: none;
+}
+
+.fte2 .fte2-speedDial .fte2-fab,
+.fte2 .fte2-speedDial.is-open .fte2-speedDialActions {
+    pointer-events: auto;
+}

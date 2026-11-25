@@ -37,7 +37,7 @@ test.describe("điện thoại 390x844", () => {
     await expect(page.locator(".fte-cardName").first()).toBeAttached();
     const fullscreen = page.getByRole("button", { name: "Toàn màn hình", exact: true });
     await expect(fullscreen).toBeVisible();
-    const fab = page.locator(".fte2-speedDial");
+    const fab = page.locator(".fte2-speedDial .fte2-fab");
     if (await fab.count()) {
       const [zoomBox, fabBox] = await Promise.all([page.locator(".fte2-zoom").boundingBox(), fab.boundingBox()]);
       const overlaps = zoomBox && fabBox && zoomBox.y < fabBox.y + fabBox.height && fabBox.y < zoomBox.y + zoomBox.height
