@@ -2,7 +2,9 @@
 
 Workflow `.github/workflows/backup.yml` chạy lúc 02:30 mỗi ngày (và chạy tay được ở tab Actions → "Sao lưu database" → Run workflow). Nó dump toàn bộ MySQL, nén, mã hóa AES-256 bằng `gpg` rồi lưu làm artifact, giữ 30 ngày.
 
-Trạng thái: workflow đã viết nhưng **chưa chạy lần nào**. Phải đặt secret (bên dưới), bấm chạy tay một lần và thử khôi phục thì mới coi là có sao lưu.
+Trạng thái 25/11/2026: đã đặt đủ 6 secret (trỏ TiDB Cloud), chạy tay thành công (run 45610647634, 18 KB). Đã tải về, giải mã và đếm: 48 bảng, `people` 119 dòng, `accounts` 2, `plans` 4, khớp DB thật. Chưa thử nạp vào MySQL (máy chưa có Docker). Chuỗi `BACKUP_PASSPHRASE` lưu trên máy của chủ repo, file `cap2-backup-passphrase.txt` trong thư mục người dùng: chép sang nơi an toàn khác (trình quản lý mật khẩu).
+
+TiDB không có SAVEPOINT nên workflow không dùng `--single-transaction` (dump không khóa bảng), cũng bỏ `--routines --triggers` vì TiDB không có hai loại này. Giải mã trên Windows: bỏ ký tự xuống dòng ở cuối chuỗi trước khi đưa cho `gpg --passphrase-fd 0`.
 
 ## Đặt secret (một lần)
 
