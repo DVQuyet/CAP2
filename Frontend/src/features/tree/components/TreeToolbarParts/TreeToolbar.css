@@ -264,3 +264,11 @@ body:has(.ai-chat-widget) .fte2 .fte2-zoom,
 body:has(.ai-chat-widget) .fte2 .fte2-speedDial {
     bottom: 84px;
 }
+
+/* Điện thoại (cùng mốc TREE_MOBILE_QUERY của FamilyTreeEditor): nút (+) 58px ở 84px, z-index 40, từng che nút
+   Toàn màn hình vì cụm zoom gọn cũng ở 84px. Giữ (+) ở 84px, đặt cụm zoom phía trên: 84 + 58 (nút +) + 14 (khoảng cách). */
+@media (max-width: 760px) {
+    body:has(.ai-chat-widget) .fte2 .fte2-zoom.is-compact {
+        bottom: calc(84px + 58px + 14px);
+    }
+}

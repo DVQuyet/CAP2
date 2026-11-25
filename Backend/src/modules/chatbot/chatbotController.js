@@ -2593,7 +2593,7 @@ exports.clearHistory = async (req, res) => {
     }
 };
 
-exports.suggestions = async (req, res) => {
+exports.suggestions = withViewer(async (req, res) => { // withViewer: tên gợi ý theo tầng người xem được thấy
     try {
         const clanId = toPositiveId(req.query.clanId || req.query.clan_id || req.user?.clan_id);
         const currentMemberId = await resolveViewerPersonId(req.user?.id || req.user?.account_id, req.user?.person_id, clanId, req.query.currentMemberId || req.query.current_member_id);
@@ -2608,7 +2608,7 @@ exports.suggestions = async (req, res) => {
         console.error('chatbot suggestions error:', error);
         return res.status(500).json({ success: false, message: 'Không thể tải gợi ý câu hỏi' });
     }
-};
+});
 
 exports.getRelationshipById = withViewer(async (req, res) => {
     try {

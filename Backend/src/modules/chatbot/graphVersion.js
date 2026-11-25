@@ -8,33 +8,65 @@ const db = require('../../config/db');
 const MEMO_MS = Number(process.env.CHATBOT_GRAPH_VERSION_MEMO_MS || 2000);
 const memo = new Map();
 
-// Cột ảnh hưởng tới suy luận quan hệ / câu trả lời. Thêm cột mới mà trợ lý dùng thì thêm vào đây.
-const FINGERPRINT_SQL = `
+// Cột mà loadClanGraph đọc (people: câu SELECT + HISTORY_COLUMNS của peopleHistoryQuery; families/children: SELECT *).
+// Thêm cột mới mà trợ lý dùng thì thêm vào đây. EXTENDED là cột DB cũ có thể chưa có: thiếu thì tính lại không có chúng.
+const COLUMNS = {
+    people: {
+        base: ['id', 'display_name', 'first_name', 'middle_name', 'surname', 'gender', 'generation', 'branch',
+            'birth_date', 'death_date', 'is_living', 'display_order'],
+        extended: ['birth_date_precision', 'death_date_precision', 'death_anniversary_lunar'],
+    },
+    families: {
+        base: ['id', 'father_id', 'mother_id', 'marriage_date', 'relationship_status', 'ended_at', 'union_type',
+            'wife_rank', 'husband_rank', 'visibility'],
+        extended: ['relation_note', 'marriage_date_precision', 'ended_at_precision', 'spouse_a_id', 'spouse_b_id'],
+    },
+    children: {
+        base: ['id', 'family_id', 'person_id', 'sort_order', 'child_type', 'is_primary_lineage'],
+        extended: ['relationship_note'],
+    },
+};
+
+// Mỗi cột có chỗ riêng và NULL thành '~' (CONCAT_WS bỏ qua NULL nên (P,NULL) và (NULL,P) từng ra cùng một chuỗi).
+// Độ dài đứng trước giá trị nên dấu '|' trong dữ liệu cũng không làm hai bộ giá trị khác nhau trùng chuỗi.
+const rowHash = (alias, columns) => `CRC32(CONCAT(${columns
+    .map((column) => `COALESCE(CONCAT(CHAR_LENGTH(${alias}.${column}), ':', ${alias}.${column}), '~')`)
+    .join(", '|', ")}))`;
+
+const tableHash = (alias, columns, fromWhere) =>
+    `(SELECT CONCAT(COUNT(*), '-', COALESCE(SUM(${rowHash(alias, columns)}), 0)) ${fromWhere})`;
+
+function buildFingerprintSql({ extended = true } = {}) {
+    const pick = (table) => [...COLUMNS[table].base, ...(extended ? COLUMNS[table].extended : [])];
+    return `
 SELECT CRC32(CONCAT_WS(':',
-  (SELECT CONCAT(COUNT(*), '-', COALESCE(SUM(CRC32(CONCAT_WS('|', p.id, p.display_name, p.first_name, p.middle_name, p.surname,
-      p.gender, p.generation, p.branch, p.birth_date, p.death_date, p.is_living, p.display_order))), 0))
-     FROM people p WHERE p.clan_id = ?),
-  (SELECT CONCAT(COUNT(*), '-', COALESCE(SUM(CRC32(CONCAT_WS('|', f.id, f.father_id, f.mother_id, f.marriage_date,
-      f.relationship_status, f.ended_at, f.union_type, f.wife_rank, f.husband_rank, f.visibility))), 0))
-     FROM families f WHERE f.clan_id = ?),
-  (SELECT CONCAT(COUNT(*), '-', COALESCE(SUM(CRC32(CONCAT_WS('|', c.id, c.family_id, c.person_id, c.sort_order,
-      c.child_type, c.is_primary_lineage))), 0))
-     FROM children c JOIN families cf ON cf.id = c.family_id WHERE cf.clan_id = ?),
+  ${tableHash('p', pick('people'), 'FROM people p WHERE p.clan_id = ?')},
+  ${tableHash('f', pick('families'), 'FROM families f WHERE f.clan_id = ?')},
+  ${tableHash('c', pick('children'), 'FROM children c JOIN families cf ON cf.id = c.family_id WHERE cf.clan_id = ?')},
   (SELECT CONCAT(COUNT(*), '-', COALESCE(SUM(am.id), 0)) FROM archived_members am WHERE am.clan_id = ?),
   (SELECT COALESCE(MAX(v.graph_version), 1) FROM family_graph_versions v WHERE v.clan_id = ?)
 )) + 1 AS graph_version`;
+}
+
+const FINGERPRINT_SQL = buildFingerprintSql();
+const FINGERPRINT_SQL_BASE = buildFingerprintSql({ extended: false });
 
 const now = () => Date.now();
 
 async function computeGraphVersion(clanId, query = db.query.bind(db)) {
-    try {
-        const [rows] = await query(FINGERPRINT_SQL, [clanId, clanId, clanId, clanId, clanId]);
-        return Number(rows?.[0]?.graph_version || 1);
-    } catch (error) {
-        // DB cũ thiếu cột/bảng (vd child_type): không chặn trợ lý, chỉ mất khả năng nhận biết thay đổi trước TTL.
-        if (['ER_NO_SUCH_TABLE', 'ER_BAD_FIELD_ERROR'].includes(error.code)) return 1;
-        throw error;
+    const params = [clanId, clanId, clanId, clanId, clanId];
+    for (const sql of [FINGERPRINT_SQL, FINGERPRINT_SQL_BASE]) {
+        try {
+            const [rows] = await query(sql, params);
+            return Number(rows?.[0]?.graph_version || 1);
+        } catch (error) {
+            if (error.code === 'ER_BAD_FIELD_ERROR') continue; // DB cũ thiếu cột mở rộng: thử bộ cột gốc.
+            if (error.code === 'ER_NO_SUCH_TABLE') return 1;
+            throw error;
+        }
     }
+    // Thiếu cả cột gốc: không chặn trợ lý, chỉ mất khả năng nhận biết thay đổi trước TTL.
+    return 1;
 }
 
 // Nhớ tạm vài giây: một câu hỏi gọi loadClanGraph nhiều lần, không cần tính lại mỗi lần.
@@ -51,4 +83,6 @@ function forgetGraphVersion(clanId) {
     else memo.delete(clanId);
 }
 
-module.exports = { FINGERPRINT_SQL, computeGraphVersion, getGraphVersion, forgetGraphVersion };
+module.exports = {
+    COLUMNS, FINGERPRINT_SQL, FINGERPRINT_SQL_BASE, buildFingerprintSql, computeGraphVersion, getGraphVersion, forgetGraphVersion,
+};

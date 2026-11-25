@@ -50,7 +50,7 @@ async function loadClanPeopleForSearch(clanId) {
     return queryOptional(
         `SELECT p.id, p.clan_id, p.display_name, p.first_name, p.middle_name, p.surname,
                 p.gender, p.generation, p.branch, p.birth_date, p.death_date,
-                r.name AS role_name
+                r.role_name AS role_name
          FROM people p
          LEFT JOIN accounts a ON a.person_id = p.id
          LEFT JOIN roles r ON r.id = a.role_id

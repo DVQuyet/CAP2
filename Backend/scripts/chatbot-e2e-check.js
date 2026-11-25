@@ -231,7 +231,7 @@ async function fakeQuery(rawSql, params = []) {
         return [people.filter((row) => likeMatch(row, params[1])).sort((a, b) => a.generation - b.generation || a.id - b.id)];
     }
     if (has(/FROM people p WHERE p\.clan_id = \? ORDER BY p\.generation ASC, p\.id ASC LIMIT 500/)) return [people];
-    if (has(/r\.name AS role_name FROM people p LEFT JOIN accounts a/)) return [people.map((row) => ({ ...row, role_name: row.id === currentDataset.me ? 'member' : null }))];
+    if (has(/r\.role_name AS role_name FROM people p LEFT JOIN accounts a/)) return [people.map((row) => ({ ...row, role_name: row.id === currentDataset.me ? 'member' : null }))];
     if (has(/FROM people p LEFT JOIN accounts a .* WHERE p\.clan_id = \? AND am\.id IS NULL/)) return [projectPeople(sql, people)];
     if (has(/^SELECT \* FROM families WHERE clan_id = \?/)) return [families];
     if (has(/^SELECT \* FROM children WHERE family_id IN/)) return [children.filter((row) => params.map(Number).includes(row.family_id))];
