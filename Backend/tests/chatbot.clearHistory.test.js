@@ -13,10 +13,11 @@ const {
 const COLUMNS = ['id', 'conversation_id', 'clan_id', 'account_id', 'current_member_id', 'role', 'message', 'intent', 'confidence', 'metadata', 'created_at', 'hidden_at'];
 
 // Mock DB: bảng chatbot_messages có đủ cột (kể cả hidden_at), người dùng thuộc dòng họ 13.
-const mockHistoryDb = (historyRows = []) => createMockDb(async (sql) => {
+const mockHistoryDb = (historyRows = []) => createMockDb(async (sql, params) => {
     if (/INFORMATION_SCHEMA\.TABLES/.test(sql)) return [[{ 1: 1 }]];
     if (/INFORMATION_SCHEMA\.COLUMNS/.test(sql)) return [COLUMNS.map((name) => ({ COLUMN_NAME: name }))];
     if (/FROM account_clans/.test(sql)) return [[{ 1: 1 }]];
+    if (/FROM people WHERE id = \? AND clan_id = \?/.test(sql) && params[0] === 5 && params[1] === 13) return [[{ id: 5 }]];
     if (/^UPDATE chatbot_messages SET hidden_at/.test(sql)) return [{ affectedRows: 3 }];
     if (/FROM chatbot_messages m/.test(sql)) return [historyRows];
     return [[]];
@@ -75,19 +76,11 @@ test('DELETE history: reset trí nhớ hội thoại của tài khoản đó, kh
 });
 
 test('GET history: lọc tin ẩn, chỉ lấy tin của tài khoản và gắn feedbackRating cho câu trả lời', async () => {
-    const mock = createMockDb(async (sql) => {
-        if (/INFORMATION_SCHEMA\.TABLES/.test(sql)) return [[{ 1: 1 }]];
-        if (/INFORMATION_SCHEMA\.COLUMNS/.test(sql)) return [COLUMNS.map((name) => ({ COLUMN_NAME: name }))];
-        if (/FROM account_clans/.test(sql)) return [[{ 1: 1 }]];
-        if (/FROM chatbot_messages m/.test(sql)) {
-            return [[
-                { id: 3, role: 'assistant', message: 'c', metadata: null, feedback_rating: -1 },
-                { id: 2, role: 'user', message: 'b', metadata: null, feedback_rating: 1 },
-                { id: 1, role: 'assistant', message: 'a', metadata: '{}', feedback_rating: null },
-            ]];
-        }
-        return [[]];
-    });
+    const mock = mockHistoryDb([
+        { id: 3, role: 'assistant', message: 'c', metadata: null, feedback_rating: -1 },
+        { id: 2, role: 'user', message: 'b', metadata: null, feedback_rating: 1 },
+        { id: 1, role: 'assistant', message: 'a', metadata: '{}', feedback_rating: null },
+    ]);
     const res = mockRes();
     await controller.history({ query: { clanId: '13', currentMemberId: '5' }, user: user(9) }, res);
     assert.strictEqual(res.statusCode, 200);
