@@ -6,6 +6,18 @@ Các file đó giữ làm nhật ký; việc mới thêm vào đây.
 
 Ký hiệu công sức: **S** < 2 giờ · **M** nửa ngày–1 ngày · **L** nhiều ngày. Cột "Ai làm" gợi ý chia việc khi chạy nhiều agent.
 
+## Đợt 25/11/2026 – Giao diện thanh công cụ cây và chọn cây đang xem
+
+- Thanh công cụ máy tính chia ba cụm: tìm người | xem cây nào + Tổng quan/Chi tiết | Thêm người, Xuất ảnh, Bố cục ▾, ⋯.
+  Nút phụ có chữ (dưới 1180px chỉ còn icon). Tự sắp xếp, Lưu bố cục và nhóm "Bố cục" cũ gom vào menu "Bố cục";
+  "Xoá bố cục nháp" có màu cảnh báo; menu ⋯ ngắn lại nên không còn bị cắt. Tiêu đề nhóm menu viết thường.
+- Chọn cây (`TreeToolbarParts/TreeViewPicker.jsx`, thay `TreeViewModeSelector.jsx`): hai lựa chọn "Cả dòng họ" / "Theo một người"
+  (ghi rõ là tổ tiên, con cháu, vợ chồng), danh sách người hiện sẵn theo đời, gõ để lọc; nút ghi "Theo: <tên>" và có nút × về cả dòng họ.
+- Điện thoại: nút chọn cây nằm cạnh "Tìm người" ở trên cùng; bảng "Xem cây" gồm cả Tổng quan/Chi tiết; bỏ "Tìm tôi" trùng trong nút (+).
+- Gom nút là hàm thuần `toolbarGroups.js` (test `tests/treeToolbarGroups.test.js`), không sửa `FamilyTreeEditor.jsx`.
+- **Còn mở:** ảnh mẫu `docs/anh/` chưa chụp lại (thanh công cụ đổi); CSS cũ `.fte-viewMode`/`.fte-rootPicker` trong `FamilyTreeEditor.v2.css` không còn dùng,
+  chưa xoá; ở 390px cây lúc mở vẫn bị cắt hai bên và tên xuống dòng ở chế độ Chi tiết (có từ trước, thuộc phần vẽ cây).
+
 ## Đợt 25/11/2026 – Q-1 + Q-2: trợ lý không lộ liên hệ, chỉ hỏi với tư cách chính tài khoản (nhánh gộp `q12`)
 
 Đã làm:

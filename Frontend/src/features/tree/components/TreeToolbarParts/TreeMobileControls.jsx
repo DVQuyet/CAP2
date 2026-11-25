@@ -1,149 +1,47 @@
-import { useCallback, useRef, useState } from "react";
+import { useState } from "react";
 import { useLanguage } from "../../../../i18n/LanguageContext";
-import TreeSearchPanel from "../TreeSearchPanel";
-import TreeViewModeSelector from "../TreeViewModeSelector";
-import { TREE_DISPLAY_MODE } from "../../utils/tree-editor/treeDisplayConfig";
-import { TreeToolList } from "./TreeToolMenu";
-import { useDismiss } from "./useDismiss";
+import TreeMobileSpeedDial from "./TreeMobileSpeedDial";
+import TreeMobileSheet from "./TreeMobileSheet";
+import { viewChipLabel } from "./toolbarGroups";
+import "./TreeToolbar.css";
 
-// Điều khiển trên điện thoại kiểu Facebook: nút tròn nổi (+) bung ra các thao tác có nhãn,
-// nút tìm kiếm nổi phía trên, và bảng trượt từ dưới lên cho tìm kiếm / công cụ.
-export default function TreeMobileControls({
-  speedDialActions,
-  search,
-  rootSelector,
-  displayMode,
-  onDisplayModeChange,
-  toolGroups,
-  styleControls,
-}) {
+// Điều khiển trên điện thoại: hàng trên cùng có "Tìm người" và nút chọn cây đang xem; nút tròn (+) bung các
+// thao tác có nhãn; bảng trượt từ dưới lên cho tìm kiếm / xem cây (cả kiểu hiển thị) / công cụ.
+export default function TreeMobileControls({ speedDialActions, search, rootSelector, displayMode, onDisplayModeChange, toolGroups, styleControls }) {
   const { t } = useLanguage();
   const [dialOpen, setDialOpen] = useState(false);
   const [sheet, setSheet] = useState(null);
-  const dialRef = useRef(null);
-  const closeDial = useCallback(() => setDialOpen(false), []);
-  useDismiss(dialRef, dialOpen, closeDial);
-
   const openSheet = (name) => {
     setDialOpen(false);
     setSheet(name);
   };
-
-  const actions = speedDialActions.filter((action) => !action.hidden);
+  // "Tìm tôi" đã có trong bảng tìm kiếm nên không lặp ở nút tròn.
+  const actions = speedDialActions.filter((action) => !action.hidden && action.key !== "findMe");
 
   return (
     <>
-      <button type="button" className="fte2-mSearchFab" onClick={() => openSheet("search")} aria-label={t("tree.toolbar.search")}>
-        <span className="material-symbols-outlined" aria-hidden="true">search</span>
-        <span>{t("tree.toolbar.search")}</span>
-      </button>
-
-      {dialOpen ? <div className="fte2-mScrim" aria-hidden="true" /> : null}
-
-      <div className={`fte2-speedDial ${dialOpen ? "is-open" : ""}`} ref={dialRef}>
-        <div className="fte2-speedDialActions" aria-hidden={!dialOpen}>
-          {actions.map((action, index) => (
-            <button
-              key={action.key}
-              type="button"
-              className="fte2-speedDialAction"
-              style={{ "--i": actions.length - index }}
-              tabIndex={dialOpen ? 0 : -1}
-              disabled={action.disabled}
-              onClick={() => {
-                setDialOpen(false);
-                action.onClick();
-              }}
-            >
-              <span className="fte2-speedDialLabel">{action.label}</span>
-              <span className="fte2-speedDialIcon">
-                <span className="material-symbols-outlined" aria-hidden="true">{action.icon}</span>
-              </span>
-            </button>
-          ))}
-          <button
-            type="button"
-            className="fte2-speedDialAction"
-            style={{ "--i": 0 }}
-            tabIndex={dialOpen ? 0 : -1}
-            onClick={() => openSheet("tools")}
-          >
-            <span className="fte2-speedDialLabel">{t("tree.toolbar.more")}</span>
-            <span className="fte2-speedDialIcon">
-              <span className="material-symbols-outlined" aria-hidden="true">tune</span>
-            </span>
-          </button>
-        </div>
-        <button
-          type="button"
-          className="fte2-fab"
-          aria-expanded={dialOpen}
-          aria-label={dialOpen ? t("tree.toolbar.close") : t("tree.toolbar.actions")}
-          onClick={() => setDialOpen((value) => !value)}
-        >
-          <span className="material-symbols-outlined" aria-hidden="true">add</span>
+      <div className="tvp-mTop">
+        <button type="button" className="fte2-mSearchFab" onClick={() => openSheet("search")} aria-label={t("tree.toolbar.search")}>
+          <span className="material-symbols-outlined" aria-hidden="true">search</span>
+          <span>{t("tree.toolbar.search")}</span>
+        </button>
+        <button type="button" className={`fte2-mSearchFab tvp-mChip ${rootSelector.mode === "root" ? "is-active" : ""}`} onClick={() => openSheet("view")}>
+          <span className="material-symbols-outlined" aria-hidden="true">{rootSelector.mode === "root" ? "account_tree" : "groups"}</span>
+          <span className="fte2-chipText">{viewChipLabel(t, rootSelector)}</span>
         </button>
       </div>
-
+      <TreeMobileSpeedDial actions={actions} open={dialOpen} onOpenChange={setDialOpen} onOpenTools={() => openSheet("tools")} />
       {sheet ? (
-        <>
-          <button type="button" className="fte2-sheetBackdrop" aria-label={t("tree.toolbar.close")} onClick={() => setSheet(null)} />
-          <div className="fte2-sheet" role="dialog" aria-modal="true" aria-label={sheet === "search" ? t("tree.toolbar.search") : t("tree.toolbar.more")}>
-            <div className="fte2-sheetHandle" aria-hidden="true" />
-            <div className="fte2-sheetHeader">
-              <strong>{sheet === "search" ? t("tree.toolbar.search") : t("tree.toolbar.more")}</strong>
-              <button type="button" onClick={() => setSheet(null)} aria-label={t("tree.toolbar.close")}>
-                <span className="material-symbols-outlined" aria-hidden="true">close</span>
-              </button>
-            </div>
-            <div className="fte2-sheetBody">
-              {sheet === "search" ? (
-                <>
-                  <TreeSearchPanel
-                    {...search}
-                    showFindMe
-                    onResultClick={(person) => {
-                      search.onResultClick(person);
-                      setSheet(null);
-                    }}
-                  />
-                  <div className="fte2-sheetSection">
-                    <TreeViewModeSelector
-                      people={rootSelector.people}
-                      mode={rootSelector.mode}
-                      rootPersonId={rootSelector.rootPersonId}
-                      onFullMode={() => {
-                        rootSelector.onFullMode();
-                        setSheet(null);
-                      }}
-                      onRootMode={(personId) => {
-                        rootSelector.onRootMode(personId);
-                        setSheet(null);
-                      }}
-                    />
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="fte2-segmented fte2-segmented--block" role="group" aria-label={t("tree.toolbar.viewMode")}>
-                    {[TREE_DISPLAY_MODE.OVERVIEW, TREE_DISPLAY_MODE.DETAIL].map((mode) => (
-                      <button
-                        key={mode}
-                        type="button"
-                        className={displayMode === mode ? "is-active" : ""}
-                        onClick={() => onDisplayModeChange(mode)}
-                      >
-                        {t(mode === TREE_DISPLAY_MODE.OVERVIEW ? "tree.toolbar.overview" : "tree.toolbar.detail")}
-                      </button>
-                    ))}
-                  </div>
-                  <TreeToolList groups={toolGroups} onPicked={() => setSheet(null)} />
-                  {styleControls}
-                </>
-              )}
-            </div>
-          </div>
-        </>
+        <TreeMobileSheet
+          sheet={sheet}
+          onClose={() => setSheet(null)}
+          search={search}
+          rootSelector={rootSelector}
+          displayMode={displayMode}
+          onDisplayModeChange={onDisplayModeChange}
+          toolGroups={toolGroups}
+          styleControls={styleControls}
+        />
       ) : null}
     </>
   );
