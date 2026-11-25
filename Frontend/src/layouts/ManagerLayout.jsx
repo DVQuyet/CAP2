@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, Outlet, useLocation, Navigate } from "react-router-dom";
+import { Link, Outlet, Navigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { getStoredUser, logout, isAuthenticated } from "../shared/utils/auth";
 import { formatDate } from "../shared/utils/dateFormat";
@@ -13,24 +13,11 @@ import ProfileDrawer from "../shared/components/ProfileDrawer";
 import HelpDialog from "../shared/components/HelpDialog";
 import AIChatGateway from "../features/ai-chat/components/AIChatGateway";
 import "./ManagerLayout.css";
-
-const menuItems = [
-  { icon: "dashboard", labelKey: "layout.portalMenu.overview", path: "/manager/dashboard" },
-  { icon: "account_tree", labelKey: "layout.portalMenu.genealogy", path: "/manager/genealogy" },
-  { icon: "assignment", labelKey: "layout.portalMenu.events", path: "/manager/tasks" },
-  { icon: "post_add", labelKey: "layout.portalMenu.posts", path: "/manager/posts" },
-  { icon: "collections_bookmark", labelKey: "layout.portalMenu.memories", path: "/manager/time-capsule" },
-  { icon: "group", labelKey: "layout.portalMenu.members", path: "/manager/account" },
-  { icon: "outgoing_mail", labelKey: "layout.portalMenu.invitations", path: "/manager/invitations" },
-  { icon: "pending_actions", labelKey: "layout.portalMenu.pending", path: "/manager/pending" },
-  { icon: "account_balance_wallet", labelKey: "layout.portalMenu.fund", path: "/manager/fund" },
-  { icon: "calendar_month", labelKey: "layout.portalMenu.calendar", path: "/manager/calendar" },
-  { icon: "payments", labelKey: "layout.portalMenu.billing", path: "/manager/billing" },
-];
+import PortalNav, { PortalMenuButton } from "./PortalNav";
+import { MANAGER_MENU } from "./portalMenus";
 
 export default function ManagerLayout() {
   const { t, i18n } = useTranslation();
-  const location = useLocation();
   const [currentUser, setCurrentUser] = useState(() => getStoredUser());
   const [sidebarOpen, setSidebarOpen] = useResponsiveSidebar(true);
   const [accountOpen, setAccountOpen] = useState(false);
@@ -136,18 +123,7 @@ export default function ManagerLayout() {
           </div>
         </button>
 
-        <nav className="sidebar-nav">
-          {menuItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`nav-item ${location.pathname === item.path ? "active" : ""}`}
-            >
-              <span className="material-symbols-outlined">{item.icon}</span>
-              <span>{t(item.labelKey)}</span>
-            </Link>
-          ))}
-        </nav>
+        <PortalNav groups={MANAGER_MENU} label={t("layout.nav.label")} open={sidebarOpen} setOpen={setSidebarOpen} />
 
         <div className="sidebar-footer">
           <button type="button" onClick={handleLogout} className="logout-btn">
@@ -172,15 +148,7 @@ export default function ManagerLayout() {
             <p>{t("layout.session", { date: formatDate(new Date(), { language: i18n.language }) })}</p>
           </div>
           <div className="header-utils">
-            <button
-              type="button"
-              className="util-btn mobile-sidebar-open"
-              onClick={() => setSidebarOpen(true)}
-              aria-label={t("layout.openMenu")}
-              title={t("layout.openMenu")}
-            >
-              <span className="material-symbols-outlined">menu</span>
-            </button>
+            <PortalMenuButton className="util-btn" onOpen={() => setSidebarOpen(true)} />
             <NotificationBell role="manager" buttonClassName="util-btn" />
             <LanguageToggle className="util-btn" />
             <button className="util-btn" title={t("layout.editAccount")} aria-label={t("layout.editAccount")} onClick={openAccountModal}>

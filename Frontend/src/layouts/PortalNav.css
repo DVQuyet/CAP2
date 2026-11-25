@@ -1,0 +1,215 @@
+/* Thanh menu chung của ba layout (admin, manager, thành viên). Màu chỉ lấy từ tokens.css.
+   Mục đang chọn: thẻ vàng kim có viền đỏ son bên trái, là điểm nhấn duy nhất; phần còn lại giữ yên. */
+
+.portal-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0.15rem 0.15rem 0.6rem;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-gold-light) 35%, transparent) transparent;
+}
+
+.portal-nav ul {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.portal-nav-heading {
+  margin: 0 0 0.3rem;
+  padding: 0 0.75rem;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  line-height: 1.3;
+  color: color-mix(in srgb, var(--color-gold-soft) 85%, transparent);
+}
+
+.portal-nav-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 42px;
+  padding: 0.45rem 0.75rem;
+  border-radius: var(--radius-lg);
+  color: color-mix(in srgb, var(--color-cream-2) 84%, transparent);
+  font-size: var(--fs-base-minus);
+  line-height: 1.25;
+  text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.portal-nav-link .material-symbols-outlined {
+  flex: 0 0 auto;
+  font-size: 21px;
+}
+
+.portal-nav-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.portal-nav-link:hover {
+  background: color-mix(in srgb, var(--color-white) 9%, transparent);
+  color: var(--color-white);
+}
+
+.portal-nav-link.is-active {
+  background: var(--color-gold-metal);
+  color: var(--color-ink-brown-1);
+  font-weight: 700;
+  box-shadow:
+    inset 4px 0 0 var(--color-red-900),
+    0 6px 14px color-mix(in srgb, var(--color-maroon-deep) 35%, transparent);
+}
+
+/* Focus bàn phím thấy rõ trên nền đỏ son, cho cả các nút của thanh bên. */
+.portal-nav-link:focus-visible,
+.portal-menu-button:focus-visible,
+.admin-sidebar button:focus-visible,
+.admin-sidebar a:focus-visible,
+.manager-sidebar button:focus-visible,
+.manager-sidebar a:focus-visible,
+.member-sidebar button:focus-visible,
+.member-sidebar a:focus-visible {
+  outline: 2px solid var(--color-gold-bright);
+  outline-offset: 2px;
+}
+
+.portal-menu-button-label {
+  display: none;
+}
+
+@media (min-width: 1101px) {
+  /* Phần đầu thanh bên gọn lại để thấy đủ menu ở màn 800px cao (App.css đặt lề và viền rộng cho .sidebar-header). */
+  .admin-sidebar > .sidebar-header,
+  .manager-sidebar > .sidebar-header,
+  .member-sidebar > .sidebar-header {
+    margin-bottom: 0.75rem;
+    padding: 0 0 0.75rem;
+  }
+
+  .portal-nav {
+    gap: 0.7rem;
+  }
+
+  .portal-nav-link {
+    min-height: 38px;
+    padding: 0.38rem 0.75rem;
+  }
+
+  /* Thanh bên thu nhỏ: chỉ còn biểu tượng; tiêu đề nhóm thành vạch ngăn, nhãn vẫn đọc được bằng trình đọc màn hình. */
+  .sidebar-collapsed .portal-nav-heading {
+    height: 1px;
+    margin: 0.15rem 0.85rem 0.45rem;
+    padding: 0;
+    overflow: hidden;
+    font-size: 0;
+    background: color-mix(in srgb, var(--color-gold-light) 30%, transparent);
+  }
+
+  .sidebar-collapsed .portal-nav-link {
+    justify-content: center;
+    padding: 0.55rem 0;
+  }
+
+  .sidebar-collapsed .portal-nav-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+/* Màn hẹp: thanh bên là ngăn kéo. Menu dồn xuống nửa dưới để với bằng ngón cái; nút mở menu ở góc dưới bên trái. */
+@media (max-width: 1100px) {
+  .portal-nav > .portal-nav-group:first-child {
+    margin-top: auto;
+  }
+
+  .portal-nav-link {
+    min-height: 48px;
+    font-size: var(--fs-base);
+  }
+
+  /* Đầu ngăn kéo: logo bên trái, nút đóng bên phải trên cùng một hàng, chừa chỗ cho menu. */
+  .admin-portal-container .admin-sidebar > .sidebar-header,
+  .manager-portal-container .manager-sidebar > .sidebar-header,
+  .member-portal-container .member-sidebar > .sidebar-header {
+    margin-bottom: 0.75rem;
+    padding: 0.1rem 3.5rem 0.75rem 0.25rem;
+  }
+
+  .admin-portal-container .admin-sidebar .sidebar-header .sidebar-brand,
+  .manager-portal-container .manager-sidebar .sidebar-header .sidebar-brand,
+  .member-portal-container .member-sidebar .sidebar-header .sidebar-brand {
+    justify-content: flex-start;
+    min-height: 44px;
+    margin: 0;
+  }
+
+  .admin-portal-container .admin-sidebar .sidebar-header .sidebar-brand img,
+  .manager-portal-container .manager-sidebar .sidebar-header .sidebar-brand img,
+  .member-portal-container .member-sidebar .sidebar-header .sidebar-brand img {
+    width: auto;
+    max-width: 100%;
+    max-height: 40px;
+  }
+
+  /* Thanh trên cùng (z-index 5000 để chuông thông báo nổi trên trang) không được đè lên ngăn kéo. */
+  .admin-portal-container .admin-top-header,
+  .manager-portal-container .manager-top-header,
+  .member-portal-container .member-topbar {
+    z-index: 60;
+    backdrop-filter: none;
+  }
+
+  .admin-portal-container .portal-menu-button,
+  .manager-portal-container .portal-menu-button,
+  .member-portal-container .portal-menu-button {
+    position: fixed;
+    left: max(16px, env(safe-area-inset-left));
+    bottom: max(16px, env(safe-area-inset-bottom));
+    z-index: 65;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    width: auto;
+    height: 52px;
+    padding: 0 1.15rem 0 0.95rem;
+    border: 1px solid color-mix(in srgb, var(--color-gold-light) 70%, transparent);
+    border-radius: var(--radius-pill);
+    background: var(--color-gold-metal);
+    color: var(--color-ink-brown-1);
+    font-weight: 700;
+    box-shadow: var(--shadow-pop);
+    transform: none;
+  }
+
+  .portal-menu-button .portal-menu-button-label {
+    display: inline;
+  }
+
+  /* Chừa chỗ để nút Menu không che dòng cuối của trang. */
+  .admin-portal-container .admin-view-body,
+  .manager-portal-container .manager-view-body,
+  .member-portal-container .member-page-body {
+    padding-bottom: 76px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-nav-link {
+    transition: none;
+  }
+}

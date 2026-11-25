@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, Navigate, Outlet, useLocation } from "react-router-dom";
+import { Link, Navigate, Outlet } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { getStoredUser, isAuthenticated, logout as clearAuth } from "../shared/utils/auth";
 import { apiRequest } from "../services/api";
@@ -11,16 +11,8 @@ import LanguageToggle from "../shared/components/LanguageToggle";
 import ProfileDrawer from "../shared/components/ProfileDrawer";
 import AIChatGateway from "../features/ai-chat/components/AIChatGateway";
 import "./MemberLayout.css";
-
-const menuItems = [
-  { icon: "assignment", labelKey: "layout.portalMenu.events", path: "/user/tasks" },
-  { icon: "account_tree", labelKey: "layout.portalMenu.familyTree", path: "/user/family-tree" },
-  { icon: "collections_bookmark", labelKey: "layout.portalMenu.memories", path: "/user/time-capsule" },
-  { icon: "history_edu", labelKey: "layout.portalMenu.posts", path: "/user/posts" },
-  { icon: "account_balance_wallet", labelKey: "layout.portalMenu.fund", path: "/user/fund" },
-  { icon: "calendar_month", labelKey: "layout.portalMenu.calendar", path: "/user/calendar" },
-  { icon: "person", labelKey: "layout.portalMenu.profile", path: "/user/profile" },
-];
+import PortalNav, { PortalMenuButton } from "./PortalNav";
+import { MEMBER_MENU } from "./portalMenus";
 
 function getUserName(user, fallback) {
   return user?.name || user?.display_name || user?.email || fallback;
@@ -28,7 +20,6 @@ function getUserName(user, fallback) {
 
 export default function MemberLayout() {
   const { t } = useTranslation();
-  const location = useLocation();
   const [currentUser, setCurrentUser] = useState(() => getStoredUser() || {});
   const [sidebarOpen, setSidebarOpen] = useResponsiveSidebar(true);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -113,7 +104,7 @@ export default function MemberLayout() {
 
         <button type="button" className="sidebar-user-profile" onClick={() => setProfileOpen(true)} title={t("common.editProfile")}>
           <div className="profile-img-container">
-            <img src={resolveImageUrl({ mediaId: currentUser?.avatar_media_id, avatar_url: currentUser?.avatar_url, fallback: "/logo-giaphaviet.png" })} alt="" className="user-avatar-circle" />
+            <img src={resolveImageUrl({ mediaId: currentUser?.avatar_media_id, avatar_url: currentUser?.avatar_url, fallback: "/logo.png" })} alt="" className="user-avatar-circle" />
             <div className="status-indicator online" />
           </div>
           <div className="user-text">
@@ -122,35 +113,12 @@ export default function MemberLayout() {
           </div>
         </button>
 
-        <nav className="member-nav" aria-label={t("layout.memberNavigation")}>
-          {menuItems.map((item) =>
-            item.path === "/user/profile" ? (
-              <button
-                key={item.path}
-                type="button"
-                className={`member-nav-item ${location.pathname === item.path ? "active" : ""}`}
-                onClick={() => setProfileOpen(true)}
-              >
-                <span className="material-symbols-outlined">{item.icon}</span>
-                <span>{t(item.labelKey)}</span>
-              </button>
-            ) : (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`member-nav-item ${location.pathname === item.path ? "active" : ""}`}
-              >
-                <span className="material-symbols-outlined">{item.icon}</span>
-                <span>{t(item.labelKey)}</span>
-              </Link>
-            ),
-          )}
-        </nav>
+        <PortalNav groups={MEMBER_MENU} label={t("layout.memberNavigation")} open={sidebarOpen} setOpen={setSidebarOpen} />
 
         <div className="member-sidebar-footer">
           <button type="button" onClick={handleLogout} className="member-logout-link">
             <span className="material-symbols-outlined">logout</span>
-            <span>{t("layout.leaveSystem")}</span>
+            <span>{t("common.logout")}</span>
           </button>
         </div>
       </aside>
@@ -172,15 +140,7 @@ export default function MemberLayout() {
             </span>
           </div>
           <div className="member-topbar-actions">
-            <button
-              type="button"
-              className="top-icon-btn glass-btn mobile-sidebar-open"
-              onClick={() => setSidebarOpen(true)}
-              aria-label={t("layout.openMenu")}
-              title={t("layout.openMenu")}
-            >
-              <span className="material-symbols-outlined">menu</span>
-            </button>
+            <PortalMenuButton className="top-icon-btn glass-btn" onOpen={() => setSidebarOpen(true)} />
             <NotificationBell role="member" buttonClassName="top-icon-btn glass-btn" />
             <LanguageToggle className="top-icon-btn glass-btn" />
             <div className="divider" />
