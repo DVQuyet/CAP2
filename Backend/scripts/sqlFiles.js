@@ -74,6 +74,7 @@ const ALREADY_APPLIED = new Set([
 ]);
 
 // Cả file chạy trên MỘT kết nối: SET FOREIGN_KEY_CHECKS / SET NAMES chỉ có tác dụng trong kết nối đó.
+// db là pool thì mượn kết nối riêng; là kết nối (đang giữ khóa migrate) thì chạy thẳng trên nó.
 async function runFile(db, file, { tolerateApplied = false, log = defaultLog } = {}) {
     const statements = splitSqlStatements(fs.readFileSync(file, 'utf8'));
     const connection = typeof db.getConnection === 'function' ? await db.getConnection() : db;
@@ -91,10 +92,8 @@ async function runFile(db, file, { tolerateApplied = false, log = defaultLog } =
             }
         }
     } finally {
-        if (connection !== db) {
-            await connection.query('SET FOREIGN_KEY_CHECKS = 1').catch(() => {});
-            connection.release();
-        }
+        await connection.query('SET FOREIGN_KEY_CHECKS = 1').catch(() => {});
+        if (connection !== db) connection.release();
     }
     return statements.length;
 }
@@ -111,6 +110,7 @@ async function runSchemaFiles(db, { dir = SCHEMA_DIR, log = defaultLog } = {}) {
 
 // Hai tiến trình `npm run migrate` cùng lúc (2 máy, 2 lần deploy): khóa tên theo DB, giữ trên một kết nối riêng
 // từ lúc đọc schema_migrations tới lúc ghi nhận file cuối. GET_LOCK/RELEASE_LOCK có trên cả MySQL 8 và TiDB.
+// callback nhận chính kết nối đó và phải làm mọi việc trên nó: mượn thêm từ pool sẽ treo khi DB_CONNECTION_LIMIT=1.
 const LOCK_NAME = 'cap2_schema_migrations';
 const LOCK_TIMEOUT_SECONDS = 120;
 
@@ -122,7 +122,7 @@ async function withMigrationLock(db, callback, { name = LOCK_NAME, timeout = LOC
             throw new Error(`Tiến trình migrate khác đang giữ khóa ${name} quá ${timeout} giây; chờ nó xong rồi chạy lại.`);
         }
         try {
-            return await callback();
+            return await callback(connection);
         } finally {
             await connection.query('SELECT RELEASE_LOCK(?) AS released', [name]).catch(() => {});
         }
@@ -139,13 +139,13 @@ async function runPendingMigrations(db, { dir = MIGRATIONS_DIR, baseline = BASEL
           PRIMARY KEY (filename)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
-    return withMigrationLock(db, async () => {
-        const [rows] = await db.query('SELECT filename FROM schema_migrations');
+    return withMigrationLock(db, async (connection) => {
+        const [rows] = await connection.query('SELECT filename FROM schema_migrations');
         const applied = new Set(rows.map((row) => row.filename));
         const pending = listSqlFiles(dir).filter((name) => name > baseline && !applied.has(name));
         for (const name of pending) {
-            const count = await runFile(db, path.join(dir, name), { tolerateApplied: true, log });
-            await db.query('INSERT INTO schema_migrations (filename) VALUES (?)', [name]);
+            const count = await runFile(connection, path.join(dir, name), { tolerateApplied: true, log });
+            await connection.query('INSERT INTO schema_migrations (filename) VALUES (?)', [name]);
             log(`✔ migration ${name} (${count} câu lệnh)`);
         }
         if (!pending.length) log('✔ migration: không có file mới sau mốc ' + baseline);
