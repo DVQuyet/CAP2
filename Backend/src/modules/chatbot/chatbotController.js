@@ -22,7 +22,7 @@ const { normalizeTyping, normalizeTypingDetailed } = require('./typingNormalizer
 const { runWithQuestion } = require('./text/nameMatch');
 const { runWithKinOrder, getKinOrderContext, filterByKinOrder, anchorsOfMatches, labelWithOrder } = require('./kinshipBirthOrder');
 const { withTreeFields, fallbackFlag } = require('./chatbotResponseMeta');
-const { createChatbotMetadataFilter } = require('./chatbotHistoryMetadata');
+const { createChatbotMetadataFilter, filterHistoryRows } = require('./chatbotHistoryMetadata');
 const { saveFeedback, ensureChatbotHiddenSchema } = require('./chatbotFeedbackService');
 const { describePersonBrief, capitalizeFirst, formatDateVN, dateParts, birthYearOf } = require('./chatbotFormat');
 const { plainTermToKey, hasVietnameseDiacritics } = require('./kinshipTermService');
@@ -198,11 +198,9 @@ async function canAccessClan(req, clanId, currentMemberId) {
     );
     if (rows.length) return true;
 
-    const [personRows] = await db.query(
-        'SELECT id FROM people WHERE id = ? AND clan_id = ? LIMIT 1',
-        [currentMemberId, clanId]
-    );
-    return personRows.length > 0 && toPositiveId(req.user?.person_id) === currentMemberId;
+    // Hồ sơ chính của tài khoản nằm trong họ là đủ quyền vào họ; góc nhìn (currentMemberId) đã do resolveViewerPersonId kiểm.
+    const [personRows] = await db.query('SELECT id FROM people WHERE id = ? AND clan_id = ? LIMIT 1', [toPositiveId(req.user?.person_id), clanId]);
+    return personRows.length > 0 && Boolean(currentMemberId);
 }
 
 async function storeChatbotMessage(payload, user) {
@@ -293,7 +291,7 @@ async function resolveOwnedConversationId(accountId, requestedConversationId) {
     return getOrCreateChatbotConversation(accountId).catch(() => null);
 }
 
-async function loadChatbotContext({ clanId, currentMemberId, conversationId, message }) {
+async function loadChatbotContext({ clanId, currentMemberId, conversationId, message, user }) {
     const [clanInfo] = await queryOptional(
         'SELECT id, clan_name, history, hall_address FROM clans WHERE id = ? LIMIT 1',
         [clanId]
@@ -320,14 +318,14 @@ async function loadChatbotContext({ clanId, currentMemberId, conversationId, mes
             : columns.has('sender')
                 ? 'sender'
                 : "'user' AS sender";
-        history = (await queryOptional(
+        history = await filterHistoryRows(user, clanId, (await queryOptional(
             `SELECT ${senderSelect}, message, intent
              FROM chatbot_messages
              WHERE conversation_id = ?${columns.has('hidden_at') ? ' AND hidden_at IS NULL' : ''}
              ORDER BY created_at DESC, id DESC
              LIMIT 10`,
             [conversationId]
-        )).reverse();
+        )).reverse());
     }
 
     return {
@@ -2131,8 +2129,7 @@ exports.ask = withViewer(withKinOrder(async (req, res) => {
         const chatbotContext = await loadChatbotContext({
             clanId,
             currentMemberId,
-            conversationId,
-            message,
+            conversationId, message, user: req.user,
         });
         if (!res.locals) res.locals = {};
         res.locals.chatbotTurn = { memorySessionId, conversationId, clanId, accountId, currentMemberId, message, rawMessage, user: req.user, forced: null, pending: null };
@@ -2492,7 +2489,7 @@ exports.history = async (req, res) => {
         const currentMemberId = await resolveViewerPersonId(accountId, req.user?.person_id, clanId, req.query.currentMemberId || req.query.current_member_id);
         const limit = Math.min(Math.max(Number(req.query.limit || 50), 1), 100);
         const offset = Math.max(Number(req.query.offset || 0), 0);
-        if (!clanId || !currentMemberId) return res.status(400).json({ success: false, message: 'clanId và currentMemberId là bắt buộc' });
+        if (!clanId) return res.status(400).json({ success: false, message: 'clanId là bắt buộc' });
         if (!(await canAccessClan(req, clanId, currentMemberId))) return res.status(403).json({ success: false, message: 'Bạn không có quyền truy cập dòng họ này' });
 
         const columns = await getTableColumns('chatbot_messages');
@@ -2517,9 +2514,9 @@ exports.history = async (req, res) => {
         } else {
             return res.json({ success: true, messages: [], pagination: { limit, offset } });
         }
-        if (columns.has('current_member_id')) {
-            where.push('m.current_member_id = ?');
-            params.push(currentMemberId);
+        if (columns.has('current_member_id')) { // chưa gắn hồ sơ: chỉ tin của chính tài khoản đã lưu với current_member_id NULL
+            where.push(currentMemberId ? 'm.current_member_id = ?' : 'm.current_member_id IS NULL');
+            if (currentMemberId) params.push(currentMemberId);
         }
         // Tin đã "xóa lịch sử" (ẩn mềm) không trả về nữa.
         if (columns.has('hidden_at')) where.push('m.hidden_at IS NULL');
@@ -2544,16 +2541,15 @@ exports.history = async (req, res) => {
             queryParams
         );
 
-        const filterMetadata = createChatbotMetadataFilter(req.user);
+        const filtered = await filterHistoryRows(req.user, clanId, rows.reverse());
         return res.json({
             success: true,
-            messages: await Promise.all(rows.reverse().map(async ({ feedback_rating: feedbackRating, ...row }) => ({
+            messages: filtered.map(({ feedback_rating: feedbackRating, ...row }) => ({
                 ...row,
-                metadata: await filterMetadata(row.metadata),
                 feedbackRating: row.role === 'assistant' && (Number(feedbackRating) === 1 || Number(feedbackRating) === -1)
                     ? Number(feedbackRating)
                     : null,
-            }))),
+            })),
             pagination: { limit, offset },
         });
     } catch (error) {

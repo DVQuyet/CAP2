@@ -30,13 +30,17 @@ function findLeaks(value, contacts, location, leaks) {
     }
 }
 
-test('/ask giữ kín SĐT, email và địa chỉ trong JSON trả về và yêu cầu gửi LLM', async () => {
+function loadHarness() {
     const sdkPath = require.resolve('groq-sdk');
     require.cache[sdkPath] = { id: sdkPath, filename: sdkPath, loaded: true, exports: FakeGroq };
     Object.assign(process.env, { GROQ_API_KEY: 'test-key', CHATBOT_LLM_REWRITE: 'all' });
-    const { ask, DATASETS } = require('../scripts/chatbot-e2e-check');
+    return require('../scripts/chatbot-e2e-check');
+}
+
+// Gắn SĐT/email/địa chỉ giả (duy nhất) cho mọi người trong bộ đo; gọi lại nhiều lần cho cùng kết quả.
+function seedContacts(datasets) {
     const contacts = [];
-    for (const [dataset, { people }] of Object.entries(DATASETS)) {
+    for (const [dataset, { people }] of Object.entries(datasets)) {
         for (const person of people) {
             Object.assign(person, {
                 phone: `+999${person.clan_id}867${String(person.id).padStart(4, '0')}`,
@@ -46,6 +50,12 @@ test('/ask giữ kín SĐT, email và địa chỉ trong JSON trả về và yê
             for (const field of ['phone', 'email', 'address']) contacts.push([field, person[field]]);
         }
     }
+    return contacts;
+}
+
+test('/ask giữ kín SĐT, email và địa chỉ trong JSON trả về và yêu cầu gửi LLM', async () => {
+    const { ask, DATASETS } = loadHarness();
+    const contacts = seedContacts(DATASETS);
 
     const profileCases = [
         ['Địa chỉ của Đinh Văn Bình là gì?', 'person_info', [5]],
@@ -98,4 +108,22 @@ test('/ask giữ kín SĐT, email và địa chỉ trong JSON trả về và yê
     assert.ok(sawPeople && sawCandidates, 'Bộ đo phải đi qua cả people và candidates');
     assert.ok(calls.some(([payload]) => payload.max_tokens === 500), 'Bộ đo phải gọi LLM lập kế hoạch');
     assert.ok(calls.some(([payload]) => payload.max_tokens === 800), 'Bộ đo phải gọi LLM diễn đạt');
+});
+
+test('toàn bộ CASES và CONVERSATION của bộ đo: không lộ liên hệ trong JSON lẫn mọi lời gọi LLM', async () => {
+    const { ask, CASES, CONVERSATION, DATASETS } = loadHarness();
+    const contacts = seedContacts(DATASETS);
+    const leaks = new Set();
+    const turns = [
+        ...CASES.map(([, question, , dataset], index) => [question, `all-case-${index}`, dataset || undefined]),
+        ...CONVERSATION.map(([question]) => [question, 'all-conversation', 'dinh']),
+    ];
+    for (const [question, session, dataset] of turns) {
+        const firstCall = calls.length;
+        const { status, body } = await ask(question, session, dataset);
+        assert.ok(status < 500, question); // câu chặn (prompt injection...) trả 4xx, vẫn phải kiểm không lộ
+        findLeaks(JSON.parse(JSON.stringify(body)), contacts, `/ask «${question}»`, leaks);
+        for (const call of calls.slice(firstCall)) findLeaks(call, contacts, `LLM «${question}»`, leaks);
+    }
+    assert.equal(leaks.size, 0, [...leaks].join('\n'));
 });

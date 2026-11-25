@@ -16,7 +16,7 @@ function mockHistory(handler) {
     return createMockDb(async (sql, params) => {
         if (/INFORMATION_SCHEMA\.TABLES/.test(sql)) return [params[0] === 'chatbot_messages' ? [{ 1: 1 }] : []];
         if (/INFORMATION_SCHEMA\.COLUMNS/.test(sql)) return [COLUMNS.map((name) => ({ COLUMN_NAME: name }))];
-        if (/^SELECT COALESCE\(a.person_id, ac.person_id\)/.test(sql)) return [[{ person_id: ownProfile.id }]];
+        if (/^SELECT COALESCE\(p.id, ac.person_id\)/.test(sql)) return [[{ person_id: ownProfile.id }]];
         if (/^SELECT 1 FROM account_clans/.test(sql)) return [[{ 1: 1 }]];
         return handler(sql, params);
     });
@@ -50,7 +50,7 @@ test('GET history lọc liên hệ đã lưu cũ theo quyền hiện tại', asy
     };
     assert.deepEqual(await read(member), [expected, expected]);
     assert.deepEqual(await read({ ...member, role_id: 2, role_name: 'manager' }), [metadata, metadata]);
-    assert.deepEqual(mock.find(/^SELECT COALESCE/).map(({ params }) => params), [[member.id]]);
+    assert.deepEqual(mock.find(/^SELECT COALESCE/).map(({ params }) => params), [[13, 13, member.id]]);
 });
 
 test('/ask lọc liên hệ người khác trước khi ghi metadata', async () => {

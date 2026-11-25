@@ -10,7 +10,9 @@ const relationshipEngine = require('../src/modules/chatbot/relationshipEngine');
 const suggestionService = require('../src/modules/chatbot/chatbotSuggestionService');
 const chatbot = require('../src/modules/chatbot/chatbotController');
 
-const OTHER_PERSON = 76;
+const OTHER_PERSON = 77; // hồ sơ có thật cùng họ, là self của tài khoản khác (8)
+// Hồ sơ có thật cùng họ nhưng thuộc tài khoản khác với người gửi (manager là tài khoản 8 nên dùng 18 của tài khoản 9).
+const otherPersonFor = (role) => (role === 'manager' ? 18 : OTHER_PERSON);
 
 const userOf = (role, personId) => ({
     id: { member: 9, manager: 8, admin: 1 }[role],
@@ -71,7 +73,7 @@ for (const role of ['member', 'manager', 'admin']) {
         await chatbot.getRelationshipById({
             user: userOf(role, 21),
             params: { id: '40' },
-            query: { clanId: String(CLAN), currentMemberId: String(OTHER_PERSON) },
+            query: { clanId: String(CLAN), currentMemberId: String(otherPersonFor(role)) },
         }, res);
         assert.deepStrictEqual(sources, [21]);
         assert.strictEqual(res.statusCode, 404);
@@ -87,7 +89,7 @@ for (const role of ['member', 'manager', 'admin']) {
         const res = mockRes();
         await chatbot.suggestions({
             user: userOf(role, 21),
-            query: { clanId: String(CLAN), currentMemberId: String(OTHER_PERSON) },
+            query: { clanId: String(CLAN), currentMemberId: String(otherPersonFor(role)) },
         }, res);
         assert.deepStrictEqual(seen, [21]);
         assert.strictEqual(res.body.success, true);

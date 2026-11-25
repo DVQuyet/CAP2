@@ -6,16 +6,23 @@ Các file đó giữ làm nhật ký; việc mới thêm vào đây.
 
 Ký hiệu công sức: **S** < 2 giờ · **M** nửa ngày–1 ngày · **L** nhiều ngày. Cột "Ai làm" gợi ý chia việc khi chạy nhiều agent.
 
-## Đợt 25/11/2026 – Q-2: trợ lý chỉ hỏi với tư cách chính tài khoản (nhánh `s5-q2-current-member`)
+## Đợt 25/11/2026 – Q-1 + Q-2: trợ lý không lộ liên hệ, chỉ hỏi với tư cách chính tài khoản (nhánh gộp `q12`)
 
-Đã làm: hàm mới `resolveViewerPersonId` (`Backend/src/modules/chatbot/viewerPerson.js`) thay chỗ đọc `currentMemberId` ở `/ask`, `/history`,
-xóa lịch sử, `/suggestions`, `/relationship/:id`, 👍/👎. Chỉ nhận id bằng `req.user.person_id` hoặc người tài khoản đã gắn trong `account_people`
-cùng dòng họ; sai thì dùng người của chính tài khoản (member, manager, admin như nhau). Test: `tests/chatbot.viewerPerson.test.js` (11 test). Còn mở:
+Đã làm:
+- Q-2: `resolveViewerPersonId` (`Backend/src/modules/chatbot/viewerPerson.js`) thay chỗ đọc `currentMemberId` ở `/ask`, `/history`, xóa lịch sử,
+  `/suggestions`, `/relationship/:id`, 👍/👎. Chỉ nhận hồ sơ chính hoặc liên kết `self` của tài khoản trong đúng dòng họ, bỏ liên kết `self`
+  đã cấp cho tài khoản khác.
+- Q-1: SĐT/email/địa chỉ của người khác không vào JSON trả về, metadata lưu, prompt LLM. Tin cũ: `chatbotHistoryMetadata.filterHistoryRows`
+  che cả giá trị liên hệ trong chữ (message, metadata) ở `/history` và ở ngữ cảnh hội thoại gửi LLM. Tìm tên khi đồ thị lỗi trả rỗng cho thành viên.
+- `/history` cho thành viên chưa gắn hồ sơ đọc tin `current_member_id IS NULL` của chính tài khoản.
+- Test: `chatbot.viewerPerson`, `chatbot.historyContact`, `chatbot.historyText`, `chatbot.graphFailure`, `chatbot.contactLeak` (chạy toàn bộ
+  CASES và CONVERSATION của bộ đo).
 
-- `/api/chatbot/path` vẫn nhận `sourceId` tùy ý (đường quan hệ giữa hai người bất kỳ, Frontend chưa gọi). Cần chốt: coi là "góc nhìn" (ép về chính mình)
-  hay là câu hỏi A–B như "quan hệ giữa A và B" trong `/ask`. **S**
-- Id sai đang bị bỏ qua lặng lẽ, không báo client; Frontend có thể hiện tên "góc nhìn" khác với người trợ lý thật sự dùng. Chưa soát Frontend. **S**
-- Chưa có test cho `/ask` với id người khác qua đường đầy đủ (mới test `/relationship/:id` và `/suggestions`); bộ e2e chỉ gửi đúng id của mình. **S**
+Còn mở:
+- `/api/chatbot/path` vẫn nhận `sourceId` tùy ý (Frontend chưa gọi). Cần chốt: ép về chính mình hay coi là câu hỏi A–B. **S**
+- Id sai bị bỏ qua lặng lẽ; Frontend có thể hiện tên "góc nhìn" khác với người trợ lý dùng. Chưa soát Frontend. **S**
+- Chưa có test `/ask` với id người khác qua đường đầy đủ (mới có `/relationship/:id`, `/suggestions`). **S**
+- Che liên hệ trong chữ dựa trên khớp đúng giá trị đang lưu: giá trị đã sửa sau khi tin được lưu thì không khớp nữa. **S**
 
 ## Soát schema DB 15/11/2026 (DB TiDB đang cấu hình trong `Backend/.env`)
 

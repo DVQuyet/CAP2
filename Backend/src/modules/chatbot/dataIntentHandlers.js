@@ -261,7 +261,7 @@ async function handlePersonExistsIntent({ clanId, parsed, planner }) {
     let people = await loadClanPeopleForSearch(clanId);
     if (relationshipEngine.currentTier() === 'public') {
         const graph = await relationshipEngine.loadClanGraph(clanId).catch(() => null);
-        if (graph) people = people.filter((person) => graph.people.has(Number(person.id)));
+        people = graph ? people.filter((person) => graph.people.has(Number(person.id))) : [];
     }
     const matches = memberSearch.findPersonByName(queryName, people);
     const best = matches[0] || null;

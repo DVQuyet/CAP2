@@ -17,6 +17,8 @@ async function resolveViewerPersonId(accountId, personId, clanId, requestedId) {
         SELECT ap.person_id FROM account_people ap
         JOIN people p ON p.id = ap.person_id AND p.clan_id = ap.clan_id
         WHERE ap.account_id = ? AND ap.clan_id = ? AND ap.role = 'self'
+          AND NOT EXISTS (SELECT 1 FROM accounts owner WHERE owner.person_id = ap.person_id AND owner.id <> ap.account_id)
+          AND NOT EXISTS (SELECT 1 FROM account_clans owner WHERE owner.person_id = ap.person_id AND owner.account_id <> ap.account_id)
         ORDER BY ap.is_default DESC, ap.id DESC
     `, [accountId, clanId]);
     const linked = selfLinks.map((row) => toPositiveId(row.person_id)).filter(Boolean);

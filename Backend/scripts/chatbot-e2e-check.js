@@ -232,12 +232,12 @@ async function fakeQuery(rawSql, params = []) {
     }
     if (has(/FROM people p WHERE p\.clan_id = \? ORDER BY p\.generation ASC, p\.id ASC LIMIT 500/)) return [people];
     if (has(/r\.name AS role_name FROM people p LEFT JOIN accounts a/)) return [people.map((row) => ({ ...row, role_name: row.id === currentDataset.me ? 'member' : null }))];
-    if (has(/FROM people p LEFT JOIN accounts a/)) return [projectPeople(sql, people)];
+    if (has(/FROM people p LEFT JOIN accounts a .* WHERE p\.clan_id = \? AND am\.id IS NULL/)) return [projectPeople(sql, people)];
     if (has(/^SELECT \* FROM families WHERE clan_id = \?/)) return [families];
     if (has(/^SELECT \* FROM children WHERE family_id IN/)) return [children.filter((row) => params.map(Number).includes(row.family_id))];
     if (has(/FROM people WHERE id = \? (AND clan_id = \? )?LIMIT 1/)) return [projectPeople(sql, [byId(params[0])].filter(Boolean))];
     if (has(/FROM people WHERE clan_id = \? AND id IN/)) return [projectPeople(sql, people.filter((row) => params.slice(1).map(Number).includes(row.id)))];
-    if (has(/p\.generation = \? AND p\.id <> \?/)) return [people.filter((row) => row.generation === Number(params[1]) && row.id !== Number(params[2]))];
+    if (has(/p\.generation = \? AND p\.id <> \?/)) return [projectPeople(sql, people.filter((row) => row.generation === Number(params[1]) && row.id !== Number(params[2])))];
     if (has(/death_anniversary_lunar FROM people WHERE clan_id = \?/)) {
         return [people.filter((row) => (row.is_living === 1 && row.birth_date && row.birth_date_precision === 'exact')
             || (row.is_living !== 1 && ((row.death_date && row.death_date_precision === 'exact') || row.death_anniversary_lunar)))];

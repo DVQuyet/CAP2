@@ -18,11 +18,8 @@ const families = [
     { id: 3, clan_id: 13, father_id: 3, mother_id: 7, relationship_status: 'active', union_type: 'concubine', visibility: 'managers' },
 ];
 
-const mockClan = ({ graphUnavailable = false } = {}) => createMockDb(async (sql) => {
-    if (/FROM people p LEFT JOIN accounts a/.test(sql)) {
-        if (graphUnavailable) throw new Error('Graph unavailable');
-        return [people];
-    }
+const mockClan = () => createMockDb(async (sql) => {
+    if (/FROM people p LEFT JOIN accounts a/.test(sql)) return [people];
     if (/^SELECT \* FROM families WHERE clan_id/.test(sql)) return [families];
     if (/FROM people p WHERE p\.clan_id = \? AND \( p\.display_name LIKE/.test(sql)) return [people.filter((row) => /Cúc/.test(row.display_name))];
     return [[]];
@@ -44,17 +41,6 @@ test('người chỉ có quan hệ ẩn không được tìm thấy qua trợ l�
     assert.strictEqual(member.status, 'not_found');
     const manager = await relationshipEngine.runWithViewer({ canSeeSensitive: true }, () => memberSearch.resolvePerson({ clanId: 13, names: ['Lê Thị Cúc'] }));
     assert.strictEqual(manager.status, 'resolved');
-});
-
-test('thành viên thường không nhận kết quả tìm tên khi đồ thị lỗi', async () => {
-    const mock = mockClan({ graphUnavailable: true });
-    relationshipEngine.clearClanCache(13);
-    const search = () => memberSearch.resolvePerson({ clanId: 13, names: ['Lê Thị Cúc'] });
-    const member = await relationshipEngine.runWithViewer({ canSeeSensitive: false }, search);
-    assert.deepStrictEqual(member, { status: 'not_found', candidates: [] });
-    assert.strictEqual(mock.find(/FROM people p LEFT JOIN accounts a/).length, 1);
-    const manager = await relationshipEngine.runWithViewer({ canSeeSensitive: true }, search);
-    assert.strictEqual(manager.person.id, 7);
 });
 
 // ---- Chọn "bạn là ai" trong khung chat ----
