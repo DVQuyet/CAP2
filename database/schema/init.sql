@@ -190,9 +190,9 @@ CREATE TABLE IF NOT EXISTS `events` (
 CREATE TABLE IF NOT EXISTS `event_contributions` (
   `id` int NOT NULL AUTO_INCREMENT,
   `clan_id` int NOT NULL,
-  `event_id` int NOT NULL,
+  `event_id` int DEFAULT NULL,
   `campaign_id` int DEFAULT NULL,
-  `person_id` int NOT NULL,
+  `person_id` int DEFAULT NULL,
   `amount` decimal(15,2) NOT NULL DEFAULT '0.00',
   `contribution_date` date DEFAULT NULL,
   `method` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT 'Tiền mặt',
@@ -213,7 +213,7 @@ CREATE TABLE IF NOT EXISTS `event_contributions` (
 CREATE TABLE IF NOT EXISTS `event_costs` (
   `id` int NOT NULL AUTO_INCREMENT,
   `clan_id` int NOT NULL,
-  `event_id` int NOT NULL,
+  `event_id` int DEFAULT NULL,
   `campaign_id` int DEFAULT NULL,
   `recipient_person_id` int DEFAULT NULL,
   `item_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,

@@ -10,9 +10,9 @@ const { runSchemaFiles, runPendingMigrations } = require('./sqlFiles');
         await db.allowDdl(async () => { await runSchemaFiles(db); await runPendingMigrations(db); });
         const results = await db.allowDdl(() => runAllSchemaEnsures());
         failed = results.filter((item) => !item.ok).length;
-        console.log(`\nHoàn tất: file .sql xong; ensure ${results.length - failed}/${results.length} bước thành công.`);
+        process.stdout.write(`\nHoàn tất: file .sql xong; ensure ${results.length - failed}/${results.length} bước thành công.\n`);
     } catch (error) {
-        console.error('Migrate lỗi:', error.message);
+        process.stderr.write(`Migrate lỗi: ${error.message}\n`);
         failed = 1;
     } finally {
         try { await db.end(); } catch (_) { /* pool có thể đã đóng */ }

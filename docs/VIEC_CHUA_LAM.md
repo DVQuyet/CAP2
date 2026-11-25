@@ -6,6 +6,17 @@ Các file đó giữ làm nhật ký; việc mới thêm vào đây.
 
 Ký hiệu công sức: **S** < 2 giờ · **M** nửa ngày–1 ngày · **L** nhiều ngày. Cột "Ai làm" gợi ý chia việc khi chạy nhiều agent.
 
+## Đợt 25/11/2026 – Sửa 8 điểm Astra ở S2–S3 (nhánh `s4-thu-trinh-duyet`)
+
+Đã làm: phiên bản đồ thị trợ lý tính từ dữ liệu cây (`chatbot/graphVersion.js`, TiDB không có trigger); migration
+`2026_11_25_fund_tables_upgrade.sql` đưa DB dựng từ init.sql cũ lên (cột quỹ, `event_id`/`person_id` cho NULL); `npm run migrate`
+giữ `GET_LOCK`, chạy lại được sau lỗi giữa file, ghi qua `process.stdout.write`; `.env.local.example`/README: kiểm chứng chỉ TiDB,
+tài khoản DB riêng cho `cap2_test`. Còn mở:
+
+- Chưa tạo tài khoản `<prefix>.cap2_test` trên cụm (người quản trị cụm chạy 2 câu SQL trong README), `.env.local` vẫn dùng tài khoản cũ. **S**
+- Dấu vân tay đồ thị không gồm `person_aliases` / chính sách hiển thị của dòng họ: sửa những thứ đó thì trợ lý vẫn chờ hết TTL (2–5 phút). **S**
+- `relationship_cache` chỉ được ghi, không ai đọc: bỏ bảng hoặc dùng lại. **S**
+
 ## Đợt 25/11/2026 – S4: bộ thử trình duyệt (nhánh `s4-thu-trinh-duyet`)
 
 Đã làm: thư mục `e2e/` (Playwright, Chromium), chạy bằng `npm run test:e2e` ở gốc repo; job `e2e` trong CI dùng MySQL 8 trong container,
