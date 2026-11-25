@@ -42,10 +42,12 @@ jobs:
         run: |
           set -euo pipefail
           file="cap2-$(date -u +%Y%m%d-%H%M%S).sql.gz.gpg"
+          # TiDB không có SAVEPOINT (mà --single-transaction cần), không có routine/trigger:
+          # dump không khóa bảng; dữ liệu gia phả ít ghi lúc 02:30 nên chấp nhận được.
           mysqldump \
             --host="$DB_HOST" --port="$DB_PORT" --user="$DB_USER" \
             --ssl-mode=REQUIRED \
-            --single-transaction --quick --routines --triggers --hex-blob \
+            --skip-lock-tables --quick --hex-blob \
             --no-tablespaces --set-gtid-purged=OFF \
             "$DB_NAME" \
             | gzip -9 \
