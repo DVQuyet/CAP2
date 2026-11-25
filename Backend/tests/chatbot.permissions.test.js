@@ -19,7 +19,7 @@ const families = [
 ];
 
 const mockClan = () => createMockDb(async (sql) => {
-    if (/^SELECT p\.\* FROM people p/.test(sql)) return [people];
+    if (/FROM people p LEFT JOIN accounts a/.test(sql)) return [people];
     if (/^SELECT \* FROM families WHERE clan_id/.test(sql)) return [families];
     if (/FROM people p WHERE p\.clan_id = \? AND \( p\.display_name LIKE/.test(sql)) return [people.filter((row) => /Cúc/.test(row.display_name))];
     return [[]];

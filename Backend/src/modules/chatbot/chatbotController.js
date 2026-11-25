@@ -299,7 +299,7 @@ async function loadChatbotContext({ clanId, currentMemberId, conversationId, mes
     );
     const [userProfile] = await queryOptional(
         `SELECT id, display_name, gender, generation, branch,
-                birth_date, death_date, is_living, address, hometown, bio
+                birth_date, death_date, is_living, hometown, bio
          FROM people WHERE id = ? LIMIT 1`,
         [currentMemberId]
     );

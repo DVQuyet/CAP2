@@ -91,8 +91,7 @@ async function explainResolvedIntent({ intent, message, resolvedData, context })
     return { explanation: null, aiUsed: false, llmRejected };
 }
 
-// Chỉ gửi cho LLM những trường cá nhân mà câu hỏi thực sự cần (địa chỉ, ghi chú, tiểu sử
-// là dữ liệu nhạy cảm và được gửi sang dịch vụ bên ngoài).
+// Chỉ gửi cho LLM những trường hồ sơ cần thiết để trả lời.
 function profileFieldsForQuestion(person, message) {
     const text = String(message || '')
         .normalize('NFD')
@@ -111,7 +110,6 @@ function profileFieldsForQuestion(person, message) {
         death_date: formatDateOnly(person.death_date),
         is_living: person.is_living,
         hometown: person.hometown,
-        ...(wants(/dia chi|o dau|song o|cho o|nha o/) ? { address: person.address } : {}),
         ...(asksOverview || wants(/tieu su|cuoc doi/) ? { bio: person.bio } : {}),
         ...(wants(/ghi chu/) ? { note: person.note } : {}),
     };
@@ -212,12 +210,11 @@ async function handlePersonInfoIntent({ clanId, currentMemberId, message, parsed
     }
 
     const ids = rows.map((row) => toPositiveId(row.id)).filter(Boolean).slice(0, 3);
-    // SELECT * để lấy cả độ chính xác ngày/ngày giỗ âm lịch nếu DB đã có các cột này.
+    const fields = 'id, display_name, first_name, middle_name, surname, gender, generation, branch, birth_date, death_date, is_living, hometown, bio, note';
+    const from = `FROM people WHERE clan_id = ? AND id IN (${ids.map(() => '?').join(',')})`;
     const profiles = ids.length
-        ? await queryOptional(
-            `SELECT * FROM people WHERE clan_id = ? AND id IN (${ids.map(() => '?').join(',')})`,
-            [clanId, ...ids]
-        )
+        ? await queryOptional(`SELECT ${fields}, birth_date_precision, death_date_precision, death_anniversary_lunar ${from}`, [clanId, ...ids])
+            .then((rows) => rows.length ? rows : queryOptional(`SELECT ${fields} ${from}`, [clanId, ...ids]))
         : [];
     const subtype = parsed.subtype || null;
     const resolvedData = { type: 'person_profile', data: profiles, entity: entity || null, subtype };
