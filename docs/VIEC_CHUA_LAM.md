@@ -86,7 +86,7 @@ Còn mở:
   CASES và CONVERSATION của bộ đo).
 
 Còn mở:
-- `/api/chatbot/path` vẫn nhận `sourceId` tùy ý (Frontend chưa gọi). Cần chốt: ép về chính mình hay coi là câu hỏi A–B. **S**
+- `/api/chatbot/path` nhận `sourceId` tùy ý (Frontend chưa gọi). Đã chốt 25/11: giữ nguyên, coi là tra quan hệ A–B giữa hai người trong cùng dòng họ (vẫn lọc quan hệ nhạy cảm theo vai trò); không phải câu hỏi "tôi là gì của…".
 - Id sai bị bỏ qua lặng lẽ; Frontend có thể hiện tên "góc nhìn" khác với người trợ lý dùng. Chưa soát Frontend. **S**
 - Chưa có test `/ask` với id người khác qua đường đầy đủ (mới có `/relationship/:id`, `/suggestions`). **S**
 - Che liên hệ trong chữ dựa trên khớp đúng giá trị đang lưu: giá trị đã sửa sau khi tin được lưu thì không khớp nữa. **S**
