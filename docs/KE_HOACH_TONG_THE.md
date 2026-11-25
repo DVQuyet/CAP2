@@ -13,7 +13,7 @@ Lập ngày 10/11/2026, dựa trên mã ở commit `3b550aa`. File này gom mọ
 | S3 | Schema dựng lại được từ repo: `init.sql` đủ bảng, `npm run migrate` chạy cả file `.sql`, dữ liệu mẫu có gói `FREE` | DB dựng từ `init.sql` thiếu 5 bảng và không có gói nào (soát 15/11) | E7.9 (bản tối thiểu) | 1–2 ngày |
 | S4 | Bộ thử trình duyệt cho 5–6 luồng chính (đăng nhập ba vai trò, mở cây, toàn màn hình, trang quản lý gia phả của admin, AI sự kiện với LLM giả), chạy trong CI | Ba lỗi chặn người dùng ngày 15/11 không test nào bắt được | H4.1 (rút gọn) | 2–3 ngày |
 | S5 | Q-1 (kiểm lộ SĐT/email qua trợ lý), rồi Q-2 (`currentMemberId` chỉ là người của chính tài khoản) | Q-1 là rủi ro cao nhất nếu có; Q-2 phải xong trước L7–L8 | Q | 2–3 ngày |
-| S6 | Quy tắc mật khẩu tối thiểu ở mọi đường tạo/đổi mật khẩu; đổi mật khẩu hai tài khoản tạo ngày 15/11 | Tài khoản admin trên DB thật đang có mật khẩu một ký tự | H3.8 | 1 ngày |
+| S6 | Quy tắc mật khẩu tối thiểu ở mọi đường tạo/đổi mật khẩu; đổi mật khẩu hai tài khoản tạo ngày 15/11 | Chủ dự án cần đổi mật khẩu hai tài khoản tạo 15/11 | H3.8 | 1 ngày |
 | S7 | Sao lưu trỏ sang TiDB: cập nhật secret `BACKUP_*`, chạy thử `backup.yml` một lần | DB đã chuyển từ Aiven sang TiDB Cloud; chưa kiểm sao lưu còn chạy | H2.1 | 0,5 ngày |
 | Tiếp | Bảng mục J từ đợt 21 (K5–K9, L7–L15); Q-3 đến Q-9 xen vào đợt 22–23 | Giữ như cũ | J, Q | theo J |
 | Sau L14 và Q | N4–N9, rồi O, rồi P | O và P là tính năng mới ngoài ba tính năng lõi nên đứng sau phần nền | N, O, P | theo P9 |

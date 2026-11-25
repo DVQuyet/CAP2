@@ -18,7 +18,7 @@ của admin và manager, form trên cây. Lỗi `WEAK_PASSWORD` từ API hiện 
 `api/authService` và `api/adminService` nay gắn thân phản hồi vào lỗi. Tự đổi mật khẩu và manager đặt hộ không còn `trim()` mật khẩu mới.
 Còn mở:
 
-- **Việc của anh Quyết:** tự đổi mật khẩu hai tài khoản tạo ngày 15/11 trên DB thật (admin đang dùng mật khẩu một ký tự). **S**
+- **Việc của anh Quyết:** tự đổi mật khẩu hai tài khoản tạo ngày 15/11 trên DB thật. **S**
 - Chưa thử trên trình duyệt.
 
 ## Soát schema DB 15/11/2026 (DB TiDB đang cấu hình trong `Backend/.env`)
