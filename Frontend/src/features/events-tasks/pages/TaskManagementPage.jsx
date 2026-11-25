@@ -1337,7 +1337,7 @@ const openEvent = (eventId) => {
                   disabled={aiLoading}
                   style={{ width: '100%', background: '#fff', border: '1px solid #d7c6aa', borderRadius: '12px', padding: '12px 45px 12px 12px', color: '#111827' }}
                 />
-                <button aria-label={voiceListening ? t("common.stopVoice") : t("common.startVoice")}
+                <button
                   className={`ai-voice-btn ${voiceListening ? "is-listening" : ""}`}
                   type="button"
                   onClick={toggleAiPromptVoiceInput}

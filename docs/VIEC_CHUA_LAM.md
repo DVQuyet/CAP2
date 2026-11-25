@@ -26,8 +26,7 @@ không sửa mã backend. Luồng phủ: đăng nhập admin/manager/member (+ s
 và Esc), trang quản lý gia phả của admin, AI điền form sự kiện rồi lưu. Đã thử đưa lại hai lỗi 15/11 (toàn màn hình, trang admin sập): test bắt được cả hai.
 Chạy trên `cap2_test`: 9/9 (gồm một test "lỗi đã biết" dưới đây). Còn mở:
 
-- **Lỗi giao diện mới thấy:** ở 1280x800 nút tròn của khung chat AI (`.ai-chat-widget`) đè lên nút "Toàn màn hình" của cây (góc dưới phải),
-  bấm chuột không tới. Test `02-tree.spec.mjs` đánh dấu `test.fail()`; sửa xong thì gỡ dòng đó. Phần sửa nằm ở thanh công cụ cây / layout. **S**
+- ~~Nút chat AI đè nút "Toàn màn hình" ở 1280x800~~: đã sửa 25/11 (cụm zoom và nút (+) nâng lên khi trang có khung chat); đã gỡ `test.fail()`.
 - Job `e2e` chưa chạy trên GitHub (chưa push): schema chưa thử trên MySQL 8 thật (chỉ TiDB), lần chạy CI đầu là lần kiểm đầu tiên. **S**
 - LLM giả chỉ trả lời "AI lập kế hoạch sự kiện"; chưa giả lỗi 429 / câu trả lời bị cắt (lỗi 15/11 thứ ba vẫn chỉ có unit test `chatbot.groqFallback`). **S**
 - Chưa phủ: điện thoại 390x844, trợ lý chat, xuất ảnh cây, sửa cây. **M**

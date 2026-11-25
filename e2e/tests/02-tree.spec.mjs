@@ -17,10 +17,9 @@ test("thành viên mở cây thấy người trong dòng họ", async ({ page })
   await expectPageHealthy(page, errors);
 });
 
-// Lỗi đã biết (25/11): ở 1280x800 nút tròn của khung chat AI (.ai-chat-widget) đè lên nút "Toàn màn hình" ở góc dưới
-// phải, bấm chuột không tới. test.fail(): khi giao diện được sửa, test này "đạt ngoài dự kiến" và Playwright báo để gỡ dòng fail.
+// Ở 1280x800 nút tròn của khung chat AI (.ai-chat-widget) từng đè nút "Toàn màn hình" ở góc dưới phải (sửa 25/11:
+// cụm zoom được nâng lên khi trang có khung chat, xem TreeToolbar.css). Bấm chuột thật để chặn lỗi quay lại.
 test("nút toàn màn hình không bị khung chat AI che", async ({ page }) => {
-  test.fail(true, "Khung chat AI đè nút toàn màn hình ở 1280x800 (VIEC_CHUA_LAM, đợt 25/11)");
   await loginAs(page, "member");
   await page.goto("/user/family-tree");
   await expect(page.locator(".fte-cardName").first()).toBeVisible();
