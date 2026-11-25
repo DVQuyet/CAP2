@@ -5,6 +5,7 @@ const memberSearch = require('./memberSearchService');
 const chatbotAI = require('./chatbotAI');
 const { resolveKinshipReference } = require('./kinshipReferenceService');
 const { toPositiveId, queryOptional } = require('./chatbotUtils');
+const { queryPeopleWithHistory } = require('./peopleHistoryQuery');
 const { formatDateWithPrecision, ageOf, relativesOf, describePersonBrief, formatDateVN } = require('./chatbotFormat');
 
 function firstEntity(plan) {
@@ -91,8 +92,7 @@ async function explainResolvedIntent({ intent, message, resolvedData, context })
     return { explanation: null, aiUsed: false, llmRejected };
 }
 
-// Chỉ gửi cho LLM những trường cá nhân mà câu hỏi thực sự cần (địa chỉ, ghi chú, tiểu sử
-// là dữ liệu nhạy cảm và được gửi sang dịch vụ bên ngoài).
+// Chỉ gửi cho LLM những trường hồ sơ cần thiết để trả lời.
 function profileFieldsForQuestion(person, message) {
     const text = String(message || '')
         .normalize('NFD')
@@ -111,7 +111,6 @@ function profileFieldsForQuestion(person, message) {
         death_date: formatDateOnly(person.death_date),
         is_living: person.is_living,
         hometown: person.hometown,
-        ...(wants(/dia chi|o dau|song o|cho o|nha o/) ? { address: person.address } : {}),
         ...(asksOverview || wants(/tieu su|cuoc doi/) ? { bio: person.bio } : {}),
         ...(wants(/ghi chu/) ? { note: person.note } : {}),
     };
@@ -212,13 +211,11 @@ async function handlePersonInfoIntent({ clanId, currentMemberId, message, parsed
     }
 
     const ids = rows.map((row) => toPositiveId(row.id)).filter(Boolean).slice(0, 3);
-    // SELECT * để lấy cả độ chính xác ngày/ngày giỗ âm lịch nếu DB đã có các cột này.
-    const profiles = ids.length
-        ? await queryOptional(
-            `SELECT * FROM people WHERE clan_id = ? AND id IN (${ids.map(() => '?').join(',')})`,
-            [clanId, ...ids]
-        )
-        : [];
+    const fields = 'id, display_name, first_name, middle_name, surname, gender, generation, branch, birth_date, death_date, is_living, hometown, bio, note';
+    const from = `FROM people WHERE clan_id = ? AND id IN (${ids.map(() => '?').join(',')})`;
+    const [profiles] = ids.length
+        ? await queryPeopleWithHistory((extra) => `SELECT ${fields}${extra} ${from}`, [clanId, ...ids])
+        : [[]];
     const subtype = parsed.subtype || null;
     const resolvedData = { type: 'person_profile', data: profiles, entity: entity || null, subtype };
     const ai = await explainResolvedIntent({
@@ -264,7 +261,7 @@ async function handlePersonExistsIntent({ clanId, parsed, planner }) {
     let people = await loadClanPeopleForSearch(clanId);
     if (relationshipEngine.currentTier() === 'public') {
         const graph = await relationshipEngine.loadClanGraph(clanId).catch(() => null);
-        if (graph) people = people.filter((person) => graph.people.has(Number(person.id)));
+        people = graph ? people.filter((person) => graph.people.has(Number(person.id))) : [];
     }
     const matches = memberSearch.findPersonByName(queryName, people);
     const best = matches[0] || null;

@@ -11,12 +11,10 @@
 // Người hỏi: Đinh Văn Quyết (id 101, đời 4). Dữ liệu mẫu có vợ cả + vợ lẽ, con nuôi,
 // hai người cùng tên "Đinh Văn Hùng", ngày giỗ âm lịch, sự kiện, lịch cá nhân/chung và kỷ niệm.
 // --llm: chạy bộ đo CÓ gọi Groq thật (xem chatbot-llm-eval.js); mặc định không gọi LLM để kết quả ổn định.
-const LLM_MODE = process.argv.includes('--llm');
-if (!LLM_MODE) process.env.GROQ_API_KEY = '';
-else if (!process.env.CHATBOT_LLM_REWRITE) process.env.CHATBOT_LLM_REWRITE = 'all'; // thử lớp chặn bịa trên mọi intent
+const LLM_MODE = require.main === module && process.argv.includes('--llm');
+if (require.main === module && !LLM_MODE) process.env.GROQ_API_KEY = '';
+else if (LLM_MODE && !process.env.CHATBOT_LLM_REWRITE) process.env.CHATBOT_LLM_REWRITE = 'all'; // thử lớp chặn bịa trên mọi intent
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'chatbot-e2e-check';
-const path = require('path');
-
 // Cố định "hôm nay" để câu hỏi về giỗ/sinh nhật sắp tới cho cùng kết quả ở mọi ngày chạy (kể cả CI).
 const FIXED_NOW = new Date(process.env.CHATBOT_E2E_NOW || '2026-10-15T09:00:00+07:00').getTime();
 const RealDate = Date;
@@ -31,8 +29,8 @@ global.Date = class extends RealDate {
     }
 };
 
-const db = require(path.join(__dirname, '..', 'src', 'config', 'db'));
-
+const db = require('../src/config/db');
+const { projectPeople } = require('./chatbot-e2e/projectPeople');
 const CLAN_ID = 13;
 const ACCOUNT_ID = 9;
 const ME = 101;
@@ -200,7 +198,6 @@ const likeMatch = (row, pattern) => {
     const fields = [row.display_name, [row.surname, row.middle_name, row.first_name].join(' '), row.first_name, row.surname];
     return fields.some((field) => strip(field).includes(needle));
 };
-
 async function fakeQuery(rawSql, params = []) {
     const sql = String(rawSql).replace(/\s+/g, ' ').trim();
     const has = (pattern) => pattern.test(sql);
@@ -228,19 +225,19 @@ async function fakeQuery(rawSql, params = []) {
         const rows = people
             .filter((row) => row.is_living === 1 && row.birth_date)
             .sort((a, b) => (ascending ? 1 : -1) * a.birth_date.localeCompare(b.birth_date));
-        return [rows.slice(0, 1)];
+        return [projectPeople(sql, rows.slice(0, 1))];
     }
     if (has(/FROM people p WHERE p\.clan_id = \? AND \( p\.display_name LIKE \?/)) {
         return [people.filter((row) => likeMatch(row, params[1])).sort((a, b) => a.generation - b.generation || a.id - b.id)];
     }
     if (has(/FROM people p WHERE p\.clan_id = \? ORDER BY p\.generation ASC, p\.id ASC LIMIT 500/)) return [people];
     if (has(/r\.name AS role_name FROM people p LEFT JOIN accounts a/)) return [people.map((row) => ({ ...row, role_name: row.id === currentDataset.me ? 'member' : null }))];
-    if (has(/^SELECT p\.\* FROM people p LEFT JOIN accounts a/)) return [people];
+    if (has(/FROM people p LEFT JOIN accounts a .* WHERE p\.clan_id = \? AND am\.id IS NULL/)) return [projectPeople(sql, people)];
     if (has(/^SELECT \* FROM families WHERE clan_id = \?/)) return [families];
     if (has(/^SELECT \* FROM children WHERE family_id IN/)) return [children.filter((row) => params.map(Number).includes(row.family_id))];
-    if (has(/FROM people WHERE id = \? (AND clan_id = \? )?LIMIT 1/)) return [[byId(params[0])].filter(Boolean)];
-    if (has(/FROM people WHERE clan_id = \? AND id IN/)) return [people.filter((row) => params.slice(1).map(Number).includes(row.id))];
-    if (has(/p\.generation = \? AND p\.id <> \?/)) return [people.filter((row) => row.generation === Number(params[1]) && row.id !== Number(params[2]))];
+    if (has(/FROM people WHERE id = \? (AND clan_id = \? )?LIMIT 1/)) return [projectPeople(sql, [byId(params[0])].filter(Boolean))];
+    if (has(/FROM people WHERE clan_id = \? AND id IN/)) return [projectPeople(sql, people.filter((row) => params.slice(1).map(Number).includes(row.id)))];
+    if (has(/p\.generation = \? AND p\.id <> \?/)) return [projectPeople(sql, people.filter((row) => row.generation === Number(params[1]) && row.id !== Number(params[2])))];
     if (has(/death_anniversary_lunar FROM people WHERE clan_id = \?/)) {
         return [people.filter((row) => (row.is_living === 1 && row.birth_date && row.birth_date_precision === 'exact')
             || (row.is_living !== 1 && ((row.death_date && row.death_date_precision === 'exact') || row.death_anniversary_lunar)))];
@@ -286,7 +283,7 @@ db.getConnection = async () => ({
     release: () => {},
 });
 
-const controller = require(path.join(__dirname, '..', 'src', 'modules', 'chatbot', 'chatbotController'));
+const controller = require('../src/modules/chatbot/chatbotController');
 
 async function ask(message, sessionId, dataset = 'dinh') {
     useDataset(dataset);
@@ -615,8 +612,8 @@ const minConversationIndex = process.argv.indexOf('--min-conversation');
 const minConversation = minConversationIndex > -1 ? Number(process.argv[minConversationIndex + 1]) : 0;
 const ACCENT_SUITE = process.argv.includes('--suite') && process.argv[process.argv.indexOf('--suite') + 1] === 'accent';
 const groupMinimums = process.argv.flatMap((arg, index) => (arg === '--min-group' ? [String(process.argv[index + 1] || '').split('=')] : []));
-
-(async () => {
+if (require.main !== module) module.exports = { ask, CASES, CONVERSATION, DATASETS };
+else (async () => {
     // --ask "câu 1|câu 2": hỏi thử vài câu tuỳ ý (không chấm điểm) để gỡ lỗi luật.
     const askIndex = process.argv.indexOf('--ask');
     if (askIndex > -1) {
